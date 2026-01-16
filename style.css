@@ -127,14 +127,19 @@ h1 {
   padding: 30px;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   transition: all 0.5s ease;
-  min-height: 650px; /* Increased to fit vertical pools */
+  /* Fixed size for consistency across stages */
+  min-height: 800px;
+  width: 95%; /* Responsive width */
+  max-width: 1000px;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* Anchor content to top so board doesn't move */
   align-items: center;
-  position: relative; /* Context for absolute children */
-  display: flex; /* Already flex */
-  flex-direction: column; /* Stack children */
+  position: relative;
+
+  /* Ensure board has space from top */
+  padding-top: 50px;
 }
 
 .stage {
