@@ -1,0 +1,699 @@
+:root {
+  --primary-color: #6c5ce7;
+  --secondary-color: #a29bfe;
+  --accent-color: #fdcb6e;
+  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --text-color: #ffffff;
+  --success-color: #00b894;
+  --error-color: #ff7675;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Outfit", sans-serif;
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  background: var(--bg-gradient);
+}
+
+.background-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.game-container {
+  width: 95%;
+  max-width: 1000px; /* Increased to fit side pools */
+  text-align: center;
+}
+
+/* ... */
+
+.jigsaw-pools-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto; /* Enable interaction for background drops */
+  display: block; /* Remove flex, use block/absolute */
+  /* Remove flex layout props since we use absolute positioning */
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px; /* More padding */
+  z-index: 1;
+}
+
+#jigsaw-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; /* Below board (10) but above background */
+  pointer-events: none; /* Let clicks pass to underlying elements unless on valid children */
+}
+
+/* Default: Wrapper handles layout but lets clicks pass (for Memory stage) */
+#jigsaw-stage .jigsaw-pools-wrapper {
+  pointer-events: none;
+}
+
+/* Interactive Mode (Stage 1): Catch drops on background */
+#jigsaw-stage.interactive .jigsaw-pools-wrapper {
+  pointer-events: auto;
+}
+
+.side-pool {
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.1); /* Visible container */
+  padding: 10px;
+  border-radius: 10px;
+}
+
+header {
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transition: all 0.5s ease;
+  min-height: 650px; /* Increased to fit vertical pools */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative; /* Context for absolute children */
+}
+
+.stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.hidden {
+  display: none;
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.active {
+  display: flex;
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Shared Board Dimensions */
+:root {
+  --cell-size: 40px;
+  --board-size: calc(var(--cell-size) * 9); /* 360px */
+}
+
+#main-board {
+  position: relative;
+  z-index: 10; /* Ensure board stays above side pools */
+}
+
+.drop-zone {
+  width: calc(var(--board-size) + 6px); /* + borders */
+  height: calc(var(--board-size) + 6px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  border: 3px solid #333; /* Match sudoku border */
+  background: rgba(0, 0, 0, 0.2);
+  box-sizing: content-box; /* Ensure inner width is 360 */
+  margin: 0 auto; /* Ensure centered if needed */
+}
+
+/* Jigsaw Styles */
+
+/* On mobile, revert to stacked */
+@media (max-width: 850px) {
+  .jigsaw-pools-wrapper {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    pointer-events: auto;
+    margin-top: 20px;
+  }
+
+  .side-pool {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 0;
+  }
+}
+
+.jigsaw-piece {
+  width: 120px; /* 3 * 40px */
+  height: 120px;
+  background: white;
+  color: #333;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  font-size: 14px;
+  border: 1px solid #333;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.jigsaw-cell {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #ddd;
+  font-weight: bold;
+  font-size: 1.2rem; /* Match sudoku font */
+}
+
+.jigsaw-piece.dragging {
+  opacity: 0.5;
+  transform: scale(1.05);
+}
+
+/* Sudoku Styles */
+.sudoku-container {
+  width: calc(var(--board-size) + 6px);
+  height: calc(var(--board-size) + 6px);
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0;
+  background: #333;
+  border: 3px solid #333;
+  margin-bottom: 20px;
+  box-sizing: content-box;
+}
+
+.sudoku-cell {
+  width: 40px;
+  height: 40px;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  color: #2d3436;
+  cursor: pointer;
+  /* Default thin borders */
+  border-right: 1px solid #333;
+  border-bottom: 1px solid #333;
+}
+
+.sudoku-cell.fixed {
+  background: #dfe6e9;
+  font-weight: bold;
+  color: #2d3436;
+  cursor: default;
+}
+
+.sudoku-cell.selected {
+  background: #a29bfe;
+}
+
+.sudoku-cell.error {
+  background: #ff7675;
+  color: white;
+}
+
+/* Borders for 3x3 blocks */
+/* Every 3rd column gets thicker right border */
+.sudoku-cell:nth-child(3n) {
+  border-right: 2px solid #333;
+}
+/* Last column - Remove right border (use container border) */
+.sudoku-cell:nth-child(9n) {
+  border-right: none;
+}
+
+/* Rows 3 and 6 get thicker bottom border */
+.sudoku-container div:nth-child(n + 19):nth-child(-n + 27),
+.sudoku-container div:nth-child(n + 46):nth-child(-n + 54) {
+  border-bottom: 2px solid #333;
+}
+
+/* Last Row - Remove bottom border (use container border) */
+.sudoku-container div:nth-child(n + 73):nth-child(-n + 81) {
+  border-bottom: none;
+}
+
+.sudoku-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.number-pad {
+  display: flex;
+  gap: 5px;
+}
+
+.num-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.num-btn:hover {
+  transform: scale(1.1);
+  background: var(--accent-color);
+}
+
+/* Number Search Styles */
+.search-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-container {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+  background: #333;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.search-cell {
+  width: 35px;
+  height: 35px;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2d3436;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.search-cell.selected {
+  background: var(--accent-color);
+  color: #2d3436;
+}
+
+.search-cell.found {
+  background: var(--success-color); /* Green */
+  color: white;
+  animation: pulse 0.5s ease;
+}
+
+/* Targets List */
+.targets-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.target-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+.target-item.done {
+  text-decoration: line-through;
+  opacity: 0.5;
+  background: rgba(0, 184, 148, 0.2);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Buttons */
+.btn-primary {
+  padding: 12px 24px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:hover {
+  background: #5649c0;
+  transform: translateY(-2px);
+}
+
+.btn-tool {
+  padding: 8px 16px;
+  margin: 0 5px;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btn-tool.active {
+  border-color: var(--accent-color);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 600px) {
+  .drop-zone {
+    width: 306px;
+    height: 306px;
+  }
+  .sudoku-cell {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .nono-cell {
+    width: 25px;
+    height: 25px;
+  }
+}
+
+/* Memory Game Styles */
+.memory-layout {
+  display: flex;
+  flex-direction: column; /* Stack vertically */
+  gap: 30px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Board (Collected) on TOP */
+.memory-sidebar {
+  display: contents; /* Remove sidebar box styling */
+  order: 1;
+}
+
+/* Cards on BOTTOM */
+.memory-board {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 15px;
+  perspective: 1000px;
+  order: 2;
+}
+
+.memory-sidebar h3 {
+  display: none; /* Hide "Piezas:" title if redundant */
+}
+
+.collected-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0; /* No gaps between pieces in the "board" view */
+  width: calc(var(--board-size) + 6px);
+  height: calc(var(--board-size) + 6px);
+  border: 3px solid #333;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.1);
+  box-sizing: content-box;
+  margin-bottom: 40px;
+}
+
+/* Override mini-piece for the collected container to be full size */
+.collected-container .mini-piece {
+  width: 120px;
+  height: 120px;
+  /* Reuse jigsaw-piece grid logic implicitly or explicit */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.collected-container .jigsaw-cell {
+  /* Inherits 40px size from global rule if class reused */
+}
+
+.memory-card {
+  width: 70px;
+  height: 70px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
+  cursor: pointer;
+}
+
+/* Mini pieces in cards need scaling */
+.memory-card .mini-piece {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.memory-card .jigsaw-cell {
+  width: auto; /* Allow flex/grid to sizing */
+  height: auto;
+  font-size: 8px;
+  border-width: 0.5px;
+}
+
+.memory-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-back {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+  font-size: 2rem;
+}
+
+.card-front {
+  background: white;
+  transform: rotateY(180deg);
+  overflow: hidden; /* To verify piece content stays inside */
+}
+
+/* Reuse jigsaw piece styling but scaled down for cards/collected */
+.mini-piece {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  font-size: 8px; /* Smaller font for numbers */
+  color: #333;
+}
+
+/* Peaks Stage Styles */
+.peaks-info {
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.peaks-cell {
+  width: 40px;
+  height: 40px;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.peaks-cell:hover {
+  background: #dfe6e9;
+}
+
+.peaks-cell.found {
+  background: var(--success-color);
+  color: white;
+  animation: pulse 0.3s ease;
+}
+
+.peaks-cell.error {
+  background: var(--error-color);
+  color: white;
+}
+/* Animations */
+
+@keyframes fusePieces {
+  0% {
+    transform: scale(1);
+    border-color: transparent;
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px var(--primary-color);
+  }
+  100% {
+    transform: scale(1);
+    border: none;
+    gap: 0;
+  }
+}
+
+.jigsaw-completed .jigsaw-piece {
+  border: none;
+  box-shadow: none;
+}
+.jigsaw-completed .jigsaw-slot {
+  border: none !important;
+}
+.jigsaw-completed {
+  animation: fuseBoard 1s forwards;
+  background: white; /* Unified background */
+  gap: 0;
+}
+
+@keyframes fuseBoard {
+  from {
+    gap: 0;
+  }
+  to {
+    gap: 0;
+  }
+}
+
+/* Board Transitions */
+.stage-transition {
+  transition: all 0.8s ease-in-out;
+}
+
+/* Sudoku <-> Peaks (Same size) */
+/* Peaks -> Search (Shrink) */
+.board-shrink {
+  animation: shrinkBoard 0.8s forwards;
+}
+
+@keyframes shrinkBoard {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0.9);
+  }
+}
+
+/* Jigsaw -> Sudoku (Expand) */
+.board-expand {
+  animation: expandBoard 0.8s forwards;
+}
+
+@keyframes expandBoard {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes flyAway {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.5) translateY(-50px);
+    opacity: 0;
+  }
+}
+.fly-away {
+  animation: flyAway 0.8s forwards;
+}

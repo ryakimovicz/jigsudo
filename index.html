@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Desafío de Puzzles</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="background-animation"></div>
+
+    <div class="game-container">
+      <header>
+        <h1>Desafío de Puzzles</h1>
+        <p id="instruction-text">
+          Arma el rompecabezas para revelar el tablero.
+        </p>
+        <button id="hint-btn" class="btn-primary" style="margin-top: 10px">
+          💡 Pista
+        </button>
+      </header>
+
+      <div id="game-area" class="glass-panel">
+        <!-- Persistent Board (Transforming Object) -->
+        <div id="main-board" class="board-common"></div>
+
+        <!-- Stage 1: Memory Game -->
+        <div id="memory-stage" class="stage active">
+          <div class="memory-layout">
+            <div class="memory-board" id="memory-board"></div>
+            <!-- Collected container replaced by main-board -->
+          </div>
+        </div>
+
+        <!-- Stage 2: Jigsaw -->
+        <div id="jigsaw-stage" class="stage hidden">
+          <div class="jigsaw-pools-wrapper">
+            <div id="pool-left" class="side-pool"></div>
+            <div id="pool-right" class="side-pool"></div>
+          </div>
+        </div>
+
+        <!-- Stage 3: Sudoku -->
+        <div id="sudoku-stage" class="stage hidden">
+          <!-- Board replaced by main-board -->
+          <div class="sudoku-controls">
+            <button id="check-sudoku" class="btn-primary">
+              Verificar Sudoku
+            </button>
+            <div class="number-pad" id="numpad"></div>
+          </div>
+        </div>
+
+        <!-- Stage 4: Peaks and Valleys -->
+        <div id="peaks-stage" class="stage hidden">
+          <div class="peaks-info">
+            <p>
+              Encuentra los Picos (mayores que sus vecinos) y Valles (menores
+              que sus vecinos). <b>No cuentan 1 ni 9.</b>
+            </p>
+            <p>Restantes: <span id="peaks-remaining">0</span></p>
+          </div>
+          <!-- Board replaced by main-board -->
+        </div>
+
+        <!-- Stage 5: Number Search -->
+        <div id="search-stage" class="stage hidden">
+          <div class="search-info">
+            <p>Encuentra estas secuencias:</p>
+            <div id="search-targets" class="targets-container"></div>
+          </div>
+          <div class="search-wrapper">
+            <!-- Board replaced by main-board -->
+          </div>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen" class="stage hidden">
+          <h2>¡Felicidades!</h2>
+          <p>Has completado los 5 desafíos.</p>
+          <button onclick="location.reload()" class="btn-primary">
+            Jugar de nuevo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
