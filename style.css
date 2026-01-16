@@ -133,6 +133,8 @@ h1 {
   justify-content: center;
   align-items: center;
   position: relative; /* Context for absolute children */
+  display: flex; /* Already flex */
+  flex-direction: column; /* Stack children */
 }
 
 .stage {
@@ -183,22 +185,64 @@ h1 {
 
 /* On mobile, revert to stacked */
 @media (max-width: 850px) {
+  #jigsaw-stage {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-bottom: 20px;
+    order: 2; /* Middle */
+  }
+
+  /* Wrapper acts as container for all pieces */
   .jigsaw-pools-wrapper {
     position: static;
     height: auto;
-    flex-direction: row;
+    display: flex;
+    flex-direction: row; /* Flow pieces horizontally */
+    flex-wrap: wrap; /* Wrap to new lines (rows) */
     justify-content: center;
-    flex-wrap: wrap;
+    align-items: center;
     pointer-events: auto;
-    margin-top: 20px;
+    margin-top: 0;
+    gap: 10px;
+    padding: 10px;
+    width: 100%;
   }
 
+  /* Turn each side pool into a functional horizontal row */
   .side-pool {
-    width: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: row; /* Pieces flow horizontally */
+    flex-wrap: wrap; /* Allow wrapping if many pieces */
     justify-content: center;
-    padding-top: 0;
+    align-items: center;
+    width: 100%;
+    gap: 5px;
+  }
+
+  /* Collected pieces styling - ensure they fit */
+  .jigsaw-pools-wrapper .jigsaw-piece {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 3px;
+    transform: none; /* Reset scale, use real size */
+    width: 80px !important; /* Larger as requested */
+    height: 80px !important;
+    font-size: 11px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .jigsaw-pools-wrapper .jigsaw-cell {
+    width: 26px; /* ~80/3 */
+    height: 26px;
+    font-size: 0.9rem;
+  }
+
+  /* Memory Stage at bottom */
+  #memory-stage {
+    order: 3;
+    margin-top: 20px;
   }
 }
 
