@@ -148,6 +148,9 @@ h1 {
 
   /* Ensure board has space from top */
   padding-top: 50px;
+
+  /* Force horizontal centering */
+  margin: 0 auto;
 }
 
 .stage {
