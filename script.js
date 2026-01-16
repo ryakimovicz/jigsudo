@@ -280,8 +280,18 @@ function collectPiece(pieceId) {
   }
 }
 
+// --- UI Helpers ---
+function updateGameSubtitle(text) {
+  const subtitle = document.getElementById("game-subtitle");
+  if (subtitle) {
+    subtitle.innerText = text;
+  }
+}
+
 // --- Stage 0: Memory Game ---
 function initMemoryGame() {
+  const subtitle = document.getElementById("game-subtitle");
+  if(subtitle) subtitle.innerText = "Memotest";
   instructionText.innerText = "Encuentra los pares para recolectar las piezas del rompecabezas.";
   
   const board = document.getElementById("memory-board");
@@ -432,6 +442,8 @@ function checkMemoryMatch() {
 // --- Transition 0->1 (Animated) ---
 function transitionToJigsawAnimated() {
   gameState.currentStage = 1;
+  const subtitle = document.getElementById("game-subtitle");
+  if(subtitle) subtitle.innerText = "Rompecabezas";
   instructionText.innerText = "Arma el rompecabezas para revelar el tablero.";
   
   // Hide Memory UI (Fade out cards provided by memory-board container? Or just the stage?)
@@ -650,6 +662,7 @@ function checkJigsawCompletion() {
 
   if (filled === 9) {
     if (correct === 9) {
+      console.log("Jigsaw complete! Transitioning...");
       // Animation: Fuse pieces
       const dropZone = mainBoard;
       dropZone.classList.add("jigsaw-completed");
@@ -657,6 +670,7 @@ function checkJigsawCompletion() {
       // Wait for fusion animation then transition
       setTimeout(() => transitionToSudoku(), 1500); 
     } else {
+      console.log("Jigsaw filled but incorrect.");
       instructionText.innerText =
         "El rompecabezas está completo pero incorrecto. Revisa las piezas.";
       instructionText.style.color = "#ff7675";
@@ -666,7 +680,9 @@ function checkJigsawCompletion() {
 
 // --- Transition 1->2 ---
 function transitionToSudoku() {
+  console.log("transitionToSudoku started");
   gameState.currentStage = 2;
+  updateGameSubtitle("Sudoku");
   instructionText.innerText = "¡Bien! Ahora completa el Sudoku.";
   instructionText.style.color = "#fff";
 
@@ -794,6 +810,8 @@ function checkSudokuSolution() {
 // --- Transition 2->3 ---
 function transitionToPeaks() {
   gameState.currentStage = 3;
+  const subtitle = document.getElementById("game-subtitle");
+  if(subtitle) subtitle.innerText = "Picos y Valles";
   instructionText.innerText = "¡Picos y Valles! Encuentra los números mayores o menores que sus vecinos. (Solo horizontales y verticales)";
   instructionText.style.color = "#fff";
 
@@ -907,6 +925,7 @@ function updatePeaksCount() {
 // --- Transition 3->4 ---
 function transitionToNumberSearch() {
   gameState.currentStage = 4;
+  updateGameSubtitle("Sopa de números");
   
   instructionText.innerText =
     "¡Juego de Agudeza! Encuentra las secuencias numéricas ocultas en el tablero.";
