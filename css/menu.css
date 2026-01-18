@@ -1,4 +1,4 @@
-/* Main Menu Styles */
+/* Main Menu Styles - Nordic Paper Theme */
 
 /* Header */
 .main-header {
@@ -12,36 +12,42 @@
   top: 0;
   left: 0;
   z-index: 1000;
-  border-radius: 0 0 16px 16px; /* Rounded bottom */
-  border-top: none;
-  background: rgba(255, 255, 255, 0.15); /* Slightly clearer */
+  background: rgba(
+    253,
+    251,
+    247,
+    0.9
+  ); /* Paper color with slight transparency */
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(5px);
 }
 
 .app-title {
   font-size: 1.8rem;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: var(--text-main);
+  /* Removed text-shadow for cleaner look */
 }
 
 .btn-icon {
   font-size: 1.5rem;
   padding: 8px;
   border-radius: 50%;
-  transition:
-    transform 0.2s,
-    background 0.2s;
+  transition: all 0.2s;
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--primary-color);
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--accent-color);
+  transform: scale(1.05);
 }
 
 .header-right {
@@ -69,32 +75,34 @@
   padding: 40px;
   width: 100%;
   max-width: 600px;
-  background: rgba(0, 0, 0, 0.2); /* Darker internal glass */
+  background: white; /* Clean card on cream bg */
+  /* Border/Shadow handled by global .glass-panel class now acting as paper-panel */
 }
 
 .game-description h2 {
   font-size: 2rem;
   margin-bottom: 20px;
-  color: var(--accent-color);
+  color: var(--primary-color);
 }
 
 .game-description p {
   font-size: 1.2rem;
   line-height: 1.6;
   margin-bottom: 20px;
-  color: var(--text-muted);
+  color: var(--text-main);
 }
 
 .game-description strong {
-  color: var(--text-color);
+  color: var(--accent-color);
   font-weight: 600;
 }
 
 .tagline {
   font-style: italic;
   font-size: 1.1rem;
-  margin-top: 10px;
-  color: var(--secondary-color) !important;
+  margin-top: 20px;
+  color: var(--text-muted) !important;
+  font-family: serif; /* Giving it that newspaper hint */
 }
 
 /* Start Button */
@@ -103,24 +111,21 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: white;
-  background: var(--primary-color);
-  background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
-  border-radius: 50px;
-  box-shadow: 0 10px 20px rgba(108, 92, 231, 0.4);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: var(--accent-color); /* Burnt Orange */
+  border-radius: 8px; /* Less rounded, more paper-like */
+  box-shadow: 0 4px 0 #c2410c; /* Hard shadow for tactile feel */
+  transition: all 0.1s ease;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 
 .btn-primary:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 15px 30px rgba(108, 92, 231, 0.6);
-  background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+  background: #ea580c; /* Darker orange */
 }
 
 .btn-primary:active {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(108, 92, 231, 0.4);
+  transform: translateY(4px);
+  box-shadow: none; /* Pressed effect */
 }
 
 /* Footer */
@@ -131,17 +136,18 @@
   color: var(--text-muted);
   width: 100%;
   border-top: 1px solid var(--glass-border);
-  background: var(--glass-bg);
+  background: var(--bg-paper);
 }
 
 .main-footer a {
-  color: var(--accent-color);
+  color: var(--primary-color);
   text-decoration: none;
   font-weight: 500;
 }
 
 .main-footer a:hover {
   text-decoration: underline;
+  color: var(--accent-color);
 }
 
 /* Sidebar */
@@ -151,7 +157,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* Backdrop */
+  background: rgba(0, 0, 0, 0.2); /* Lighter backdrop */
   z-index: 2000;
   display: flex;
   justify-content: flex-start; /* Left aligned */
@@ -164,13 +170,30 @@
 .sidebar-content {
   width: 300px;
   height: 100%;
-  background: #2d3436; /* Solid-ish background */
+  background: var(--bg-paper);
   padding: 80px 20px 20px;
-  border-radius: 0 16px 16px 0;
+  border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   gap: 20px;
-  transition: transform 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-content h3 {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 10px;
+}
+
+.sidebar-content button {
+  text-align: left;
+  padding: 10px;
+  color: var(--text-main);
+  border-radius: 4px;
+}
+
+.sidebar-content button:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 600px) {
@@ -190,4 +213,207 @@
     padding: 12px 36px;
     font-size: 1.2rem;
   }
+}
+
+/* Settings Dropdown */
+.settings-dropdown {
+  position: absolute;
+  top: 120%; /* Below the button */
+  right: -10px; /* Align right */
+  width: 250px;
+  padding: 16px;
+  background: var(--bg-paper);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  transform-origin: top right;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.settings-dropdown.hidden {
+  display: flex !important; /* Keep flex context */
+  opacity: 0;
+  transform: scale(0.9) translateY(-10px);
+  pointer-events: none;
+}
+
+.settings-dropdown:not(.hidden) {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.dropdown-header {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 5px;
+  width: 100%;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: center; /* Centered since text is gone */
+  align-items: center;
+  font-weight: 500;
+  color: var(--text-main);
+  width: 100%;
+}
+
+/* Theme Switch */
+.theme-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Little more space */
+}
+
+.theme-icon {
+  font-size: 1.4rem;
+  transition: all 0.3s ease;
+}
+
+/* DEFAULT (Light Mode) State */
+.theme-icon.sun {
+  opacity: 1;
+  transform: scale(1.1);
+  text-shadow: 0 0 10px #f59e0b;
+}
+
+.theme-icon.moon {
+  opacity: 0.3;
+  transform: scale(0.9);
+}
+
+/* DARK MODE State (Inherited from body) */
+body.dark-mode .theme-icon.sun {
+  opacity: 0.3;
+  transform: scale(0.9);
+  text-shadow: none;
+}
+
+body.dark-mode .theme-icon.moon {
+  opacity: 1;
+  transform: scale(1.1);
+  text-shadow: 0 0 10px #a78bfa;
+}
+
+/* The Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1; /* Light grey when off */
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Input Checked (Dark Mode) */
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* Small Auto Switch */
+.switch-small {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+}
+
+.switch-small input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-small {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.slider-small:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .slider-small {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider-small:before {
+  transform: translateX(14px);
+}
+
+.setting-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-right: auto; /* Push switch to right */
+}
+
+/* Disabled Manual State - Only dim the switch */
+.option-manual {
+  transition: all 0.3s;
+}
+
+.option-manual.disabled .switch {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+/* Ensure icons stay visible */
+.option-manual.disabled .theme-icon {
+  filter: none;
 }

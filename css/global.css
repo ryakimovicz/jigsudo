@@ -1,19 +1,43 @@
 :root {
-  /* Color Palette - Deep Purples & Glassmorphism */
-  --primary-color: #6c5ce7;
-  --primary-dark: #5649c0;
-  --secondary-color: #a29bfe;
-  --accent-color: #ffeaa7;
-  --background-start: #2d3436;
-  --background-end: #0984e3; /* Will rely on mesh gradient logic or simplified gradient */
-  --glass-bg: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --text-color: #ffffff;
-  --text-muted: rgba(255, 255, 255, 0.7);
+  /* Nordic Paper Theme - Minimalist & Elegant */
+  --bg-paper: #fdfbf7; /* Cream / Off-White Background */
+  --primary-color: #64748b; /* Slate Blue - Application Elements */
+  --primary-dark: #475569;
+  --text-main: #1e293b; /* Dark Slate - Main Text */
+  --text-muted: #94a3b8; /* Muted Text */
+  --accent-color: #f97316; /* Burnt Orange - Selection/Highlights */
 
-  /* Typography */
-  --font-family: "Outfit", sans-serif;
+  /* UI Utilities */
   --header-height: 70px;
+  --font-family: "Outfit", sans-serif;
+
+  /* Paper Effects */
+  --paper-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --inset-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.05),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.8);
+  --glass-bg: rgba(255, 255, 255, 0.8); /* Frosted glass becoming Paper-like */
+  --glass-border: rgba(0, 0, 0, 0.05);
+}
+
+/* Midnight Paper Theme (Dark Mode) */
+body.dark-mode {
+  --bg-paper: #1e2329; /* Dark Lead/Blue */
+  --primary-color: #cdd9e5; /* Pearl Grey Text/Elements */
+  --primary-dark: #adbac7;
+  --text-main: #cdd9e5; /* Pearl Grey */
+  --text-muted: #768390;
+  --accent-color: #f37825; /* Vibrant Orange */
+
+  --glass-border: #444c56; /* Medium Grey Border */
+  --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */
+}
+
+/* Ensure glass panel adapts to dark mode */
+body.dark-mode .glass-panel {
+  background: #2d333b; /* Darker Grey Surface */
+  border-color: var(--glass-border);
 }
 
 * {
@@ -24,19 +48,11 @@
 
 body {
   font-family: var(--font-family);
-  color: var(--text-color);
-  background: linear-gradient(
-    135deg,
-    #a18cd1 0%,
-    #fbc2eb 100%
-  ); /* Placeholder colorful gradient */
-  background: linear-gradient(
-    135deg,
-    #667eea 0%,
-    #764ba2 100%
-  ); /* Deep Purple Gradient */
+  color: var(--text-main);
+  background-color: var(--bg-paper);
+  /* Optional: Subtle paper texture pattern could happen here */
   min-height: 100vh;
-  overflow: hidden; /* App-like feel */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -52,14 +68,12 @@ body {
   max-width: 100vw;
 }
 
-/* Utility: Glass Panel */
+/* Utility: Paper Panel (Replacing Glass Panel concept) */
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: white;
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--paper-shadow);
+  border-radius: 12px;
 }
 
 /* Utility: Hidden */

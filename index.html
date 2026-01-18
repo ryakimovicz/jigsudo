@@ -42,9 +42,41 @@
           <button id="btn-stats" class="btn-icon" aria-label="Estadísticas">
             📊
           </button>
-          <button id="btn-settings" class="btn-icon" aria-label="Ajustes">
-            ⚙️
-          </button>
+
+          <div class="settings-wrapper" style="position: relative">
+            <button id="btn-settings" class="btn-icon" aria-label="Ajustes">
+              ⚙️
+            </button>
+            <!-- Settings Dropdown -->
+            <div
+              id="settings-dropdown"
+              class="settings-dropdown glass-panel hidden"
+            >
+              <h3 class="dropdown-header">Modo Oscuro</h3>
+
+              <!-- Auto Theme Option -->
+              <div class="setting-item">
+                <span class="setting-label">Automático</span>
+                <label class="switch-small">
+                  <input type="checkbox" id="auto-theme-toggle" />
+                  <span class="slider-small round"></span>
+                </label>
+              </div>
+
+              <!-- Manual Theme Option -->
+              <div class="setting-item option-manual">
+                <div class="theme-switch-wrapper">
+                  <span class="theme-icon sun">☀️</span>
+                  <label class="switch">
+                    <input type="checkbox" id="theme-toggle" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="theme-icon moon">🌙</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <button id="btn-profile" class="btn-icon" aria-label="Perfil">
             👤
           </button>
