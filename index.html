@@ -26,7 +26,63 @@
   <body>
     <!-- Main Application Container -->
     <div id="app">
-      <!-- Content will be injected/managed by JS modules -->
+      <!-- Header -->
+      <header class="main-header glass-panel">
+        <div class="header-left">
+          <button id="menu-toggle" class="btn-icon" aria-label="Abrir menú">
+            ☰
+          </button>
+        </div>
+
+        <div class="header-center">
+          <h1 class="app-title">Jigsudo</h1>
+        </div>
+
+        <div class="header-right">
+          <button id="btn-stats" class="btn-icon" aria-label="Estadísticas">
+            📊
+          </button>
+          <button id="btn-settings" class="btn-icon" aria-label="Ajustes">
+            ⚙️
+          </button>
+          <button id="btn-profile" class="btn-icon" aria-label="Perfil">
+            👤
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Menu Content -->
+      <main id="menu-content" class="menu-container">
+        <section class="game-description glass-panel">
+          <h2>Embárcate en el desafío</h2>
+          <p>
+            Supera el <strong>Juego de Memoria</strong>, arma el
+            <strong>Rompecabezas</strong>, resuelve el <strong>Sudoku</strong>,
+            domina <strong>Picos y Valles</strong> y halla la
+            <strong>Sopa de Números</strong>.
+          </p>
+          <p class="tagline">Cinco desafíos, un solo tablero.</p>
+        </section>
+
+        <button id="start-btn" class="btn-primary">EMPEZAR</button>
+      </main>
+
+      <!-- Footer -->
+      <footer class="main-footer">
+        <p>
+          © 2026 Román Yakimovicz |
+          <a href="https://github.com/ryakimovicz/" target="_blank">GitHub</a>
+        </p>
+      </footer>
+
+      <!-- Sidebar (Hidden by default) -->
+      <aside id="sidebar" class="sidebar hidden">
+        <div class="sidebar-content glass-panel">
+          <h3>Más Juegos</h3>
+          <p>(Próximamente)</p>
+          <button id="close-sidebar">Cerrar</button>
+        </div>
+      </aside>
     </div>
 
     <!-- Global Scripts -->
