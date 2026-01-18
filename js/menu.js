@@ -140,6 +140,47 @@ document.addEventListener("DOMContentLoaded", () => {
         applyTheme(e.matches);
       }
     });
+  // --- Header Info (Date & Challenge #) ---
+  function updateHeaderInfo() {
+    const dateEl = document.getElementById("current-date");
+    const challengeEl = document.getElementById("challenge-num");
+
+    if (!dateEl || !challengeEl) return;
+
+    const now = new Date();
+
+    // Date: "domingo, 18 de enero" (default ES)
+    const dateStr = now.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+
+    // Custom Capitalization: "Domingo, 18 de Enero"
+    // Capitalize words except "de"
+    const formattedDate = dateStr.replace(/\b\w+/g, (word) => {
+      return word === "de" || word === "en"
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+
+    dateEl.textContent = formattedDate;
+
+    // Challenge #: Days since Jan 18, 2026 (Launch Day = #001)
+    const todayZero = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const startZero = new Date(2026, 0, 18); // Jan 18, 2026
+
+    const diffTime = todayZero - startZero;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    challengeEl.textContent = `#${String(diffDays).padStart(3, "0")}`;
+  }
+
+  updateHeaderInfo();
 
   // Placeholders for other buttons
   document.getElementById("btn-stats")?.addEventListener("click", () => {
