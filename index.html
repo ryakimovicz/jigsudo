@@ -17,9 +17,8 @@
 
     <div id="game-scaler">
       <div class="game-container">
-        <header>
-          <h1>Jigsudo</h1>
-        </header>
+        <!-- Unified App Title (Animates from Menu to Header) -->
+        <h1 id="app-title" class="app-title start-mode">Jigsudo</h1>
 
         <div id="game-area" class="glass-panel">
           <!-- New Internal Header with Subtitle & Info -->
@@ -38,8 +37,26 @@
           <!-- Persistent Board (Transforming Object) -->
           <div id="main-board" class="board-common"></div>
 
+          <!-- Start Menu -->
+          <div id="start-menu" class="stage active">
+            <!-- Top Section: Description (Title moved out) -->
+            <div class="start-header">
+              <!-- Title removed from here -->
+              <p>
+                Cinco desafíos, un solo tablero.<br />
+                Supera el Juego de Memoria, arma el Rompecabezas, resuelve el
+                Sudoku, domina Picos y Valles, y halla la Sopa de Números.
+              </p>
+            </div>
+
+            <!-- Middle Section: Centered Button -->
+            <div class="start-action">
+              <button id="start-btn" class="btn-primary">Empezar</button>
+            </div>
+          </div>
+
           <!-- Stage 1: Memory Game -->
-          <div id="memory-stage" class="stage active">
+          <div id="memory-stage" class="stage hidden">
             <div class="memory-layout">
               <div class="memory-board" id="memory-board"></div>
               <!-- Collected container replaced by main-board -->

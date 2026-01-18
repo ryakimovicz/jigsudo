@@ -85,8 +85,13 @@ function resizeGame() {
   // Use smaller scale to fit both
   uiScale = Math.min(scaleX, scaleY);
 
-  // 4. Apply Scale
-  scaler.style.transform = `scale(${uiScale})`;
+  // 4. Apply Scale - DISABLED because layout is now responsive via CSS
+  // scaler.style.transform = `scale(${uiScale})`;
+
+  // Set to 1 explicitly to ensure no residual scaling
+  scaler.style.transform = "none";
+  scaler.style.width = "100%";
+  scaler.style.height = "100%"; // Ensure full height for centering
 }
 
 window.addEventListener("resize", resizeGame);
@@ -298,14 +303,105 @@ function initGame() {
   initMemoryGame();
   initSudokuControls();
 
-  // Ensure Jigsaw Overlay is visible (for side pieces)
-  jigsawStage.classList.remove("hidden");
-  jigsawStage.classList.add("active");
+  // Initial State Override for Start Menu
+  const startMenu = document.getElementById("start-menu");
+  const subtitle = document.getElementById("game-subtitle");
+  const panelHeader = document.querySelector(".panel-header");
+  const globalHeader = document.querySelector("header");
+  const hintBtn = document.getElementById("hint-btn");
+
+  if (startMenu) {
+    // Hide Game Elements
+    mainBoard.classList.add("hidden");
+    if (panelHeader) panelHeader.classList.add("hidden");
+    if (globalHeader) globalHeader.style.display = "none";
+    if (hintBtn) hintBtn.style.display = "none";
+
+    // Ensure Jigsaw Overlay is hidden (it would intercept clicks)
+    jigsawStage.classList.add("hidden");
+    jigsawStage.classList.remove("active");
+
+    // Ensure Memory Stage is hidden
+    memoryStage.classList.add("hidden");
+    memoryStage.classList.remove("active");
+
+    // Show Start Menu
+    startMenu.classList.remove("hidden");
+    startMenu.classList.add("active");
+
+    if (subtitle) subtitle.innerText = "Jigsudo";
+
+    document
+      .getElementById("start-btn")
+      .addEventListener("click", startGameFlow);
+  } else {
+    // Fallback if no menu
+    startGameFlow();
+  }
 
   // Trigger initial resize
   setTimeout(resizeGame, 0);
 
   initTooltip();
+}
+
+function startGameFlow() {
+  const startMenu = document.getElementById("start-menu");
+  const subtitle = document.getElementById("game-subtitle");
+  const panelHeader = document.querySelector(".panel-header");
+  const hintBtn = document.getElementById("hint-btn");
+  const appTitle = document.getElementById("app-title");
+
+  // Game Elements (ensure we have references)
+  const mainBoard = document.getElementById("main-board");
+  const memoryStage = document.getElementById("memory-stage");
+  const jigsawStage = document.getElementById("jigsaw-stage");
+
+  // 1. Trigger Title Animation (Move from Center to Top)
+  if (appTitle) {
+    appTitle.classList.remove("start-mode");
+    appTitle.classList.add("game-mode");
+  }
+
+  // 2. Animate Menu Fade Out
+  if (startMenu) {
+    startMenu.classList.add("fade-out");
+
+    // Wait for transition (0.6s) before switching state
+    setTimeout(() => {
+      startMenu.classList.add("hidden");
+      startMenu.classList.remove("active");
+
+      // 3. Reveal Game Interface
+      if (mainBoard) mainBoard.classList.remove("hidden");
+      if (panelHeader) panelHeader.classList.remove("hidden"); // Correct class handling
+
+      if (hintBtn && DEBUG_MODE) hintBtn.style.display = "block";
+
+      // Activate Memory Stage
+      if (memoryStage) {
+        memoryStage.classList.remove("hidden");
+        // Slight delay for fade-in effect if desired, or instant
+        setTimeout(() => {
+          memoryStage.classList.add("active");
+        }, 50);
+      }
+
+      // Activate Jigsaw Overlay (Persisting existing logic)
+      if (jigsawStage) {
+        jigsawStage.classList.remove("hidden");
+        jigsawStage.classList.add("active");
+      }
+
+      if (subtitle) subtitle.innerText = "Juego de memoria";
+
+      // Final Layout Adjustment
+      resizeGame();
+    }, 600); // Sync with CSS transition
+  } else {
+    // Fallback if no start menu exists (Direct Start)
+    initGame(); // This might lack some UI setups if skipped, but safe for dev
+  }
 }
 
 function initTooltip() {

@@ -24,15 +24,20 @@ body {
   overflow: hidden; /* Prevent scrolling */
   display: flex;
   flex-direction: column; /* Stack VERTICALLY */
-  justify-content: flex-start; /* FORCE TOP ALIGNMENT */
+  justify-content: center; /* CENTER ALIGNMENT */
   align-items: center; /* Center horizontally */
   background: var(--bg-gradient);
   margin: 0;
   padding-top: 0;
 }
 
+/* Hide the outer header to allow perfect panel centering */
+header {
+  display: none;
+}
+
 #game-scaler {
-  transform-origin: center top; /* Scale from top */
+  transform-origin: center center; /* Scale from center */
   transition: transform 0.1s ease-out;
   display: flex;
   flex-direction: column;
@@ -71,7 +76,12 @@ body {
   width: 100%; /* Fill the scaler */
   text-align: center;
   margin: 0 auto;
-  padding: 5px 0; /* Reduced from 20px */
+  padding: 0; /* Remove padding */
+  display: flex; /* Ensure flex behavior */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%; /* Ensure full height */
 }
 
 /* ... */
@@ -145,37 +155,68 @@ h1 {
   letter-spacing: 2px;
 }
 
+/* Global Full Screen Panel */
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
-  padding: 30px;
+  padding: 20px;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   transition: all 0.5s ease;
-  /* Fixed size for consistency across stages, but flexible for mobile */
-  min-height: 800px;
-  width: 95%; /* Responsive width */
-  max-width: 1000px;
+
+  /* Dimensions: Full Screen with minimal margins */
+  width: calc(100vw - 30px);
+  height: calc(100dvh - 30px);
+  margin: auto; /* Let flex center handle it */
+  max-width: none; /* remove limits */
+  min-height: 0; /* remove limits */
 
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Anchor content to top so board doesn't move */
+  justify-content: flex-start;
   align-items: center;
   position: relative;
 
-  /* Ensure board has space from top */
-  padding-top: 20px; /* Reduced from 50px to move subtitle up as requested */
-
-  /* Force horizontal centering */
-  margin: 0 auto;
+  /* Remove top padding hack, use flex spacing */
+  padding-top: 20px;
 }
 
+/* Update Game Container to allow full width */
+.game-container {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#game-scaler {
+  /* Disable scaler constraints visually, 
+     though JS might still try to scale, 
+     but with 100vw content it should result in close to 1.0 scale */
+  width: 100%;
+  max-width: none;
+  height: 100%;
+}
+
+/* Hide global header since we want to focus on panel content? 
+   No, user said title INSIDE panel. 
+   We should probably hide the outer header globally if the panel has the new title.
+   But game stages rely on subtitle.
+   Let's ensure outer header doesn't take space if possible. */
+
+/* Mobile override not needed as much if global is fluid, 
+   but specific adjustments can remain */
 @media (max-width: 850px) {
   .glass-panel {
-    min-height: auto; /* Allow shrinking on mobile */
-    padding-bottom: 80px; /* Space for footer/pools */
+    /* Just ensure margins are slightly smaller on mobile */
+    width: calc(100vw - 20px);
+    height: calc(100dvh - 20px);
+    margin: 10px auto;
   }
 }
 
@@ -1027,6 +1068,7 @@ h1 {
   margin-bottom: 10px; /* Space before hint button/board */
   position: relative; /* For tooltip positioning */
   z-index: 30; /* Fix: Higher than btn-hint (20) to show tooltip on top */
+  margin-top: 60px; /* SPACE FOR ANIMATED TITLE */
 }
 
 /* Ensure subtitle has no bottom margin to align with icon */
@@ -1151,4 +1193,158 @@ h1 {
 .debug-floating-btn:hover {
   opacity: 1;
   transform: scale(1.05);
+}
+/* Start Menu Styles */
+#start-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.start-header {
+  position: absolute;
+  top: 30px;
+  width: 100%;
+  text-align: center;
+}
+
+.start-header h1 {
+  font-size: 4rem;
+  margin: 0;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.start-header p {
+  font-size: 1.1rem;
+  max-width: 90%;
+  line-height: 1.5;
+  opacity: 0.9;
+  margin: 10px auto 0 auto;
+}
+
+#start-btn {
+  font-size: 2rem;
+  padding: 20px 80px;
+  box-shadow: 0 10px 25px rgba(108, 92, 231, 0.5);
+  border-radius: 50px;
+}
+
+/* Mobile Adjustments for Start Menu */
+@media (max-width: 600px) {
+  .start-header {
+    top: 20px; /* Less top space */
+  }
+
+  .start-header h1 {
+    font-size: 2.5rem; /* Smaller Title */
+  }
+
+  .start-header p {
+    font-size: 0.95rem; /* Smaller Text */
+    line-height: 1.4;
+    max-width: 95%;
+  }
+
+  #start-btn {
+    font-size: 1.5rem;
+    padding: 15px 50px;
+  }
+}
+
+@media (max-height: 500px) {
+  /* Landscape mobile or very short screens */
+  .start-header {
+    position: relative; /* Return to flow if height is too small */
+    top: auto;
+    margin-bottom: 20px;
+  }
+  #start-menu {
+    justify-content: center; /* Center everything together */
+    padding-top: 20px;
+  }
+}
+/* Unified App Title Styles */
+.app-title {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  margin: 0;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Bouncy transition */
+  z-index: 100; /* Above everything */
+  width: 100%;
+  text-align: center;
+  pointer-events: none; /* Let clicks pass through */
+}
+
+/* State 1: Start Menu Mode (Centered, Large) */
+.app-title.start-mode {
+  top: 30%; /* Visually centered above description */
+  font-size: 4rem;
+}
+
+/* State 2: Game Mode (Header Position, Smaller) */
+.app-title.game-mode {
+  top: 10px; /* Top header position */
+  font-size: 2.5rem; /* Smaller size */
+}
+
+/* Description positioned below the title */
+.start-header {
+  position: absolute;
+  top: 10px; /* Reduced from 120px to move closer to title */
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Ensure button stays centered but shifted up */
+#start-menu {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centers button */
+  align-items: center;
+  padding-bottom: 10%; /* Shift button upwards visually */
+}
+
+/* Initial state for Start Menu Content (to allow fade out) */
+#start-menu {
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+
+#start-menu.fade-out {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+}
+
+/* Mobile Adjustments for Title */
+@media (max-width: 600px) {
+  .app-title.start-mode {
+    top: 25%; /* Move back to center-ish like desktop */
+    font-size: 3rem;
+  }
+  .start-header {
+    top: 1%; /* Position below the percentage-based title */
+  }
+  .app-title.game-mode {
+    top: 5px;
+    font-size: 1.8rem;
+  }
+  /* Shift button higher on mobile */
+  #start-menu {
+    padding-bottom: 80%;
+  }
 }
