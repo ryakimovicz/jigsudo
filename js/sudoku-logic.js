@@ -130,7 +130,7 @@ function generateFullBoard(prng) {
 /**
  * Removes numbers to create a puzzle with a unique solution
  */
-function createPuzzle(fullBoard, prng) {
+function createPuzzle(fullBoard, prng, holesToRemove = 45) {
   const puzzle = fullBoard.map((row) => [...row]); // Deep copy
   const positions = [];
 
@@ -146,8 +146,7 @@ function createPuzzle(fullBoard, prng) {
     [positions[i], positions[j]] = [positions[j], positions[i]];
   }
 
-  // Try to remove ~45 numbers (leaving ~36)
-  let attempts = 45;
+  let attempts = holesToRemove;
 
   for (let [r, c] of positions) {
     if (attempts <= 0) break;
@@ -196,8 +195,15 @@ function getChunks(board) {
 
 export function generateDailyGame(seed) {
   const prng = createGenerator(seed);
+
+  // Progressive Difficulty Calculation
+  const dayIndex = new Date().getDay(); // 0 (Sun) - 6 (Sat)
+  const baseHoles = 40;
+  const holesToRemove = baseHoles + dayIndex;
+  // Result: Sun=40, Mon=41 ... Sat=46
+
   const solution = generateFullBoard(prng);
-  const puzzle = createPuzzle(solution, prng);
+  const puzzle = createPuzzle(solution, prng, holesToRemove);
   const chunks = getChunks(solution);
 
   return {
@@ -205,5 +211,9 @@ export function generateDailyGame(seed) {
     solution,
     puzzle,
     chunks,
+    difficulty: {
+      dayIndex,
+      holes: holesToRemove,
+    },
   };
 }
