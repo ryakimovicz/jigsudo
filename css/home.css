@@ -117,6 +117,211 @@
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Wrapper for Tabs + Panels to bypass menu-container gap */
+.tabs-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 600px; /* Keep consistent with panel/tabs */
+  align-items: center; /* Center children */
+  /* No gap here, so we control overlap precisely */
+}
+
+/* --- Home Tabs & Panels --- */
+.home-tabs {
+  display: flex;
+  width: 100%;
+  max-width: 600px;
+  padding-left: 20px;
+  margin-bottom: -1px; /* Minimal overlap to cover border */
+  /* z-index: 10; REMOVED to allow interleaving with panels */
+  position: relative;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid transparent; /* Match glass border eventually */
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  cursor: pointer;
+  font-family: var(--font-paper);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-muted);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  z-index: 1; /* Inactive tabs sit behind panel (z-10) */
+  /* Visual depth for inactive tabs */
+  box-shadow: inset 0 -5px 10px rgba(0, 0, 0, 0.05);
+
+  /* Close the gap - INCREASED overlap */
+  margin-right: -4px;
+  /* bottom: 0;  No offset needed if container margins are right */
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--primary-color);
+}
+
+/* Dark Mode Inactive Tab Fix */
+body.dark-mode .tab-btn:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+body.dark-mode .tab-btn:not(.active):hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+}
+
+.tab-btn.active {
+  background: var(--bg-paper); /* Match panel background */
+  color: var(--primary-color);
+  z-index: 20; /* Ensure it is ABOVE panel */
+  border: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--bg-paper); /* Exact match 1px to cover */
+  padding-bottom: 13px; /* Precise height adjustment */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.02);
+  margin-top: 0; /* Reset vertical push */
+}
+
+/* Panel Container */
+.home-panels {
+  position: relative;
+  z-index: 10; /* Above inactive tabs (1), below active tab (20) */
+  width: 100%;
+  max-width: 600px;
+  margin-top: 0; /* Reset force overlap, standard flow now */
+  /* overflow: hidden;  <-- Crucial for "coming from above" without overlap outside */
+}
+
+/* Custom Panel Overlay */
+.custom-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-paper); /* Must be opaque to cover daily */
+  z-index: 5;
+
+  /* Start State: Hidden Above */
+  transform: translateY(-110%);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0;
+  pointer-events: none;
+
+  /* Reset padding to match description card if needed */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.custom-panel.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Segmented Control (Difficulty) */
+.difficulty-wrapper {
+  margin-bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.segmented-control {
+  display: flex;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  border-radius: 8px;
+  gap: 4px;
+}
+
+.seg-btn {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+}
+
+.seg-btn.active {
+  background: white;
+  color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .seg-btn.active {
+  background: #334155;
+  color: var(--accent-color);
+}
+
+.coming-soon-text {
+  font-style: italic;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+/* Switch List - Grid Layout */
+.game-switches-list {
+  width: 100%;
+  max-width: 600px; /* Contain width */
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two columns */
+  gap: 15px;
+  max-height: 400px; /* Prevent overflow of panel if list is long */
+  overflow-y: auto; /* Scroll if needed, though 5 items should fit */
+  padding: 4px; /* Space for focus rings/shadows */
+}
+
+.switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+
+/* Center last item if odd number of items */
+.switch-row:last-child:nth-child(odd) {
+  grid-column: 1 / -1; /* Span full width to allow centering */
+  width: calc(50% - 7.5px); /* Exactly size of 1 column (minus half gap) */
+  max-width: none; /* Reset max-width if set */
+  justify-self: center; /* Center in container */
+}
+
+.switch-row span {
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap; /* Prevent wrapping */
+  font-size: 0.9rem;
+}
+
+/* Mobile: Single Column */
+@media (max-width: 600px) {
+  .game-switches-list {
+    grid-template-columns: 1fr;
+  }
+
+  .switch-row:last-child:nth-child(odd) {
+    grid-column: auto; /* Reset span */
+    max-width: 100%;
+  }
 }
 
 /* Description Card */

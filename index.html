@@ -114,19 +114,119 @@
 
       <!-- Main Menu Content -->
       <main id="menu-content" class="menu-container">
-        <section class="game-description glass-panel">
-          <h2 data-i18n="menu_title">Cinco desafíos, un solo tablero</h2>
-          <p data-i18n-html="menu_description_html">
-            Todo empieza con el <strong>Juego de Memoria</strong>: encuentra los
-            pares, consigue las piezas y arma el <strong>Rompecabezas</strong>.
-            Solo así podrás enfrentar al <strong>Sudoku</strong>, superar los
-            <strong>Picos y Valles</strong> y encontrar las secuencias ocultas
-            en la <strong>Sopa de Números</strong> final.
-          </p>
-          <p class="tagline" data-i18n="menu_tagline">
-            Tu dosis diaria de números te está esperando
-          </p>
-        </section>
+        <div class="tabs-group">
+          <!-- Tabs -->
+          <div class="home-tabs">
+            <button
+              class="tab-btn active"
+              data-tab="daily"
+              data-i18n="tab_daily"
+            >
+              Diario
+            </button>
+            <button class="tab-btn" data-tab="custom" data-i18n="tab_custom">
+              Personalizado
+            </button>
+          </div>
+
+          <!-- Panels Container -->
+          <div class="home-panels">
+            <!-- Daily Panel (Default) -->
+            <section
+              id="panel-daily"
+              class="game-description glass-panel active"
+            >
+              <h2 data-i18n="menu_title">Cinco desafíos, un solo tablero</h2>
+              <p data-i18n-html="menu_description_html">
+                Todo empieza con el <strong>Juego de Memoria</strong>: encuentra
+                los pares, consigue las piezas y arma el
+                <strong>Rompecabezas</strong>. Solo así podrás enfrentar al
+                <strong>Sudoku</strong>, superar los
+                <strong>Picos y Valles</strong> y encontrar las secuencias
+                ocultas en la <strong>Sopa de Números</strong> final.
+              </p>
+              <p class="tagline" data-i18n="menu_tagline">
+                Tu dosis diaria de números te está esperando
+              </p>
+            </section>
+
+            <!-- Custom Panel (Overlay) -->
+            <section
+              id="panel-custom"
+              class="game-description glass-panel custom-panel"
+            >
+              <div class="custom-content">
+                <!-- Difficulty -->
+                <div class="difficulty-wrapper">
+                  <div class="segmented-control">
+                    <button
+                      class="seg-btn active"
+                      data-diff="normal"
+                      data-i18n="diff_normal"
+                    >
+                      Normal
+                    </button>
+                    <button
+                      class="seg-btn"
+                      data-diff="hard"
+                      data-i18n="diff_hard"
+                    >
+                      Difícil
+                    </button>
+                    <button
+                      class="seg-btn"
+                      data-diff="extreme"
+                      data-i18n="diff_extreme"
+                    >
+                      Extremo
+                    </button>
+                  </div>
+                </div>
+
+                <p class="coming-soon-text" data-i18n="soon">(Próximamente)</p>
+
+                <!-- Game List -->
+                <div class="game-switches-list">
+                  <div class="switch-row">
+                    <span data-i18n="game_memory">Memory</span>
+                    <label class="switch-small">
+                      <input type="checkbox" checked />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                  <div class="switch-row">
+                    <span data-i18n="game_jigsaw">Jigsaw</span>
+                    <label class="switch-small">
+                      <input type="checkbox" checked />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                  <div class="switch-row">
+                    <span data-i18n="game_sudoku">Sudoku</span>
+                    <label class="switch-small">
+                      <input type="checkbox" checked />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                  <div class="switch-row">
+                    <span data-i18n="game_peaks">Peaks</span>
+                    <label class="switch-small">
+                      <input type="checkbox" checked />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                  <div class="switch-row">
+                    <span data-i18n="game_search">Search</span>
+                    <label class="switch-small">
+                      <input type="checkbox" checked />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
 
         <button id="start-btn" class="btn-primary" data-i18n="btn_start">
           EMPEZAR

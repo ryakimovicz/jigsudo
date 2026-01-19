@@ -7,10 +7,28 @@ export const translations = {
     // Header Info
     date_locale: "es-ES" /* For date formatting logic */,
 
+    // Generic
+    soon: "(Próximamente)",
+
     // Sidebar
     sidebar_more_games: "Más Juegos",
-    sidebar_soon: "(Próximamente)",
     sidebar_close: "Cerrar",
+
+    // Home Tabs
+    tab_daily: "Diario",
+    tab_custom: "Personalizado",
+
+    // Custom Mode
+    diff_normal: "Normal",
+    diff_hard: "Difícil",
+    diff_extreme: "Extremo",
+
+    // Game Names
+    game_memory: "Juego de Memoria",
+    game_jigsaw: "Rompecabezas",
+    game_sudoku: "Sudoku",
+    game_peaks: "Picos y Valles",
+    game_search: "Sopa de Números",
 
     // Menu Main Content
     menu_title: "Cinco desafíos, un solo tablero",
@@ -41,10 +59,28 @@ export const translations = {
     // Header Info
     date_locale: "en-US",
 
+    // Generic
+    soon: "(Coming Soon)",
+
     // Sidebar
     sidebar_more_games: "More Games",
-    sidebar_soon: "(Coming Soon)",
     sidebar_close: "Close",
+
+    // Home Tabs
+    tab_daily: "Daily",
+    tab_custom: "Custom",
+
+    // Custom Mode
+    diff_normal: "Normal",
+    diff_hard: "Hard",
+    diff_extreme: "Extreme",
+
+    // Game Names
+    game_memory: "Memory Game",
+    game_jigsaw: "Jigsaw Puzzle",
+    game_sudoku: "Sudoku",
+    game_peaks: "Peaks & Valleys",
+    game_search: "Number Search",
 
     // Menu Main Content
     menu_title: "Five challenges, one single board",

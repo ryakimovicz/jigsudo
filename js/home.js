@@ -13,14 +13,7 @@ export function initHome() {
   // Sidebar Interactions - REMOVED per user request
   // (Sidebar and menu-toggle elements have been removed from HTML)
 
-  // Start Game
-  if (startBtn) {
-    startBtn.addEventListener("click", () => {
-      console.log("Start Game Clicked!");
-      // Future logic: Transition to Memory Game Stage
-      alert("¡Empezando el juego! (Siguiente integración: Juego de Memoria)");
-    });
-  }
+  // Start Game - Logic moved to end of function to support tabs
 
   // Profile Dropdown Logic
   const btnProfile = document.getElementById("btn-profile");
@@ -186,6 +179,67 @@ export function initHome() {
   // Listen for Language Changes to re-render date
   window.addEventListener("languageChanged", () => {
     updateHeaderInfo();
+  });
+
+  // Placeholders for other buttons
+  // --- Home Tabs Logic ---
+  const tabs = document.querySelectorAll(".tab-btn");
+  const panelDaily = document.getElementById("panel-daily");
+  const panelCustom = document.getElementById("panel-custom");
+  let currentMode = "daily"; // 'daily' | 'custom'
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+
+      // Update Tabs styling
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      // Update Panels
+      if (target === "daily") {
+        currentMode = "daily";
+        panelCustom.classList.remove("active");
+        // panelDaily is always there, underneath
+      } else {
+        currentMode = "custom";
+        panelCustom.classList.add("active");
+      }
+    });
+  });
+
+  // --- Custom Mode: Difficulty Control ---
+  const diffBtns = document.querySelectorAll(".seg-btn");
+  diffBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      diffBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      console.log(`Difficulty set to: ${btn.dataset.diff}`);
+    });
+  });
+
+  // Start Game Button Logic Update
+  if (startBtn) {
+    // Remove old listener (clone node trick or just use a flag if we can't remove anonymous)
+    // Since we are inside initHome which runs once, we can just replace the logic
+    // BUT startBtn already has a listener from lines 17-22.
+    // Let's modify the existing listener or handling there.
+    // For now, I'll assume I can just add a new one that checks logic,
+    // but better to replace the previous block or use the variable.
+  }
+
+  // Re-implementing Start Button logic cleanly:
+  startBtn.replaceWith(startBtn.cloneNode(true)); // Remove old listeners
+  const newStartBtn = document.getElementById("start-btn"); // Get fresh reference
+
+  newStartBtn.addEventListener("click", () => {
+    if (currentMode === "daily") {
+      console.log("Starting Daily Game...");
+      alert("¡Empezando el Desafío Diario! (Próximamente)");
+    } else {
+      console.log("Starting Custom Game...");
+      alert("Modo Personalizado: ¡Configura tu juego! (Próximamente)");
+    }
   });
 
   // Placeholders for other buttons
