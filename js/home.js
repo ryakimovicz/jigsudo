@@ -54,9 +54,10 @@ export function initHome() {
   const autoThemeToggle = document.getElementById("auto-theme-toggle");
   const manualOption = document.querySelector(".option-manual");
   const body = document.body;
+  const STORAGE_KEY = "jigsudo_theme";
 
-  // Helper: Apply Theme
-  function applyTheme(isDark) {
+  // Helper: Apply visual theme
+  function applyVisualTheme(isDark) {
     if (isDark) {
       body.classList.add("dark-mode");
       if (themeToggle) themeToggle.checked = true;
@@ -66,55 +67,57 @@ export function initHome() {
     }
   }
 
-  // Helper: Handle Auto State
-  function handleAutoTheme(isAuto) {
-    if (isAuto) {
-      manualOption.classList.add("disabled");
-      if (themeToggle) themeToggle.disabled = true;
+  // Core Logic: Load and Apply
+  function updateThemeState() {
+    const savedTheme = localStorage.getItem(STORAGE_KEY) || "auto";
 
-      // Check System Preference
+    if (savedTheme === "auto") {
+      // Auto Mode
+      if (autoThemeToggle) autoThemeToggle.checked = true;
+      if (themeToggle) themeToggle.disabled = true;
+      if (manualOption) manualOption.classList.add("disabled");
+
+      // Apply System Preference
       const systemPrefersDark = window.matchMedia(
         "(prefers-color-scheme: dark)",
       ).matches;
-      applyTheme(systemPrefersDark);
+      applyVisualTheme(systemPrefersDark);
     } else {
-      manualOption.classList.remove("disabled");
+      // Manual Mode
+      if (autoThemeToggle) autoThemeToggle.checked = false;
       if (themeToggle) themeToggle.disabled = false;
+      if (manualOption) manualOption.classList.remove("disabled");
 
-      // Revert to manual saved preference
-      const manualTheme = localStorage.getItem("theme") || "light";
-      applyTheme(manualTheme === "dark");
+      // Apply Manual Preference
+      applyVisualTheme(savedTheme === "dark");
     }
   }
 
-  // 1. Initialize
-  const savedAuto = localStorage.getItem("autoTheme") === "true";
-  if (autoThemeToggle) autoThemeToggle.checked = savedAuto;
-
-  if (savedAuto) {
-    handleAutoTheme(true);
-  } else {
-    const savedTheme = localStorage.getItem("theme");
-    applyTheme(savedTheme === "dark");
-    handleAutoTheme(false);
-  }
+  // 1. Initialize on Load
+  updateThemeState();
 
   // 2. Auto Toggle Listener
   if (autoThemeToggle) {
     autoThemeToggle.addEventListener("change", () => {
-      const isAuto = autoThemeToggle.checked;
-      localStorage.setItem("autoTheme", isAuto);
-      handleAutoTheme(isAuto);
+      if (autoThemeToggle.checked) {
+        localStorage.setItem(STORAGE_KEY, "auto");
+      } else {
+        // When switching to manual, inherit current state
+        const isDarkCurrently = body.classList.contains("dark-mode");
+        localStorage.setItem(STORAGE_KEY, isDarkCurrently ? "dark" : "light");
+      }
+      updateThemeState();
     });
   }
 
   // 3. Manual Toggle Listener
   if (themeToggle) {
     themeToggle.addEventListener("change", () => {
+      // Only works if auto is NOT checked (which is handled by UI disabled state too)
       if (!autoThemeToggle.checked) {
         const isDark = themeToggle.checked;
-        applyTheme(isDark);
-        localStorage.setItem("theme", isDark ? "dark" : "light");
+        localStorage.setItem(STORAGE_KEY, isDark ? "dark" : "light");
+        updateThemeState();
       }
     });
   }
@@ -122,9 +125,10 @@ export function initHome() {
   // 4. System Preference Listener
   window
     .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", (e) => {
-      if (autoThemeToggle.checked) {
-        applyTheme(e.matches);
+    .addEventListener("change", () => {
+      // Only react if we are in auto mode
+      if (localStorage.getItem(STORAGE_KEY) === "auto") {
+        updateThemeState();
       }
     });
   // --- Header Info (Date & Challenge #) ---

@@ -6,38 +6,46 @@ export function getCurrentLang() {
   return currentLang;
 }
 
-export function setLanguage(lang) {
+// Internal: Updates state and UI without persisting
+function applyLanguage(lang) {
   if (translations[lang]) {
     currentLang = lang;
-    localStorage.setItem("jigsudo_lang", lang);
     updateTexts();
     updateLanguageSelector(lang);
 
-    // Dispatch event for other modules (like date renderer)
+    // Dispatch event
     window.dispatchEvent(
       new CustomEvent("languageChanged", { detail: { lang } }),
     );
   }
 }
 
+// Public: Changes language AND saves preference (User Intent)
+export function setLanguage(lang) {
+  if (translations[lang]) {
+    localStorage.setItem("jigsudo_lang", lang);
+    applyLanguage(lang);
+  }
+}
+
 export function initLanguage() {
-  // 1. Check LocalStorage
+  // 1. Check LocalStorage (User Override)
   const savedLang = localStorage.getItem("jigsudo_lang");
 
   if (savedLang && translations[savedLang]) {
-    currentLang = savedLang;
+    // If user previously chose a language, respect it
+    applyLanguage(savedLang);
   } else {
-    // 2. Check Browser
+    // 2. No override? Check Browser (Auto)
     const browserLang = navigator.language.split("-")[0]; // 'es-ES' -> 'es'
-    if (translations[browserLang]) {
-      currentLang = browserLang;
-    } else {
-      currentLang = "es"; // Fallback
-    }
+    const supportedLang = translations[browserLang] ? browserLang : "es";
+
+    // Apply detection, but DO NOT save to localStorage yet.
+    // This allows the user to change browser lang later and see the change
+    // until they explicitly lock it via the dropdown.
+    applyLanguage(supportedLang);
   }
 
-  // Initialize UI
-  setLanguage(currentLang);
   setupLanguageSelectorListener();
 }
 
@@ -76,7 +84,7 @@ function setupLanguageSelectorListener() {
     select.addEventListener("change", (e) => {
       setLanguage(e.target.value);
     });
-    // Prevent closing dropdown when clicking select (optional, but consistent)
+    // Prevent closing dropdown when clicking select
     select.addEventListener("click", (e) => e.stopPropagation());
   }
 }
