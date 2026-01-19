@@ -190,6 +190,13 @@
   font-size: 0.65rem; /* Smaller as requested */
   opacity: 0.8;
   margin-left: 5px;
+  text-decoration: none; /* It's a link now */
+  cursor: pointer;
+}
+
+.version-tag:hover {
+  text-decoration: underline;
+  opacity: 1;
 }
 
 .main-footer a {

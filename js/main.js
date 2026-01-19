@@ -16,7 +16,9 @@ function displayVersion() {
     footerP.appendChild(document.createTextNode(" | "));
 
     // Version Tag (smaller)
-    const versionSpan = document.createElement("span");
+    const versionSpan = document.createElement("a");
+    versionSpan.href = "https://github.com/ryakimovicz/jigsudo/commits/main";
+    versionSpan.target = "_blank";
     versionSpan.className = "version-tag";
     versionSpan.innerText = CONFIG.version;
     footerP.appendChild(versionSpan);
