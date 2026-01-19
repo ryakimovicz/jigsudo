@@ -35,30 +35,29 @@ export function initMenu() {
     });
   }
 
-  // Settings Dropdown Logic
-  const btnSettings = document.getElementById("btn-settings");
-  const settingsDropdown = document.getElementById("settings-dropdown");
+  // Profile Dropdown Logic
+  const btnProfile = document.getElementById("btn-profile");
+  const profileDropdown = document.getElementById("profile-dropdown");
 
-  if (btnSettings && settingsDropdown) {
-    btnSettings.addEventListener("click", (e) => {
+  if (btnProfile && profileDropdown) {
+    btnProfile.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevent closing immediately
-      settingsDropdown.classList.toggle("hidden");
-      console.log("Settings toggled via JS"); // Debug
+      profileDropdown.classList.toggle("hidden");
     });
 
     // Close dropdown when clicking outside
     document.addEventListener("click", (e) => {
       if (
-        !settingsDropdown.classList.contains("hidden") &&
-        !settingsDropdown.contains(e.target) &&
-        e.target !== btnSettings
+        !profileDropdown.classList.contains("hidden") &&
+        !profileDropdown.contains(e.target) &&
+        e.target !== btnProfile
       ) {
-        settingsDropdown.classList.add("hidden");
+        profileDropdown.classList.add("hidden");
       }
     });
 
     // Prevent closing when clicking inside the dropdown
-    settingsDropdown.addEventListener("click", (e) => {
+    profileDropdown.addEventListener("click", (e) => {
       e.stopPropagation();
     });
   }
@@ -186,9 +185,5 @@ export function initMenu() {
   // Placeholders for other buttons
   document.getElementById("btn-stats")?.addEventListener("click", () => {
     alert("Estadísticas: Próximamente");
-  });
-
-  document.getElementById("btn-profile")?.addEventListener("click", () => {
-    alert("Perfil: Próximamente");
   });
 }

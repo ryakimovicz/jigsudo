@@ -324,6 +324,15 @@ body.dark-mode .btn-primary:hover {
   letter-spacing: 1px;
   border-bottom: 2px solid var(--accent-color);
   padding-bottom: 5px;
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 5px;
+  width: 100%;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 10px 0;
   width: 100%;
 }
 
