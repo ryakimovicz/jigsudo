@@ -74,6 +74,13 @@
   }
 }
 
+/* Very Small Screens: Hide Date */
+@media (max-width: 425px) {
+  #current-date {
+    display: none;
+  }
+}
+
 .btn-icon {
   font-size: 1.5rem;
   padding: 8px;
