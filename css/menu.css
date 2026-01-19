@@ -175,6 +175,16 @@
   box-shadow: none; /* Pressed effect */
 }
 
+/* Dark Mode Button Overrides */
+body.dark-mode .btn-primary {
+  color: #1e293b; /* Dark text on bright orange for contrast */
+  box-shadow: 0 4px 0 #f57c00; /* Matching lighter shadow */
+}
+
+body.dark-mode .btn-primary:hover {
+  background: #ffb74d; /* Lighter orange on hover */
+}
+
 /* Footer */
 .main-footer {
   text-align: center;
@@ -389,6 +399,7 @@ body.dark-mode .theme-icon.moon {
   border-radius: 34px;
 }
 
+/* The slider circle (Manual Switch) */
 .slider:before {
   position: absolute;
   content: "";
@@ -402,7 +413,7 @@ body.dark-mode .theme-icon.moon {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Input Checked (Dark Mode) */
+/* Input Checked (Manual Switch) */
 input:checked + .slider {
   background-color: var(--accent-color);
 }
@@ -411,7 +422,7 @@ input:checked + .slider:before {
   transform: translateX(22px);
 }
 
-/* Small Auto Switch */
+/* Small Auto Switch Structure */
 .switch-small {
   position: relative;
   display: inline-block;
@@ -432,11 +443,18 @@ input:checked + .slider:before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #cbd5e1;
+  background-color: #cbd5e1; /* Light grey when off */
   transition: 0.4s;
   border-radius: 34px;
 }
 
+/* Dark Mode Override for Sliders */
+body.dark-mode .slider,
+body.dark-mode .slider-small {
+  background-color: #444c56; /* Darker grey for dark mode background */
+}
+
+/* Small Slider Circle */
 .slider-small:before {
   position: absolute;
   content: "";

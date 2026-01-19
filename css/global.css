@@ -31,7 +31,7 @@ body.dark-mode {
   --primary-dark: #adbac7;
   --text-main: #cdd9e5; /* Pearl Grey */
   --text-muted: #768390;
-  --accent-color: #f37825; /* Vibrant Orange */
+  --accent-color: #ffa726; /* Lighter/Golden Orange for better contrast on dark */
 
   --glass-border: #444c56; /* Medium Grey Border */
   --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */
