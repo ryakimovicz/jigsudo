@@ -100,3 +100,35 @@ button {
   cursor: pointer;
   color: inherit;
 }
+
+/* Debug Mode Floating Button */
+.debug-btn {
+  display: none; /* Hidden by default */
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--accent-color, #007bff);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-family: var(--font-main, sans-serif);
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 20003; /* Above everything */
+  transition: transform 0.2s ease;
+}
+
+.debug-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Visibility Trigger */
+body.debug-mode .debug-btn {
+  display: block;
+}
+
+body.dark-mode .debug-btn {
+  color: #1e293b; /* Match btn-primary text color in dark mode */
+}

@@ -5,11 +5,23 @@ import { gameManager } from "./game-manager.js";
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
 
 // Boot Sequence
+// Capture native logging before suppression
+const systemLog = console.log;
+
 function startApp() {
+  // Handle Debug Mode
+  if (CONFIG.debugMode) {
+    document.body.classList.add("debug-mode");
+    systemLog("DEBUG MODE ACTIVE");
+  } else {
+    // Suppress console.log in production/non-debug
+    console.log = function () {};
+  }
+
   console.log("Jigsudo App Starting...");
   // gameManager initializes itself on import
-  initLanguage(); // Initialize i18n
-  initHome(); // Initialize Home Screen logic
+  initLanguage();
+  initHome();
 }
 
 // Wait for DOM to be ready
@@ -36,7 +48,7 @@ function displayVersion() {
     versionSpan.innerText = CONFIG.version;
     footerP.appendChild(versionSpan);
   }
-  console.log(
+  systemLog(
     `%c JIGSUDO ${CONFIG.version} cargado correctamente`,
     "background: #F37825; color: white; padding: 2px 5px; border-radius: 3px;",
   );

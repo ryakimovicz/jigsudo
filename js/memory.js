@@ -77,6 +77,62 @@ export function initMemoryGame() {
     fitCollectedPieces();
     fitMemoryCards();
   });
+
+  // Debug Button matching
+  const debugBtn = document.getElementById("debug-help-btn");
+  if (debugBtn) {
+    debugBtn.onclick = debugAutoMatch;
+  }
+}
+
+function debugAutoMatch() {
+  // 1. Find unmatched chunks
+  const availableCards = Array.from(
+    document.querySelectorAll(".memory-card:not(.matched)"),
+  );
+  if (availableCards.length === 0) return;
+
+  // 2. Group by chunkIndex
+  const pairs = {};
+  availableCards.forEach((card) => {
+    const idx = card.dataset.chunkIndex;
+    if (!pairs[idx]) pairs[idx] = [];
+    pairs[idx].push(card);
+  });
+
+  // 3. Pick random pair
+  const indices = Object.keys(pairs);
+  if (indices.length === 0) return;
+  const randomIdx = indices[Math.floor(Math.random() * indices.length)];
+  const pairToMatch = pairs[randomIdx];
+
+  // 4. Force Match Directly (Bypass Game Loop to prevent spam race conditions)
+  if (pairToMatch && pairToMatch.length === 2) {
+    const [c1, c2] = pairToMatch;
+
+    // IMMEDIATE LOCK: Mark as matched visually to prevent re-selection
+    c1.classList.add("matched");
+    c2.classList.add("matched");
+    c1.classList.add("flipped");
+    c2.classList.add("flipped");
+    c1.classList.add("match-anim");
+    c2.classList.add("match-anim");
+
+    // Clear global flipped if we stole them
+    if (flippedCards.includes(c1) || flippedCards.includes(c2)) {
+      flippedCards = [];
+    }
+
+    // A. Spawn Piece FAST (100ms)
+    setTimeout(() => {
+      handleMatchSuccess(randomIdx);
+    }, 100);
+
+    // B. Finalize Card State (300ms)
+    setTimeout(() => {
+      disableCards([c1, c2]);
+    }, 300);
+  }
 }
 
 // Mobile Responsive Sizing for Memory Cards (Green Zone)
@@ -328,15 +384,31 @@ function checkForMatch() {
   const idx2 = card2.dataset.chunkIndex;
 
   if (idx1 === idx2) {
-    disableCards();
-    handleMatchSuccess(idx1);
+    // 1. Success Animation (Green Border)
+    // Non-blocking: Clear global immediately so user can keep playing
+    flippedCards = [];
+
+    card1.classList.add("match-anim");
+    card2.classList.add("match-anim");
+
+    // 2. Wait for animation, then process match
+    // A. Spawn Piece FAST (100ms) per user request
+    setTimeout(() => {
+      handleMatchSuccess(idx1);
+    }, 100);
+
+    // B. Finalize Card State (300ms) to match animation duration
+    setTimeout(() => {
+      disableCards([card1, card2]);
+    }, 300);
   } else {
     unflipCards();
   }
 }
 
-function disableCards() {
-  flippedCards.forEach((card) => {
+function disableCards(cardsToDisable) {
+  const target = cardsToDisable || flippedCards;
+  target.forEach((card) => {
     card.style.pointerEvents = "none";
     // Optional: fade them out or keep them until we place the prize?
     // We will keep them for a moment then maybe remove them if we want to simulate "moving"
@@ -345,28 +417,26 @@ function disableCards() {
     // card.style.visibility = "hidden"; // Removed per user request
     card.classList.add("matched");
   });
-  flippedCards = [];
+  if (!cardsToDisable) flippedCards = [];
 }
 
 function handleMatchSuccess(chunkIndex) {
   matchesFound++;
   console.log(`Matched Pair for Chunk ${chunkIndex}!`);
 
-  setTimeout(() => {
-    const idx = parseInt(chunkIndex);
-    if (idx === 4) {
-      placeInBoard(idx);
-    } else {
-      placeInPanel(idx);
-    }
+  const idx = parseInt(chunkIndex);
+  if (idx === 4) {
+    placeInBoard(idx);
+  } else {
+    placeInPanel(idx);
+  }
 
-    // Check Win
-    if (matchesFound === TOTAL_PAIRS) {
-      setTimeout(() => {
-        alert("¡Juego Completado! Próximamente: Jigsaw Stage");
-      }, 1000);
-    }
-  }, 600); // Wait slightly for card flip to finish and "flight" logic (simulated by delay)
+  // Check Win
+  if (matchesFound === TOTAL_PAIRS) {
+    setTimeout(() => {
+      alert("¡Juego Completado! Próximamente: Jigsaw Stage");
+    }, 1000);
+  }
 }
 
 function placeInBoard(chunkIndex) {

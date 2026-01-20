@@ -324,6 +324,14 @@ body.dark-mode {
   transition-delay: 0s; /* Show immediately when starting calculation */
 }
 
+/* Match Success Animation (Temporary Green State) */
+.memory-card.match-anim .memory-card-back {
+  border-color: #4caf50 !important; /* Success Green */
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.6) !important;
+  transform: rotateY(180deg) scale(1.05);
+  transition: all 0.3s ease-out;
+}
+
 /* Mini Sudoku Grid Content */
 .mini-sudoku-grid {
   display: grid;
@@ -454,6 +462,17 @@ body.dark-mode {
   .test-panel.green {
     background: transparent;
     flex: 1;
+  }
+
+  /* Debug Mode Visibility */
+  body.debug-mode .test-panel.red {
+    background: rgba(255, 0, 0, 0.3);
+  }
+  body.debug-mode .test-panel.yellow {
+    background: rgba(255, 255, 0, 0.3);
+  }
+  body.debug-mode .test-panel.green {
+    background: rgba(0, 128, 0, 0.3);
   }
 
   .memory-grid-layout {

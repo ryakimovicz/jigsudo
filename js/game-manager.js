@@ -1,5 +1,6 @@
 import { getDailySeed } from "./utils/random.js";
 import { generateDailyGame } from "./sudoku-logic.js";
+import { CONFIG } from "./config.js";
 
 export class GameManager {
   constructor() {
@@ -15,20 +16,26 @@ export class GameManager {
     const savedState = localStorage.getItem(this.storageKey);
 
     if (savedState) {
-      console.log(
-        `[GameManager] Loading existing game for seed ${this.currentSeed}`,
-      );
+      if (CONFIG.debugMode) {
+        console.log(
+          `[GameManager] Loading existing game for seed ${this.currentSeed}`,
+        );
+      }
       this.state = JSON.parse(savedState);
     } else {
-      console.log(
-        `[GameManager] Generating NEW game for seed ${this.currentSeed}`,
-      );
+      if (CONFIG.debugMode) {
+        console.log(
+          `[GameManager] Generating NEW game for seed ${this.currentSeed}`,
+        );
+      }
       this.state = this.createNewState();
       this.save();
     }
 
     // Debug
-    console.log("Game Initialized:", this.state);
+    if (CONFIG.debugMode) {
+      console.log("Game Initialized:", this.state);
+    }
   }
 
   createNewState() {
