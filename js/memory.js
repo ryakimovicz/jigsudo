@@ -72,7 +72,114 @@ export function initMemoryGame() {
 
   // Initialize Resizing
   fitCollectedPieces();
-  window.addEventListener("resize", fitCollectedPieces);
+  fitMemoryCards();
+  window.addEventListener("resize", () => {
+    fitCollectedPieces();
+    fitMemoryCards();
+  });
+}
+
+// Mobile Responsive Sizing for Memory Cards (Green Zone)
+// Mobile Responsive Sizing for Memory Cards (Green Zone)
+function fitMemoryCards() {
+  const cardsContainer = document.getElementById("memory-cards");
+  if (!cardsContainer) return;
+
+  // Desktop Cleanup / Guard
+  if (window.innerWidth > 768) {
+    cardsContainer.style = "";
+    const cards = document.querySelectorAll(".memory-card");
+    cards.forEach((card) => {
+      card.style.width = "";
+      card.style.height = "";
+      card.style.margin = "";
+    });
+    return;
+  }
+
+  // Mobile Logic
+  const vh = window.innerHeight;
+
+  // Available Height Strategy:
+  // 1. Measure the container itself (best if flex works)
+  // 2. Measure the green panel (good reference)
+  // 3. Fallback calculation
+
+  // Strategy 1: Container ClientHeight (since we set flex:1 in CSS)
+  let h1 = cardsContainer.clientHeight;
+  if (h1 < 50) h1 = 9999;
+
+  // Strategy 2: Green Panel
+  let h2 = 9999;
+  const greenPanel = document.querySelector(".test-panel.green");
+  if (greenPanel) {
+    h2 = greenPanel.clientHeight;
+  }
+
+  // Strategy 3: Math Fallback
+  // Total Height - (Header 60 + Red (calc) + Yellow 13vh) - Footer ~30-40
+  // Red is calc(43.5vh - header), Yellow 13vh.
+  // Top of Green = 60 + (43.5vh - 60) + 13vh = 56.5vh.
+  // Height = (100vh - 40px) - 56.5vh = 43.5vh - 40px.
+  const h3 = vh * 0.435 - 40;
+
+  // Pick the SAFEST (smallest valid) height
+  let availableHeight = Math.min(h1, h2, h3);
+
+  // If measured heights are invalid (e.g. 0), fall back to math
+  if (availableHeight < 50) availableHeight = h3;
+
+  // Apply Safety Buffer (40px total for padding/margins)
+  availableHeight -= 40;
+
+  const availableWidth = cardsContainer.clientWidth || window.innerWidth;
+
+  // Padding/Gap settings
+  const gap = 6;
+  const padding = 10;
+
+  const totalCards = 18;
+
+  let bestConfig = { size: 0, cols: 3 };
+
+  // Iterate to find best fit
+  for (let cols = 3; cols <= 6; cols++) {
+    const rows = Math.ceil(totalCards / cols);
+    const wSize = (availableWidth - padding * 2 - (cols - 1) * gap) / cols;
+    const hSize = (availableHeight - padding * 2 - (rows - 1) * gap) / rows;
+    const size = Math.min(wSize, hSize);
+
+    if (size > bestConfig.size) {
+      bestConfig = { size, cols };
+    }
+  }
+
+  let finalSize = Math.floor(bestConfig.size);
+  if (finalSize < 30) finalSize = 30; // Min safe size
+
+  // Apply Styles
+  cardsContainer.style.display = "flex";
+  cardsContainer.style.flexWrap = "wrap";
+  cardsContainer.style.justifyContent = "center";
+  cardsContainer.style.alignContent = "center";
+  cardsContainer.style.width = "100%";
+  // Force height to match what we calculated to prevent overflow if flex expanded too much
+  cardsContainer.style.height = `${availableHeight}px`;
+  cardsContainer.style.gap = `${gap}px`;
+  cardsContainer.style.padding = `${padding}px`;
+  cardsContainer.style.boxSizing = "border-box";
+  cardsContainer.style.position = "relative";
+  cardsContainer.style.zIndex = "10002";
+
+  // Overflow handling
+  cardsContainer.style.overflow = "hidden";
+
+  const cards = document.querySelectorAll(".memory-card");
+  cards.forEach((card) => {
+    card.style.width = `${finalSize}px`;
+    card.style.height = `${finalSize}px`;
+    card.style.margin = "0";
+  });
 }
 
 function getChunksFromBoard(board) {
