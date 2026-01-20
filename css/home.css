@@ -464,7 +464,7 @@ body.dark-mode .switch-row {
 
 .btn-primary:active {
   transform: translateY(4px);
-  box-shadow: none; /* Pressed effect */
+  box-shadow: 0 0 0 #c2410c; /* Animate to 0 offset instead of none */
 }
 
 .btn-primary:disabled {
@@ -485,7 +485,11 @@ body.dark-mode .btn-primary {
 }
 
 body.dark-mode .btn-primary:hover {
-  background: #ffb74d; /* Lighter orange on hover */
+  background: #ff9800; /* Darker orange (Orange 500) - Lighter than 600 */
+}
+
+body.dark-mode .btn-primary:active {
+  box-shadow: 0 0 0 #f57c00; /* Animate to 0 offset dark mode color */
 }
 
 /* Footer */

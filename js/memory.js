@@ -16,6 +16,10 @@ let matchesFound = 0;
 let panelCount = 0;
 const TOTAL_PAIRS = 9;
 
+// Timer State
+let timerStartTime;
+let timerInterval;
+
 export function initMemoryGame() {
   console.log("Initializing Memory Game...");
 
@@ -76,7 +80,11 @@ export function initMemoryGame() {
   window.addEventListener("resize", () => {
     fitCollectedPieces();
     fitMemoryCards();
+    fitMemoryCards();
   });
+
+  // Start Timer
+  startTimer();
 
   // Debug Button matching
   const debugBtn = document.getElementById("debug-help-btn");
@@ -287,15 +295,15 @@ function setupCards(chunks) {
     deck.push({ id: `pair-${index}-b`, chunkIndex: index, chunkData: chunk });
   });
 
-  // Shuffle
-  shuffleArray(deck);
-
-  // Render
+  // Render (Ordered Pairs)
   deck.forEach((cardData) => {
     const cardEl = createCardElement(cardData);
     cardsContainer.appendChild(cardEl);
     cards.push(cardEl);
   });
+
+  // Force Layout Update
+  fitMemoryCards();
 
   // Preview Phase
   previewCards();
@@ -303,14 +311,68 @@ function setupCards(chunks) {
 
 function previewCards() {
   isLocked = true;
-  // Flip all to show content
-  cards.forEach((card) => card.classList.add("flipped"));
+  // Flip all to show content (Ordered pairs)
+  setTimeout(() => {
+    cards.forEach((card) => card.classList.add("flipped"));
+  }, 100);
 
   setTimeout(() => {
     // Unflip all
     cards.forEach((card) => card.classList.remove("flipped"));
+
+    // Start Visual Shuffle after flip down animation
+    setTimeout(() => {
+      visualShuffle();
+    }, 500); // Wait for unflip
+  }, 2000); // 2 Seconds Preview
+}
+
+function visualShuffle() {
+  // 1. Record Initial Positions (First)
+  const firstRects = new Map();
+  cards.forEach((card) => {
+    firstRects.set(card, card.getBoundingClientRect());
+  });
+
+  // 2. Shuffle DOM Order (Last)
+  // We can just shuffle the 'cards' array and re-append
+  shuffleArray(cards);
+  cards.forEach((card) => cardsContainer.appendChild(card));
+
+  // Force layout update (fit cards might need re-run if layout engine is weird, but usually flex just reflows)
+  // fitMemoryCards(); // Ensure sizing is still correct
+
+  // 3. Invert (Calculate delta)
+  cards.forEach((card) => {
+    const first = firstRects.get(card);
+    const last = card.getBoundingClientRect();
+    const deltaX = first.left - last.left;
+    const deltaY = first.top - last.top;
+
+    // Apply Transform to put card back at start position
+    card.style.transition = "none";
+    card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+  });
+
+  // 4. Play (Animate to new position)
+  requestAnimationFrame(() => {
+    cards.forEach((card) => {
+      // Enable transition
+      card.style.transition = "transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)";
+      // Clear transform to move to natural shuffled position
+      card.style.transform = "";
+    });
+  });
+
+  // Unlock after animation
+  setTimeout(() => {
     isLocked = false;
-  }, 2000); // 2 Seconds
+    // Clean up inline styles
+    cards.forEach((card) => {
+      card.style.transition = "";
+      card.style.transform = "";
+    });
+  }, 600);
 }
 
 // Helper to render mini grid
@@ -443,6 +505,9 @@ function handleMatchSuccess(chunkIndex) {
   // Check Win
   if (matchesFound === TOTAL_PAIRS) {
     setTimeout(() => {
+      // 0. Stop Timer
+      stopTimer();
+
       // 1. Hide Cards
       if (cardsContainer) cardsContainer.classList.add("cards-hidden");
 
@@ -636,5 +701,43 @@ function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+// Timer Functions
+function startTimer() {
+  stopTimer();
+  timerStartTime = Date.now();
+  timerInterval = setInterval(updateTimer, 100);
+  updateTimer();
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function updateTimer() {
+  const now = Date.now();
+  const elapsed = now - timerStartTime;
+  const totalSeconds = Math.floor(elapsed / 1000);
+
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  const timerElement = document.getElementById("memory-timer");
+  if (timerElement) {
+    if (hrs > 0) {
+      timerElement.textContent = `⏱ ${hrs.toString().padStart(2, "0")}:${mins
+        .toString()
+        .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    } else {
+      timerElement.textContent = `⏱ ${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
+    }
   }
 }
