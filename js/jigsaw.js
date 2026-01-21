@@ -579,13 +579,32 @@ export function handlePointerMove(e) {
 
       dragClone = content.cloneNode(true);
       dragClone.classList.add("dragging-clone");
-      const rect = target.getBoundingClientRect();
-      dragClone.style.width = `${rect.width}px`;
-      dragClone.style.height = `${rect.height}px`;
+
+      // Normalize Size: Always use the size of a Panel Piece
+      const referencePiece =
+        document.querySelector(".collected-piece") || target;
+      const refRect = referencePiece.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+
+      // 1. Start with ORIGINAL size
+      dragClone.style.width = `${targetRect.width}px`;
+      dragClone.style.height = `${targetRect.height}px`;
+
       document.body.appendChild(dragClone);
 
-      dragOffsetX = e.clientX - rect.left;
-      dragOffsetY = e.clientY - rect.top;
+      // 2. Force DOM Reflow so the browser registers the starting size
+      void dragClone.offsetWidth;
+
+      // 3. Set FINAL size (animates due to CSS transition)
+      dragClone.style.width = `${refRect.width}px`;
+      dragClone.style.height = `${refRect.height}px`;
+
+      // Hide the original content to mimic "lifting"
+      content.style.opacity = "0";
+
+      // Center the clone on the cursor for better feel when resizing
+      dragOffsetX = refRect.width / 2;
+      dragOffsetY = refRect.height / 2;
 
       updateDragPosition(e.clientX, e.clientY);
     }
@@ -603,7 +622,6 @@ export function handlePointerMove(e) {
     (el) =>
       (el.classList.contains("sudoku-chunk-slot") ||
         el.classList.contains("collected-piece")) &&
-      el !== selectedPieceElement &&
       el.dataset.slotIndex !== "4", // Not center
   );
 
@@ -633,17 +651,19 @@ export function handlePointerUp(e) {
     (el) =>
       (el.classList.contains("sudoku-chunk-slot") ||
         el.classList.contains("collected-piece")) &&
-      el !== selectedPieceElement &&
       el.dataset.slotIndex !== "4",
   );
 
-  if (dropTarget) {
+  // Restore Opacity (Always)
+  const sourceContent = selectedPieceElement.querySelector(".mini-sudoku-grid");
+  if (sourceContent) sourceContent.style.opacity = "";
+
+  if (dropTarget && dropTarget !== selectedPieceElement) {
     // Execute Move/Swap
     // 1. Get Source Content (from dragClone or source)
     // Source is `selectedPieceElement`
 
-    const sourceContent =
-      selectedPieceElement.querySelector(".mini-sudoku-grid");
+    // sourceContent is already defined above
     const targetContent = dropTarget.querySelector(".mini-sudoku-grid"); // Might be null
 
     if (sourceContent) {
