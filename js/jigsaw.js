@@ -286,18 +286,19 @@ export function handlePieceSelect(pieceElement) {
     const isSourceBoard = source.classList.contains("sudoku-chunk-slot");
     const isTargetBoard = target.classList.contains("sudoku-chunk-slot");
 
-    // --- CASE: Panel to Panel -> Change Selection instead of Swap/Move ---
+    // --- CASE: Panel to Panel -> Change Selection OR Move to Empty ---
     if (!isSourceBoard && !isTargetBoard) {
-      deselectPiece();
       if (!isTargetEmpty) {
+        // Target is an occupied slot in panel -> Just switch selection
+        deselectPiece();
         handlePieceSelect(target);
+        return;
       }
-      return;
+      // Target is an empty placeholder in panel -> Proceed to MOVE logic below
     }
 
-    // --- CASE: Board or Panel to Panel (Board Source or Empty Target) ---
-    // If it's Board to Panel, we allow it to proceed to Move/Swap logic below.
-    // If it was Panel to Panel it already returned above.
+    // --- CASE: Interactions involving the board (Source or Target) ---
+    // Or Panel to Empty Panel slot (continues here)
     const sourceContent = source.querySelector(".mini-sudoku-grid");
     const targetContent = target.querySelector(".mini-sudoku-grid"); // may be null
 
