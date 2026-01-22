@@ -109,14 +109,39 @@ export function fitCollectedPieces() {
 
   // DESKTOP RESET: Trust CSS > 768px (except for laptop specific override handled in CSS)
   if (window.innerWidth > 768) {
+    // Preserve critical transition styles during mode switch
+    const preserveStyles = (el) => {
+      if (!el) return null;
+      return {
+        vt: el.style.viewTransitionName,
+        tr: el.style.transition,
+      };
+    };
+
+    const restoreStyles = (el, saved) => {
+      if (!el || !saved) return;
+      if (saved.vt) el.style.viewTransitionName = saved.vt;
+      if (saved.tr) el.style.transition = saved.tr;
+    };
+
+    const wrapperSaved = preserveStyles(wrapper);
+    const leftSaved = preserveStyles(collectedLeft);
+    const rightSaved = preserveStyles(collectedRight);
+
     wrapper.style.cssText = "";
     collectedLeft.style.cssText = "";
     collectedRight.style.cssText = "";
+
+    restoreStyles(wrapper, wrapperSaved);
+    restoreStyles(collectedLeft, leftSaved);
+    restoreStyles(collectedRight, rightSaved);
+
     pieces.forEach((p) => {
-      // Preserve view-transition-name if exists
       const vtName = p.style.viewTransitionName;
+      const trNorm = p.style.transition;
       p.style.cssText = "";
       if (vtName) p.style.viewTransitionName = vtName;
+      if (trNorm) p.style.transition = trNorm;
     });
     return;
   }
@@ -511,34 +536,46 @@ export function transitionToJigsaw() {
       const gridLayout = document.querySelector(".memory-grid-layout");
       if (gridLayout) gridLayout.style.viewTransitionName = "main-layout";
 
+      const pieces = document.querySelectorAll(".collected-piece");
+      const wrapper = document.querySelector(".collected-wrapper");
+
       const transition = document.startViewTransition(() => {
-        // CRITICAL: Disable CSS transitions during the DOM update
-        // This makes the size change instant for the "Target" snapshot,
-        // allowing the View Transition API to handle the animation exclusively.
+        // CRITICAL: Disable all CSS transitions during the DOM update phase.
+        // This ensures the Target snapshot is captured instantly by the API,
+        // preventing "ghosting" or "messy stacking" caused by CSS/API conflict.
         if (board) board.style.transition = "none";
         if (gridLayout) gridLayout.style.transition = "none";
+        if (wrapper) wrapper.style.transition = "none";
+        collectedLeft.style.transition = "none";
+        collectedRight.style.transition = "none";
+        pieces.forEach((p) => (p.style.transition = "none"));
 
         memorySection.classList.add("jigsaw-mode");
 
         // UI/Layout updates MUST happen inside the transition callback
-        // so the browser captures the NEW state as the "Target"
         gameManager.updateProgress("progress", { currentStage: "jigsaw" });
         deselectPiece();
         fitCollectedPieces();
       });
 
       transition.finished.finally(() => {
-        // Clean up transition names and restore CSS transitions
+        // Clean up names and restore transition capabilities
         leftPieces.forEach((p) => (p.style.viewTransitionName = ""));
         rightPieces.forEach((p) => (p.style.viewTransitionName = ""));
-        if (board) {
-          board.style.viewTransitionName = "";
-          board.style.transition = "";
-        }
-        if (gridLayout) {
-          gridLayout.style.viewTransitionName = "";
-          gridLayout.style.transition = "";
-        }
+
+        const cleanup = (el) => {
+          if (el) {
+            el.style.viewTransitionName = "";
+            el.style.transition = "";
+          }
+        };
+
+        cleanup(board);
+        cleanup(gridLayout);
+        cleanup(wrapper);
+        cleanup(collectedLeft);
+        cleanup(collectedRight);
+        pieces.forEach((p) => (p.style.transition = ""));
       });
     } else {
       memorySection.classList.add("jigsaw-mode");

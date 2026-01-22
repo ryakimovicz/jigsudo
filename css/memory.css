@@ -31,14 +31,11 @@ body.dark-mode {
 }
 
 /* View Transition API Overrides (Modern Browsers) */
-::view-transition-group(root),
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.8s;
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.5s;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-::view-transition-group(board-main) {
-  animation-duration: 0.8s;
 }
 @keyframes fadeIn {
   from {
@@ -196,10 +193,10 @@ body:not(.dark-mode) .memory-timer {
 
   /* Animate layout changes */
   transition:
-    grid-template-columns 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-    column-gap 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-    gap 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-    max-width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    grid-template-columns 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    column-gap 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Grid Areas */
@@ -267,7 +264,7 @@ body:not(.dark-mode) .memory-timer {
   justify-content: center;
   align-items: center;
   position: relative;
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sudoku-chunk-slot.filled {
@@ -431,12 +428,12 @@ body.dark-mode .memory-card-back {
   /* Smoothly animate size/position changes (like mobile jigsaw transition) */
   /* Using specific properties prevents "sliding from origin" artifacts often caused by transition: all */
   transition:
-    width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-    height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-    margin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-    font-size 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.6s ease,
-    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark-mode .collected-piece {
@@ -644,7 +641,7 @@ body.dark-mode .memory-card-back {
     max-height: calc(43.5dvh - var(--header-height) - 50px);
     aspect-ratio: 1/1; /* Ensure squareness */
     object-fit: contain; /* Prevent distortion */
-    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Expand Board vertical budget when in Jigsaw Mode to allow growth */
@@ -664,7 +661,7 @@ body.dark-mode .memory-card-back {
     position: relative;
     z-index: 10000;
     /* Animate height expansion during jigsaw mode transition */
-    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Reset children to simple flex items */
@@ -709,10 +706,10 @@ body.dark-mode .memory-card-back {
 @media (min-width: 769px) and (max-height: 850px) {
   .memory-grid-layout {
     transition:
-      grid-template-columns 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-      column-gap 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-      row-gap 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-      padding 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      grid-template-columns 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      column-gap 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      row-gap 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     padding-top: 0.5rem;
     column-gap: 8rem; /* SEPARATE panels horizontally without pushing cards down */
     row-gap: 1rem;
@@ -735,10 +732,10 @@ body.dark-mode .memory-card-back {
     align-self: center;
     justify-self: center;
     transition:
-      width 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-      height 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-      margin 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      margin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Enlarged Board (Jigsaw) */
@@ -772,7 +769,7 @@ body.dark-mode .memory-card-back {
     width: 100%;
     max-width: 160px; /* Room for 2 columns */
     margin: 0 auto;
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Shifting pieces to 1 column in Jigsaw Mode */
@@ -787,7 +784,7 @@ body.dark-mode .memory-card-back {
     width: 55px;
     height: 55px;
     font-size: 1rem;
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Enlarged Pieces (Jigsaw Mode) */
