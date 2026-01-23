@@ -33,7 +33,7 @@
   gap: 12px;
   width: 100%;
   max-width: 400px;
-  margin: 0 auto 20px auto !important; /* Center and add safe bottom margin */
+  margin: 0 auto 10px auto !important; /* Center and add compact bottom margin */
   animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -112,8 +112,22 @@
     justify-content: flex-start !important;
     align-items: center !important;
     gap: 8px !important;
-    padding-bottom: 20px !important; /* Reduced to leave room for timer */
+    padding-bottom: 5px !important; /* Minimized to reduce gap */
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Ultra-Short Screens optimizations */
+  @media (max-height: 660px) {
+    .sudoku-mode .memory-grid-layout {
+      gap: 4px !important;
+      padding-bottom: 0 !important;
+      justify-content: space-between !important;
+    }
+    .sudoku-controls {
+      max-height: 40dvh !important;
+      gap: 4px !important;
+      margin-bottom: 5px !important;
+    }
   }
 }
 
@@ -136,7 +150,7 @@
   .sudoku-controls {
     flex: 1;
     min-height: 0;
-    max-height: 45dvh; /* Slightly more space for 4 rows */
+    max-height: 42dvh; /* Increased from 38dvh to fill space, but still safe */
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(
