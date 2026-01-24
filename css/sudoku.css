@@ -152,9 +152,9 @@
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important;
+    justify-content: space-around !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 5px !important;
     padding-bottom: 5px !important; /* Minimized to reduce gap */
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -162,14 +162,14 @@
   /* Ultra-Short Screens optimizations */
   @media (max-height: 660px) {
     .sudoku-mode .memory-grid-layout {
-      gap: 4px !important;
+      gap: 2px !important;
       padding-bottom: 0 !important;
       justify-content: space-between !important;
     }
     .sudoku-controls {
-      max-height: 38dvh !important;
+      max-height: 35dvh !important;
       gap: 4px !important;
-      margin-bottom: 2px !important;
+      margin-bottom: 0 !important;
     }
   }
 }
@@ -193,7 +193,7 @@
   .sudoku-controls {
     flex: 1;
     min-height: 0;
-    max-height: 40dvh; /* Reduced from 42dvh to fill space, but still safe */
+    max-height: 35dvh; /* Conservatively reduced to 35dvh */
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(

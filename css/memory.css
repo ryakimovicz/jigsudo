@@ -639,7 +639,7 @@ body.dark-mode .memory-card-back {
   /* Added max(260px, ...) to ensure it doesn't shrink too much on small screens */
   .jigsaw-mode .memory-board,
   .sudoku-mode .memory-board {
-    width: min(95vw, max(200px, calc(58dvh - var(--header-height) - 50px)));
+    width: min(95vw, max(200px, calc(50dvh - var(--header-height) - 40px)));
     max-height: 100%; /* Relaxed to allow the 200px minimum */
   }
 
