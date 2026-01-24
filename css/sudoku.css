@@ -167,9 +167,9 @@
       justify-content: space-between !important;
     }
     .sudoku-controls {
-      max-height: 40dvh !important;
+      max-height: 38dvh !important;
       gap: 4px !important;
-      margin-bottom: 5px !important;
+      margin-bottom: 2px !important;
     }
   }
 }
@@ -193,7 +193,7 @@
   .sudoku-controls {
     flex: 1;
     min-height: 0;
-    max-height: 42dvh; /* Increased from 38dvh to fill space, but still safe */
+    max-height: 40dvh; /* Reduced from 42dvh to fill space, but still safe */
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(

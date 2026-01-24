@@ -523,7 +523,7 @@ body.dark-mode .memory-card-back {
   #memory-game {
     padding: 0;
     padding-top: var(--header-height); /* Only pad for the fixed header */
-    padding-bottom: var(--footer-height); /* SAFE ZONE for fixed footer */
+    padding-bottom: calc(var(--footer-height) + 2px); /* Tight safety zone */
     justify-content: flex-start; /* Force content to top */
     overflow: hidden !important; /* Strictly contain content */
     display: flex;
