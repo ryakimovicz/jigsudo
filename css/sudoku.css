@@ -174,55 +174,28 @@
       max-height: 38dvh !important;
       gap: 4px !important;
       margin-bottom: 2px !important;
+      margin-bottom: 2px !important;
     }
   }
-}
 
-/* 3x3 Grid & Height-based Scaling - Large Desktop */
-@media (min-width: 1100px) and (min-height: 1001px) {
-  .sudoku-mode .memory-grid-layout {
-    flex: 1 !important;
-    min-height: 0;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    gap: 10px !important;
-    padding-bottom: 30px !important; /* Room for timer */
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-}
-
-/* Integrated 3-column Keypad (Actions + Numbers) for Mobile/Large Desktop */
-@media (max-width: 768px), (min-width: 1100px) and (min-height: 1001px) {
+  /* Compact Keypad for Mobile (Re-declaring explicitly since we split the complex query) */
   .sudoku-controls {
     flex: 1;
     min-height: 0;
-    max-height: 28dvh; /* Budgeted: ~28% of height for keypad to allow board growth */
+    max-height: 28dvh;
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: repeat(
-      4,
-      1fr
-    ) !important; /* 1 (actions) + 3 (numbers) */
-    gap: 5px !important; /* Tighter gap */
+    grid-template-rows: repeat(4, 1fr) !important;
+    gap: 5px !important;
     width: auto !important;
     aspect-ratio: 3 / 4 !important;
     margin: 0 auto !important;
     height: 100% !important;
     align-self: center !important;
-    justify-content: center !important; /* Center the grid content horizontally */
-    justify-items: center !important; /* Center items in their cells */
+    justify-content: center !important;
+    justify-items: center !important;
   }
 
-  /* Limit keypad size on Large Desktop to avoid over-scaling */
-  @media (min-width: 1100px) and (min-height: 851px) {
-    .sudoku-controls {
-      max-width: 200px !important;
-      max-height: 267px !important;
-    }
-  }
-
-  /* Unbox buttons to make them direct children of the 4x3 grid */
   .control-row {
     display: contents !important;
   }
@@ -237,20 +210,77 @@
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    font-size: clamp(
-      0.9rem,
-      3vh,
-      1.4rem
-    ) !important; /* Reduced for smaller keypad */
+    font-size: clamp(0.9rem, 3vh, 1.4rem) !important;
+  }
+}
+
+/* 3x3 Grid & Height-based Scaling - Large Desktop */
+/* 3x3 Grid - Desktop Defaults */
+@media (min-width: 769px) {
+  .sudoku-mode .memory-grid-layout {
+    flex: 1 !important;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    padding-bottom: 30px !important;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Integrated 3-column Keypad (Actions + Numbers) for Mobile/Large Desktop */
+/* Keypad - Desktop Default (Integrated 3-column) */
+@media (min-width: 769px) {
+  .sudoku-controls {
+    /* Limit width specifically on desktop */
+    max-width: 200px !important;
+    max-height: 267px !important;
+
+    flex: 1;
+    min-height: 0;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(4, 1fr) !important;
+    gap: 5px !important;
+    width: auto !important;
+    aspect-ratio: 3 / 4 !important;
+    margin: 0 auto !important;
+    height: 100% !important;
+    align-self: center !important;
+    justify-content: center !important;
+    justify-items: center !important;
   }
 
-  /* Specific styles for action buttons in grid */
+  .control-row {
+    display: contents !important;
+  }
+
+  .btn-sudoku-action,
+  .sudoku-num {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: 1.2rem !important;
+  }
+
   .btn-sudoku-action {
     background: var(--bg-tertiary) !important;
     max-width: none !important;
     border-radius: 8px !important;
   }
 }
+
+/* Keypad - Mobile Specific (already handled separately in lines 196+ previously, 
+   but we are replacing the combined query, so we need to ensure Mobile rules stick) 
+   The original code had mobile rules inside the combined query which was messy.
+   Let's check the mobile rules block above in the file structure. 
+*/
 
 .dark-mode .sudoku-num {
   background: #333;

@@ -117,53 +117,23 @@
 }
 
 /* Standard Desktop Jigsaw Expansion (769px - 1099px, Height > 850px) */
-@media (min-width: 769px) and (max-width: 1099px) and (min-height: 1001px) {
-  .jigsaw-mode .memory-board,
-  .sudoku-mode .memory-board {
-    width: 400px !important;
-    height: 400px !important;
-  }
-
-  .jigsaw-mode .collected-piece {
-    width: 91px !important;
-    height: 91px !important;
-    font-size: 1.6rem !important;
-  }
-
-  /* Adjust grid columns for larger Jigsaw board */
-  .jigsaw-mode .memory-grid-layout,
-  .sudoku-mode .memory-grid-layout {
-    grid-template-columns: 120px 400px 120px !important;
-    column-gap: 4rem !important;
-    max-width: 1250px !important;
-  }
-
-  /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
-  .jigsaw-mode .memory-board,
-  .sudoku-mode .memory-board {
-    width: 400px !important;
-    height: 400px !important;
-  }
-
-  .jigsaw-mode .collected-zone,
-  .sudoku-mode .collected-zone {
-    gap: 12px !important;
-  }
-}
 
 /* Large Desktop Jigsaw Expansion (Scale Up only if there is enough height) */
-@media (min-width: 1100px) and (min-height: 1001px) {
+/* Standard Desktop Jigsaw (Responsive) */
+@media (min-width: 769px) {
   .jigsaw-mode .memory-board,
   .sudoku-mode .memory-board {
-    width: 420px !important; /* Force larger size */
-    height: 420px !important;
+    /* Use clamp/min to handle smaller desktops gracefully without media queries */
+    width: min(420px, 45vw) !important;
+    height: auto !important;
+    aspect-ratio: 1/1 !important;
   }
 
   .jigsaw-mode .collected-piece {
-    width: 99px !important;
-    height: 99px !important;
-    /* Large Font for large pieces */
-    font-size: 2rem;
+    width: min(99px, 10vw) !important;
+    height: auto !important;
+    aspect-ratio: 1/1 !important;
+    font-size: clamp(1rem, 2vw, 2rem) !important;
   }
 
   .jigsaw-mode .collected-wrapper,
@@ -176,8 +146,9 @@
   .jigsaw-mode .memory-grid-layout,
   .sudoku-mode .memory-grid-layout {
     gap: 2rem;
-    /* Unlock the middle column to fit the 420px board */
-    grid-template-columns: 110px 420px 110px;
+    column-gap: 4rem;
+    grid-template-columns: 1fr auto 1fr !important; /* Flexible sides, board automatic */
+    justify-content: center;
   }
 }
 
