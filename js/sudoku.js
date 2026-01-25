@@ -132,13 +132,12 @@ export function initSudoku() {
     // if (!lockedNumber) return;
 
     // If click is inside board, controls, or specific buttons, ignore
-    // (Note: we check closest on the click target)
     const isControl = e.target.closest(".sudoku-controls");
     const isBoard = e.target.closest("#memory-board");
     const isPencil = e.target.closest("#sudoku-pencil");
     const isUndo = e.target.closest("#sudoku-back");
     const isClear = e.target.closest("#sudoku-clear");
-    const isModal = e.target.closest(".modal"); // Don't unlock if interacting with modals
+    const isModal = e.target.closest(".modal");
 
     if (
       !isControl &&
@@ -151,6 +150,59 @@ export function initSudoku() {
       if (lockedNumber) unlockNumber();
       deselectCurrentCell(); // Always deselect cell if clicking outside
       highlightSimilarCells(null); // Clear highlights
+    }
+  });
+
+  // Physical Keyboard Support
+  document.addEventListener("keydown", (e) => {
+    const gameSection = document.getElementById("memory-game");
+    if (!gameSection || !gameSection.classList.contains("sudoku-mode")) return;
+
+    // Ignore if modal is open
+    if (!document.getElementById("confirm-modal")?.classList.contains("hidden"))
+      return;
+
+    const key = e.key;
+
+    // Numbers 1-9
+    if (key >= "1" && key <= "9") {
+      handleNumberInput(key);
+      return;
+    }
+
+    // Backspace / Delete
+    if (key === "Backspace" || key === "Delete") {
+      clearSelectedCell();
+      return;
+    }
+
+    // Escape -> Deselect / Unlock
+    if (key === "Escape") {
+      if (lockedNumber) unlockNumber();
+      deselectCurrentCell();
+      highlightSimilarCells(null);
+      return;
+    }
+
+    // Custom Shortcuts (Q=Undo, W=Notes, E=Clear) - User Preference
+    const lowerKey = key.toLowerCase();
+
+    // Q -> Undo, Backspace (if just navigation)
+    if (lowerKey === "q") {
+      handleUndo();
+      return;
+    }
+
+    // W -> Pencil/Notes Mode
+    if (lowerKey === "w" || lowerKey === "p" || lowerKey === "n") {
+      togglePencilMode();
+      return;
+    }
+
+    // E -> Eraser/Clear
+    if (lowerKey === "e") {
+      clearSelectedCell();
+      return;
     }
   });
 }
