@@ -213,9 +213,14 @@ let undoStack = [];
 
 function pushAction(cell) {
   // Capture snapshot BEFORE change
+  const hasNotes = !!cell.querySelector(".notes-grid");
+
   const action = {
     cell: cell,
-    previousText: cell.textContent,
+    // If it has a grid, the "text content" is just the concatenation of notes,
+    // which we don't want to restore as a big number.
+    // We only care about textContent if it's a real user value (no grid).
+    previousText: hasNotes ? "" : cell.textContent,
     previousClasses: [...cell.classList],
     previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
   };
@@ -253,17 +258,26 @@ function handleUndo() {
 
 function toggleNote(cell, num, skipHistory = true) {
   if (!skipHistory) pushAction(cell); // Only push if not already pushed by caller
-  // Simple note logic for now: just text or small dots?
-  // Let's create a 3x3 grid of small numbers for notes
+
+  // Check if we are converting a real number to notes
+  const existingVal = cell.textContent;
+  const wasUserFilled = cell.classList.contains("user-filled");
+  const hasExistingNotes = !!cell.querySelector(".notes-grid");
+
   cell.classList.add("has-notes");
-  cell.textContent = ""; // Clear main number
   cell.classList.remove("error"); // Pencil marks clear error state
+  cell.classList.remove("user-filled"); // No longer a "final" answer
 
   let notesGrid = cell.querySelector(".notes-grid");
+
+  // If no grid exists, create it (and clear any single number interacting)
   if (!notesGrid) {
+    cell.textContent = ""; // Clear main number to make room for grid
+
     notesGrid = document.createElement("div");
     notesGrid.classList.add("notes-grid");
     cell.appendChild(notesGrid);
+
     // Initialize 9 empty slots
     for (let i = 1; i <= 9; i++) {
       const slot = document.createElement("div");
@@ -271,10 +285,17 @@ function toggleNote(cell, num, skipHistory = true) {
       slot.dataset.note = i;
       notesGrid.appendChild(slot);
     }
+
+    // Capture the existing number as a note if it was a user entry
+    if (wasUserFilled && existingVal && !hasExistingNotes) {
+      const oldSlot = notesGrid.querySelector(`[data-note="${existingVal}"]`);
+      if (oldSlot) oldSlot.textContent = existingVal;
+    }
   }
 
   const slot = notesGrid.querySelector(`[data-note="${num}"]`);
   if (slot) {
+    // Toggle: if empty set num, if num set empty
     slot.textContent = slot.textContent ? "" : num;
   }
 }
