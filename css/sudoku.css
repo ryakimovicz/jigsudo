@@ -308,6 +308,20 @@
   font-weight: 800;
 }
 
+/* Feedback: Number is present in selected cell */
+.sudoku-num.key-present {
+  background: #e2e8f0; /* Light slate */
+  color: var(--text-main);
+  border-color: #cbd5e1;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .sudoku-num.key-present {
+  background: #475569; /* Slate 600 */
+  color: white;
+  border-color: #64748b;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

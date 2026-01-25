@@ -187,6 +187,36 @@ export function transitionToSudoku() {
   }
 }
 
+/* Keypad Feedback Helper */
+function updateKeypadHighlights(cell) {
+  // 1. Reset all keys (except locked ones)
+  document.querySelectorAll(".sudoku-num").forEach((btn) => {
+    btn.classList.remove("key-present");
+  });
+
+  if (!cell) return;
+
+  const presentNumbers = new Set();
+
+  // 2. Check content
+  if (cell.querySelector(".notes-grid")) {
+    const slots = cell.querySelectorAll(".note-slot");
+    slots.forEach((slot) => {
+      if (slot.textContent) presentNumbers.add(slot.dataset.note);
+    });
+  } else {
+    const val = cell.textContent.trim();
+    if (val) presentNumbers.add(val);
+  }
+
+  // 3. Highlight keys
+  document.querySelectorAll(".sudoku-num").forEach((btn) => {
+    if (presentNumbers.has(btn.dataset.value)) {
+      btn.classList.add("key-present");
+    }
+  });
+}
+
 function selectCell(cell, skipPaint = false) {
   // Guard: Only allow selection in Sudoku Mode
   const gameSection = document.getElementById("memory-game");
@@ -199,6 +229,7 @@ function selectCell(cell, skipPaint = false) {
     cell.classList.contains("has-number") &&
     !cell.classList.contains("user-filled")
   ) {
+    updateKeypadHighlights(cell); // Still show feedback for pre-filled cells!
     return;
   }
 
@@ -211,6 +242,7 @@ function selectCell(cell, skipPaint = false) {
     selectedCell.classList.add("selected-cell");
 
     handleNumberInput(lockedNumber);
+    // handleNumberInput will call updateKeypadHighlights
     return;
   }
 
@@ -220,6 +252,7 @@ function selectCell(cell, skipPaint = false) {
 
   selectedCell = cell;
   selectedCell.classList.add("selected-cell");
+  updateKeypadHighlights(cell);
 }
 
 /* Locking Logic Helper */
@@ -271,6 +304,7 @@ function handleNumberInput(num) {
 
     // VALIDATE BOARD AFTER FILL
     validateBoard();
+    updateKeypadHighlights(selectedCell);
   }
 }
 
@@ -289,6 +323,8 @@ function clearSelectedCell() {
   selectedCell.classList.remove("user-filled", "has-notes", "error");
   const notesGrid = selectedCell.querySelector(".notes-grid");
   if (notesGrid) notesGrid.remove();
+
+  updateKeypadHighlights(selectedCell);
 }
 
 // History for Undo
@@ -381,6 +417,8 @@ function toggleNote(cell, num, skipHistory = true) {
     // Toggle: if empty set num, if num set empty
     slot.textContent = slot.textContent ? "" : num;
   }
+
+  updateKeypadHighlights(cell);
 }
 
 function validateBoard() {
