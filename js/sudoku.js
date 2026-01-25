@@ -17,9 +17,52 @@ export function initSudoku() {
   document
     .getElementById("sudoku-pencil")
     ?.addEventListener("click", togglePencilMode);
+  document.getElementById("sudoku-back")?.addEventListener("click", handleUndo);
+
+  // Clear Button with Long Press Logic
+  const clearBtn = document.getElementById("sudoku-clear");
+  if (clearBtn) {
+    // Normal click/tap for single cell
+    clearBtn.addEventListener("click", (e) => {
+      // If long press triggered, ignore this click
+      if (clearBtn.dataset.longPressed === "true") {
+        clearBtn.dataset.longPressed = "false";
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      clearSelectedCell();
+    });
+
+    // Mouse / Touch Events for Long Press
+    const startPress = (e) => {
+      clearBtn.dataset.longPressed = "false";
+      clearBtn.dataset.pressTimer = setTimeout(() => {
+        clearBtn.dataset.longPressed = "true";
+        initiateClearBoard();
+      }, 800); // 800ms threshold
+    };
+
+    const cancelPress = (e) => {
+      const timer = clearBtn.dataset.pressTimer;
+      if (timer) clearTimeout(timer);
+    };
+
+    clearBtn.addEventListener("mousedown", startPress);
+    clearBtn.addEventListener("touchstart", startPress, { passive: true });
+
+    clearBtn.addEventListener("mouseup", cancelPress);
+    clearBtn.addEventListener("mouseleave", cancelPress);
+    clearBtn.addEventListener("touchend", cancelPress);
+  }
+
+  // Modal Listeners
   document
-    .getElementById("sudoku-clear")
-    ?.addEventListener("click", clearSelectedCell);
+    .getElementById("modal-cancel")
+    ?.addEventListener("click", closeConfirmModal);
+  document
+    .getElementById("modal-confirm")
+    ?.addEventListener("click", confirmClearBoard);
   document.getElementById("sudoku-back")?.addEventListener("click", handleUndo);
 
   const helpBtn = document.getElementById("debug-help-btn");
@@ -100,6 +143,12 @@ export function transitionToSudoku() {
 }
 
 function selectCell(cell) {
+  // Guard: Only allow selection in Sudoku Mode
+  const gameSection = document.getElementById("memory-game");
+  if (!gameSection || !gameSection.classList.contains("sudoku-mode")) {
+    return;
+  }
+
   // Can't edit pre-filled cells (initial puzzle numbers)
   if (
     cell.classList.contains("has-number") &&
@@ -119,10 +168,13 @@ function selectCell(cell) {
 function handleNumberInput(num) {
   if (!selectedCell) return;
 
+  // Track History
+  pushAction(selectedCell);
+
   if (pencilMode) {
     // Implement notes logic
     console.log("Pencil note:", num);
-    toggleNote(selectedCell, num);
+    toggleNote(selectedCell, num, true); // Pass true to skip inner history push (already pushed above)
   } else {
     selectedCell.textContent = num;
     selectedCell.classList.add("user-filled");
@@ -149,17 +201,58 @@ function togglePencilMode() {
 
 function clearSelectedCell() {
   if (!selectedCell) return;
+  pushAction(selectedCell); // Track clear
   selectedCell.textContent = "";
   selectedCell.classList.remove("user-filled", "has-notes", "error");
   const notesGrid = selectedCell.querySelector(".notes-grid");
   if (notesGrid) notesGrid.remove();
 }
 
-function handleUndo() {
-  console.log("Undo not implemented yet");
+// History for Undo
+let undoStack = [];
+
+function pushAction(cell) {
+  // Capture snapshot BEFORE change
+  const action = {
+    cell: cell,
+    previousText: cell.textContent,
+    previousClasses: [...cell.classList],
+    previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
+  };
+  undoStack.push(action);
 }
 
-function toggleNote(cell, num) {
+function handleUndo() {
+  if (undoStack.length === 0) {
+    console.log("Nothing to undo");
+    return;
+  }
+
+  const action = undoStack.pop();
+  const cell = action.cell;
+
+  // Restore State
+  cell.textContent = action.previousText;
+  cell.className = ""; // Reset first
+  action.previousClasses.forEach((c) => cell.classList.add(c));
+
+  // Restore Notes if any
+  const existingNotes = cell.querySelector(".notes-grid");
+  if (existingNotes) existingNotes.remove();
+
+  if (action.previousNotes) {
+    cell.appendChild(action.previousNotes);
+  }
+
+  // Restore selection to the undone cell for continuity
+  selectCell(cell);
+
+  // Re-validate to clear any global error states potentially caused by this move
+  validateBoard();
+}
+
+function toggleNote(cell, num, skipHistory = true) {
+  if (!skipHistory) pushAction(cell); // Only push if not already pushed by caller
   // Simple note logic for now: just text or small dots?
   // Let's create a 3x3 grid of small numbers for notes
   cell.classList.add("has-notes");
@@ -336,5 +429,82 @@ function provideHint() {
 
     // Trigger validation (only triggers win if this was the last cell)
     validateBoard();
+  }
+}
+// Long Press Clear Board Logic
+function initiateClearBoard() {
+  const skipConfirm =
+    localStorage.getItem("jigsudo_skip_clear_confirm") === "true";
+
+  if (skipConfirm) {
+    clearBoard();
+  } else {
+    showConfirmModal();
+  }
+}
+
+function showConfirmModal() {
+  const modal = document.getElementById("confirm-modal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closeConfirmModal() {
+  const modal = document.getElementById("confirm-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function confirmClearBoard() {
+  // Check preference
+  const dontAsk = document.getElementById("modal-dont-ask");
+  if (dontAsk && dontAsk.checked) {
+    localStorage.setItem("jigsudo_skip_clear_confirm", "true");
+  }
+
+  clearBoard();
+  closeConfirmModal();
+}
+
+function clearBoard() {
+  const board = document.getElementById("memory-board");
+  if (!board) return;
+
+  // Track as a single massive undoable action?
+  // For now, let's keep it simple mostly because undoing a full board clear is heavy.
+  // But strictly we should probably clear the history stack to avoid inconsistencies
+  undoStack = []; // Reset history on full clear
+
+  const slots = Array.from(board.querySelectorAll(".sudoku-chunk-slot"));
+  let changesMade = false;
+
+  slots.forEach((slot) => {
+    const cells = Array.from(slot.querySelectorAll(".mini-cell"));
+    cells.forEach((cell) => {
+      // Only clear user-filled cells, not initial puzzle numbers
+      if (
+        cell.classList.contains("user-filled") ||
+        cell.classList.contains("has-notes")
+      ) {
+        cell.textContent = "";
+        cell.classList.remove(
+          "user-filled",
+          "has-notes",
+          "error",
+          "selected-cell",
+        );
+
+        const notes = cell.querySelector(".notes-grid");
+        if (notes) notes.remove();
+
+        changesMade = true;
+      }
+    });
+  });
+
+  // Re-select active cell if any remained (probably not needed if we cleared selection)
+  selectedCell = null;
+
+  if (changesMade) {
+    console.log("Board cleared by user.");
+    validateBoard(); // Remove any global error states
   }
 }

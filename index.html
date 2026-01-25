@@ -97,6 +97,17 @@
                 Ajustes
               </h3>
 
+              <!-- Confirm Clear Toggle -->
+              <div class="setting-item">
+                <span class="setting-label" data-i18n="profile_quick_clear"
+                  >Borrado Rápido</span
+                >
+                <label class="switch-small">
+                  <input type="checkbox" id="confirm-clear-toggle" />
+                  <span class="slider-small round"></span>
+                </label>
+              </div>
+
               <!-- Language Option -->
               <div class="setting-item">
                 <span class="setting-label" data-i18n="profile_language"
@@ -338,6 +349,39 @@
     <script src="js/search.js" type="module"></script>
     <script type="module" src="js/main.js"></script>
     <!-- Entry Point -->
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+      <div class="modal-content glass-panel">
+        <h3 id="modal-title" class="modal-title" data-i18n="modal_clear_title">
+          Reiniciar Tablero
+        </h3>
+        <p id="modal-desc" class="modal-desc" data-i18n="modal_clear_body">
+          ¿Estás seguro de que quieres borrar todos los números?
+        </p>
+
+        <div class="modal-option">
+          <label class="checkbox-label">
+            <input type="checkbox" id="modal-dont-ask" />
+            <span class="custom-checkbox"></span>
+            <span data-i18n="modal_dont_ask">No volver a preguntar</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            id="modal-cancel"
+            class="btn-secondary"
+            data-i18n="btn_cancel"
+          >
+            Cancelar
+          </button>
+          <button id="modal-confirm" class="btn-danger" data-i18n="btn_clear">
+            Borrar
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Debug Help Button -->
     <button id="debug-help-btn" class="debug-btn">Ayuda</button>

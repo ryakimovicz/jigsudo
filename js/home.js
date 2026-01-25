@@ -123,7 +123,32 @@ export function initHome() {
       if (localStorage.getItem(STORAGE_KEY) === "auto") {
         updateThemeState();
       }
+      if (localStorage.getItem(STORAGE_KEY) === "auto") {
+        updateThemeState();
+      }
     });
+
+  // 5. Quick Clear Toggle Logic
+  const confirmClearToggle = document.getElementById("confirm-clear-toggle");
+  if (confirmClearToggle) {
+    // Initialization: Check localStorage 'jigsudo_skip_clear_confirm'
+    // If 'true', it means SKIP confirmation -> Quick Clear ON (checked)
+    // If 'false' or null, it means ASK confirmation -> Quick Clear OFF (unchecked)
+    const isSkipping =
+      localStorage.getItem("jigsudo_skip_clear_confirm") === "true";
+    confirmClearToggle.checked = isSkipping;
+
+    // Listener
+    confirmClearToggle.addEventListener("change", () => {
+      // If Checked -> We want speed/skipping -> skip = true
+      // If Unchecked -> We want safety/asking -> skip = false
+      const wantSpeed = confirmClearToggle.checked;
+      localStorage.setItem(
+        "jigsudo_skip_clear_confirm",
+        wantSpeed ? "true" : "false",
+      );
+    });
+  }
   // --- Header Info (Date & Challenge #) ---
   function updateHeaderInfo() {
     const dateEl = document.getElementById("current-date");

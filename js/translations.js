@@ -47,6 +47,7 @@ export const translations = {
     profile_dark_mode: "Modo Oscuro",
     profile_auto: "Automático",
     profile_settings: "Ajustes",
+    profile_quick_clear: "Borrado Rápido",
     profile_language: "Idioma",
 
     // Footer
@@ -65,7 +66,16 @@ export const translations = {
     sudoku_help_desc:
       "Completa la cuadrícula con los números del 1 al 9.<br />Cada fila, columna y bloque de 3x3 debe contener todos los números sin repetirlos.",
     alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
+    alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
     alert_next_peaks: "Siguiente juego: Picos y Valles\nPróximamente",
+
+    // Modals
+    modal_clear_title: "Reiniciar Tablero",
+    modal_clear_body:
+      "¿Estás seguro de que quieres borrar todos los números del tablero?",
+    modal_dont_ask: "No volver a preguntar",
+    btn_cancel: "Cancelar",
+    btn_clear: "Borrar Todo",
   },
   en: {
     app_title: "JIGSUDO",
@@ -114,6 +124,7 @@ export const translations = {
     profile_dark_mode: "Dark Mode",
     profile_auto: "Automatic",
     profile_settings: "Settings",
+    profile_quick_clear: "Quick Clear",
     profile_language: "Language",
 
     // Footer
@@ -133,5 +144,13 @@ export const translations = {
       "Complete the grid with numbers from 1 to 9.<br />Each row, column and 3x3 block must contain all numbers without repeating them.",
     alert_next_sudoku: "Next game: Sudoku\nComing Soon",
     alert_next_peaks: "Next game: Peaks & Valleys\nComing Soon",
+
+    // Modals
+    modal_clear_title: "Reset Board",
+    modal_clear_body:
+      "Are you sure you want to clear all numbers from the board?",
+    modal_dont_ask: "Don't ask again",
+    btn_cancel: "Cancel",
+    btn_clear: "Clear All",
   },
 };
