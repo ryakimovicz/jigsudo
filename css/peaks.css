@@ -4,3 +4,65 @@
 .peaks-mode .mini-cell.user-filled {
   color: var(--text-main);
 }
+
+.peaks-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-main);
+  font-size: 1.2rem;
+  color: var(--text-main);
+  margin-top: 10px;
+  order: 3; /* Ensure it stays below board (order 1 in sudoku layout) and controls (order 2) */
+  width: 100%;
+}
+
+.peaks-stats.hidden {
+  display: none;
+}
+
+.error-label {
+  font-weight: 700;
+}
+
+#peaks-error-count {
+  color: #f44336; /* Red for errors */
+  font-weight: 700;
+}
+
+/* Success States */
+.peak-found {
+  background-color: rgba(var(--accent-rgb), 0.3) !important;
+  box-shadow: inset 0 0 10px var(--accent-color) !important;
+  color: var(--text-main) !important; /* Ensure readability */
+}
+
+/* Valley: Keep Blue-ish but cleaner, or maybe use a secondary theme color? 
+   let's use a standard blue but accessible. */
+.valley-found {
+  background-color: rgba(33, 150, 243, 0.3) !important;
+  box-shadow: inset 0 0 10px #2196f3 !important;
+  color: var(--text-main) !important;
+}
+
+/* Animation */
+@keyframes error-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+    color: red;
+  }
+  75% {
+    transform: translateX(5px);
+    color: red;
+  }
+}
+
+.error-shake {
+  animation: error-shake 0.4s ease-in-out;
+  color: red !important;
+}

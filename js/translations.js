@@ -81,6 +81,9 @@ export const translations = {
     peaks_help_title: "Picos y Valles",
     peaks_help_desc:
       "Encuentra los <strong>Picos</strong> (números mayores que todos sus vecinos) y los <strong>Valles</strong> (números menores que todos sus vecinos).",
+
+    peaks_errors: "Errores:",
+    peaks_remaining: "Faltan:",
   },
   en: {
     app_title: "JIGSUDO",
@@ -162,5 +165,8 @@ export const translations = {
     peaks_help_title: "Peaks & Valleys",
     peaks_help_desc:
       "Find the <strong>Peaks</strong> (numbers with no larger neighbors around them) and <strong>Valleys</strong> (numbers with no smaller neighbors around them).",
+
+    peaks_errors: "Errors:",
+    peaks_remaining: "Remaining:",
   },
 };

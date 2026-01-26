@@ -6,6 +6,7 @@
   --text-main: #1e293b; /* Dark Slate - Main Text */
   --text-muted: #94a3b8; /* Muted Text */
   --accent-color: #f97316; /* Burnt Orange - Selection/Highlights */
+  --accent-rgb: 249, 115, 22; /* RGB Triplet for rgba() usage */
 
   --bg-secondary: #f1f5f9; /* Light Slate - Secondary Background */
   --bg-tertiary: #e2e8f0; /* Lighter Slate - Tertiary Background */
@@ -36,6 +37,7 @@ body.dark-mode {
   --text-main: #cdd9e5; /* Pearl Grey */
   --text-muted: #768390;
   --accent-color: #ffa726; /* Lighter/Golden Orange for better contrast on dark */
+  --accent-rgb: 255, 167, 38;
 
   --bg-secondary: #0d1117; /* Darker background for components */
   --bg-tertiary: #30363d; /* Lighter background for slots */
