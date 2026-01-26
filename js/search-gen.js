@@ -44,10 +44,10 @@ export function generateSearchSequences(board, dateSeed) {
     }
   }
 
-  // 2. Target Used Cells = Total Available - 5
-  // We want exactly 5 cells left unused (neither peak/valley nor sequence)
+  // 2. Target Used Cells = Total Available - 3
+  // We want exactly 3 cells left unused (neither peak/valley nor sequence)
   const totalAvailable = availableCells.length;
-  const targetUsedCount = Math.max(0, totalAvailable - 5);
+  const targetUsedCount = Math.max(0, totalAvailable - 3);
 
   if (CONFIG.debugMode) {
     console.log(
@@ -102,8 +102,8 @@ export function generateSearchSequences(board, dateSeed) {
 
     // PANIC MODE: Try to fill remaining gaps with simple greedy logic
     // STRICT MODE: We must find UNIQUE sequences.
-    if (totalAvailable - perfStats.best.usedCount > 5) {
-      console.log("Entering Strict Panic Fill Mode...");
+    if (totalAvailable - perfStats.best.usedCount > 3) {
+      if (CONFIG.debugMode) console.log("Entering Strict Panic Fill Mode...");
 
       // Start with the best result found so far
       const usedMap = new Set();
@@ -117,7 +117,7 @@ export function generateSearchSequences(board, dateSeed) {
       let attempts = 0;
       const maxAttempts = 50; // Prevention against infinite loops in panic mode
 
-      while (totalAvailable - usedMap.size > 5 && attempts < maxAttempts) {
+      while (totalAvailable - usedMap.size > 3 && attempts < maxAttempts) {
         attempts++;
 
         // 1. Identify Holes
@@ -349,13 +349,13 @@ function isValidState(usedMap, peaksValleys, remainingToFill) {
     }
   }
 
-  // Total Free Cells = remainingToFill + 5 (Final Buffer)
+  // Total Free Cells = remainingToFill + 3 (Final Buffer)
   // We need to fill remainingToFill.
   // The 'smallIslandSum' cells are useless for filling.
   // So available for filling = (TotalFree - smallIslandSum).
   // If (TotalFree - smallIslandSum) < remainingToFill, we are stuck.
-  // Or simply: smallIslandSum must fit in the final 5 buffer.
-  return smallIslandSum <= 5;
+  // Or simply: smallIslandSum must fit in the final 3 buffer.
+  return smallIslandSum <= 3;
 }
 
 function getComponentSize(startR, startC, usedMap, peaksValleys, visited) {
