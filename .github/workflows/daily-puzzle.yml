@@ -1,0 +1,30 @@
+name: Generar Puzzle Diario
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Every day at 00:00 UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Run Generator
+        run: node scripts/generate-daily.js
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name 'Jigsudo Bot'
+          git config --global user.email 'bot@jigsudo.com'
+          git add public/puzzles/*.json
+          # Only commit if there are changes (avoids error if file exists and identical, unlikely with seed)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🧩 New Daily Puzzle Generated" && git push)
