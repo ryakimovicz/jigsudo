@@ -72,6 +72,11 @@ export const translations = {
     alert_next_peaks: "Siguiente juego: Picos y Valles\nPróximamente",
     alert_next_search: "Siguiente juego: Sopa de Números\nPróximamente",
 
+    // Search Game Help
+    search_help_title: "Sopa de Números",
+    search_help_desc:
+      "Encuentra las secuencias numéricas ocultas en el tablero.",
+
     // Modals
     modal_clear_title: "Reiniciar Tablero",
     modal_clear_body:
@@ -159,6 +164,10 @@ export const translations = {
     alert_next_sudoku: "Next game: Sudoku\nComing Soon",
     alert_next_peaks: "Next game: Peaks & Valleys\nComing Soon",
     alert_next_search: "Next game: Number Search\nComing Soon",
+
+    // Search Game Help
+    search_help_title: "Number Search",
+    search_help_desc: "Find the hidden number sequences on the board.",
 
     // Modals
     modal_clear_title: "Reset Board",

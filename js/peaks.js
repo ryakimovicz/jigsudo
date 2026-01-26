@@ -2,6 +2,7 @@
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
+import { transitionToSearch } from "./search.js";
 
 // State
 let peaksErrors = 0;
@@ -255,9 +256,10 @@ function checkPeaksVictory() {
     // Trigger Search Stage...
     setTimeout(() => {
       if (board) board.classList.remove("board-complete");
-      alert(msg);
-      // gameManager.advanceStage("search");
-    }, 1500); // 1.5s delay to match animation
+      transitionToSearch();
+      // Also advance logic state
+      gameManager.advanceStage("search");
+    }, 800); // reduced delay to match animation (0.6s) + buffer
   }
 }
 

@@ -110,6 +110,19 @@ function updateTexts() {
       tooltipTitle.textContent = t.peaks_help_title;
     if (tooltipDesc && t.peaks_help_desc)
       tooltipDesc.innerHTML = t.peaks_help_desc;
+  } else if (
+    document.getElementById("memory-game")?.classList.contains("search-mode")
+  ) {
+    // Search Mode Override
+    const titleEl = document.querySelector(".header-title-container h2");
+    if (titleEl && t.game_search) titleEl.textContent = t.game_search;
+
+    const tooltipTitle = document.querySelector(".info-tooltip h3");
+    const tooltipDesc = document.querySelector(".info-tooltip p");
+    if (tooltipTitle && t.search_help_title)
+      tooltipTitle.textContent = t.search_help_title;
+    if (tooltipDesc && t.search_help_desc)
+      tooltipDesc.innerHTML = t.search_help_desc;
   }
 }
 
