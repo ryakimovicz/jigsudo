@@ -16,9 +16,7 @@ if (!fs.existsSync(PUZZLES_DIR)) {
 }
 
 async function generateDailyPuzzle() {
-  console.log(
-    "🧩 Starting Daily Puzzle Generation (Strict Island Handling)...",
-  );
+  console.log("🧩 Starting Daily Puzzle Generation (Clean Board Strategy)...");
 
   let seed = process.argv[2];
   let dateStr = "";
@@ -58,7 +56,7 @@ async function generateDailyPuzzle() {
     let finalSimonValues = [];
 
     // --- BUCLE PRINCIPAL ---
-    while (!success && attemptsGlobal < 200) {
+    while (!success && attemptsGlobal < 500) {
       attemptsGlobal++;
       const currentSeed = baseSeed * 1000 + attemptsGlobal;
 
@@ -77,7 +75,7 @@ async function generateDailyPuzzle() {
 
       let validTopology = true;
       let allCandidates = [];
-      let globalForcedValues = new Set(); // Union of all islands across all vars
+      let globalForcedValues = new Set();
 
       // 3. Procesar cada variante
       for (let key in variations) {
@@ -91,30 +89,34 @@ async function generateDailyPuzzle() {
           variations[key].peaksValleys,
         );
 
-        // C. Verificar Islas (Forced Holes)
-        const islands = getIslands(rawPaths, variations[key].peaksValleys);
-        // Si hay muchas islas en UNA variante, ya es malo.
-        if (islands.length > 3) {
-          process.stdout.write(
-            `Too many islands in [${key}] (${islands.length}). Next.\r`,
-          );
-          validTopology = false;
-          break;
-        }
-        variations[key].islands = islands;
+        // C. Verificar Islas PRE-Segmentation (Islas naturales)
+        let islands = getIslands(rawPaths, variations[key].peaksValleys);
 
-        // Track Forced Values
-        islands.forEach((isl) =>
-          globalForcedValues.add(variations[key].board[isl.r][isl.c]),
-        );
-
-        // D. Smart Segmentation
-        const snakes = segmentPathsSmart(
+        // D. Segmentation (Captura orphans/sawdust)
+        const { snakes, orphans } = segmentPathsSmart(
           rawPaths,
           variations[key].board,
           variations[key].peaksValleys,
         );
         variations[key].snakes = snakes;
+
+        // Add Orphans to Islands
+        islands = [...islands, ...orphans];
+        variations[key].islands = islands;
+
+        // Check Count (Si > 3, descartar seed)
+        if (islands.length > 3) {
+          process.stdout.write(
+            `Too many islands/orphans in [${key}] (${islands.length}). Next.\r`,
+          );
+          validTopology = false;
+          break;
+        }
+
+        // Track Forced Values
+        islands.forEach((isl) =>
+          globalForcedValues.add(variations[key].board[isl.r][isl.c]),
+        );
 
         // E. Unique Analysis
         const uniqueSnakes = identifyUniqueSnakes(
@@ -124,7 +126,7 @@ async function generateDailyPuzzle() {
         );
         variations[key].uniqueSnakes = uniqueSnakes;
 
-        // F. Candidates (Unique Snake Ends + Islands)
+        // F. Candidates
         const candidates = new Set();
         islands.forEach((isl) =>
           candidates.add(variations[key].board[isl.r][isl.c]),
@@ -144,8 +146,7 @@ async function generateDailyPuzzle() {
 
       if (!validTopology) continue;
 
-      // --- CRITICAL CHECK: FORCED VALUES ---
-      // 1. We cannot have more than 3 distinct forced values across all variations.
+      // --- STRICT CHECK: FORCED VALUES ---
       if (globalForcedValues.size > 3) {
         process.stdout.write(
           `Too many disparate islands (Union=${globalForcedValues.size}). Next.\r`,
@@ -153,8 +154,6 @@ async function generateDailyPuzzle() {
         continue;
       }
 
-      // 2. All forced values MUST be available candidates in ALL variations.
-      // (i.e. if '5' is an island in Var0, '5' must be carve-able in VarLR)
       let forcedCompatible = true;
       for (let forced of globalForcedValues) {
         for (let candidates of allCandidates) {
@@ -178,14 +177,9 @@ async function generateDailyPuzzle() {
         commonValues = commonValues.filter((val) => allCandidates[i].has(val));
       }
 
-      // Remove Forced from Common (to avoid double picking if we rely on random fill)
-      // Actually, let's build the final target set directly.
+      // Build Targets
       let targets = Array.from(globalForcedValues);
-
-      // Determine how many more we need
       let slotsNeeded = 3 - targets.length;
-
-      // Filter potential fillers: Common Values that are NOT in targets already
       let potentialFillers = commonValues.filter(
         (v) => !globalForcedValues.has(v),
       );
@@ -195,7 +189,6 @@ async function generateDailyPuzzle() {
         continue;
       }
 
-      // 5. ÉXITO: Seleccionar fillers
       let fillers = potentialFillers
         .sort(() => 0.5 - Math.random())
         .slice(0, slotsNeeded);
@@ -237,11 +230,11 @@ async function generateDailyPuzzle() {
     }
 
     if (!success)
-      throw new Error("Could not generate valid puzzle after 200 attempts.");
+      throw new Error("Could not generate valid puzzle after 500 attempts.");
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "4.5-strict-islands", date: dateStr, seed: seedInt },
+      meta: { version: "4.6-clean-board", date: dateStr, seed: seedInt },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
@@ -263,9 +256,6 @@ async function generateDailyPuzzle() {
   }
 }
 
-// ==========================================
-// 🧠 LOGIC: GREEDY PATH GENERATOR
-// ==========================================
 function generateGreedyCoverage(grid, pvMap) {
   let visited = Array(9)
     .fill()
@@ -324,21 +314,23 @@ function generateGreedyCoverage(grid, pvMap) {
   return paths;
 }
 
-// ==========================================
-// 🪚 LOGIC: SMART SEGMENTATION
-// ==========================================
 function segmentPathsSmart(rawPaths, grid, pvMap) {
   let finalSnakes = [];
+  let orphans = [];
 
   for (let path of rawPaths) {
     let remaining = [...path];
     while (remaining.length > 0) {
       const len = remaining.length;
       if (len <= 6) {
-        if (len >= 3) finalSnakes.push(remaining);
+        if (len >= 3) {
+          finalSnakes.push(remaining);
+        } else {
+          orphans.push(...remaining); // Catch scraps
+        }
         break;
       }
-      // Smart uniqueness check logic
+
       let bestCut = -1;
       for (let cut = 6; cut >= 3; cut--) {
         let remSize = len - cut;
@@ -350,7 +342,7 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
           break;
         }
       }
-      // Fallback
+
       if (bestCut === -1) {
         let cut = 6;
         while (cut >= 3) {
@@ -364,12 +356,9 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
       remaining = remaining.slice(bestCut);
     }
   }
-  return finalSnakes;
+  return { snakes: finalSnakes, orphans };
 }
 
-// ==========================================
-// 🔎 UNIQUENESS IDENTIFIER
-// ==========================================
 function identifyUniqueSnakes(snakes, grid, pvMap) {
   let uniqueOnes = [];
   for (let snake of snakes) {
@@ -381,7 +370,6 @@ function identifyUniqueSnakes(snakes, grid, pvMap) {
   return uniqueOnes;
 }
 
-// 🌍 GLOBAL SCANNER
 function countOccurrences(grid, pvMap, targetSeq) {
   let count = 0;
   const startVal = targetSeq[0];
@@ -445,26 +433,18 @@ function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
   return found;
 }
 
-// ==========================================
-// 🎨 LOGIC: CARVING
-// ==========================================
 function applyCarving(snakes, islands, grid, targets) {
   let finalSnakes = JSON.parse(JSON.stringify(snakes));
   let simonCoords = islands.map((i) => ({ r: i.r, c: i.c }));
 
-  // We must ensure that ALL 'targets' are carved or satisfied.
-  // 'satisfiedValues' are what we ALREADY HAVE as islands.
   let satisfiedValues = new Set(simonCoords.map((p) => grid[p.r][p.c]));
   let toCarve = targets.filter((t) => !satisfiedValues.has(t));
-
-  // Sort toCarve to prioritize? No order needed if we just find ANY match.
 
   for (let val of toCarve) {
     let carved = false;
     for (let i = 0; i < finalSnakes.length; i++) {
       let s = finalSnakes[i];
 
-      // Head
       if (grid[s[0].r][s[0].c] === val) {
         if (s.length > 3) {
           simonCoords.push(s.shift());
@@ -472,7 +452,6 @@ function applyCarving(snakes, islands, grid, targets) {
           break;
         }
       }
-      // Tail
       let tailIdx = s.length - 1;
       if (grid[s[tailIdx].r][s[tailIdx].c] === val) {
         if (s.length > 3) {
@@ -482,18 +461,11 @@ function applyCarving(snakes, islands, grid, targets) {
         }
       }
     }
-    if (!carved) {
-      // If we failed to carve a "Forced Value", it's a critical error for this seed variant pairing.
-      // But wait, our pre-check said it was in possible candidates.
-      return { success: false };
-    }
+    if (!carved) return { success: false };
   }
   return { success: true, snakes: finalSnakes, simonCoords };
 }
 
-// ==========================================
-// 🛠️ HELPERS
-// ==========================================
 function getIslands(paths, pvMap) {
   let visitedCount = paths.reduce((acc, p) => acc + p.length, 0);
   let wallCount = pvMap.size;
