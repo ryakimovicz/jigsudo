@@ -17,7 +17,7 @@ if (!fs.existsSync(PUZZLES_DIR)) {
 }
 
 async function generateDailyPuzzle() {
-  console.log("🔍 STARTING DIAGNOSTIC MODE...");
+  console.log("🔍 STARTING DIAGNOSTIC MODE (Safe)...");
 
   let seed = process.argv[2] || "20260127";
   let seedInt = parseInt(seed, 10);
@@ -29,8 +29,8 @@ async function generateDailyPuzzle() {
     let success = false;
 
     // --- MAIN LOOP ---
-    while (!success && attemptsGlobal < 5) {
-      // Bajamos a 5 intentos para no spamear el log
+    // Subimos a 20 intentos para darle espacio al buscador
+    while (!success && attemptsGlobal < 20) {
       attemptsGlobal++;
       const currentSeed = baseSeed * 1000 + attemptsGlobal;
 
@@ -43,7 +43,7 @@ async function generateDailyPuzzle() {
         0: { board: JSON.parse(JSON.stringify(gameData.solution)) },
       };
 
-      // SOLO PROBAMOS VARIANTE 0 PARA AISLAR EL ERROR
+      // SOLO PROBAMOS VARIANTE 0 PARA DIAGNÓSTICO
       let key = "0";
       console.log(`   [Topology] Analyzing Variant 0...`);
 
@@ -56,7 +56,6 @@ async function generateDailyPuzzle() {
 
       console.log(`   [Fill] Generating Full Cover...`);
 
-      // Llamada con LOGS ACTIVADOS
       const fillResult = generateFullCoverDebug(
         variations[key].board,
         variations[key].peaksValleys,
@@ -65,15 +64,21 @@ async function generateDailyPuzzle() {
       );
 
       if (!fillResult.success) {
-        console.log(`❌ Fill Failed.`);
+        console.log(`❌ Fill Failed. Retrying with new seed...`);
         continue;
       }
 
-      console.log(`✅ Fill SUCCESS!`);
-      success = true; // Si llegamos acá, funciona
+      console.log(`✅ Fill SUCCESS! (This seed works)`);
+      success = true;
+    }
+
+    if (!success) {
+      console.error("❌ Failed to find a valid seed after 20 attempts.");
+      process.exit(1);
     }
   } catch (error) {
     console.error("❌ Fatal Error:", error);
+    process.exit(1);
   }
 }
 
@@ -81,8 +86,15 @@ async function generateDailyPuzzle() {
 function generateFullCoverDebug(grid, pvMap, reserved, seed) {
   const result = generateSearchSequences(grid, seed, 1000, reserved);
 
-  if (!result) {
-    console.log(`      ⚠️ generateSearchSequences returned NULL.`);
+  // FIX: Validar que el resultado sea correcto antes de usarlo
+  if (
+    !result ||
+    !Array.isArray(result.sequences) ||
+    typeof result.holes !== "number"
+  ) {
+    console.log(
+      `      ⚠️ Generator returned invalid result (Timeout). Skipping this seed.`,
+    );
     return { success: false };
   }
 
@@ -121,7 +133,8 @@ function absorbOrphansDebug(sequences, grid, reservedArr, topographyMap) {
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         const key = `${r},${c}`;
-        const isUsed = sequences.some((seq) =>
+        // Seguridad adicional: chequear que sequences exista (aunque ya lo validamos arriba)
+        const isUsed = sequences?.some((seq) =>
           seq.some((s) => s.r === r && s.c === c),
         );
         const isWall = topographyMap.has(key);
@@ -134,8 +147,6 @@ function absorbOrphansDebug(sequences, grid, reservedArr, topographyMap) {
       console.log(`         ✨ Iteration ${iterations}: No orphans left!`);
       return true;
     }
-
-    // console.log(`         Iteration ${iterations}: Found ${orphans.length} orphans.`);
 
     // Try Merge
     let mergedCount = 0;
@@ -177,13 +188,12 @@ function absorbOrphansDebug(sequences, grid, reservedArr, topographyMap) {
       }
     }
 
-    // Si no hubo cambios en esta pasada, imprimimos por qué
+    // Log de estancamiento
     if (!changed) {
       console.log(
         `         💀 Stuck at Iteration ${iterations}. ${rem.length} orphans remaining.`,
       );
       rem.forEach((o) => {
-        // Analizar vecinos para ver por qué está atascado
         let neighbors = [];
         [
           [0, 1],
