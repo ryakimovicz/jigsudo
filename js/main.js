@@ -44,6 +44,7 @@ if (document.readyState === "loading") {
 console.log("Main Loaded. Daily Seed:", gameManager.currentSeed);
 
 // Display Version
+// Display Version
 function displayVersion() {
   const footerP = document.querySelector(".main-footer p");
   if (footerP) {

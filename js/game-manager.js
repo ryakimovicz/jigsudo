@@ -261,6 +261,16 @@ export class GameManager {
   save() {
     this.state.meta.lastPlayed = new Date().toISOString();
     localStorage.setItem(this.storageKey, JSON.stringify(this.state));
+
+    // Log info if debug enabled (as requested by user "mejor en la consola")
+    if (CONFIG.debugMode) {
+      const ver = this.state.meta.version || "unknown";
+      const seed = this.state.meta.seed;
+      console.log(
+        `%c🧩 Jigsaw Sudoku Loaded | Ver: ${ver} | Seed: ${seed}`,
+        "color: #00bcd4; font-weight: bold;",
+      );
+    }
   }
 
   getState() {
