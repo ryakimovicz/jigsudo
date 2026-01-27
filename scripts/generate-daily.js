@@ -55,49 +55,29 @@ async function generateDailyPuzzle() {
     let attempts = 0;
     const MAX_SUDOKU_RETRIES = 200;
 
-    // --- STEP 1: GENERATE SUDOKU BASE ---
-    while (true) {
-      if (attempts > 0) seedInt = baseSeed * 1000 + attempts;
-      else seedInt = baseSeed;
-
-      gameData = generateDailyGame(seedInt);
-
-      // Check for visual uniqueness (optional but good)
-      const blocks = [];
-      for (let r = 0; r < 9; r += 3) {
-        for (let c = 0; c < 9; c += 3) {
-          const block = [];
-          for (let i = 0; i < 3; i++)
-            block.push(gameData.solution[r + i].slice(c, c + 3));
-          blocks.push(JSON.stringify(block));
-        }
-      }
-
-      if (new Set(blocks).size === 9) {
-        if (attempts > 0)
-          console.log(
-            `\n     ✅ Unique Sudoku found after ${attempts} retries.`,
-          );
-        break;
-      }
-      attempts++;
-      if (attempts > MAX_SUDOKU_RETRIES)
-        throw new Error("Max Sudoku retries reached.");
-    }
-
-    // --- STEP 2: MULTIVERSE GENERATION (SUBTRACTIVE) ---
+    // --- STEP 1: MULTIVERSE GENERATION (Fresh Sudoku Every Attempt) ---
+    // We combine Sudoku Gen + Snake Gen into one loop to avoid "Bad Topology" lock-in.
 
     let globalAttempts = 0;
     let success = false;
     let finalSearchTargets = {};
     let finalSimonValues = [];
+    // gameData is already declared above
 
-    // Main Loop: Try different Topologies until one works
+    // Main Loop: Try different Sudokus AND Topologies until one works
     while (!success && globalAttempts < 50) {
       globalAttempts++;
       process.stdout.write(`   > Attempt ${globalAttempts}: `);
 
-      // A. Setup Variations
+      // A. Generate NEW Sudoku for this attempt (avoid stuck topology)
+      // Use a derived seed so it's deterministic but different per attempt
+      const attemptSeed = seedInt + globalAttempts * 1000;
+      gameData = generateDailyGame(attemptSeed);
+
+      // (We skip the "Unique Blocks" check here for speed.
+      // Reliability of finding a solvable board is higher priority than visual uniqueness for now).
+
+      // B. Setup Variations
       let variations = {
         0: { board: JSON.parse(JSON.stringify(gameData.solution)) },
         LR: { board: swapStacks(gameData.solution) },
@@ -105,7 +85,7 @@ async function generateDailyPuzzle() {
         HV: { board: swapBands(swapStacks(gameData.solution)) },
       };
 
-      // B. Generate Topology (Walls) & FULL FILL Snakes
+      // C. Generate Topology (Walls) & FULL FILL Snakes
       let allVariationsFilled = true;
 
       for (let key in variations) {
@@ -118,7 +98,7 @@ async function generateDailyPuzzle() {
         const fillResult = generateFullCover(
           variations[key].board,
           variations[key].peaksValleys,
-          seedInt + globalAttempts * 100,
+          attemptSeed + 123, // Use same seed derivation for consistency
         );
 
         if (!fillResult.success) {
@@ -129,7 +109,7 @@ async function generateDailyPuzzle() {
         variations[key].fullSnakes = fillResult.sequences;
       }
 
-      if (!allVariationsFilled) continue; // Try next global attempt
+      if (!allVariationsFilled) continue; // Try next global attempt (New Sudoku)
 
       // C. THE CARVER: Pick 3 numbers and try to remove them from ALL variations
       // We try 50 different combinations of 3 numbers for this board configuration
@@ -213,10 +193,10 @@ async function generateDailyPuzzle() {
 // --- HELPER 1: FULL COVER GENERATOR ---
 function generateFullCover(grid, pvMap, seed) {
   // Generate with NO reserved cells. We want to cover everything.
-  // Allow up to 40 holes initially because we have a strong cleaner.
-  const result = generateSearchSequences(grid, seed, 800, []);
+  // Allow up to 50 holes initially because we have a strong cleaner.
+  const result = generateSearchSequences(grid, seed, 2000, []);
 
-  if (result && result.holes <= 40) {
+  if (result && result.holes <= 50) {
     // Aggressive cleanup: Merge orphans into neighbors
     absorbOrphans(result.sequences, grid, [], pvMap);
 
