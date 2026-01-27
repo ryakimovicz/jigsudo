@@ -261,3 +261,121 @@ export function getConflicts(board) {
 
   return conflicts;
 }
+
+/**
+ * Checks if the board has a unique block arrangement.
+ * It permutes the 8 peripheral 3x3 blocks (keeping center fixed)
+ * and verifies if any other arrangement forms a valid Sudoku.
+ * Returns true if ONLY the original arrangement is valid.
+ */
+export function checkBlockAmbiguity(board) {
+  // 1. Extract 9 blocks (3x3)
+  const blocks = [];
+  for (let b = 0; b < 9; b++) {
+    const block = [];
+    const startR = Math.floor(b / 3) * 3;
+    const startC = (b % 3) * 3;
+    for (let r = 0; r < 3; r++) {
+      const row = [];
+      for (let c = 0; c < 3; c++) {
+        row.push(board[startR + r][startC + c]);
+      }
+      block.push(row);
+    }
+    blocks.push(block);
+  }
+
+  // Indices to permute: 0, 1, 2, 3, 5, 6, 7, 8 (4 is fixed)
+  const mobileIndices = [0, 1, 2, 3, 5, 6, 7, 8];
+  let validCount = 0;
+
+  // Heap's Algorithm (Iterative)
+  const n = mobileIndices.length;
+  const p = [...mobileIndices];
+  const c = new Array(n).fill(0);
+
+  // Check initial (Identity)
+  if (isValidArrangement(blocks, p)) validCount++;
+
+  let i = 0;
+  while (i < n) {
+    if (c[i] < i) {
+      if (i % 2 === 0) {
+        [p[0], p[i]] = [p[i], p[0]];
+      } else {
+        [p[c[i]], p[i]] = [p[i], p[c[i]]];
+      }
+
+      // Check new permutation
+      if (isValidArrangement(blocks, p)) {
+        validCount++;
+        if (validCount > 1) return false; // Found more than 1 valid -> Ambiguous
+      }
+
+      c[i] += 1;
+      i = 0;
+    } else {
+      c[i] = 0;
+      i += 1;
+    }
+  }
+
+  return validCount === 1;
+}
+
+function isValidArrangement(blocks, mobileIndices) {
+  // Map current slot (0..8) to Block Index
+  // 4 is fixed in the middle
+  const slotMap = [
+    mobileIndices[0],
+    mobileIndices[1],
+    mobileIndices[2],
+    mobileIndices[3],
+    4,
+    mobileIndices[4],
+    mobileIndices[5],
+    mobileIndices[6],
+    mobileIndices[7],
+  ];
+
+  // Check Rows
+  for (let r = 0; r < 9; r++) {
+    const seen = new Set();
+    const slotRow = Math.floor(r / 3);
+    const localR = r % 3;
+
+    for (let slotCol = 0; slotCol < 3; slotCol++) {
+      const slotIdx = slotRow * 3 + slotCol;
+      const blockIdx = slotMap[slotIdx];
+
+      // Optimization: access directly without loop
+      const rowVals = blocks[blockIdx][localR];
+      for (let k = 0; k < 3; k++) {
+        const val = rowVals[k];
+        if (seen.has(val)) return false;
+        seen.add(val);
+      }
+    }
+  }
+
+  // Check Cols
+  for (let c = 0; c < 9; c++) {
+    const seen = new Set();
+    const slotCol = Math.floor(c / 3);
+    const localC = c % 3;
+
+    for (let slotRow = 0; slotRow < 3; slotRow++) {
+      const slotIdx = slotRow * 3 + slotCol;
+      const blockIdx = slotMap[slotIdx];
+
+      const block = blocks[blockIdx];
+      for (let k = 0; k < 3; k++) {
+        const val = block[k][localC];
+        if (seen.has(val)) return false;
+        seen.add(val);
+      }
+    }
+  }
+
+  return true;
+}

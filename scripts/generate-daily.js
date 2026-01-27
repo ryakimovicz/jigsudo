@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 
 // Import Logic Modules directly from /js/
 // Note: We need to use relative paths from this script location
-import { generateDailyGame } from "../js/sudoku-logic.js";
+import { generateDailyGame, checkBlockAmbiguity } from "../js/sudoku-logic.js";
 import { getAllTargets } from "../js/peaks-logic.js";
 import { generateSearchSequences } from "../js/search-gen.js";
 import { getDailySeed } from "../js/utils/random.js";
@@ -27,30 +27,82 @@ async function generateDailyPuzzle() {
   let dateStr = "";
 
   if (!seed) {
-    // Generate for "Tomorrow" by default if running at 00:00?
-    // Or generate for "Today" (UTC).
-    // Standard wordle behavior: Generate for the current date index.
+    // Generate for "Tomorrow" to ensure it's ready for early timezones (Asia/Oceania)
+    // Run at 00:00 UTC Jan 26 -> Generates for Jan 27
     const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const yyyy = tomorrow.getFullYear();
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, "0");
+    const dd = String(tomorrow.getDate()).padStart(2, "0");
     dateStr = `${yyyy}-${mm}-${dd}`;
 
-    // Convert to integer seed like getDailySeed does
-    seed = getDailySeed(); // This uses local time of the machine running it
-    // Ideally we want explicit control, but for now this matches client logic.
-    console.log(`📅 Date: ${dateStr}, Seed: ${seed}`);
+    // Convert formatted date back to integer seed
+    // We cannot use getDailySeed() because that uses "Now".
+    // We must manually construct seed from the calculated tomorrow date.
+    seedInt = parseInt(`${yyyy}${mm}${dd}`, 10);
+    seed = seedInt.toString();
+
+    console.log(`📅 Target Date: ${dateStr} (Tomorrow), Seed: ${seed}`);
   } else {
     dateStr = "custom-" + seed;
     console.log(`🔧 Custom Seed: ${seed}`);
   }
 
   try {
-    const seedInt = parseInt(seed, 10);
+    // seedInt is already set above if logic is correct, but let's ensure it exists
+    if (!seedInt) seedInt = parseInt(seed, 10);
+    const baseSeed = seedInt; // Store original date seed
 
     // 2. Generate Sudoku & Jigsaw (Base)
     console.log("   > Generating Sudoku & Jigsaw Layers...");
-    const gameData = generateDailyGame(seedInt);
+
+    let gameData;
+    let attempts = 0;
+    const MAX_AMBIGUITY_RETRIES = 500;
+
+    // "El Permutador de Bloques" Loop
+    while (true) {
+      // Use suffix strategy: 20260126 -> 20260126000, 20260126001, etc.
+      // This ensures strictly unique seeds for this date without touching tomorrow's seed
+      if (attempts > 0) {
+        seedInt = baseSeed * 1000 + attempts;
+      } else {
+        // First attempt tries the clean date seed (optional, but let's stick to the pattern)
+        // or just start with * 1000.
+        // Actually, if we change the seed format, we change the resulting puzzle for EVERYONE.
+        // But since this is a new validation, it's fine.
+        // Let's keep attempt 0 as the pure date seed for backward compat if it works?
+        // No, "20260126" and "20260126000" are different numbers.
+        // Let's just use the appended version for consistency if we want.
+        // OR: keep logic: seedInt = (attempts === 0) ? baseSeed : (baseSeed * 1000 + attempts);
+        seedInt = attempts === 0 ? baseSeed : baseSeed * 1000 + attempts;
+      }
+
+      gameData = generateDailyGame(seedInt);
+
+      // Validar Permutaciones
+      if (checkBlockAmbiguity(gameData.solution)) {
+        if (attempts > 0) {
+          console.log(
+            `\n     ✅ Found unique puzzle after ${attempts} retries. Final Seed: ${seedInt}`,
+          );
+        }
+        break;
+      }
+
+      attempts++;
+
+      if (attempts % 10 === 0) process.stdout.write(".");
+
+      if (attempts > MAX_AMBIGUITY_RETRIES) {
+        throw new Error(
+          `Could not find a unique block arrangement after ${MAX_AMBIGUITY_RETRIES} attempts.`,
+        );
+      }
+    }
+    if (attempts > 0 && attempts % 10 !== 0) console.log(""); // Newline cleanup
 
     // 3. Generate Peaks & Valleys
     console.log("   > Calculating Peaks & Valleys...");

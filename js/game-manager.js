@@ -22,8 +22,10 @@ export class GameManager {
     if (savedState) {
       this.state = JSON.parse(savedState);
 
+      this.state = JSON.parse(savedState);
+
       // Ensure Search exists (Migration for old saves)
-      this.ensureSearchGenerated();
+      // this.ensureSearchGenerated(); -> REMOVED (Static only now)
 
       // Debug
       if (CONFIG.debugMode) {
@@ -41,21 +43,20 @@ export class GameManager {
         if (dailyData) {
           console.log("[GameManager] Loaded Static Puzzle!");
           this.state = this.createStateFromJSON(dailyData);
+          this.save();
         } else {
           throw new Error("No data returned");
         }
       } catch (err) {
-        console.warn(
-          "[GameManager] Static fetch failed/offline. Falling back to local generation.",
+        console.error(
+          "[GameManager] CRITICAL: Static fetch failed/offline. No fallback allowed.",
           err,
         );
-        // 3. Fallback: Generate Locally
-        this.state = this.createNewState();
-        // Trigger background generation immediately
-        this.ensureSearchGenerated();
+        this.showCriticalError(
+          "Error loading daily puzzle. Check connection & refresh.",
+        );
+        return false; // Initialize failed
       }
-
-      this.save();
     }
 
     // Beta Mode Cleanups
@@ -208,145 +209,39 @@ export class GameManager {
     this.save();
   }
 
-  ensureSearchGenerated() {
-    // Force Generation or Validation
-    let shouldRegenerate = false;
+  showCriticalError(message) {
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.background = "rgba(0,0,0,0.9)";
+    overlay.style.color = "white";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.zIndex = "9999";
+    overlay.style.fontFamily = "sans-serif";
+    overlay.style.textAlign = "center";
+    overlay.style.padding = "20px";
 
-    if (
-      !this.state.search ||
-      !this.state.search.targets ||
-      this.state.search.targets.length === 0 ||
-      this.state.search.version !== 11 // Explicit V11 Check
-    ) {
-      shouldRegenerate = true;
-      if (CONFIG.debugMode)
-        console.warn(
-          "[GameManager] Search Data Outdated/Missing. Regenerating...",
-        );
-    } else {
-      // Validate Existing Targets
-      const targets = this.state.search.targets;
-      const seenCells = new Set(); // Check for overlaps globaly
+    overlay.innerHTML = `
+        <h2 style="color: #ff5555; margin-bottom: 20px;">⚠️ Status Error detected</h2>
+        <p style="font-size: 1.2rem; margin-bottom: 30px;">${message}</p>
+        <button onclick="window.location.reload()" style="
+            background: #4a90e2; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            font-size: 1rem; 
+            border-radius: 8px; 
+            cursor: pointer;
+        ">Reload App</button>
+      `;
 
-      for (const target of targets) {
-        if (!target.path || target.path.length < 2) {
-          shouldRegenerate = true;
-          break;
-        }
-
-        // Check each cell
-        for (let i = 0; i < target.path.length; i++) {
-          const cell = target.path[i];
-          const key = `${cell.r},${cell.c}`;
-
-          // 1. Check Duplicates/Overlaps
-          if (seenCells.has(key)) {
-            console.warn(
-              `[GameManager] OVERLAP DETECTED at ${key} - Regenerating`,
-            );
-            shouldRegenerate = true;
-            break;
-          }
-          seenCells.add(key);
-
-          // 2. Check Orthogonality
-          if (i < target.path.length - 1) {
-            const next = target.path[i + 1];
-            const dist = Math.abs(cell.r - next.r) + Math.abs(cell.c - next.c);
-            if (dist !== 1) {
-              console.warn(
-                `[GameManager] DIAGONAL DETECTED at ${key}->${next.r},${next.c} - Regenerating`,
-              );
-              shouldRegenerate = true;
-              break;
-            }
-          }
-        }
-
-        // 3. AMBIGUITY CHECK (Force regenerate if stale targets are ambiguous)
-        if (!shouldRegenerate) {
-          const numbers =
-            target.numbers ||
-            target.path.map((p) => this.state.data.solution[p.r][p.c]); // Ensure numbers exist
-          // Need full solution board for check
-          const board = this.state.data.solution;
-          if (countSequenceOccurrences(board, numbers) > 1) {
-            console.warn(
-              `[GameManager] AMBIGUOUS SEQUENCE DETECTED (${numbers.join("-")}) - Regenerating`,
-            );
-            shouldRegenerate = true;
-            break;
-          }
-        }
-
-        if (shouldRegenerate) break;
-      }
-    }
-
-    if (shouldRegenerate) {
-      if (CONFIG.debugMode)
-        console.log(
-          "[GameManager] Starting Background Search Generation (Worker)...",
-        );
-
-      this.startBackgroundGeneration();
-    }
-  }
-
-  startBackgroundGeneration() {
-    if (window.Worker) {
-      const worker = new Worker("js/search-worker.js", { type: "module" });
-
-      worker.postMessage({
-        board: this.state.data.solution,
-        seed: this.currentSeed,
-        debugMode: CONFIG.debugMode,
-      });
-
-      worker.onmessage = (e) => {
-        const { status, sequences, message } = e.data;
-        if (status === "success") {
-          if (CONFIG.debugMode)
-            console.log(
-              "[GameManager] Background Generation Complete!",
-              sequences.length,
-            );
-
-          // Update State silently
-          this.state.search = {
-            targets: sequences,
-            found: [],
-            version: 14,
-          };
-          this.save();
-          worker.terminate();
-        } else {
-          console.error("[GameManager] Worker Failed:", message);
-          worker.terminate();
-        }
-      };
-
-      worker.onerror = (err) => {
-        console.error("[GameManager] Worker Error:", err);
-        worker.terminate();
-      };
-    } else {
-      // Fallback for no worker support
-      console.warn(
-        "[GameManager] Workers not supported. Running synchronously (might freeze).",
-      );
-      const sequences = generateSearchSequences(
-        this.state.data.solution,
-        this.currentSeed,
-        4000, // Short timeout for sync fallback
-      );
-      this.state.search = {
-        targets: sequences,
-        found: [],
-        version: 14,
-      };
-      this.save();
-    }
+    document.body.appendChild(overlay);
   }
 }
 
