@@ -205,8 +205,32 @@ async function generateDailyPuzzle() {
         baseReserved,
       );
 
-      if (!resultBase || resultBase.holes > 3) {
-        process.stdout.write("Base Search failed. Retry.\r");
+      let baseValid = false;
+
+      if (resultBase) {
+        // Perfect?
+        if (resultBase.holes <= 3) {
+          baseValid = true;
+        }
+        // Near-Perfect? Try to clean
+        else if (resultBase.holes <= 8) {
+          absorbOrphans(
+            resultBase.sequences,
+            variations["0"].board,
+            baseReserved,
+            variations["0"].peaksValleys,
+          );
+          const realHoles = countHoles(
+            resultBase.sequences,
+            baseReserved,
+            variations["0"].peaksValleys,
+          );
+          if (realHoles === 0) baseValid = true;
+        }
+      }
+
+      if (!baseValid) {
+        process.stdout.write("Base Search failed (after cleanup). Retry.\r");
         continue;
       }
 
