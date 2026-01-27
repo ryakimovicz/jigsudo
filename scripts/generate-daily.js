@@ -17,7 +17,7 @@ if (!fs.existsSync(PUZZLES_DIR)) {
 
 async function generateDailyPuzzle() {
   console.log(
-    "🧩 Starting Daily Puzzle Generation (Global Uniqueness Strategy)...",
+    "🧩 Starting Daily Puzzle Generation (Smart Segmentation Strategy)...",
   );
 
   let seed = process.argv[2];
@@ -88,7 +88,6 @@ async function generateDailyPuzzle() {
         const rawPaths = generateGreedyCoverage(
           variations[key].board,
           variations[key].peaksValleys,
-          currentSeed + (parseInt(key, 36) || 0),
         );
 
         // C. Verificar Islas
@@ -102,28 +101,31 @@ async function generateDailyPuzzle() {
         }
         variations[key].islands = islands;
 
-        // D. "La Motosierra Global": Cortar verificando unicidad EN EL TABLERO
-        const segmentation = segmentPathsGloballyUnique(
+        // D. "Segmentation Inteligente"
+        // Intenta cortar bloques ÚNICOS. Si falla, usa fallback ambiguo para llenar el tablero.
+        const snakes = segmentPathsSmart(
           rawPaths,
           variations[key].board,
           variations[key].peaksValleys,
         );
+        variations[key].snakes = snakes;
 
-        if (!segmentation.success) {
-          process.stdout.write(
-            `Failed to enforce global uniqueness in [${key}]. Next.\r`,
-          );
-          validTopology = false;
-          break;
-        }
-        variations[key].snakes = segmentation.snakes;
+        // E. Análisis de Unicidad Post-Corte
+        const uniqueSnakes = identifyUniqueSnakes(
+          snakes,
+          variations[key].board,
+          variations[key].peaksValleys,
+        );
+        variations[key].uniqueSnakes = uniqueSnakes;
 
-        // E. Recolectar Candidatos
+        // F. Recolectar Candidatos (Principalmente de Únicas)
         const candidates = new Set();
+
         islands.forEach((isl) =>
           candidates.add(variations[key].board[isl.r][isl.c]),
         );
-        variations[key].snakes.forEach((snake) => {
+
+        uniqueSnakes.forEach((snake) => {
           candidates.add(variations[key].board[snake[0].r][snake[0].c]);
           candidates.add(
             variations[key].board[snake[snake.length - 1].r][
@@ -131,6 +133,7 @@ async function generateDailyPuzzle() {
             ],
           );
         });
+
         variations[key].candidates = candidates;
         allCandidates.push(candidates);
       }
@@ -145,16 +148,18 @@ async function generateDailyPuzzle() {
 
       if (commonValues.length < 3) {
         process.stdout.write(
-          `Not enough common candidates (${commonValues.length}). Next.\r`,
+          `Not enough UNIQUE candidates (${commonValues.length}). Next.\r`,
         );
         continue;
       }
 
-      // 5. ÉXITO: Seleccionar 3 números y Esculpir
+      // 5. ÉXITO: Seleccionar 3 números
       const finalTargets = commonValues
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
-      console.log(`\n     💎 Match! Values: [${finalTargets.join(", ")}]`);
+      console.log(
+        `\n     💎 Match! Unique Values: [${finalTargets.join(", ")}]`,
+      );
 
       let tempSearchTargets = {};
       let carvingSuccess = true;
@@ -168,7 +173,7 @@ async function generateDailyPuzzle() {
         );
 
         if (!res.success) {
-          console.error("Critical: Failed to carve despite pre-check. Retry.");
+          console.error("Critical: Failed to carve. Retry.");
           carvingSuccess = false;
           break;
         }
@@ -192,7 +197,7 @@ async function generateDailyPuzzle() {
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "4.2-global-uniqueness", date: dateStr, seed: seedInt },
+      meta: { version: "4.4-smart-segmentation", date: dateStr, seed: seedInt },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
@@ -217,7 +222,7 @@ async function generateDailyPuzzle() {
 // ==========================================
 // 🧠 LOGIC: GREEDY PATH GENERATOR
 // ==========================================
-function generateGreedyCoverage(grid, pvMap, seed) {
+function generateGreedyCoverage(grid, pvMap) {
   let visited = Array(9)
     .fill()
     .map(() => Array(9).fill(false));
@@ -228,7 +233,6 @@ function generateGreedyCoverage(grid, pvMap, seed) {
   });
 
   let paths = [];
-  // Pseudo-random directions based on simple math to vary per call
   const getDirs = () =>
     [
       [0, 1],
@@ -277,9 +281,9 @@ function generateGreedyCoverage(grid, pvMap, seed) {
 }
 
 // ==========================================
-// 🪚 LOGIC: GLOBALLY UNIQUE SEGMENTATION
+// 🪚 LOGIC: SMART SEGMENTATION
 // ==========================================
-function segmentPathsGloballyUnique(rawPaths, grid, pvMap) {
+function segmentPathsSmart(rawPaths, grid, pvMap) {
   let finalSnakes = [];
 
   for (let path of rawPaths) {
@@ -288,66 +292,78 @@ function segmentPathsGloballyUnique(rawPaths, grid, pvMap) {
     while (remaining.length > 0) {
       const len = remaining.length;
 
-      // Caso base: Pequeño (3-6)
+      // Si es pequeño, lo tomamos directo (no hay opción de corte)
       if (len <= 6) {
-        if (len >= 3) {
-          // Validar unicidad GLOBAL
-          const seqValues = remaining.map((p) => grid[p.r][p.c]);
-          if (countOccurrences(grid, pvMap, seqValues) === 1) {
-            finalSnakes.push(remaining);
-          } else {
-            // Si falla la unicidad aquí (al final del camino), estamos en problemas.
-            // Opción: Intentar recortarlo a 4 o 5 si era de 6?
-            // Simple fallback: Fail. (La cantidad de intentos globales nos salvará)
-            return { success: false };
-          }
-        }
+        if (len >= 3) finalSnakes.push(remaining);
+        // Si < 3, se descarta (se convierte en Isla)
         break;
       }
 
-      // Búsqueda del mejor corte (Evitando duplicados GLOBALES)
+      // --- BÚSQUEDA DEL CORTE PERFECTO (Único) ---
       let bestCut = -1;
 
-      // Probamos longitudes 6, 5, 4, 3
-      // Priorizamos las largas
+      // Priorizamos cortes largos (6, 5, 4, 3)
       for (let cut = 6; cut >= 3; cut--) {
         let remSize = len - cut;
-        if (remSize > 0 && remSize < 3) continue; // Resto inválido
+        if (remSize > 0 && remSize < 3) continue; // Resto inválido (evitar dejar 1 o 2)
 
         const candidateChunk = remaining.slice(0, cut);
         const seqValues = candidateChunk.map((p) => grid[p.r][p.c]);
 
-        // CRITICAL CHECK: ¿Esta secuencia aparece más de una vez en el tablero?
+        // Check Uniqueness
         if (countOccurrences(grid, pvMap, seqValues) === 1) {
           bestCut = cut;
-          break; // Encontramos el corte más largo posible y ÚNICO
+          break; // Encontramos un corte ÚNICO. ¡Excelente!
         }
       }
 
-      if (bestCut === -1) return { success: false };
+      // --- FALLBACK (Si no hay corte único) ---
+      if (bestCut === -1) {
+        // Tomamos el corte válido más largo posible, aunque sea ambiguo.
+        // Prioridad cobertura sobre unicidad en este caso.
+        let cut = 6;
+        while (cut >= 3) {
+          if (len - cut === 0 || len - cut >= 3) break;
+          cut--;
+        }
+        if (cut < 3) cut = 3; // Ultimo recurso
+        bestCut = cut;
+      }
 
-      const chunk = remaining.slice(0, bestCut);
-      finalSnakes.push(chunk);
+      finalSnakes.push(remaining.slice(0, bestCut));
       remaining = remaining.slice(bestCut);
     }
   }
-  return { success: true, snakes: finalSnakes };
+  return finalSnakes;
+}
+
+// ==========================================
+// 🔎 UNIQUENESS IDENTIFIER
+// ==========================================
+function identifyUniqueSnakes(snakes, grid, pvMap) {
+  let uniqueOnes = [];
+
+  for (let snake of snakes) {
+    const seqValues = snake.map((p) => grid[p.r][p.c]);
+    const occurrences = countOccurrences(grid, pvMap, seqValues);
+    if (occurrences === 1) {
+      uniqueOnes.push(snake);
+    }
+  }
+  return uniqueOnes;
 }
 
 // 🌍 GLOBAL SCANNER
-// Cuenta cuántas veces aparece una secuencia de valores en el tablero (DFS)
 function countOccurrences(grid, pvMap, targetSeq) {
   let count = 0;
   const startVal = targetSeq[0];
+  const targetStr = targetSeq.join(","); // Optimization for debug checking? No not really needed
 
-  // 1. Encontrar todos los puntos de partida posibles
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
-      // Ignorar paredes (Picos/Valles)
       if (pvMap.has(`${r},${c}`)) continue;
 
       if (grid[r][c] === startVal) {
-        // Iniciar búsqueda desde aquí
         count += searchPath(
           grid,
           pvMap,
@@ -357,7 +373,7 @@ function countOccurrences(grid, pvMap, targetSeq) {
           1,
           new Set([`${r},${c}`]),
         );
-        if (count > 1) return count; // Fail fast: si ya encontramos 2, no importa si hay 10
+        if (count > 1) return count;
       }
     }
   }
@@ -365,7 +381,7 @@ function countOccurrences(grid, pvMap, targetSeq) {
 }
 
 function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
-  if (index >= targetSeq.length) return 1; // Encontramos una instancia completa
+  if (index >= targetSeq.length) return 1;
 
   let found = 0;
   const nextVal = targetSeq[index];
@@ -390,7 +406,6 @@ function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
       !visited.has(key) &&
       grid[nr][nc] === nextVal
     ) {
-      // Clonar visited para el nuevo camino (DFS puro)
       const newVisited = new Set(visited);
       newVisited.add(key);
       found += searchPath(
@@ -402,7 +417,7 @@ function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
         index + 1,
         newVisited,
       );
-      if (found > 1) return found; // Optimización
+      if (found > 1) return found;
     }
   }
   return found;
