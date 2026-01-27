@@ -733,7 +733,6 @@ export function provideHint() {
   if (slots.length !== 9) return;
 
   // Use Dynamic Solution (Symmetric)
-  console.log("[DEBUG v0.6.6] provideHint: Checking getTargetSolution()...");
   const solution = gameManager.getTargetSolution();
 
   // Find the first block that is not fully correct
