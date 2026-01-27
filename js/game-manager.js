@@ -79,7 +79,7 @@ export class GameManager {
     const month = Math.floor((seed % 10000) / 100);
     const day = seed % 100;
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const url = `puzzles/daily-${dateStr}.json`;
+    const url = `public/puzzles/daily-${dateStr}.json`;
 
     try {
       const response = await fetch(url);
