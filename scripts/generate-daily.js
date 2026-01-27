@@ -17,7 +17,7 @@ if (!fs.existsSync(PUZZLES_DIR)) {
 
 async function generateDailyPuzzle() {
   console.log(
-    "🧩 Starting Daily Puzzle Generation (Smart Segmentation Strategy)...",
+    "🧩 Starting Daily Puzzle Generation (Strict Island Handling)...",
   );
 
   let seed = process.argv[2];
@@ -58,7 +58,7 @@ async function generateDailyPuzzle() {
     let finalSimonValues = [];
 
     // --- BUCLE PRINCIPAL ---
-    while (!success && attemptsGlobal < 100) {
+    while (!success && attemptsGlobal < 200) {
       attemptsGlobal++;
       const currentSeed = baseSeed * 1000 + attemptsGlobal;
 
@@ -77,10 +77,11 @@ async function generateDailyPuzzle() {
 
       let validTopology = true;
       let allCandidates = [];
+      let globalForcedValues = new Set(); // Union of all islands across all vars
 
       // 3. Procesar cada variante
       for (let key in variations) {
-        // A. Mapa de Paredes
+        // A. Topology
         const { targetMap } = getAllTargets(variations[key].board);
         variations[key].peaksValleys = targetMap;
 
@@ -90,8 +91,9 @@ async function generateDailyPuzzle() {
           variations[key].peaksValleys,
         );
 
-        // C. Verificar Islas
+        // C. Verificar Islas (Forced Holes)
         const islands = getIslands(rawPaths, variations[key].peaksValleys);
+        // Si hay muchas islas en UNA variante, ya es malo.
         if (islands.length > 3) {
           process.stdout.write(
             `Too many islands in [${key}] (${islands.length}). Next.\r`,
@@ -101,8 +103,12 @@ async function generateDailyPuzzle() {
         }
         variations[key].islands = islands;
 
-        // D. "Segmentation Inteligente"
-        // Intenta cortar bloques ÚNICOS. Si falla, usa fallback ambiguo para llenar el tablero.
+        // Track Forced Values
+        islands.forEach((isl) =>
+          globalForcedValues.add(variations[key].board[isl.r][isl.c]),
+        );
+
+        // D. Smart Segmentation
         const snakes = segmentPathsSmart(
           rawPaths,
           variations[key].board,
@@ -110,7 +116,7 @@ async function generateDailyPuzzle() {
         );
         variations[key].snakes = snakes;
 
-        // E. Análisis de Unicidad Post-Corte
+        // E. Unique Analysis
         const uniqueSnakes = identifyUniqueSnakes(
           snakes,
           variations[key].board,
@@ -118,13 +124,11 @@ async function generateDailyPuzzle() {
         );
         variations[key].uniqueSnakes = uniqueSnakes;
 
-        // F. Recolectar Candidatos (Principalmente de Únicas)
+        // F. Candidates (Unique Snake Ends + Islands)
         const candidates = new Set();
-
         islands.forEach((isl) =>
           candidates.add(variations[key].board[isl.r][isl.c]),
         );
-
         uniqueSnakes.forEach((snake) => {
           candidates.add(variations[key].board[snake[0].r][snake[0].c]);
           candidates.add(
@@ -140,25 +144,65 @@ async function generateDailyPuzzle() {
 
       if (!validTopology) continue;
 
+      // --- CRITICAL CHECK: FORCED VALUES ---
+      // 1. We cannot have more than 3 distinct forced values across all variations.
+      if (globalForcedValues.size > 3) {
+        process.stdout.write(
+          `Too many disparate islands (Union=${globalForcedValues.size}). Next.\r`,
+        );
+        continue;
+      }
+
+      // 2. All forced values MUST be available candidates in ALL variations.
+      // (i.e. if '5' is an island in Var0, '5' must be carve-able in VarLR)
+      let forcedCompatible = true;
+      for (let forced of globalForcedValues) {
+        for (let candidates of allCandidates) {
+          if (!candidates.has(forced)) {
+            forcedCompatible = false;
+            break;
+          }
+        }
+        if (!forcedCompatible) break;
+      }
+      if (!forcedCompatible) {
+        process.stdout.write(
+          `Forced island value incompatible with other variants. Next.\r`,
+        );
+        continue;
+      }
+
       // 4. Buscar Intersección
       let commonValues = [...allCandidates[0]];
       for (let i = 1; i < allCandidates.length; i++) {
         commonValues = commonValues.filter((val) => allCandidates[i].has(val));
       }
 
-      if (commonValues.length < 3) {
-        process.stdout.write(
-          `Not enough UNIQUE candidates (${commonValues.length}). Next.\r`,
-        );
+      // Remove Forced from Common (to avoid double picking if we rely on random fill)
+      // Actually, let's build the final target set directly.
+      let targets = Array.from(globalForcedValues);
+
+      // Determine how many more we need
+      let slotsNeeded = 3 - targets.length;
+
+      // Filter potential fillers: Common Values that are NOT in targets already
+      let potentialFillers = commonValues.filter(
+        (v) => !globalForcedValues.has(v),
+      );
+
+      if (potentialFillers.length < slotsNeeded) {
+        process.stdout.write(`Not enough fillers to reach 3 targets. Next.\r`);
         continue;
       }
 
-      // 5. ÉXITO: Seleccionar 3 números
-      const finalTargets = commonValues
+      // 5. ÉXITO: Seleccionar fillers
+      let fillers = potentialFillers
         .sort(() => 0.5 - Math.random())
-        .slice(0, 3);
+        .slice(0, slotsNeeded);
+      let finalTargets = [...targets, ...fillers];
+
       console.log(
-        `\n     💎 Match! Unique Values: [${finalTargets.join(", ")}]`,
+        `\n     💎 Match! Targets: [${finalTargets.join(", ")}] (Forced: [${targets.join(", ")}])`,
       );
 
       let tempSearchTargets = {};
@@ -193,11 +237,11 @@ async function generateDailyPuzzle() {
     }
 
     if (!success)
-      throw new Error("Could not generate valid puzzle after 100 attempts.");
+      throw new Error("Could not generate valid puzzle after 200 attempts.");
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "4.4-smart-segmentation", date: dateStr, seed: seedInt },
+      meta: { version: "4.5-strict-islands", date: dateStr, seed: seedInt },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
@@ -288,48 +332,34 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
 
   for (let path of rawPaths) {
     let remaining = [...path];
-
     while (remaining.length > 0) {
       const len = remaining.length;
-
-      // Si es pequeño, lo tomamos directo (no hay opción de corte)
       if (len <= 6) {
         if (len >= 3) finalSnakes.push(remaining);
-        // Si < 3, se descarta (se convierte en Isla)
         break;
       }
-
-      // --- BÚSQUEDA DEL CORTE PERFECTO (Único) ---
+      // Smart uniqueness check logic
       let bestCut = -1;
-
-      // Priorizamos cortes largos (6, 5, 4, 3)
       for (let cut = 6; cut >= 3; cut--) {
         let remSize = len - cut;
-        if (remSize > 0 && remSize < 3) continue; // Resto inválido (evitar dejar 1 o 2)
-
+        if (remSize > 0 && remSize < 3) continue;
         const candidateChunk = remaining.slice(0, cut);
         const seqValues = candidateChunk.map((p) => grid[p.r][p.c]);
-
-        // Check Uniqueness
         if (countOccurrences(grid, pvMap, seqValues) === 1) {
           bestCut = cut;
-          break; // Encontramos un corte ÚNICO. ¡Excelente!
+          break;
         }
       }
-
-      // --- FALLBACK (Si no hay corte único) ---
+      // Fallback
       if (bestCut === -1) {
-        // Tomamos el corte válido más largo posible, aunque sea ambiguo.
-        // Prioridad cobertura sobre unicidad en este caso.
         let cut = 6;
         while (cut >= 3) {
           if (len - cut === 0 || len - cut >= 3) break;
           cut--;
         }
-        if (cut < 3) cut = 3; // Ultimo recurso
+        if (cut < 3) cut = 3;
         bestCut = cut;
       }
-
       finalSnakes.push(remaining.slice(0, bestCut));
       remaining = remaining.slice(bestCut);
     }
@@ -342,11 +372,9 @@ function segmentPathsSmart(rawPaths, grid, pvMap) {
 // ==========================================
 function identifyUniqueSnakes(snakes, grid, pvMap) {
   let uniqueOnes = [];
-
   for (let snake of snakes) {
     const seqValues = snake.map((p) => grid[p.r][p.c]);
-    const occurrences = countOccurrences(grid, pvMap, seqValues);
-    if (occurrences === 1) {
+    if (countOccurrences(grid, pvMap, seqValues) === 1) {
       uniqueOnes.push(snake);
     }
   }
@@ -357,12 +385,9 @@ function identifyUniqueSnakes(snakes, grid, pvMap) {
 function countOccurrences(grid, pvMap, targetSeq) {
   let count = 0;
   const startVal = targetSeq[0];
-  const targetStr = targetSeq.join(","); // Optimization for debug checking? No not really needed
-
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       if (pvMap.has(`${r},${c}`)) continue;
-
       if (grid[r][c] === startVal) {
         count += searchPath(
           grid,
@@ -382,7 +407,6 @@ function countOccurrences(grid, pvMap, targetSeq) {
 
 function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
   if (index >= targetSeq.length) return 1;
-
   let found = 0;
   const nextVal = targetSeq[index];
   const dirs = [
@@ -391,12 +415,10 @@ function searchPath(grid, pvMap, r, c, targetSeq, index, visited) {
     [1, 0],
     [-1, 0],
   ];
-
   for (let d of dirs) {
     const nr = r + d[0];
     const nc = c + d[1];
     const key = `${nr},${nc}`;
-
     if (
       nr >= 0 &&
       nr < 9 &&
@@ -430,8 +452,12 @@ function applyCarving(snakes, islands, grid, targets) {
   let finalSnakes = JSON.parse(JSON.stringify(snakes));
   let simonCoords = islands.map((i) => ({ r: i.r, c: i.c }));
 
+  // We must ensure that ALL 'targets' are carved or satisfied.
+  // 'satisfiedValues' are what we ALREADY HAVE as islands.
   let satisfiedValues = new Set(simonCoords.map((p) => grid[p.r][p.c]));
   let toCarve = targets.filter((t) => !satisfiedValues.has(t));
+
+  // Sort toCarve to prioritize? No order needed if we just find ANY match.
 
   for (let val of toCarve) {
     let carved = false;
@@ -456,7 +482,11 @@ function applyCarving(snakes, islands, grid, targets) {
         }
       }
     }
-    if (!carved) return { success: false };
+    if (!carved) {
+      // If we failed to carve a "Forced Value", it's a critical error for this seed variant pairing.
+      // But wait, our pre-check said it was in possible candidates.
+      return { success: false };
+    }
   }
   return { success: true, snakes: finalSnakes, simonCoords };
 }
