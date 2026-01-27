@@ -175,11 +175,6 @@ function endSelection(e) {
   isSelecting = false;
 
   validateSequence();
-
-  // Clear Visuals
-  currentCells.forEach((c) => c.classList.remove("search-selected"));
-  currentPath = [];
-  currentCells = [];
 }
 
 function getTargetCell(e) {
@@ -201,6 +196,7 @@ function isValidMove(cell) {
   if (currentCells.includes(cell)) return false; // Already in path
 
   const lastCell = currentCells[currentCells.length - 1];
+  if (!lastCell) return false; // Safety check for race conditions
   const lastSlot = lastCell.closest(".sudoku-chunk-slot");
   const thisSlot = cell.closest(".sudoku-chunk-slot");
 
@@ -271,6 +267,32 @@ function validateSequence() {
   if (match) {
     // VICTORY for this sequence
     handleFoundSequence(match);
+    // Clear selection immediately after success
+    currentCells.forEach((c) => c.classList.remove("search-selected"));
+    currentPath = [];
+    currentCells = [];
+  } else {
+    // FAILURE for this sequence
+    // Visual Feedback: Shake + Red
+
+    // Capture the cells to clear in a local variable to avoid race conditions
+    const errorCells = [...currentCells];
+
+    errorCells.forEach((c) => {
+      c.classList.remove("search-selected");
+      c.classList.add("search-error");
+    });
+
+    // Clear globals immediately so new selection can start fresh if user is fast
+    currentPath = [];
+    currentCells = [];
+
+    // Wait for animation to finish before clearing classes
+    setTimeout(() => {
+      errorCells.forEach((c) => {
+        c.classList.remove("search-error");
+      });
+    }, 500);
   }
 }
 
