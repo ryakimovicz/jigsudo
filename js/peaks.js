@@ -106,7 +106,9 @@ export function transitionToPeaks() {
 
 function prepareGameLogic() {
   const state = gameManager.getState();
-  solvedBoard = state.data.solution;
+
+  // FIXED: Use symmetric solution (TB, LR, etc.) instead of raw solution
+  solvedBoard = gameManager.getTargetSolution();
   targetMap = new Map();
 
   // Find all Peaks and Valleys
