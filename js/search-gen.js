@@ -405,14 +405,10 @@ function backtrackSequences(
   // 2. Sort by Degree (Ascending) + Randomness for ties
   // Shuffle first to randomize ties
   shuffleArray(styledStarts, rng);
-  // Then stable sort by degree
   styledStarts.sort((a, b) => a.degree - b.degree);
 
-  // EPSILON-GREEDY:
-  // If randomness is enabled (retry attempts), sometimes shuffle the "best" candidates
-  // to break local optima.
+  // Probability: 30% chance to shuffle top 5
   if (enableRandomness && rng.nextFloat() < 0.3) {
-    // 30% chance to shuffle the top 5 candidates
     const topN = Math.min(styledStarts.length, 5);
     for (let i = topN - 1; i > 0; i--) {
       const j = rng.range(0, i);
@@ -420,34 +416,25 @@ function backtrackSequences(
     }
   }
 
-  // Take top N candidates? No, try them in order.
-
   for (const startObj of styledStarts) {
     const start = { r: startObj.r, c: startObj.c };
 
-    // Try lengths 6 down to 3 (Longer sequences first = better fill?)
-    // Actually, mixing lengths is good, but long first fills faster.
-    const lengths = [6, 5, 4, 3];
-    shuffleArray(lengths, rng); // Keep randomness in lengths
+    // User Request: Sequences of 3 to 5 preferred.
+    // Order: [5, 4, 3] (Randomized)
+    const lengths = [5, 4, 3];
+    shuffleArray(lengths, rng);
 
     for (const len of lengths) {
-      // Don't exceed target
       if (currentUsedCount + len > targetUsedCount) continue;
 
-      // Try to find a path of 'len' starting at 'start'
       const paths = findPaths(board, start, len, usedMap, peaksValleys);
       shuffleArray(paths, rng);
 
       for (const path of paths) {
-        // Place Path
         path.forEach((cell) => usedMap.add(`${cell.r},${cell.c}`));
-
-        // Extract Numbers
         const numbers = path.map((p) => board[p.r][p.c]);
 
-        // AMBIGUITY CHECK: Ensure this number sequence appears ONLY ONCE on the entire board
         if (countSequenceOccurrences(board, numbers, numberLocs) > 1) {
-          // Reject ambiguous sequence
           path.forEach((cell) => usedMap.delete(`${cell.r},${cell.c}`));
           continue;
         }
@@ -455,7 +442,6 @@ function backtrackSequences(
         const seqObj = { path, numbers, id: sequences.length };
         sequences.push(seqObj);
 
-        // Recursive Step
         if (
           backtrackSequences(
             board,
@@ -473,10 +459,8 @@ function backtrackSequences(
           return true;
         }
 
-        // If child returned TRUE due to timeout, propagate it without popping
         if (perfStats.timeout) return true;
 
-        // Undo (Backtrack)
         sequences.pop();
         path.forEach((cell) => usedMap.delete(`${cell.r},${cell.c}`));
       }
@@ -484,6 +468,88 @@ function backtrackSequences(
   }
 
   return false;
+}
+
+// New Aggressive Orphan Attachment Logic
+function runPanicFill(
+  bestSeqs,
+  board,
+  totalAvailable,
+  peaksValleys,
+  rows,
+  cols,
+) {
+  // 1. Reconstruct Used Map
+  const usedMap = new Set();
+  bestSeqs.forEach((s) => s.path.forEach((p) => usedMap.add(`${p.r},${p.c}`)));
+
+  let changed = true;
+  let passes = 0;
+  while (changed && passes < 50) {
+    changed = false;
+    passes++;
+
+    // Find Orphans (Empty cells)
+    const orphans = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const key = `${r},${c}`;
+        if (!usedMap.has(key) && !peaksValleys.has(key)) {
+          orphans.push({ r, c, key });
+        }
+      }
+    }
+
+    // Try to attach orphans to neighbors
+    for (const orphan of orphans) {
+      // Check neighbors
+      const neighbors = getOrthogonalNeighbors(orphan.r, orphan.c);
+      let merged = false;
+
+      for (const n of neighbors) {
+        const nKey = `${n.r},${n.c}`;
+        // Find which sequence owns this neighbor
+        const ownerSeq = bestSeqs.find((s) =>
+          s.path.some((p) => p.r === n.r && p.c === n.c),
+        );
+
+        if (ownerSeq && ownerSeq.path.length < 6) {
+          // Try to Append or Prepend
+          // Check if neighbor is start or end
+          const p = ownerSeq.path;
+          const head = p[0];
+          const tail = p[p.length - 1];
+
+          let newPath = null;
+
+          if (head.r === n.r && head.c === n.c) {
+            // Prepend
+            newPath = [orphan, ...p];
+          } else if (tail.r === n.r && tail.c === n.c) {
+            // Append
+            newPath = [...p, orphan];
+          }
+
+          if (newPath) {
+            // Validate Uniqueness
+            const numbers = newPath.map((c) => board[c.r][c.c]);
+            const locs = precomputeNumberLocations(board); // Ideally cache this
+            if (countSequenceOccurrences(board, numbers, locs) === 1) {
+              // Apply Merge
+              ownerSeq.path = newPath;
+              ownerSeq.numbers = numbers;
+              usedMap.add(orphan.key);
+              merged = true;
+              changed = true;
+              break;
+            }
+          }
+        }
+      }
+      if (merged) break; // Restart loop to handle cascading updates?
+    }
+  }
+  return bestSeqs;
 }
 
 // Check if remaining holes are valid
