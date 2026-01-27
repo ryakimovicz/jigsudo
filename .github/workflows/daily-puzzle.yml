@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 0 * * *" # Every day at 00:00 UTC
   workflow_dispatch: # Allow manual trigger
+    inputs:
+      seed:
+        description: "Seed/Date to generate (e.g., 20260126)"
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -19,7 +24,7 @@ jobs:
           node-version: 18
 
       - name: Run Generator
-        run: node scripts/generate-daily.js
+        run: node scripts/generate-daily.js ${{ github.event.inputs.seed }}
 
       - name: Commit and Push
         run: |
