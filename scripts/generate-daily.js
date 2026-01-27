@@ -231,7 +231,7 @@ async function generateDailyPuzzle() {
           const result = generateSearchSequences(
             varData.board,
             seedInt + seedVariance,
-            60000,
+            5000, // Fail fast (5s) to iterate more seeds
             varData.simonCoords,
           );
 
