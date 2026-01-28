@@ -62,6 +62,13 @@ async function generateDailyPuzzle() {
       attemptsGlobal++;
       const currentSeed = baseSeed * 1000 + attemptsGlobal;
 
+      // Simple Seeded RNG (Linear Congruential Generator)
+      let localSeed = currentSeed;
+      const nextRnd = () => {
+        localSeed = (localSeed * 9301 + 49297) % 233280;
+        return localSeed / 233280;
+      };
+
       // 1. Generar Sudoku
       let gameData = generateDailyGame(currentSeed);
 
@@ -195,14 +202,6 @@ async function generateDailyPuzzle() {
       }
 
       let fillers = [...potentialFillers];
-
-      // Simple Seeded RNG (Linear Congruential Generator)
-      // to avoid dependency issues with Prando in Node script
-      let localSeed = currentSeed;
-      const nextRnd = () => {
-        localSeed = (localSeed * 9301 + 49297) % 233280;
-        return localSeed / 233280;
-      };
 
       // Deterministic Shuffle
       for (let i = fillers.length - 1; i > 0; i--) {
