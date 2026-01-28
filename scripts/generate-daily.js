@@ -156,6 +156,19 @@ async function generateDailyPuzzle() {
           break;
         }
 
+        // REGLA: Valores de islas únicos (no duplicados)
+        const islandValSet = new Set(
+          finalIslands.map((i) => variations[key].board[i.r][i.c]),
+        );
+        if (islandValSet.size < finalIslands.length) {
+          if (attemptsGlobal % 10 === 1)
+            process.stdout.write(
+              `Duplicate Island Values in [${key}]. Next.\r`,
+            );
+          validTopology = false;
+          break;
+        }
+
         // --- CHEQUEO DE ADYACENCIA ---
         if (hasAdjacency(finalIslands)) {
           if (attemptsGlobal % 10 === 1)
@@ -253,6 +266,15 @@ async function generateDailyPuzzle() {
         }
 
         if (hasAdjacency(res.simonCoords)) {
+          carvingSuccess = false;
+          break;
+        }
+
+        if (res.simonCoords.length !== 3) {
+          if (attemptsGlobal % 10 === 1)
+            process.stdout.write(
+              `Carve result bad length (${res.simonCoords.length}) in [${key}].\r`,
+            );
           carvingSuccess = false;
           break;
         }
