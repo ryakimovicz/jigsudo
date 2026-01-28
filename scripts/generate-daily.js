@@ -73,7 +73,12 @@ async function generateDailyPuzzle() {
       };
 
       // 1. Generar Sudoku
-      let gameData = generateDailyGame(currentSeed);
+      // Calcular día de la semana para la dificultad (0=Domingo, 6=Sábado)
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const targetDate = new Date(y, m - 1, d);
+      const dayIndex = targetDate.getDay();
+
+      let gameData = generateDailyGame(currentSeed, dayIndex);
 
       if (attemptsGlobal % 10 === 1)
         process.stdout.write(`   > Attempt ${attemptsGlobal}: `);

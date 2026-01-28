@@ -193,11 +193,15 @@ function getChunks(board) {
   return chunks;
 }
 
-export function generateDailyGame(seed) {
+export function generateDailyGame(seed, dayIndex = null) {
   const prng = createGenerator(seed);
 
   // Progressive Difficulty Calculation
-  const dayIndex = new Date().getDay(); // 0 (Sun) - 6 (Sat)
+  // If no dayIndex provided, fallback to current day (legacy)
+  if (dayIndex === null) {
+    dayIndex = new Date().getDay(); // 0 (Sun) - 6 (Sat)
+  }
+
   const baseHoles = 40;
   const holesToRemove = baseHoles + dayIndex;
   // Result: Sun=40, Mon=41 ... Sat=46
