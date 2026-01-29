@@ -206,8 +206,22 @@ export function generateDailyGame(seed, dayIndex = null) {
   const holesToRemove = baseHoles + dayIndex;
   // Result: Sun=40, Mon=41 ... Sat=46
 
-  const solution = generateFullBoard(prng);
-  const puzzle = createPuzzle(solution, prng, holesToRemove);
+  let solution, puzzle;
+  let attempts = 0;
+
+  // Retry loop to ensure Jigsaw Uniqueness (max 4 symmetries)
+  while (attempts < 50) {
+    solution = generateFullBoard(prng);
+    puzzle = createPuzzle(solution, prng, holesToRemove);
+
+    if (checkBlockAmbiguity(puzzle)) {
+      break;
+    }
+    attempts++;
+    if (attempts === 49)
+      console.warn("Could not satisfy Jigsaw Uniqueness after 50 attempts.");
+  }
+
   const chunks = getChunks(puzzle);
 
   return {
@@ -313,7 +327,8 @@ export function checkBlockAmbiguity(board) {
       // Check new permutation
       if (isValidArrangement(blocks, p)) {
         validCount++;
-        if (validCount > 1) return false; // Found more than 1 valid -> Ambiguous
+        // Allow up to 4 valid variations (Original, Swap Rows, Swap Cols, Swap Both)
+        if (validCount > 4) return false;
       }
 
       c[i] += 1;
@@ -324,7 +339,7 @@ export function checkBlockAmbiguity(board) {
     }
   }
 
-  return validCount === 1;
+  return validCount <= 4;
 }
 
 function isValidArrangement(blocks, mobileIndices) {
@@ -356,8 +371,10 @@ function isValidArrangement(blocks, mobileIndices) {
       const rowVals = blocks[blockIdx][localR];
       for (let k = 0; k < 3; k++) {
         const val = rowVals[k];
-        if (seen.has(val)) return false;
-        seen.add(val);
+        if (val !== 0) {
+          if (seen.has(val)) return false;
+          seen.add(val);
+        }
       }
     }
   }
@@ -375,8 +392,10 @@ function isValidArrangement(blocks, mobileIndices) {
       const block = blocks[blockIdx];
       for (let k = 0; k < 3; k++) {
         const val = block[k][localC];
-        if (seen.has(val)) return false;
-        seen.add(val);
+        if (val !== 0) {
+          if (seen.has(val)) return false;
+          seen.add(val);
+        }
       }
     }
   }
