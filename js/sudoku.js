@@ -24,6 +24,12 @@ export function initSudoku() {
         return;
       }
 
+      // Check if number is globally completed
+      if (btn.classList.contains("key-completed")) {
+        highlightSimilarCells(val);
+        return;
+      }
+
       // If we are in "Lock Mode" (Paint Mode)
       if (lockedNumber) {
         if (lockedNumber === val) {
@@ -266,54 +272,81 @@ export function transitionToSudoku() {
 }
 
 /* Keypad Feedback Helper */
-/* Keypad Feedback Helper */
 function updateKeypadHighlights(cell) {
   // 1. Reset all keys (except locked ones)
+  const board = document.getElementById("memory-board");
+
   document.querySelectorAll(".sudoku-num").forEach((btn) => {
-    btn.classList.remove("key-present", "key-disabled");
+    btn.classList.remove("key-present", "key-disabled", "key-completed");
   });
 
-  if (!cell) return;
+  // Calculate Global Counts
+  const globalCounts = {};
+  if (board) {
+    board.querySelectorAll(".mini-cell").forEach((c) => {
+      const v = c.textContent.trim();
+      if (v && !c.classList.contains("has-notes")) {
+        globalCounts[v] = (globalCounts[v] || 0) + 1;
+      }
+    });
+  }
 
-  const presentNumbers = new Set();
-  let visibleNotesCount = 0;
-  let hasNotes = false;
+  // 2. Local Context Logic
+  if (cell) {
+    const presentNumbers = new Set();
+    let visibleNotesCount = 0;
+    let hasNotes = false;
 
-  // 2. Check content
-  if (cell.querySelector(".notes-grid")) {
-    hasNotes = true;
-    const slots = cell.querySelectorAll(".note-slot");
-    slots.forEach((slot) => {
-      if (slot.textContent) {
-        presentNumbers.add(slot.dataset.note);
-        visibleNotesCount++;
+    // Check content
+    if (cell.querySelector(".notes-grid")) {
+      hasNotes = true;
+      const slots = cell.querySelectorAll(".note-slot");
+      slots.forEach((slot) => {
+        if (slot.textContent) {
+          presentNumbers.add(slot.dataset.note);
+          visibleNotesCount++;
+        }
+      });
+    } else {
+      const val = cell.textContent.trim();
+      if (val) presentNumbers.add(val);
+    }
+
+    // 3. Highlight and Disable logic
+    document.querySelectorAll(".sudoku-num").forEach((btn) => {
+      const val = btn.dataset.value;
+
+      // Global Check first
+      if (globalCounts[val] >= 9) {
+        btn.classList.add("key-completed");
+        // If completed, we shouldn't really disable it locally in a way that hides completion
+        // But maybe we want visual priority? key-completed should override.
+      } else {
+        // Highlight if present LOCALLY
+        if (presentNumbers.has(val)) {
+          btn.classList.add("key-present");
+        }
+
+        // Disable if: Not Pencil Mode AND Has Notes AND This number is NOT in notes AND there are visible notes
+        if (
+          !pencilMode &&
+          hasNotes &&
+          !presentNumbers.has(val) &&
+          visibleNotesCount > 0
+        ) {
+          btn.classList.add("key-disabled");
+        }
       }
     });
   } else {
-    const val = cell.textContent.trim();
-    if (val) presentNumbers.add(val);
+    // Even if no cell selected, show completed numbers
+    document.querySelectorAll(".sudoku-num").forEach((btn) => {
+      const val = btn.dataset.value;
+      if (globalCounts[val] >= 9) {
+        btn.classList.add("key-completed");
+      }
+    });
   }
-
-  // 3. Highlight and Disable logic
-  document.querySelectorAll(".sudoku-num").forEach((btn) => {
-    const val = btn.dataset.value;
-
-    // Highlight if present
-    if (presentNumbers.has(val)) {
-      btn.classList.add("key-present");
-    }
-
-    // Disable if: Not Pencil Mode AND Has Notes AND This number is NOT in notes AND there are visible notes
-    // This enforces "Using candidates as constraints" ONLY if candidates exist
-    if (
-      !pencilMode &&
-      hasNotes &&
-      !presentNumbers.has(val) &&
-      visibleNotesCount > 0
-    ) {
-      btn.classList.add("key-disabled");
-    }
-  });
 }
 
 function highlightSimilarCells(val) {
