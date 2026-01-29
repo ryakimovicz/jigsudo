@@ -905,44 +905,40 @@ export function checkBoardCompletion() {
   if (boardContainer && boardContainer.classList.contains("board-complete"))
     return;
 
-  // 1. Check vacancies
-  const slots = document.querySelectorAll(".sudoku-chunk-slot");
-  const filledCount = document.querySelectorAll(
-    ".sudoku-chunk-slot.filled",
-  ).length;
-
-  // Clear previous errors first
+  // 1. Clear previous errors first
   clearBoardErrors();
   document
     .querySelectorAll(".error-slot")
     .forEach((el) => el.classList.remove("error-slot"));
 
-  // Only validate if FULL
-  if (filledCount < 9) return;
+  const slots = document.querySelectorAll(".sudoku-chunk-slot");
+  const filledCount = document.querySelectorAll(
+    ".sudoku-chunk-slot.filled",
+  ).length;
 
   // 2. Reconstruct 9x9 Grid from DOM
   // We need to map the slots 0-8 to the grid rows/cols
-  // Slot 0 (0,0) -> rows 0-2, cols 0-2
-  // Slot 1 (0,1) -> rows 0-2, cols 3-5
-  // ...
   const currentBoard = Array.from({ length: 9 }, () => Array(9).fill(0));
   let reconstructionFailed = false;
 
   slots.forEach((slot) => {
     const sIndex = parseInt(slot.dataset.slotIndex);
     const content = slot.querySelector(".mini-sudoku-grid");
-    if (!content) {
-      reconstructionFailed = true;
-      return;
-    }
+
+    // If empty slot, just leave 0s
+    if (!content) return;
 
     // Identify which chunk of numbers this is.
-    // NOTE: The content might be "correct" or "wrong". We need its NUMBERS.
-    // The `dataset.chunkIndex` tells us which original chunk it corresponds to.
     const chunkId = parseInt(content.dataset.chunkIndex);
     const state = gameManager.getState();
     const originalChunks = getChunksFromBoard(state.data.initialPuzzle);
     const chunkData = originalChunks[chunkId]; // 3x3 array of numbers
+
+    if (!chunkData) {
+      // Should not happen
+      reconstructionFailed = true;
+      return;
+    }
 
     // Map this 3x3 chunk to the 9x9 board based on `sIndex` (Position)
     const startRow = Math.floor(sIndex / 3) * 3;
@@ -958,53 +954,83 @@ export function checkBoardCompletion() {
 
   if (reconstructionFailed) return;
 
-  // 3. Validate against 4 Symmetric Permutations
-  // We check which permutation the user is building.
-  const currentChunks = [];
-  slots.forEach((slot, i) => {
-    const content = slot.querySelector(".mini-sudoku-grid");
-    if (content) {
-      currentChunks[i] = parseInt(content.dataset.chunkIndex);
-    } else {
-      currentChunks[i] = -1; // Should not happen given reconstruction check
-    }
-  });
+  // 3. Check for Conflicts (Real-time)
+  const conflicts = getConflicts(currentBoard); // Returns Set of "row,col" strings
 
-  // Define Valid Targets (Indices 0..8)
-  const targets = {
-    0: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-    LR: [2, 1, 0, 5, 4, 3, 8, 7, 6],
-    TB: [6, 7, 8, 3, 4, 5, 0, 1, 2],
-    HV: [8, 7, 6, 5, 4, 3, 2, 1, 0],
-  };
+  // 4. Highlight Errors
+  if (conflicts.size > 0) {
+    // We need to map back from (row, col) to the DOM element (chunk -> cell)
+    // There isn't a direct link, so we have to calculate it.
 
-  let bestMatchKey = null;
-  let maxMatches = -1;
-  let matchesFound = 0;
+    // Iterate over slots again to find the cells corresponding to conflicts
+    slots.forEach((slot) => {
+      const sIndex = parseInt(slot.dataset.slotIndex);
+      const startRow = Math.floor(sIndex / 3) * 3;
+      const startCol = (sIndex % 3) * 3;
 
-  // Find Closest Target
-  console.log("Checking Board Variations... Current Chunks:", currentChunks);
-  for (const [key, target] of Object.entries(targets)) {
-    let matches = 0;
-    for (let i = 0; i < 9; i++) {
-      if (currentChunks[i] === target[i]) matches++;
-    }
-    console.log(`Variation [${key}]: ${matches}/9 matches`);
-    if (matches === 9) {
-      bestMatchKey = key;
-      matchesFound = 9;
-      break; // Perfect match
-    }
-    if (matches > maxMatches) {
-      maxMatches = matches;
-      bestMatchKey = key;
+      // Check each cell in this 3x3 slot
+      const miniCells = slot.querySelectorAll(".mini-cell");
+      // The mini-cells are usually strictly ordered 0..8 in DOM?
+      // Yes, createMiniGrid builds them in row-major order.
+
+      miniCells.forEach((cell, idx) => {
+        const rOffset = Math.floor(idx / 3);
+        const cOffset = idx % 3;
+        const absoluteRow = startRow + rOffset;
+        const absoluteCol = startCol + cOffset;
+
+        if (conflicts.has(`${absoluteRow},${absoluteCol}`)) {
+          cell.classList.add("error-number");
+        }
+      });
+    });
+
+    if (boardContainer) {
+      boardContainer.classList.remove("board-error");
+      void boardContainer.offsetWidth;
+      boardContainer.classList.add("board-error");
     }
   }
 
-  if (matchesFound === 9) {
-    console.log(`Jigsaw Solved! Detected Variation: [${bestMatchKey}]`);
+  // 5. Check Victory (Full Board AND No Conflicts)
+  if (filledCount === 9 && conflicts.size === 0) {
+    console.log("Jigsaw Solved! Valid Sudoku formed.");
 
-    // Save Variation to Game Manager
+    // Detect Variation to ensure Sudoku Phase uses correct map
+    const currentChunks = [];
+    slots.forEach((slot, i) => {
+      const content = slot.querySelector(".mini-sudoku-grid");
+      if (content) {
+        currentChunks[i] = parseInt(content.dataset.chunkIndex);
+      } else {
+        currentChunks[i] = -1;
+      }
+    });
+
+    const targets = {
+      0: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      LR: [2, 1, 0, 5, 4, 3, 8, 7, 6],
+      TB: [6, 7, 8, 3, 4, 5, 0, 1, 2],
+      HV: [8, 7, 6, 5, 4, 3, 2, 1, 0],
+    };
+
+    let bestMatchKey = "0";
+    let maxMatches = -1;
+
+    for (const [key, target] of Object.entries(targets)) {
+      let matches = 0;
+      for (let i = 0; i < 9; i++) {
+        if (currentChunks[i] === target[i]) matches++;
+      }
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        bestMatchKey = key;
+      }
+    }
+
+    console.log(
+      `Detected Variation: [${bestMatchKey}] (${maxMatches}/9 matches)`,
+    );
     gameManager.setJigsawVariation(bestMatchKey);
 
     // Clean errors and Add Victory Animation
@@ -1019,31 +1045,6 @@ export function checkBoardCompletion() {
     setTimeout(() => {
       transitionToSudoku();
     }, 600);
-    return;
-  }
-
-  // If we are here, it's invalid.
-  // Highlight errors against the "Closest" Intent (bestMatchKey)
-  console.log(
-    `Board Complete but Invalid. Closest Variation: ${bestMatchKey} (${maxMatches}/9)`,
-  );
-
-  const target = targets[bestMatchKey];
-  slots.forEach((slot, i) => {
-    if (i === 4) return; // Skip center
-
-    const chunksVal = currentChunks[i];
-    if (chunksVal !== target[i]) {
-      // This slot is wrong for the intended variation
-      const cells = slot.querySelectorAll(".mini-cell");
-      cells.forEach((c) => c.classList.add("error-number"));
-    }
-  });
-
-  if (boardContainer) {
-    boardContainer.classList.remove("board-error");
-    void boardContainer.offsetWidth;
-    boardContainer.classList.add("board-error");
   }
 }
 
