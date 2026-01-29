@@ -210,7 +210,8 @@ export function generateDailyGame(seed, dayIndex = null) {
   let attempts = 0;
 
   // Retry loop to ensure Jigsaw Uniqueness (max 4 symmetries)
-  while (attempts < 50) {
+  // No limit as requested
+  while (true) {
     solution = generateFullBoard(prng);
     puzzle = createPuzzle(solution, prng, holesToRemove);
 
@@ -218,8 +219,7 @@ export function generateDailyGame(seed, dayIndex = null) {
       break;
     }
     attempts++;
-    if (attempts === 49)
-      console.warn("Could not satisfy Jigsaw Uniqueness after 50 attempts.");
+    if (attempts % 100 === 0) console.log(`Search attempt ${attempts}...`);
   }
 
   const chunks = getChunks(puzzle);
