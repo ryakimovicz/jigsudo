@@ -16,47 +16,64 @@ export class GameManager {
   }
 
   async init() {
-    // 1. Check LocalStorage
-    const savedState = localStorage.getItem(this.storageKey);
+    // 1. Always Try Fetching Daily Puzzle (for version check)
+    let dailyData = null;
+    try {
+      if (CONFIG.debugMode)
+        console.log("[GameManager] Fetching daily puzzle...");
+      dailyData = await this.fetchDailyPuzzle();
+    } catch (e) {
+      console.warn("[GameManager] Offline or Fetch Failed:", e);
+    }
 
+    // 2. Check LocalStorage
+    const savedStateStr = localStorage.getItem(this.storageKey);
+    let savedState = null;
+
+    if (savedStateStr) {
+      try {
+        savedState = JSON.parse(savedStateStr);
+
+        // VERSION CHECK: If we have both, check for mismatch
+        if (dailyData && savedState) {
+          const savedVer = savedState.meta?.version || "unknown";
+          const newVer = dailyData.meta?.version || "unknown";
+
+          if (savedVer !== newVer) {
+            console.warn(
+              `⚠️ Version mismatch! Saved: ${savedVer} vs New: ${newVer}. Wiping old save.`,
+            );
+            localStorage.removeItem(this.storageKey);
+            savedState = null; // Force reload from dailyData
+          }
+        }
+      } catch (err) {
+        console.error("Error parsing save, wiping:", err);
+        localStorage.removeItem(this.storageKey);
+        savedState = null;
+      }
+    }
+
+    // 3. Load State Decision
     if (savedState) {
-      this.state = JSON.parse(savedState);
-
-      this.state = JSON.parse(savedState);
-
-      // Ensure Search exists (Migration for old saves)
-      // this.ensureSearchGenerated(); -> REMOVED (Static only now)
-
-      // Debug
-      if (CONFIG.debugMode) {
+      // A. Load Saved Game
+      this.state = savedState;
+      if (CONFIG.debugMode)
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
         );
-      }
+    } else if (dailyData) {
+      // B. Load New Daily Puzzle
+      console.log("[GameManager] Starting Fresh Daily Puzzle!");
+      this.state = this.createStateFromJSON(dailyData);
+      this.save();
     } else {
-      // 2. Try Fetching Static Puzzle (Network)
-      try {
-        if (CONFIG.debugMode)
-          console.log("[GameManager] Fetching daily puzzle...");
-        const dailyData = await this.fetchDailyPuzzle();
-
-        if (dailyData) {
-          console.log("[GameManager] Loaded Static Puzzle!");
-          this.state = this.createStateFromJSON(dailyData);
-          this.save();
-        } else {
-          throw new Error("No data returned");
-        }
-      } catch (err) {
-        console.error(
-          "[GameManager] CRITICAL: Static fetch failed/offline. No fallback allowed.",
-          err,
-        );
-        this.showCriticalError(
-          "Error loading daily puzzle. Check connection & refresh.",
-        );
-        return false; // Initialize failed
-      }
+      // C. Critical Failure
+      console.error("[GameManager] CRITICAL: No Save & No Network.");
+      this.showCriticalError(
+        "Error loading daily puzzle. Check connection & refresh.",
+      );
+      return false;
     }
 
     // Beta Mode Cleanups
