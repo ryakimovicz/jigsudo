@@ -13,7 +13,6 @@ import { provideHint as provideSudokuHint } from "./sudoku.js";
 import { providePeaksHint } from "./peaks.js";
 import { provideSearchHint } from "./search.js";
 import { gameManager } from "./game-manager.js";
-import { gameManager } from "./game-manager.js";
 import { CONFIG } from "./config.js";
 import { startTimer } from "./timer.js";
 
