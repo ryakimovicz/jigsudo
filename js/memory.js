@@ -646,7 +646,7 @@ function startTimer() {
   updateTimer();
 }
 
-function stopTimer() {
+export function stopTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;

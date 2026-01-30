@@ -228,3 +228,206 @@
     box-shadow: 0 0 25px #ffd700;
   }
 }
+/* =========================================
+   Victory Animation (Disintegration + Glitch)
+   ========================================= */
+
+/* Disintegration Effect - Board & Non-Code Cells */
+.disintegrate {
+  animation: disintegrate 1.5s forwards ease-in;
+  pointer-events: none;
+}
+
+@keyframes disintegrate {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+    filter: blur(0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+    filter: blur(10px);
+  }
+}
+
+/* Central Overlay for the Final Code */
+.victory-code-container {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 2px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.victory-code-cell {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent-color); /* Orange default */
+  background: transparent;
+  text-shadow: 0 0 10px var(--accent-color);
+  font-family: "Courier New", monospace; /* Matrix style */
+  /* Remove transform transition to avoid conflict with animation */
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+
+  /* Hardware Acceleration Hints */
+  will-change: transform; /* Removed text-shadow from will-change */
+  backface-visibility: hidden;
+  transform: translateZ(0);
+
+  /* Text Rendering Optimization for Scaling */
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Flash White on Lock-in */
+/* Set specific locked state with strong shadow static */
+.victory-code-cell.locked {
+  color: var(--accent-color);
+  /* Base static shadow (doesn't animate) */
+  text-shadow: 0 0 10px var(--accent-color);
+  position: relative; /* Ensure it can hold abs pseudo */
+
+  animation:
+    lock-flash 0.4s ease-out forwards,
+    pulse-scale-only 2s infinite alternate 0.4s;
+}
+
+/* The Pulsing Glow Layer - GPU Optimized */
+.victory-code-cell.locked::before {
+  content: attr(data-content);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  /* Center the Content (Glow Text) to match Parent */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* The Glow Itself */
+  color: transparent;
+  text-shadow:
+    0 0 30px var(--accent-color),
+    0 0 50px var(--accent-color);
+
+  opacity: 0; /* Start invisible */
+  pointer-events: none;
+  z-index: -1; /* Behind or mixed? Text shadow usually on top for 'glow'. Let's try z-1 or top. */
+  /* If z-1, it might be behind background if any. Here bg is transparent so it works. */
+
+  will-change: opacity;
+  animation: pulse-glow-opacity 2s infinite alternate 0.4s;
+}
+
+@keyframes lock-flash {
+  0% {
+    color: #fff;
+    text-shadow: 0 0 20px #fff;
+    transform: scale3d(1.5, 1.5, 1);
+  }
+  100% {
+    color: var(--accent-color);
+    /* Base Shadow Only */
+    text-shadow: 0 0 10px var(--accent-color);
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+/* Optimization: Opacity is cheap! Pulse the overlay */
+@keyframes pulse-glow-opacity {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scale text subtly too, via main element (cheap transform) */
+@keyframes pulse-scale-only {
+  from {
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+/* Glitch Effect */
+.glitching {
+  animation: glitch-anim 0.2s infinite;
+  color: #0f0 !important; /* Matrix Green during glitch */
+  text-shadow:
+    2px 0 #f00,
+    -2px 0 #00f;
+}
+
+@keyframes glitch-anim {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+/* Spawning extra characters smoothly */
+.spawn-in {
+  animation: spawn-pop 0.5s ease-out forwards;
+}
+
+@keyframes spawn-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+    width: 0;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+    width: 60px;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    width: 60px;
+  }
+}
+
+/* Final Victory Text State */
+/* Final Victory Text State */
+.victory-final {
+  /* Animation handled by .locked combined class now for better entrance */
+  font-family: "Montserrat", sans-serif; /* Back to clean font */
+}
