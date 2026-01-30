@@ -247,6 +247,19 @@ function validateSequence() {
   const currentNumbers = currentCells.map((c) => c.textContent.trim());
   const currentNumString = currentNumbers.join(",");
 
+  // EASTER EGG CHECK: "4,2"
+  if (currentNumString === "4,2") {
+    triggerEasterEgg(); // Random emoji
+  }
+
+  // EASTER EGG CHECK: "5"
+  if (currentNumString === "5") {
+    // Check if it's a valid target first? NO, override for Easter Egg.
+    // If "5" IS a target, it will match below and trigger found sequence simultaneously?
+    // Let's allow it. Emoji overlays don't block game logic.
+    triggerEasterEgg("🍵");
+  }
+
   const match = targets.find((t) => {
     // Exact match of numbers AND not already found
     if (found.includes(t.id)) return false;
@@ -487,4 +500,22 @@ export function transitionToCode() {
 
   // 5. Initialize Code Game
   initCode();
+}
+
+function triggerEasterEgg(overrideEmoji = null) {
+  const overlay = document.createElement("div");
+  overlay.className = "easter-egg-overlay";
+
+  // Use override if provided, else random
+  const emoji = overrideEmoji || (Math.random() < 0.5 ? "💜" : "❓");
+  overlay.textContent = emoji;
+
+  const gameSection = document.getElementById("memory-game");
+  if (gameSection) {
+    gameSection.appendChild(overlay);
+    // Remove after animation (2s)
+    setTimeout(() => {
+      overlay.remove();
+    }, 2000);
+  }
 }

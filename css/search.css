@@ -275,3 +275,38 @@
 .search-win .memory-board {
   animation: searchWinPulse 0.5s ease-out 1;
 }
+
+/* Easter Egg Overlay */
+.search-mode .easter-egg-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8rem;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+  animation: egg-pop 2s ease-out forwards;
+}
+
+@keyframes egg-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(1.1);
+  }
+}
