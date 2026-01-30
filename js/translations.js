@@ -95,6 +95,13 @@ export const translations = {
 
     // Search
     search_targets_title: "Secuencias:",
+    // Code Game
+    game_code: "El Código",
+    code_help_title: "El Código",
+    code_help_desc:
+      "Memoriza la secuencia numérica y repítela en las celdas correctas.<br>La secuencia crece en cada turno.",
+    code_level_local: "Nivel",
+    code_win: "¡CÓDIGO DESCIFRADO!",
   },
   en: {
     app_title: "JIGSUDO",
@@ -188,5 +195,12 @@ export const translations = {
 
     peaks_errors: "Errors:",
     peaks_remaining: "Remaining:",
+    // Code Game
+    game_code: "The Code",
+    code_help_title: "The Code",
+    code_help_desc:
+      "Memorize the number sequence and repeat it on the correct cells.<br>The sequence grows each turn.",
+    code_level_local: "Level",
+    code_win: "CODE CRACKED!",
   },
 };

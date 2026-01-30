@@ -1,0 +1,230 @@
+/* El Código (The Code) Styles */
+
+/* =========================================
+   Layout Inheritance (Matches Search/Sudoku)
+   ========================================= */
+
+/* Main Layout Stack */
+.code-mode .memory-grid-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 15px !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+  padding-top: 1rem !important;
+
+  --sudoku-grid-line: #999; /* Softer gray (was #333, then #bbb) */
+}
+
+.dark-mode .code-mode .memory-grid-layout {
+  --sudoku-grid-line: #444; /* Softer dark theme line (was #eee) */
+}
+
+/* Board Styling - Ensure it stays exactly like Search/Sudoku */
+.code-mode .memory-board {
+  background: var(--bg-secondary) !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 4px solid var(--bg-secondary) !important;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1/1 !important;
+}
+
+/* Remove internal rounding */
+.code-mode .sudoku-chunk-slot,
+.code-mode .mini-sudoku-grid {
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Internal Grid Borders */
+.code-mode .sudoku-chunk-slot {
+  border-right: 3px solid var(--sudoku-grid-line);
+  border-bottom: 3px solid var(--sudoku-grid-line);
+}
+
+.code-mode .sudoku-chunk-slot:nth-child(3n) {
+  border-right: none !important;
+}
+
+.code-mode .sudoku-chunk-slot:nth-child(n + 7) {
+  border-bottom: none !important;
+}
+
+/* Hide Unused Elements (Jigsaw Panels, Cards) */
+.code-mode .collected-zone,
+.code-mode .collected-wrapper,
+.code-mode .cards-area {
+  display: none !important;
+}
+
+/* Center Board Wrapper */
+.code-mode .board-wrapper {
+  order: 1 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Mobile Responsive Adjustments (Same as Search) */
+@media (max-width: 768px) {
+  .code-mode .memory-grid-layout {
+    flex: 1 !important;
+    min-height: 0;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 2px !important;
+    max-height: calc(
+      100dvh - var(--header-height) - var(--footer-height) - 4px
+    ) !important;
+    overflow: hidden !important;
+  }
+
+  .code-mode .memory-board {
+    width: min(95vw, max(200px, calc(60dvh - var(--header-height) - 30px)));
+    max-height: 100%;
+  }
+}
+
+@media (min-width: 769px) {
+  .code-mode .memory-board {
+    width: min(420px, 45vw) !important;
+    height: auto !important;
+    aspect-ratio: 1/1 !important;
+  }
+}
+
+/* =========================================
+   Interactive Elements
+   ========================================= */
+
+/* Active Cell Logic */
+
+/* 1. Base disabled state for ALL cells in code mode */
+.code-mode .mini-cell {
+  background-color: transparent !important; /* Let board bg show through or dark */
+  color: #555 !important;
+  border-color: #333 !important;
+  opacity: 0.6;
+  pointer-events: none; /* Disable interaction on non-game cells */
+}
+
+.dark-mode .code-mode .mini-cell {
+  color: #444 !important;
+  border-color: #222 !important;
+}
+
+/* 2. Active Game Cells (Survivors) */
+/* 2. Active Game Cells (Survivors) */
+.code-mode .mini-cell.code-cell {
+  background-color: var(--bg-secondary) !important;
+  background: #e2e8f0 !important; /* Light neutral gray */
+  color: #000000 !important; /* Light mode: Black text */
+  text-shadow: none;
+  font-weight: 800;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  border: 2px solid #000000 !important; /* Black border instead of orange */
+  z-index: 5;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark-mode .code-mode .mini-cell.code-cell {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: white !important;
+  color: #ffffff !important; /* Dark mode: White text */
+  text-shadow: 0 0 2px black;
+}
+
+/* Override previous game styles (Peaks/Valleys) to be colorless in Code Mode */
+.code-mode .peak-found,
+.code-mode .valley-found {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #555 !important;
+  border-color: #333 !important;
+  box-shadow: none !important;
+}
+
+.dark-mode .code-mode .peak-found,
+.dark-mode .code-mode .valley-found {
+  color: #444 !important;
+  border-color: #222 !important;
+}
+
+.code-cell {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.code-cell:active {
+  transform: scale(0.9);
+}
+
+/* Active Blink State (Simon Says) */
+/* High Specificity to override .code-cell !important rules */
+.code-mode .mini-cell.simon-active {
+  background-color: var(--accent-color) !important; /* Orange */
+  color: white !important;
+  box-shadow: 0 0 25px var(--accent-color) !important;
+  transform: scale(1.15) !important;
+  z-index: 20 !important;
+  border-color: white !important;
+  text-shadow: 0 0 4px black;
+}
+
+.dark-mode .code-mode .mini-cell.simon-active {
+  background-color: var(--accent-color) !important;
+  box-shadow: 0 0 30px var(--accent-color) !important;
+  color: white !important;
+}
+
+/* Error State */
+@keyframes shake-simon {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.simon-error {
+  animation: shake-simon 0.4s ease-in-out;
+  background-color: #ff3333 !important;
+  box-shadow: 0 0 15px #ff0000;
+  color: white !important;
+}
+
+/* Win State */
+.simon-win {
+  background-color: #ffd700 !important; /* Gold */
+  color: #000 !important;
+  box-shadow: 0 0 20px #ffd700;
+  animation: pulse-gold 1s infinite alternate;
+}
+
+@keyframes pulse-gold {
+  from {
+    box-shadow: 0 0 10px #ffd700;
+  }
+  to {
+    box-shadow: 0 0 25px #ffd700;
+  }
+}

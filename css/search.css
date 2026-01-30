@@ -255,3 +255,23 @@
   background: #334155;
   border-color: #475569;
 }
+
+/* Win Animation (Reusing keyframes if available, or defining new) */
+@keyframes searchWinPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    border-color: rgba(76, 175, 80, 0);
+  }
+  50% {
+    box-shadow: 0 0 30px 10px rgba(76, 175, 80, 0.6);
+    border-color: #4caf50;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    border-color: rgba(76, 175, 80, 0);
+  }
+}
+
+.search-win .memory-board {
+  animation: searchWinPulse 0.5s ease-out 1;
+}

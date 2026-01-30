@@ -3,6 +3,7 @@ import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { isPeakOrValley, getNeighbors } from "./peaks-logic.js";
+import { initCode } from "./code.js";
 
 let isSelecting = false;
 let currentPath = []; // Array of {r, c}
@@ -334,9 +335,16 @@ function handleFoundSequence(target) {
   // 3. Check All Found?
   if (state.search.found.length === state.search.targets.length) {
     console.log("ALL SEQUENCES FOUND!");
-    // Trigger Global Win?
-    // alert("COMPLETADO / DONE");
-    // Leave it for now or add confetti
+
+    // Trigger Global Win Animation & Transition
+    const boardWrapper = document.querySelector(".board-wrapper");
+    boardWrapper.classList.add("search-win"); // Green Glow or similar
+
+    setTimeout(() => {
+      boardWrapper.classList.remove("search-win");
+      gameManager.advanceStage(); // Advances to 'code'
+      transitionToCode();
+    }, 500);
   }
 }
 
@@ -432,4 +440,51 @@ export function provideSearchHint() {
   } else {
     console.log("[Search] No more targets to solve.");
   }
+}
+
+export function transitionToCode() {
+  console.log("Transitioning to The Code...");
+
+  const gameSection = document.getElementById("memory-game");
+  if (!gameSection) return;
+
+  // 1. Switch Mode Classes
+  gameSection.classList.remove("search-mode");
+  gameSection.classList.add("code-mode");
+
+  // 2. Hide Search UI
+  const searchContainer = document.getElementById("search-targets-container");
+  if (searchContainer) searchContainer.style.display = "none";
+
+  // 3. Update Title
+  const lang = getCurrentLang();
+  const t = translations[lang];
+  const titleEl = document.querySelector(".header-title-container h2");
+
+  if (titleEl) {
+    titleEl.style.transition = "opacity 0.5s ease";
+    titleEl.style.opacity = "0";
+    setTimeout(() => {
+      titleEl.textContent = t.game_code || "El Código";
+      titleEl.style.opacity = "1";
+    }, 500);
+  }
+
+  // 4. Update Tooltip
+  const tooltipTitle = document.querySelector(".info-tooltip h3");
+  const tooltipDesc = document.querySelector(".info-tooltip p");
+
+  if (tooltipTitle && tooltipDesc) {
+    tooltipTitle.style.transition = "opacity 0.5s ease";
+    tooltipDesc.style.opacity = "0";
+    setTimeout(() => {
+      tooltipTitle.textContent = t.code_help_title || "El Código";
+      tooltipDesc.innerHTML = t.code_help_desc || "Memoriza la secuencia.";
+      tooltipTitle.style.opacity = "1";
+      tooltipDesc.style.opacity = "1";
+    }, 500);
+  }
+
+  // 5. Initialize Code Game
+  initCode();
 }

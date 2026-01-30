@@ -158,6 +158,9 @@ export class GameManager {
         values: data.simonValues || [],
         coordinates: [], // Will be populated by setJigsawVariation
       },
+      code: {
+        completed: false,
+      },
     };
   }
 
@@ -283,7 +286,7 @@ export class GameManager {
         lastPlayed: new Date().toISOString(),
       },
       progress: {
-        currentStage: "memory", // memory, jigsaw, sudoku, peaks, search
+        currentStage: "memory", // memory, jigsaw, sudoku, peaks, search, code
         stagesCompleted: [],
       },
       data: {
@@ -315,6 +318,9 @@ export class GameManager {
         values: [],
         coordinates: [],
       },
+      code: {
+        completed: false,
+      },
     };
   }
 
@@ -328,7 +334,7 @@ export class GameManager {
   }
 
   advanceStage() {
-    const stages = ["memory", "jigsaw", "sudoku", "peaks", "search"];
+    const stages = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
     const currentIdx = stages.indexOf(this.state.progress.currentStage);
 
     if (currentIdx >= 0 && currentIdx < stages.length - 1) {
