@@ -55,15 +55,15 @@ export function generateSearchSequences(
   }
 
   // 2. Target Used Count
-  // If reservedCells are provided, we assume those ARE the "3 unused", so we try to fill everything else.
-  // Otherwise, we leave 3 unused dynamically.
+  // If reservedCells are provided, we assume those ARE the "4 unused", so we try to fill everything else.
+  // Otherwise, we leave 4 unused dynamically.
   const totalAvailable = availableCells.length;
   let targetUsedCount;
 
-  if (reservedCells && reservedCells.length >= 3) {
+  if (reservedCells && reservedCells.length >= 4) {
     targetUsedCount = totalAvailable; // Try to use ALL remaining
   } else {
-    targetUsedCount = Math.max(0, totalAvailable - 3);
+    targetUsedCount = Math.max(0, totalAvailable - 4);
   }
 
   if (CONFIG.debugMode) {
@@ -176,17 +176,17 @@ export function generateSearchSequences(
         `   > Attempt ${attempt}: used=${candidateUsedCount}, adj=${adj}`,
       );
 
-    // SUCCESS CRITERIA: Full usage (only 3 left) AND 0 Adjacency
-    if (holesLeft <= 3 && adj === 0) {
+    // SUCCESS CRITERIA: Full usage (only 4 left) AND 0 Adjacency
+    if (holesLeft <= 4 && adj === 0) {
       if (CONFIG.debugMode)
         console.log(
-          `${logPrefix} SUCCESS! Found separated solution with 3 holes.`,
+          `${logPrefix} SUCCESS! Found separated solution with 4 holes.`,
         );
       return candidateSequences;
     } else {
       if (CONFIG.debugMode)
         console.log(
-          `${logPrefix} Failed criteria. Holes: ${holesLeft} (Target <=3), Adj: ${adj} (Target 0). Retrying...`,
+          `${logPrefix} Failed criteria. Holes: ${holesLeft} (Target <=4), Adj: ${adj} (Target 0). Retrying...`,
         );
     }
 
@@ -509,16 +509,16 @@ function isValidState(usedMap, peaksValleys, remainingToFill) {
     }
   }
 
-  // Total Free Cells = remainingToFill + 3 (Final Buffer)
+  // Total Free Cells = remainingToFill + 4 (Final Buffer)
   // We need to fill remainingToFill.
   // The 'smallIslandSum' cells are useless for filling.
   // So available for filling = (TotalFree - smallIslandSum).
   // If (TotalFree - smallIslandSum) < remainingToFill, we are stuck.
-  // Or simply: smallIslandSum must fit in the final 3 buffer.
-  if (smallIslandSum > 3) return false;
+  // Or simply: smallIslandSum must fit in the final 4 buffer.
+  if (smallIslandSum > 4) return false;
 
   // EXTRA CONSTRAINT: If remainingToFill is 0 (we are at the end state),
-  // we must ensure the 3 unused cells are NOT neighbors.
+  // we must ensure the 4 unused cells are NOT neighbors.
   if (remainingToFill === 0) {
     // Collect unused cells
     const unused = [];

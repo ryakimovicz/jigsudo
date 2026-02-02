@@ -59,6 +59,7 @@ async function generateDailyPuzzle() {
     let finalGameData = null;
     let finalSearchTargets = {};
     let finalSimonValues = [];
+    let finalCodeSequence = [];
 
     // --- BUCLE PRINCIPAL ---
     while (!success) {
@@ -146,8 +147,8 @@ async function generateDailyPuzzle() {
 
         variations[key].islands = finalIslands;
 
-        // REGLA: Máximo 3 celdas libres
-        if (finalIslands.length > 3) {
+        // REGLA: Máximo 4 celdas libres
+        if (finalIslands.length > 4) {
           if (attemptsGlobal % 10 === 1)
             process.stdout.write(
               `Too many islands in [${key}] (${finalIslands.length}).\r`,
@@ -203,7 +204,7 @@ async function generateDailyPuzzle() {
       if (!validTopology) continue;
 
       // --- CHEQUEO: VALORES FORZADOS COMPATIBLES ---
-      if (globalForcedValues.size > 3) {
+      if (globalForcedValues.size > 4) {
         continue;
       }
 
@@ -226,7 +227,7 @@ async function generateDailyPuzzle() {
       }
 
       let targets = Array.from(globalForcedValues);
-      let slotsNeeded = 3 - targets.length;
+      let slotsNeeded = 4 - targets.length;
       let potentialFillers = commonValues.filter(
         (v) => !globalForcedValues.has(v),
       );
@@ -270,7 +271,7 @@ async function generateDailyPuzzle() {
           break;
         }
 
-        if (res.simonCoords.length !== 3) {
+        if (res.simonCoords.length !== 4) {
           if (attemptsGlobal % 10 === 1)
             process.stdout.write(
               `Carve result bad length (${res.simonCoords.length}) in [${key}].\r`,
@@ -289,6 +290,7 @@ async function generateDailyPuzzle() {
         finalSearchTargets = tempSearchTargets;
         finalSimonValues = finalTargets;
         finalGameData = gameData;
+        finalCodeSequence = generateCodeSequence(finalTargets, nextRnd);
         success = true;
       }
     }
@@ -303,6 +305,7 @@ async function generateDailyPuzzle() {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
         simonValues: finalSimonValues,
+        codeSequence: finalCodeSequence,
         searchTargets: finalSearchTargets,
       },
       chunks: finalGameData.chunks,
@@ -318,6 +321,32 @@ async function generateDailyPuzzle() {
     console.error("❌ Fatal Error:", error);
     process.exit(1);
   }
+}
+
+// ==========================================
+// 🔐 LOGIC: CODE SEQUENCE GENERATION
+// ==========================================
+function generateCodeSequence(simonValues, rnd) {
+  // Goal: Length 7. Length start at 3, end at 7.
+  // Constraint: Must use ALL 4 simonValues at least once.
+  // simonValues has 4 numbers.
+
+  // 1. Start with the mandatory 4 values
+  let pool = [...simonValues];
+
+  // 2. Add 3 more randoms from simonValues to reach 7
+  for (let i = 0; i < 3; i++) {
+    const idx = Math.floor(rnd() * simonValues.length);
+    pool.push(simonValues[idx]);
+  }
+
+  // 3. Shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  return pool;
 }
 
 // ==========================================

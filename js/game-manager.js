@@ -137,6 +137,7 @@ export class GameManager {
         chunks: data.chunks, // Provided by JSON
         searchTargetsMap: data.searchTargets, // Store the full map { "0": ..., "LR": ... }
         simonValues: data.simonValues || [],
+        codeSequence: data.codeSequence || [],
       },
       memory: {
         pairsFound: 0,

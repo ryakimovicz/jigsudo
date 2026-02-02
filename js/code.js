@@ -50,8 +50,15 @@ export function initCode() {
     cell.style.transform = "scale(1)";
   });
 
-  // 3. Generate Sequence (Seeded Random)
-  generateSequence();
+  // 3. Load Sequence from Game State (Server Generated)
+  if (state.data.codeSequence && state.data.codeSequence.length > 0) {
+    sequence = state.data.codeSequence;
+    console.log(`[Code] Loaded Global Sequence: ${sequence.join("-")}`);
+  } else {
+    // Fallback if not present (e.g. old save or old generator)
+    console.warn("[Code] No global sequence found, generating local fallback.");
+    generateFallbackSequence();
+  }
 
   // 4. Start Game Loop
   currentLevel = 3;
@@ -65,13 +72,9 @@ export function initCode() {
   attachCodeListeners();
 }
 
-function generateSequence() {
+function generateFallbackSequence() {
   // Use daily seed to ensure same code for everyone
   const seed = getDailySeed();
-  // Simple LCG or just use Math.sin with seed (local helper)
-  // We need 5 digits, generated from available values in simonData
-
-  // Available numbers
   const availableValues = simonData.map((d) => d.value);
 
   // Pseudo-random based on seed
@@ -82,28 +85,23 @@ function generateSequence() {
   };
 
   sequence = [];
+  let pool = [...availableValues];
 
-  // Rule: "tienen que estar los 3 al menos una vez" (All 3 must appear at least once)
-  // We have 5 slots. Let's place the 3 unique values first, shuffle, then fill remaining 2.
-
-  // 1. Base Pool
-  let pool = [...availableValues]; // [A, B, C]
-
-  // 2. Add 2 more randoms from available
+  // Fill up to 7 for consistency with new standard, or stick to 5 for fallback?
+  // Let's do 5 for fallback to be safe.
+  // Actually, let's do 7 to match new mechanics if possible, but 5 is safer for old saves.
+  // We'll stick to 5 for fallback.
   for (let i = 0; i < 2; i++) {
     const idx = Math.floor(random() * availableValues.length);
     pool.push(availableValues[idx]);
   }
 
-  // 3. Shuffle Pool to get Final Sequence
-  // Fisher-Yates with seeded random
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-
   sequence = pool;
-  console.log(`[Code] Sequence Generated: ${sequence.join("-")}`);
+  console.log(`[Code] Fallback Sequence: ${sequence.join("-")}`);
 }
 
 function playSequence() {
@@ -113,9 +111,11 @@ function playSequence() {
   stepInLevel = 0;
 
   // Extract substep: first 'currentLevel' digits
-  const currentSequence = sequence.slice(0, currentLevel);
+  // Ensure we don't exceed sequence length
+  const validLevel = Math.min(currentLevel, sequence.length);
+  const currentSequence = sequence.slice(0, validLevel);
   console.log(
-    `[Code] Playing sequence for level ${currentLevel}:`,
+    `[Code] Playing sequence for level ${validLevel}:`,
     currentSequence,
   );
 
@@ -234,7 +234,8 @@ function handleCodeClick(e) {
 
     // Check if Level Complete
     if (stepInLevel >= currentLevel) {
-      if (currentLevel === 5) {
+      // Use sequence.length to determine max level (should be 7 now)
+      if (currentLevel >= sequence.length) {
         // GAME WIN!
         isInputBlocked = true;
         setTimeout(winGame, 500);
@@ -295,7 +296,7 @@ function winGame() {
     if (titleContainer) titleContainer.style.display = "none";
   }
 
-  const values = sequence.slice(0, 5);
+  const values = sequence.slice(0, 7); // Use up to 7, or all
   const gameSection = document.getElementById("memory-game");
   const board = document.getElementById("memory-board");
 
