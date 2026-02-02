@@ -300,7 +300,7 @@ async function generateDailyPuzzle() {
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "5.6-anti-ambiguity", date: dateStr, seed: seedInt },
+      meta: { version: "5.7-code-updates", date: dateStr, seed: seedInt },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
