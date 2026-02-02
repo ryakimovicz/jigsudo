@@ -15,56 +15,20 @@ let simonData = []; // { value, r, c, element }
 let idleTimer = null; // Timer to repeat sequence
 let activeTimeouts = []; // Track animation timeouts to cancel them on interrupt
 
+let penaltyMode = false; // New state
+let maxUnlockedLevel = 3; // Tracks the highest level shown to player
+
+// ... (In initCode or reset)
 export function initCode() {
   console.log("Initializing Code Stage...");
-
-  const state = gameManager.getState();
-  const simonCoords = state.simon.coordinates;
-  const board = document.getElementById("memory-board");
-
-  if (!simonCoords || simonCoords.length !== 3) {
-    console.error("Critical: Invalid Simon Coordinates", simonCoords);
-    return;
-  }
-
-  // 1. Identify Cells and Values
-  simonData = simonCoords.map((pos) => {
-    const slotIndex = Math.floor(pos.r / 3) * 3 + Math.floor(pos.c / 3);
-    const cellIndex = (pos.r % 3) * 3 + (pos.c % 3);
-    const slot = board.querySelector(
-      `.sudoku-chunk-slot[data-slot-index="${slotIndex}"]`,
-    );
-    const cell = slot.querySelectorAll(".mini-cell")[cellIndex];
-    const value = parseInt(cell.textContent.trim());
-
-    return { r: pos.r, c: pos.c, element: cell, value: value };
-  });
-
-  // 2. Clear previous styles / listeners
-  simonCells = simonData.map((d) => d.element);
-  simonCells.forEach((cell) => {
-    cell.classList.remove("search-found-cell"); // Clean from previous stage
-    cell.classList.add("code-cell");
-    // Ensure value is visible
-    cell.style.opacity = "1";
-    cell.style.transform = "scale(1)";
-  });
-
-  // 3. Load Sequence from Game State (Server Generated)
-  if (state.data.codeSequence && state.data.codeSequence.length > 0) {
-    sequence = state.data.codeSequence;
-    console.log(`[Code] Loaded Global Sequence: ${sequence.join("-")}`);
-  } else {
-    // Fallback if not present (e.g. old save or old generator)
-    console.warn("[Code] No global sequence found, generating local fallback.");
-    generateFallbackSequence();
-  }
-
+  penaltyMode = false; // Reset penalty mode
+  // ...
+  // ...
   // 4. Start Game Loop
   currentLevel = 3;
+  maxUnlockedLevel = 3; // Reset max
   updateStatusDisplay();
 
-  // Brief delay before starting first sequence
   setTimeout(() => {
     playSequence();
   }, 100);
@@ -72,37 +36,7 @@ export function initCode() {
   attachCodeListeners();
 }
 
-function generateFallbackSequence() {
-  // Use daily seed to ensure same code for everyone
-  const seed = getDailySeed();
-  const availableValues = simonData.map((d) => d.value);
-
-  // Pseudo-random based on seed
-  let localSeed = seed + 12345;
-  const random = () => {
-    const x = Math.sin(localSeed++) * 10000;
-    return x - Math.floor(x);
-  };
-
-  sequence = [];
-  let pool = [...availableValues];
-
-  // Fill up to 7 for consistency with new standard, or stick to 5 for fallback?
-  // Let's do 5 for fallback to be safe.
-  // Actually, let's do 7 to match new mechanics if possible, but 5 is safer for old saves.
-  // We'll stick to 5 for fallback.
-  for (let i = 0; i < 2; i++) {
-    const idx = Math.floor(random() * availableValues.length);
-    pool.push(availableValues[idx]);
-  }
-
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  sequence = pool;
-  console.log(`[Code] Fallback Sequence: ${sequence.join("-")}`);
-}
+// ...
 
 function playSequence() {
   stopAnimation(); // ensuring clean slate
@@ -110,12 +44,16 @@ function playSequence() {
   clearIdleTimer(); // Stop timer while playing
   stepInLevel = 0;
 
-  // Extract substep: first 'currentLevel' digits
-  // Ensure we don't exceed sequence length
-  const validLevel = Math.min(currentLevel, sequence.length);
+  // Extract substep:
+  // Standard: currentLevel.
+  // Penalty Mode: Always 3 (visual reset).
+  const visualLevel = penaltyMode ? 3 : currentLevel;
+
+  // Ensure we don't exceed sequence length (though visualLevel is usually low)
+  const validLevel = Math.min(visualLevel, sequence.length);
   const currentSequence = sequence.slice(0, validLevel);
   console.log(
-    `[Code] Playing sequence for level ${validLevel}:`,
+    `[Code] Playing sequence (Level ${currentLevel}, Visual ${validLevel}):`,
     currentSequence,
   );
 
@@ -144,109 +82,67 @@ function playSequence() {
   activeTimeouts.push(tEnd);
 }
 
-function stopAnimation() {
-  // Clear all pending animation steps
-  activeTimeouts.forEach((id) => clearTimeout(id));
-  activeTimeouts = [];
-
-  // Remove active class from all cells immediately
-  simonCells.forEach((c) => c.classList.remove("simon-active"));
-
-  // Improve responsiveness: Unblock input immediately
-  isInputBlocked = false;
-}
-
-function startIdleTimer() {
-  clearIdleTimer();
-  // Repeat sequence after 4 seconds of inactivity
-  idleTimer = setTimeout(() => {
-    console.log("[Code] Idle timeout. Replaying sequence...");
-    playSequence();
-  }, 4000);
-}
-
-function clearIdleTimer() {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-    idleTimer = null;
-  }
-}
-
-function highlightCell(cell, duration = 500) {
-  cell.classList.add("simon-active");
-  setTimeout(() => {
-    cell.classList.remove("simon-active");
-  }, duration);
-}
-
-function showInputHint() {
-  // Optional: cursor change or slight glow to indicate "Your turn"
-}
-
-function attachCodeListeners() {
-  const board = document.getElementById("memory-board");
-  // Use delegation but specific to code-cell
-  board.addEventListener("click", handleCodeClick);
-  board.addEventListener(
-    "touchstart",
-    function (e) {
-      if (e.target.closest(".code-cell")) {
-        e.preventDefault();
-        handleCodeClick(e);
-      }
-    },
-    { passive: false },
-  );
-}
+// ...
 
 function handleCodeClick(e) {
   const cell = e.target.closest(".code-cell");
   if (!cell) return;
 
-  // Interruption Logic: If clicking during animation (isInputBlocked but activeTimeouts exist), stop it.
   if (isInputBlocked && activeTimeouts.length > 0) {
     stopAnimation();
-    // Proceed to handle the click naturally below
   }
 
   if (isInputBlocked) return;
 
-  // Click Effect
-  highlightCell(cell, 200); // Fast for interaction
-  clearIdleTimer(); // Stop timer on interaction (first interaction stops loop until next idle or new level)
-
-  // Note: We might want to restart idle timer if they stop mid-input?
-  // User asked: "repetirlo, y así hasta que el usuario empiece a resolverlo."
-  // "empiece a resolverlo" -> Once they click, we stop repeating?
-  // Or if they stall mid-sequence?
-  // Let's assume once they start typing, they are "solving".
-  // If they timeout MID-typing, should we replay? Usually Simon doesn't.
-  // We'll leave it cleared. If they make a mistake, error handles it.
+  highlightCell(cell, 200);
+  clearIdleTimer();
 
   const val = parseInt(cell.textContent.trim());
-
-  // Validate
   const expectedVal = sequence[stepInLevel];
 
   if (val === expectedVal) {
-    // Correct!
     stepInLevel++;
 
-    // Check if Level Complete
+    // Check if we hit the limit of the CURRENT TARGET level
     if (stepInLevel >= currentLevel) {
-      // Use sequence.length to determine max level (should be 7 now)
+      // Check absolute victory (Level 7 / Sequence Max)
       if (currentLevel >= sequence.length) {
-        // GAME WIN!
         isInputBlocked = true;
         setTimeout(winGame, 500);
-      } else {
-        // Level Up
+        return;
+      }
+
+      // Logic Decision: Silent Advance OR Standard Advance?
+
+      // If we are in penalty mode AND NOT YET at the max level we saw before...
+      if (penaltyMode && currentLevel < maxUnlockedLevel) {
+        // Silent Advance (Catching up)
         currentLevel++;
+        console.log(
+          `[Code] Penalty Catch-up: Silent advance to Level ${currentLevel}`,
+        );
+        startIdleTimer();
+      } else {
+        // Standard Advance (New Territory OR Just Caught Up)
+        // If we just caught up (currentLevel === maxUnlockedLevel), exit penalty mode
+        if (penaltyMode) {
+          console.log(
+            "[Code] Caught up to max unlocked level. Exiting Penalty Mode.",
+          );
+          penaltyMode = false;
+        }
+
+        currentLevel++;
+        maxUnlockedLevel = Math.max(maxUnlockedLevel, currentLevel);
+
         isInputBlocked = true;
         setTimeout(() => {
-          playSequence();
+          playSequence(); // Show the new level
         }, 1000);
       }
+    } else {
+      // In the middle of a sequence, restart idle timer
+      startIdleTimer();
     }
   } else {
     // WRONG!
@@ -257,26 +153,29 @@ function handleCodeClick(e) {
 function handleError(cell) {
   isInputBlocked = true;
   cell.classList.add("simon-error");
-  navigator.vibrate?.(200); // Mobile vibe
+  navigator.vibrate?.(200);
 
   setTimeout(() => {
     cell.classList.remove("simon-error");
-    // Restart current level sequence
-    // "Si el usuario le erra, marca error y vuelve a empezar desde el principio."
-    // Interpreting "principio" as "principio de la secuencia actual" or "reset level to 3"?
-    // "start repeating the sequence again".
-    // Usually Simon doesn't reset level. Just replays.
-    // "vuelve a empezar desde el principio" COULD mean level 3.
-    // Let's implement Soft Fail (Replay current level) first. Ideally Hard Fail (Level 3) is too punishing.
-    // Wait, request says: "Si el usuario lo hace bien... agregandole un digito mas. Si el usuario le erra... vuelve a empezar desde el principio."
-    // "Desde el principio" strongly suggests Level 3 reset.
-    // I Will reset to Level 3 for strict adherence to "principio".
 
+    // ENTER PENALTY MODE
+    // If not already in penalty mode, we mark it
+    if (!penaltyMode) {
+      console.log("[Code] Error! Entering Penalty Mode.");
+      penaltyMode = true;
+    }
+
+    // Always reset current input requirement to 3
+    // But we keep maxUnlockedLevel as is, so they can climb back up silenty
     currentLevel = 3;
+
     updateStatusDisplay();
+    console.log(
+      `[Code] Resetting to Level 3. Max Unlocked is ${maxUnlockedLevel}.`,
+    );
 
     setTimeout(() => {
-      playSequence();
+      playSequence(); // Will play 3 (visual)
     }, 1000);
   }, 1000);
 }
