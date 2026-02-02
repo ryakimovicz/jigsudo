@@ -17,7 +17,7 @@ export function startTimer(layoutCallback) {
   }
 
   timerStartTime = Date.now();
-  timerInterval = setInterval(updateTimerDisplay, 100);
+  timerInterval = setInterval(updateTimerDisplay, 1000);
   updateTimerDisplay();
 }
 

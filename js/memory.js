@@ -369,19 +369,28 @@ function setupCards(chunks) {
 
 function previewCards() {
   isLocked = true;
-  // Flip all to show content (Ordered pairs)
-  setTimeout(() => {
-    cards.forEach((card) => card.classList.add("flipped"));
-  }, 100);
-
-  setTimeout(() => {
-    // Unflip all
-    cards.forEach((card) => card.classList.remove("flipped"));
-
-    // Start Visual Shuffle after flip down animation
+  // Staggered Flip UP
+  cards.forEach((card, i) => {
     setTimeout(() => {
-      visualShuffle();
-    }, 500); // Wait for unflip
+      card.classList.add("flipped");
+    }, i * 30); // Fast ripple (30ms per card)
+  });
+
+  setTimeout(() => {
+    // Staggered Flip DOWN
+    cards.forEach((card, i) => {
+      setTimeout(() => {
+        card.classList.remove("flipped");
+      }, i * 30);
+    });
+
+    // Start Visual Shuffle after last unflip finishes
+    setTimeout(
+      () => {
+        visualShuffle();
+      },
+      500 + cards.length * 30,
+    ); // Wait for sequence + buffer
   }, 2000); // 2 Seconds Preview
 }
 
@@ -412,14 +421,23 @@ function visualShuffle() {
     card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
   });
 
-  // 4. Play (Animate to new position)
-  requestAnimationFrame(() => {
-    cards.forEach((card) => {
-      // Enable transition
-      card.style.transition = "transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)";
-      // Clear transform to move to natural shuffled position
-      card.style.transform = "";
-    });
+  // 4. Play (Animate to new position) with STAGGER
+  // Shuffle phase: Randomize delay for each card to create chaotic feel
+  const baseDelay = 50;
+
+  cards.forEach((card, index) => {
+    // Random delay between 0 and 300ms
+    const randomDelay = Math.random() * 300;
+
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        // Enable transition
+        card.style.transition =
+          "transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)";
+        // Clear transform to move to natural shuffled position
+        card.style.transform = "";
+      });
+    }, baseDelay + randomDelay);
   });
 
   // Unlock after animation
@@ -430,7 +448,7 @@ function visualShuffle() {
       card.style.transition = "";
       card.style.transform = "";
     });
-  }, 600);
+  }, 600 + 350); // Max delay ~350
 }
 
 // Helper to render mini grid
@@ -542,7 +560,7 @@ function checkForMatch() {
     // B. Finalize Card State (300ms) to match animation duration
     setTimeout(() => {
       disableCards([card1, card2]);
-    }, 300);
+    }, 450);
   } else {
     unflipCards();
   }
@@ -552,6 +570,8 @@ function disableCards(cardsToDisable) {
   const target = cardsToDisable || flippedCards;
   target.forEach((card) => {
     card.style.pointerEvents = "none";
+    // Remove the temporary green pulse so it settles to the neutral 'matched' state
+    card.classList.remove("match-anim");
     // Optional: fade them out or keep them until we place the prize?
     // We will keep them for a moment then maybe remove them if we want to simulate "moving"
     // But for now we just spawn the prize and leave cards (or hide them).
@@ -586,7 +606,7 @@ function handleMatchSuccess(chunkIndex) {
     setTimeout(() => {
       if (boardContainer) boardContainer.classList.remove("board-complete");
       transitionToJigsaw();
-    }, 800);
+    }, 700); // Wait for pulse/fade (0.6s) + buffer
   }
 }
 

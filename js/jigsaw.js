@@ -1,3 +1,4 @@
+import { CONFIG } from "./config.js";
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
 import { transitionToSudoku } from "./sudoku.js";
@@ -524,6 +525,7 @@ export function transitionToJigsaw() {
       const leftPieces = collectedLeft.querySelectorAll(".collected-piece");
       const rightPieces = collectedRight.querySelectorAll(".collected-piece");
 
+      // RESTORED: Assign unique VT names to track pieces during the morph
       leftPieces.forEach((p, i) => {
         p.style.viewTransitionName = `piece-left-${i}`;
       });
@@ -534,32 +536,59 @@ export function transitionToJigsaw() {
       const board = document.querySelector(".memory-board");
       if (board) board.style.viewTransitionName = "board-main";
 
+      // OPTIMIZATION: Do not transition the layout wrapper.
+      // Nesting VTs is expensive (hole punching).
+      // Let the browser cross-fade the container while we morph the board/pieces.
       const gridLayout = document.querySelector(".memory-grid-layout");
-      if (gridLayout) gridLayout.style.viewTransitionName = "main-layout";
+      // if (gridLayout) gridLayout.style.viewTransitionName = "main-layout";
 
-      const pieces = document.querySelectorAll(".collected-piece");
+      // Animate the wrapper, not individual pieces
       const wrapper = document.querySelector(".collected-wrapper");
+      // if (wrapper) wrapper.style.viewTransitionName = "wrapper-main"; // Optional, might look better without
 
       const transition = document.startViewTransition(() => {
+        const start = performance.now();
+        if (CONFIG.debugMode)
+          console.log("[Perf] Start ViewTransition Callback");
+
+        // PERFORMANCE: Reduce rendering quality during heavy transition
+        document.body.classList.add("perf-optimization-active");
+
         // CRITICAL: Disable all CSS transitions during the DOM update phase.
-        // This ensures the Target snapshot is captured instantly by the API,
-        // preventing "ghosting" or "messy stacking" caused by CSS/API conflict.
         if (board) board.style.transition = "none";
-        if (gridLayout) gridLayout.style.transition = "none";
+        // if (gridLayout) gridLayout.style.transition = "none"; // Optimization: gridLayout VT disabled
         if (wrapper) wrapper.style.transition = "none";
         collectedLeft.style.transition = "none";
         collectedRight.style.transition = "none";
-        pieces.forEach((p) => (p.style.transition = "none"));
+
+        // We still need to disable CSS transitions on pieces so they snap to new positions
+        // inside the container immediately (for the VT snapshot to work right if we animated containers)
+        // But since we aren't VT-animating them, standard CSS transition might be better?
+        // No, let's keep them snappy for the layout change.
+        document
+          .querySelectorAll(".collected-piece")
+          .forEach((p) => (p.style.transition = "none"));
 
         memorySection.classList.add("jigsaw-mode");
 
         // UI/Layout updates MUST happen inside the transition callback
         gameManager.updateProgress("progress", { currentStage: "jigsaw" });
         deselectPiece();
+
+        if (CONFIG.debugMode) console.time("[Perf] fitCollectedPieces");
         fitCollectedPieces();
+        if (CONFIG.debugMode) console.timeEnd("[Perf] fitCollectedPieces");
+
+        if (CONFIG.debugMode)
+          console.log(
+            `[Perf] Callback Duration: ${(performance.now() - start).toFixed(2)}ms`,
+          );
       });
 
       transition.finished.finally(() => {
+        // Restore rendering quality
+        document.body.classList.remove("perf-optimization-active");
+
         // Clean up names and restore transition capabilities
         leftPieces.forEach((p) => (p.style.viewTransitionName = ""));
         rightPieces.forEach((p) => (p.style.viewTransitionName = ""));
@@ -573,10 +602,11 @@ export function transitionToJigsaw() {
 
         cleanup(board);
         cleanup(gridLayout);
-        cleanup(wrapper);
-        cleanup(collectedLeft);
-        cleanup(collectedRight);
-        pieces.forEach((p) => (p.style.transition = ""));
+        // cleanup(wrapper);
+
+        document
+          .querySelectorAll(".collected-piece")
+          .forEach((p) => (p.style.transition = ""));
       });
     } else {
       memorySection.classList.add("jigsaw-mode");

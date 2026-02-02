@@ -54,8 +54,7 @@ body.dark-mode {
   margin-bottom: 0.8rem; /* Slightly more space from footer */
   padding: 0.2rem 0.6rem; /* Reduced padding further */
   background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.9); /* Solid/High Alpha instead of Blur */
   border-radius: 6px;
   font-family: "Outfit", sans-serif;
   font-size: 0.9rem; /* Reduced font size further */
@@ -72,6 +71,13 @@ body.dark-mode {
 body:not(.dark-mode) .memory-timer {
   background: rgba(0, 0, 0, 0.05); /* Light grey tint */
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Mode specific */
+body.dark-mode .memory-timer {
+  background: rgba(30, 41, 59, 0.95); /* Dark Slate background */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0; /* Ensure light text */
 }
 
 .game-header {
@@ -198,12 +204,9 @@ body:not(.dark-mode) .memory-timer {
   flex: 1;
   padding-top: 2rem; /* Push content down on Desktop */
 
-  /* Animate layout changes */
-  transition:
-    grid-template-columns 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-    column-gap 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-    gap 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-    max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  justify-content: center;
+  flex: 1;
+  padding-top: 2rem; /* Push content down on Desktop */
 }
 
 /* Grid Areas */
@@ -272,7 +275,7 @@ body:not(.dark-mode) .memory-timer {
   justify-content: center;
   align-items: center;
   position: relative;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .sudoku-chunk-slot.filled {
@@ -314,9 +317,10 @@ body:not(.dark-mode) .memory-timer {
 }
 
 .memory-card.matched .memory-card-back {
-  filter: grayscale(100%);
+  /* filter: grayscale(100%); REMOVED for performance */
   opacity: 0.6;
   background: #e5e5e5; /* Slightly darker background to indicate disabled */
+  transition: all 0.3s ease-out; /* Smoothly settle from the pulse */
 }
 
 /* Dark mode adjustment for matched cards */
@@ -395,6 +399,9 @@ body.dark-mode .memory-card-back {
   gap: 0; /* Removed gap to prevent edge bleeding */
   background: transparent; /* Lines now handled by cell borders */
   container-type: size; /* Enable relative typography */
+  /* Optimization: Isolate rendering of the 9x9 grid internals */
+  contain: layout paint style;
+  will-change: transform;
   border-radius: 8px; /* Refined to account for 2px parent border */
   overflow: hidden; /* Ensure corner cells are clipped correctly */
 }
@@ -486,17 +493,14 @@ body.dark-mode .memory-card-back {
 /* Level Completion Animations */
 @keyframes boardPulseGreen {
   0% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
     transform: scale(1);
     border-color: rgba(76, 175, 80, 0);
   }
   50% {
-    box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.6);
     transform: scale(1.05); /* Slight grow */
     border-color: #4caf50;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
     transform: scale(1);
     border-color: rgba(76, 175, 80, 0);
   }
@@ -508,8 +512,13 @@ body.dark-mode .memory-card-back {
 
 .cards-hidden {
   opacity: 0;
-  transition: opacity 1s ease-out;
+  transition: opacity 0.6s ease-out; /* Match board pulse duration */
   pointer-events: none;
+}
+
+/* Performance: Remove cards from layout entirely in Jigsaw mode so they don't affect VT or Paint */
+.jigsaw-mode .cards-area {
+  display: none !important;
 }
 
 /* Test Panels (Mobile Only) */
@@ -600,7 +609,6 @@ body.dark-mode .memory-card-back {
     flex: 1; /* Take all remaining vertical space */
     min-height: 0;
     width: 100%;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Bring Header above test panels too */
@@ -620,7 +628,6 @@ body.dark-mode .memory-card-back {
     justify-content: center;
     padding-top: 0;
     margin-top: 0; /* Align tight to title */
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .memory-board {
@@ -632,7 +639,6 @@ body.dark-mode .memory-card-back {
     max-height: calc(43.5dvh - var(--header-height) - 50px);
     aspect-ratio: 1/1; /* Ensure squareness */
     object-fit: contain; /* Prevent distortion */
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
@@ -690,9 +696,46 @@ body.dark-mode .memory-card-back {
     width: 22vw;
     height: 22vw;
     /* max-width/height removed to let JS scale up on taller screens if needed */
+    .mini-cell {
+      font-size: 12px;
+    }
   }
 
-  .mini-cell {
-    font-size: 12px;
+  /* PERFORMANCE MODE
+   Triggered by JS during heavy transitions (Memory -> Jigsaw).
+   Strips expensive paint effects to prioritize FPS.
+*/
+  body.perf-optimization-active * {
+    box-shadow: none !important;
+  }
+
+  body.perf-optimization-active .memory-card-back {
+    border-color: transparent !important; /* Avoid border rendering on backs */
+  }
+
+  /* CRITICAL PERF: Disable CQW recalculations during animation */
+  body.perf-optimization-active .mini-sudoku-grid {
+    container-type: normal !important;
+  }
+
+  body.perf-optimization-active .mini-cell {
+    border: none !important; /* Strip grid lines temporarily */
+    font-size: 14px !important; /* Fixed size to prevent layout thrashing */
+  }
+
+  /* Force GPU Promotion */
+  .memory-board,
+  .collected-piece,
+  .mini-sudoku-grid {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform; /* Removed width/height to save VRAM */
+    perspective: 1000px;
+  }
+
+  /* Ensure internal grids are cheap to render */
+  .mini-sudoku-grid {
+    content-visibility: auto;
+    contain: layout paint style;
   }
 }
