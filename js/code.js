@@ -22,8 +22,49 @@ let maxUnlockedLevel = 3; // Tracks the highest level shown to player
 export function initCode() {
   console.log("Initializing Code Stage...");
   penaltyMode = false; // Reset penalty mode
-  // ...
-  // ...
+
+  const state = gameManager.getState();
+  const simonCoords = state.simon.coordinates;
+  const board = document.getElementById("memory-board");
+
+  if (!simonCoords || simonCoords.length < 3) {
+    console.error("Critical: Invalid Simon Coordinates", simonCoords);
+    return;
+  }
+
+  // 1. Identify Cells and Values
+  simonData = simonCoords.map((pos) => {
+    const slotIndex = Math.floor(pos.r / 3) * 3 + Math.floor(pos.c / 3);
+    const cellIndex = (pos.r % 3) * 3 + (pos.c % 3);
+    const slot = board.querySelector(
+      `.sudoku-chunk-slot[data-slot-index="${slotIndex}"]`,
+    );
+    const cell = slot.querySelectorAll(".mini-cell")[cellIndex];
+    const value = parseInt(cell.textContent.trim());
+
+    return { r: pos.r, c: pos.c, element: cell, value: value };
+  });
+
+  // 2. Clear previous styles / listeners
+  simonCells = simonData.map((d) => d.element);
+  simonCells.forEach((cell) => {
+    cell.classList.remove("search-found-cell"); // Clean from previous stage
+    cell.classList.add("code-cell");
+    // Ensure value is visible
+    cell.style.opacity = "1";
+    cell.style.transform = "scale(1)";
+  });
+
+  // 3. Load Sequence from Game State (Server Generated)
+  if (state.data.codeSequence && state.data.codeSequence.length > 0) {
+    sequence = state.data.codeSequence;
+    console.log(`[Code] Loaded Global Sequence: ${sequence.join("-")}`);
+  } else {
+    // Fallback if not present (e.g. old save or old generator)
+    console.warn("[Code] No global sequence found, generating local fallback.");
+    generateFallbackSequence();
+  }
+
   // 4. Start Game Loop
   currentLevel = 3;
   maxUnlockedLevel = 3; // Reset max
@@ -36,7 +77,88 @@ export function initCode() {
   attachCodeListeners();
 }
 
-// ...
+function generateFallbackSequence() {
+  // Use daily seed to ensure same code for everyone
+  const seed = getDailySeed();
+  const availableValues = simonData.map((d) => d.value);
+
+  // Pseudo-random based on seed
+  let localSeed = seed + 12345;
+  const random = () => {
+    const x = Math.sin(localSeed++) * 10000;
+    return x - Math.floor(x);
+  };
+
+  sequence = [];
+  let pool = [...availableValues];
+
+  for (let i = 0; i < 2; i++) {
+    const idx = Math.floor(random() * availableValues.length);
+    pool.push(availableValues[idx]);
+  }
+
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  sequence = pool;
+  console.log(`[Code] Fallback Sequence: ${sequence.join("-")}`);
+}
+
+function stopAnimation() {
+  // Clear all pending animation steps
+  activeTimeouts.forEach((id) => clearTimeout(id));
+  activeTimeouts = [];
+
+  // Remove active class from all cells immediately
+  simonCells.forEach((c) => c.classList.remove("simon-active"));
+
+  // Improve responsiveness: Unblock input immediately
+  isInputBlocked = false;
+}
+
+function startIdleTimer() {
+  clearIdleTimer();
+  // Repeat sequence after 4 seconds of inactivity
+  idleTimer = setTimeout(() => {
+    console.log("[Code] Idle timeout. Replaying sequence...");
+    playSequence();
+  }, 4000);
+}
+
+function clearIdleTimer() {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+}
+
+function highlightCell(cell, duration = 500) {
+  cell.classList.add("simon-active");
+  setTimeout(() => {
+    cell.classList.remove("simon-active");
+  }, duration);
+}
+
+function showInputHint() {
+  // Optional: cursor change or slight glow to indicate "Your turn"
+}
+
+function attachCodeListeners() {
+  const board = document.getElementById("memory-board");
+  // Use delegation but specific to code-cell
+  board.addEventListener("click", handleCodeClick);
+  board.addEventListener(
+    "touchstart",
+    function (e) {
+      if (e.target.closest(".code-cell")) {
+        e.preventDefault();
+        handleCodeClick(e);
+      }
+    },
+    { passive: false },
+  );
+}
 
 function playSequence() {
   stopAnimation(); // ensuring clean slate
@@ -57,6 +179,12 @@ function playSequence() {
     currentSequence,
   );
 
+  // Debug: Check simonData
+  console.log(
+    "[Code] Simon Data available:",
+    simonData.map((d) => ({ val: d.value, el: !!d.element })),
+  );
+
   let delay = 500;
   const flashDuration = 600;
   const gap = 300;
@@ -64,6 +192,9 @@ function playSequence() {
   currentSequence.forEach((val, index) => {
     // Find all cells matching this value
     const matchData = simonData.filter((d) => d.value === val);
+    console.log(
+      `[Code] Step ${index}: Value ${val}, Matches Found: ${matchData.length}`,
+    );
 
     const tId = setTimeout(() => {
       matchData.forEach((d) => highlightCell(d.element, 500)); // Slow for sequence
