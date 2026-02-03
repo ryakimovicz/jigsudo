@@ -283,27 +283,50 @@ export function initHome() {
   }
 
   // Re-implementing Start Button logic cleanly:
-  startBtn.replaceWith(startBtn.cloneNode(true)); // Remove old listeners
-  const newStartBtn = document.getElementById("start-btn"); // Get fresh reference
+  // Using direct onclick assignment to avoid listener stacking/loss
 
-  newStartBtn.addEventListener("click", () => {
+  // Define handler
+  const handleStart = () => {
     if (currentMode === "daily") {
       console.log("Starting Daily Game...");
-      // alert("¡Empezando el Desafío Diario! (Próximamente)");
+
+      // Visual Feedback
+      if (startBtn) {
+        startBtn.textContent = "Cargando...";
+        startBtn.disabled = true; // Prevent double-clicks
+      }
+
       import("./memory.js")
         .then((module) => {
           module.initMemoryGame();
+          // Note: initMemoryGame hides home, so button state reset isn't strictly needed immediately,
+          // but good practice if user comes back.
+          if (startBtn) {
+            startBtn.textContent =
+              translations[getCurrentLang()]?.btn_start || "EMPEZAR";
+            startBtn.disabled = false;
+          }
         })
-        .catch((err) => console.error("Failed to load Memory Game", err));
+        .catch((err) => {
+          console.error("Failed to load Memory Game", err);
+          if (startBtn) {
+            startBtn.textContent = "Error";
+            startBtn.disabled = false;
+          }
+        });
     } else {
       console.log("Starting Custom Game...");
       alert("Modo Personalizado: ¡Configura tu juego! (Próximamente)");
     }
-  });
+  };
+
+  if (startBtn) {
+    startBtn.onclick = handleStart;
+  }
 
   // Enable button now that listeners are ready (if mode is valid)
-  if (currentMode === "daily") {
-    newStartBtn.disabled = false;
+  if (currentMode === "daily" && startBtn) {
+    startBtn.disabled = false;
   }
 
   // Placeholders for other buttons
