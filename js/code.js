@@ -527,6 +527,7 @@ function finalizeVictory() {
   console.log("Victory Animation Complete");
   // Ensure "Game Complete" state is saved
   gameManager.updateProgress("code", { completed: true });
+  gameManager.recordWin(); // <--- Record Stats
 }
 
 function updateStatusDisplay() {

@@ -4,6 +4,7 @@ import { initLanguage } from "./i18n.js";
 import { initSudoku } from "./sudoku.js";
 import { gameManager } from "./game-manager.js";
 import { initAuth, loginUser, registerUser, logoutUser } from "./auth.js"; // Auth Import
+import { initProfile, showProfile } from "./profile.js"; // Profile Import
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
 
 // Boot Sequence
@@ -34,6 +35,7 @@ async function startApp() {
   initHome();
   initSudoku();
   initAuth(); // Initialize Firebase Auth listener
+  initProfile(); // Profile Module
 
   attachAuthListeners();
 }
@@ -57,6 +59,15 @@ function attachAuthListeners() {
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
       loginModal.classList.add("hidden");
+    });
+  }
+
+  // Profile Navigation
+  const btnViewProfile = document.getElementById("btn-view-profile");
+  if (btnViewProfile) {
+    btnViewProfile.addEventListener("click", () => {
+      showProfile();
+      document.getElementById("profile-dropdown")?.classList.add("hidden");
     });
   }
 

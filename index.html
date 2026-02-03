@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/search.css" />
     <link rel="stylesheet" href="css/code.css" />
     <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/profile.css" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -103,9 +104,16 @@
                   Iniciar Sesión
                 </button>
                 <div id="logged-in-view" class="hidden">
-                  <p class="user-greeting">
-                    Hola, <span id="user-display-name">Guest</span>
-                  </p>
+                  <div class="user-greeting">
+                    Hola, <span id="user-display-name">Usuario</span>
+                  </div>
+                  <button
+                    id="btn-view-profile"
+                    class="btn-secondary full-width"
+                    data-i18n="btn_view_profile"
+                  >
+                    Ver Perfil
+                  </button>
                   <button
                     id="btn-logout"
                     class="btn-danger small full-width"
@@ -339,8 +347,57 @@
         </button>
       </main>
 
-      <!-- Memory Game Section -->
-      <section id="memory-game" class="game-section hidden">
+      <!-- Profile Section -->
+      <section id="profile-section" class="hidden">
+        <header class="app-header">
+          <button id="profile-back-btn" class="icon-btn" aria-label="Volver">
+            ←
+          </button>
+          <h1 data-i18n="profile_title_page">Mi Perfil</h1>
+          <div class="header-spacer"></div>
+          <!-- Balance content -->
+        </header>
+
+        <div class="scrollable-content">
+          <div class="profile-card glass-panel">
+            <div class="profile-header">
+              <div class="profile-avatar" id="profile-avatar">U</div>
+              <div class="profile-info">
+                <h2 id="profile-username">Usuario</h2>
+                <p id="profile-email">usuario@example.com</p>
+              </div>
+            </div>
+
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-value" id="stat-days">0</span>
+                <span class="stat-label" data-i18n="stat_days"
+                  >Días Jugados</span
+                >
+              </div>
+              <div class="stat-item">
+                <span class="stat-value" id="stat-streak">0</span>
+                <span class="stat-label" data-i18n="stat_streak"
+                  >Racha Actual</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-actions">
+            <button
+              id="btn-profile-logout"
+              class="btn-danger full-width"
+              data-i18n="btn_logout"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Game Section (Sudoku/Jigsaw) -->
+      <section id="game-section" class="hidden">
         <!-- TEST PANELS FOR MOBILE -->
         <div class="test-mobile-panels">
           <div class="test-panel red"></div>

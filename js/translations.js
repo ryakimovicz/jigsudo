@@ -231,5 +231,11 @@ export const translations = {
     link_login: "Log In",
     auth_success: "Welcome!",
     auth_logout: "Logged out",
+
+    // Profile
+    profile_title_page: "My Profile",
+    btn_view_profile: "View Profile",
+    stat_days: "Levels Completed",
+    stat_streak: "Current Streak",
   },
 };

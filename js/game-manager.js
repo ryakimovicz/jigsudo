@@ -58,6 +58,7 @@ export class GameManager {
     if (savedState) {
       // A. Load Saved Game
       this.state = savedState;
+      this._ensureStats(); // Migration
       if (CONFIG.debugMode)
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
@@ -161,6 +162,14 @@ export class GameManager {
       },
       code: {
         completed: false,
+      },
+      stats: {
+        totalPlayed: 0,
+        wins: 0,
+        currentStreak: 0,
+        maxStreak: 0,
+        history: {},
+        distribution: { "<2m": 0, "2-5m": 0, "+5m": 0 },
       },
     };
   }
@@ -442,6 +451,49 @@ export class GameManager {
       `;
 
     document.body.appendChild(overlay);
+  }
+
+  // Helper to ensure stats exist on load
+  _ensureStats() {
+    if (!this.state.stats) {
+      this.state.stats = {
+        totalPlayed: 0,
+        wins: 0,
+        currentStreak: 0,
+        maxStreak: 0,
+        history: {},
+        distribution: { "<2m": 0, "2-5m": 0, "+5m": 0 },
+      };
+    }
+  }
+
+  recordWin() {
+    const today = new Date().toISOString().split("T")[0];
+    if (
+      this.state.stats.history[today] &&
+      this.state.stats.history[today].result === "win"
+    )
+      return;
+
+    console.log("🏆 RECORDING WIN!");
+    const s = this.state.stats;
+    s.totalPlayed++;
+    s.wins++;
+    s.history[today] = { result: "win", timestamp: Date.now() };
+
+    // Streak Logic
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().split("T")[0];
+
+    if (s.history[yStr] && s.history[yStr].result === "win") {
+      s.currentStreak++;
+    } else {
+      s.currentStreak = 1;
+    }
+    if (s.currentStreak > s.maxStreak) s.maxStreak = s.currentStreak;
+
+    this.save();
   }
 }
 
