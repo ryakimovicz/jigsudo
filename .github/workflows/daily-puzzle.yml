@@ -35,4 +35,4 @@ jobs:
           git config --global user.email 'bot@jigsudo.com'
           git add public/puzzles/*.json
           # Only commit if there are changes (avoids error if file exists and identical, unlikely with seed)
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🧩 New Daily Puzzle Generated" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🧩 New Daily Puzzle Generated" && git pull --rebase origin main && git push)
