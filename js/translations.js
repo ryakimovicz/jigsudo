@@ -19,6 +19,7 @@ export const translations = {
     tab_custom: "Personalizado",
 
     // Custom Mode
+    diff_easy: "Fácil",
     diff_normal: "Normal",
     diff_hard: "Difícil",
     diff_extreme: "Extremo",
@@ -31,13 +32,13 @@ export const translations = {
     game_search: "Sopa de Números",
 
     // Menu Main Content
-    menu_title: "Cinco desafíos, un solo tablero",
+    menu_title: "Seis desafíos, un solo tablero",
     // innerHTML for description to preserve strong tags
     menu_description_html: `Todo empieza con el <strong>Juego de Memoria</strong>: encuentra los
             pares, consigue las piezas y arma el <strong>Rompecabezas</strong>.
             Solo así podrás enfrentar al <strong>Sudoku</strong>, superar los
-            <strong>Picos y Valles</strong> y encontrar las secuencias ocultas en
-            la <strong>Sopa de Números</strong> final.`,
+            <strong>Picos y Valles</strong>, buscar en la <strong>Sopa de Números</strong> 
+            y descifrar <strong>El Código</strong> final.`,
     menu_tagline: "Tu dosis diaria de números te está esperando",
     btn_start: "EMPEZAR",
     btn_start: "EMPEZAR",
@@ -123,6 +124,7 @@ export const translations = {
     tab_custom: "Custom",
 
     // Custom Mode
+    diff_easy: "Easy",
     diff_normal: "Normal",
     diff_hard: "Hard",
     diff_extreme: "Extreme",
@@ -135,12 +137,12 @@ export const translations = {
     game_search: "Number Search",
 
     // Menu Main Content
-    menu_title: "Five challenges, one single board",
+    menu_title: "Six challenges, one single board",
     menu_description_html: `It all starts with the <strong>Memory Game</strong>: find the 
             pairs, get the pieces and solve the <strong>Jigsaw Puzzle</strong>.
             Only then can you face the <strong>Sudoku</strong>, overcome the 
-            <strong>Peaks and Valleys</strong> and find the hidden sequences in 
-            the final <strong>Number Search</strong>.`,
+            <strong>Peaks and Valleys</strong>, search in the <strong>Number Search</strong> 
+            and crack <strong>The Code</strong> at the end.`,
     menu_tagline: "Your daily dose of numbers is waiting for you",
     btn_start: "START",
     btn_start: "START",

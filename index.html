@@ -164,14 +164,15 @@
               id="panel-daily"
               class="game-description glass-panel active"
             >
-              <h2 data-i18n="menu_title">Cinco desafíos, un solo tablero</h2>
+              <h2 data-i18n="menu_title">Seis desafíos, un solo tablero</h2>
               <p data-i18n-html="menu_description_html">
                 Todo empieza con el <strong>Juego de Memoria</strong>: encuentra
                 los pares, consigue las piezas y arma el
                 <strong>Rompecabezas</strong>. Solo así podrás enfrentar al
                 <strong>Sudoku</strong>, superar los
-                <strong>Picos y Valles</strong> y encontrar las secuencias
-                ocultas en la <strong>Sopa de Números</strong> final.
+                <strong>Picos y Valles</strong>, buscar en la
+                <strong>Sopa de Números</strong> y descifrar
+                <strong>El Código</strong> final.
               </p>
               <p class="tagline" data-i18n="menu_tagline">
                 Tu dosis diaria de números te está esperando
@@ -191,6 +192,13 @@
 
                 <div class="difficulty-wrapper">
                   <div class="segmented-control">
+                    <button
+                      class="seg-btn"
+                      data-diff="easy"
+                      data-i18n="diff_easy"
+                    >
+                      Fácil
+                    </button>
                     <button
                       class="seg-btn active"
                       data-diff="normal"
@@ -252,6 +260,13 @@
                   </div>
                   <div class="switch-row">
                     <span data-i18n="game_search">Search</span>
+                    <label class="switch-small">
+                      <input type="checkbox" checked />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                  <div class="switch-row">
+                    <span data-i18n="game_code">Code</span>
                     <label class="switch-small">
                       <input type="checkbox" checked />
                       <span class="slider-small round"></span>
