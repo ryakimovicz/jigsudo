@@ -327,8 +327,10 @@ function handleError(cell) {
 function winGame() {
   console.log("CODE CRACKED! Starting Victory Animation...");
 
-  // 1. STOP TIMER IMMEDIATELY
+  // 1. STOP TIMER & ANIMATIONS IMMEDIATELY
   stopTimer();
+  stopAnimation();
+  clearIdleTimer();
 
   // 2. HIDE HEADER UI (Title & Info)
   const gameHeader = document.querySelector(".game-header");
