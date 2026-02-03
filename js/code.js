@@ -126,6 +126,11 @@ function startIdleTimer() {
   // Repeat sequence after 4 seconds of inactivity
   idleTimer = setTimeout(() => {
     console.log("[Code] Idle timeout. Replaying sequence...");
+    // If user stopped in penalty mode, assume they want to see the next level they unlocked
+    if (penaltyMode) {
+      console.log("[Code] Idle in Penalty Mode. Exiting to show progression.");
+      penaltyMode = false;
+    }
     playSequence();
   }, 4000);
 }
