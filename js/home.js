@@ -301,6 +301,11 @@ export function initHome() {
     }
   });
 
+  // Enable button now that listeners are ready (if mode is valid)
+  if (currentMode === "daily") {
+    newStartBtn.disabled = false;
+  }
+
   // Placeholders for other buttons
   document.getElementById("btn-stats")?.addEventListener("click", () => {
     alert("Estadísticas: Próximamente");
