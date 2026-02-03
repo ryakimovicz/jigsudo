@@ -213,6 +213,8 @@ export function initSudoku() {
 
 export function transitionToSudoku() {
   console.log("Transitioning to Sudoku...");
+  const lang = getCurrentLang();
+  const t = translations[lang];
 
   const gameSection = document.getElementById("memory-game");
   const controls = document.getElementById("sudoku-controls");
@@ -241,8 +243,7 @@ export function transitionToSudoku() {
   // Update header title/desc if needed via gameManager or manually
   const headerTitle = gameSection.querySelector(".header-title-container h2");
   if (headerTitle) {
-    headerTitle.textContent =
-      translations[gameManager.getState().language]?.game_sudoku || "Sudoku";
+    headerTitle.textContent = t.game_sudoku || "Sudoku";
   }
 
   // Deselect any jigsaw pieces
@@ -251,8 +252,6 @@ export function transitionToSudoku() {
     .forEach((el) => el.classList.remove("selected"));
 
   // Update Tooltip Info for Sudoku
-  const lang = getCurrentLang();
-  const t = translations[lang];
   const tooltipTitle = document.querySelector(".info-tooltip h3");
   const tooltipDesc = document.querySelector(".info-tooltip p");
 

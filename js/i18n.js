@@ -60,10 +60,10 @@ function updateTexts() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     let key = el.getAttribute("data-i18n");
 
-    // Override mechanisms for Jigsaw Mode
-    if (jigsawMode) {
-      if (key === "game_memory") key = "jigsaw_help_title"; // Reuse for Title
-    }
+    // Override mechanisms for Jigsaw Mode - REMOVED faulty remapping
+    // if (jigsawMode) {
+    //   if (key === "game_memory") key = "jigsaw_help_title"; // Reuse for Title
+    // }
 
     if (t[key]) el.textContent = t[key];
   });
@@ -82,6 +82,9 @@ function updateTexts() {
 
   // Jigsaw/Sudoku Tooltip Special Case (Manual Override if in mode)
   if (jigsawMode) {
+    const titleEl = document.querySelector(".header-title-container h2");
+    if (titleEl && t.game_jigsaw) titleEl.textContent = t.game_jigsaw;
+
     const tooltipTitle = document.querySelector(".info-tooltip h3");
     const tooltipDesc = document.querySelector(".info-tooltip p");
     if (tooltipTitle && t.jigsaw_help_title)
@@ -91,6 +94,9 @@ function updateTexts() {
   } else if (
     document.getElementById("memory-game")?.classList.contains("sudoku-mode")
   ) {
+    const titleEl = document.querySelector(".header-title-container h2");
+    if (titleEl && t.game_sudoku) titleEl.textContent = t.game_sudoku;
+
     const tooltipTitle = document.querySelector(".info-tooltip h3");
     const tooltipDesc = document.querySelector(".info-tooltip p");
     if (tooltipTitle && t.sudoku_help_title)
@@ -123,6 +129,19 @@ function updateTexts() {
       tooltipTitle.textContent = t.search_help_title;
     if (tooltipDesc && t.search_help_desc)
       tooltipDesc.innerHTML = t.search_help_desc;
+  } else if (
+    document.getElementById("memory-game")?.classList.contains("code-mode")
+  ) {
+    // Code Mode Override
+    const titleEl = document.querySelector(".header-title-container h2");
+    if (titleEl && t.game_code) titleEl.textContent = t.game_code;
+
+    const tooltipTitle = document.querySelector(".info-tooltip h3");
+    const tooltipDesc = document.querySelector(".info-tooltip p");
+    if (tooltipTitle && t.code_help_title)
+      tooltipTitle.textContent = t.code_help_title;
+    if (tooltipDesc && t.code_help_desc)
+      tooltipDesc.innerHTML = t.code_help_desc;
   }
 }
 

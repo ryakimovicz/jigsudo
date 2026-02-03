@@ -62,10 +62,10 @@ export const translations = {
       "Encuentra los pares de bloques sudoku.<br />Cada par revelado se colocará en el tablero o en tu colección.",
 
     // Jigsaw Game Help
-    jigsaw_help_title: "Rompecabezas",
+    jigsaw_help_title: "Cómo jugar", // Standardized
     jigsaw_help_desc:
       "Arrastra las piezas de tu colección al tablero.<br />Arma el Sudoku completo para avanzar.",
-    sudoku_help_title: "Sudoku",
+    sudoku_help_title: "Cómo jugar", // Standardized
     sudoku_help_desc:
       "Completa la cuadrícula con los números del 1 al 9.<br />Cada fila, columna y bloque de 3x3 debe contener todos los números sin repetirlos.",
     alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
@@ -74,9 +74,9 @@ export const translations = {
     alert_next_search: "Siguiente juego: Sopa de Números\nPróximamente",
 
     // Search Game Help
-    search_help_title: "Sopa de Números",
+    search_help_title: "Cómo jugar", // Standardized
     search_help_desc:
-      "Encuentra las secuencias numéricas ocultas en el tablero.",
+      "Encuentra las secuencias numéricas ocultas en el tablero.<br>Pueden girar en cualquier dirección (como viborita), pero no en diagonal.",
 
     // Modals
     modal_clear_title: "Reiniciar Tablero",
@@ -87,7 +87,7 @@ export const translations = {
     btn_clear: "Borrar Todo",
 
     // Peaks Game Help
-    peaks_help_title: "Picos y Valles",
+    peaks_help_title: "Cómo jugar", // Standardized
     peaks_help_desc:
       "Encuentra los <strong>Picos</strong> (números mayores que todos sus vecinos) y los <strong>Valles</strong> (números menores que todos sus vecinos).",
 
@@ -100,7 +100,7 @@ export const translations = {
     search_targets_title: "Secuencias:",
     // Code Game
     game_code: "El Código",
-    code_help_title: "El Código",
+    code_help_title: "Cómo jugar", // Standardized
     code_help_desc:
       "Memoriza la secuencia numérica y repítela en las celdas correctas.<br>La secuencia crece en cada turno.",
     code_level_local: "Nivel",
@@ -168,10 +168,10 @@ export const translations = {
       "Find the matching Sudoku block pairs.<br />Each revealed pair will be placed on the board or in your collection.",
 
     // Jigsaw Game Help
-    jigsaw_help_title: "Jigsaw Puzzle",
+    jigsaw_help_title: "How to play", // Standardized
     jigsaw_help_desc:
       "Drag pieces from your collection to the board.<br />Assemble the full Sudoku to proceed.",
-    sudoku_help_title: "Sudoku",
+    sudoku_help_title: "How to play", // Standardized
     sudoku_help_desc:
       "Complete the grid with numbers from 1 to 9.<br />Each row, column and 3x3 block must contain all numbers without repeating them.",
     alert_next_sudoku: "Next game: Sudoku\nComing Soon",
@@ -180,8 +180,9 @@ export const translations = {
     alert_next_search: "Next game: Number Search\nComing Soon",
 
     // Search Game Help
-    search_help_title: "Number Search",
-    search_help_desc: "Find the hidden number sequences on the board.",
+    search_help_title: "How to play", // Standardized
+    search_help_desc:
+      "Find the hidden number sequences on the board.<br>They can turn in any direction (like a snake), but not diagonally.",
     search_targets_title: "Sequences:", // [NEW]
 
     // Modals
@@ -193,7 +194,7 @@ export const translations = {
     btn_clear: "Clear All",
 
     // Peaks Game Help
-    peaks_help_title: "Peaks & Valleys",
+    peaks_help_title: "How to play", // Standardized
     peaks_help_desc:
       "Find the <strong>Peaks</strong> (numbers with no larger neighbors around them) and <strong>Valleys</strong> (numbers with no smaller neighbors around them).",
 
@@ -203,7 +204,7 @@ export const translations = {
     peaks_tooltip_valley: "Valley",
     // Code Game
     game_code: "The Code",
-    code_help_title: "The Code",
+    code_help_title: "How to play", // Standardized
     code_help_desc:
       "Memorize the number sequence and repeat it on the correct cells.<br>The sequence grows each turn.",
     code_level_local: "Level",

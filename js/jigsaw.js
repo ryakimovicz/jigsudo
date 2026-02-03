@@ -514,7 +514,7 @@ export function transitionToJigsaw() {
     titleEl.style.transition = "opacity 0.5s ease";
     titleEl.style.opacity = "0";
     setTimeout(() => {
-      titleEl.textContent = t.jigsaw_help_title || "Rompecabezas";
+      titleEl.textContent = t.game_jigsaw || "Rompecabezas";
       titleEl.style.opacity = "1";
     }, 500);
   }
