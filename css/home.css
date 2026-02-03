@@ -130,10 +130,12 @@ body.dark-mode .main-header {
   /* Centering Logic */
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Vertically center content in safe zone */
+  justify-content: flex-start; /* Vertically center content in safe zone */
   align-items: center;
+  padding-top: 6vh; /* Start 6vh down from header */
 
-  padding: 0 20px; /* Horizontal padding only */
+  padding-left: 20px; /* Horizontal padding only */
+  padding-right: 20px;
   gap: 20px;
   width: 100%;
   max-width: 800px;
@@ -144,6 +146,46 @@ body.dark-mode .main-header {
   overflow-y: auto;
   /* Hide scrollbar for cleaner look if content fits */
   scrollbar-width: none;
+}
+
+/* Home Logo Section */
+.home-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px; /* Space before tabs */
+}
+
+.home-logo {
+  width: 60px; /* Adjust size as needed provided svg allows */
+  height: 60px;
+  object-fit: contain;
+}
+
+.home-logo-text {
+  font-family: var(--font-main); /* Outfit */
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1;
+}
+
+/* Theme Switching for Logo */
+.light-mode-logo {
+  display: block;
+}
+.dark-mode-logo {
+  display: none;
+}
+
+body.dark-mode .light-mode-logo {
+  display: none;
+}
+body.dark-mode .dark-mode-logo {
+  display: block;
 }
 
 /* Wrapper for Tabs + Panels to bypass menu-container gap */
