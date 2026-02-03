@@ -56,6 +56,13 @@
   gap: 16px;
   border: 1px solid var(--glass-border);
   background: white; /* Clean paper look */
+
+  /* Override glass-panel defaults */
+  opacity: 1 !important;
+  transform: none !important;
+  min-height: auto !important;
+  position: relative !important;
+  pointer-events: auto !important;
 }
 
 .profile-avatar-large {
