@@ -125,16 +125,18 @@ function stopAnimation() {
 
 function startIdleTimer() {
   clearIdleTimer();
-  // Repeat sequence after 4 seconds of inactivity
+  // Duration: 2s if in penalty mode (quick assist), 4s otherwise (standard replay)
+  const delay = penaltyMode ? 2000 : 4000;
+
   idleTimer = setTimeout(() => {
-    console.log("[Code] Idle timeout. Replaying sequence...");
+    console.log(`[Code] Idle timeout (${delay}ms). Replaying sequence...`);
     // If user stopped in penalty mode, assume they want to see the next level they unlocked
     if (penaltyMode) {
       console.log("[Code] Idle in Penalty Mode. Exiting to show progression.");
       penaltyMode = false;
     }
     playSequence();
-  }, 4000);
+  }, delay);
 }
 
 function clearIdleTimer() {
