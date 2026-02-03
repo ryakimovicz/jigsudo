@@ -377,9 +377,10 @@ function deselectCurrentCell() {
   if (selectedCell) {
     selectedCell.classList.remove("selected-cell");
     selectedCell = null;
-    // Clear keypad feedback (unless locked, but updateKeypadHighlights handles locked logic?)
-    // Actually updateKeypadHighlights(null) clears everything except locked-num.
+    // Clear keypad feedback
     updateKeypadHighlights(null);
+    // Clear board highlights (matching numbers)
+    highlightSimilarCells(null);
   }
 }
 
@@ -540,11 +541,12 @@ function handleNumberInput(num) {
     // REMOVE ERROR CLASS ON EDIT
     selectedCell.classList.remove("error");
 
-    // VALIDATE BOARD AFTER FILL
-    validateBoard();
     updateNoteVisibility(); // Check constraints
     updateKeypadHighlights(selectedCell);
     highlightSimilarCells(num);
+
+    // VALIDATE BOARD AFTER FILL (Last step to ensure win cleans up)
+    validateBoard();
   }
 }
 
@@ -945,6 +947,9 @@ function validateBoard() {
 }
 
 function handleSudokuWin() {
+  // Deselect any active cell so it doesn't carry over to Peaks
+  deselectCurrentCell();
+
   const board = document.getElementById("memory-board");
   if (board) {
     board.classList.add("board-complete");
