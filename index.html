@@ -83,101 +83,150 @@
               aria-label="Perfil"
               data-i18n-aria="header_profile_label"
             >
-              👤
+              ⚙️
             </button>
             <!-- Profile Dropdown -->
             <div
               id="profile-dropdown"
-              class="settings-dropdown glass-panel hidden"
+              class="dropdown-content glass-panel hidden"
             >
-              <h3 class="dropdown-header" data-i18n="profile_header">
-                Mí perfil
+              <!-- HEADER -->
+              <h3 class="dropdown-header" data-i18n="settings_title">
+                Configuración
               </h3>
 
-              <!-- Account Actions -->
-              <div class="account-actions">
-                <button
-                  id="btn-login-trigger"
-                  class="btn-secondary full-width"
-                  data-i18n="btn_login_menu"
-                >
-                  Iniciar Sesión
-                </button>
-                <div id="logged-in-view" class="hidden">
-                  <div class="user-greeting">
-                    Hola, <span id="user-display-name">Usuario</span>
-                  </div>
+              <!-- SECTION: ACCOUNT -->
+              <div class="settings-section account-section">
+                <h4 class="settings-subhead" data-i18n="settings_account">
+                  Cuenta
+                </h4>
+                <!-- Login State (Toggled by JS) -->
+                <div id="login-wrapper">
                   <button
-                    id="btn-view-profile"
+                    id="btn-login-trigger"
                     class="btn-secondary full-width"
-                    data-i18n="btn_view_profile"
+                    data-i18n="btn_login_menu"
                   >
-                    Ver Perfil
+                    Iniciar Sesión
                   </button>
-                  <button
-                    id="btn-logout"
-                    class="btn-danger small full-width"
-                    data-i18n="btn_logout"
-                  >
-                    Cerrar Sesión
-                  </button>
+                </div>
+
+                <div id="logged-in-view" class="hidden">
+                  <div class="user-info-row centered">
+                    <button
+                      id="btn-view-profile"
+                      class="btn-profile-link"
+                      title="Ver Perfil"
+                    >
+                      <span class="user-avatar-placeholder">👤</span>
+                      <strong id="user-display-name">Usuario</strong>
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div class="dropdown-divider"></div>
 
-              <h3 class="dropdown-header" data-i18n="profile_dark_mode">
-                Modo Oscuro
-              </h3>
-
-              <!-- Auto Theme Option -->
-              <div class="setting-item">
-                <span class="setting-label" data-i18n="profile_auto"
-                  >Automático</span
-                >
-                <label class="switch-small">
-                  <input type="checkbox" id="auto-theme-toggle" />
-                  <span class="slider-small round"></span>
-                </label>
-              </div>
-
-              <!-- Manual Theme Option -->
-              <div class="setting-item option-manual">
-                <div class="theme-switch-wrapper">
-                  <span class="theme-icon sun">☀️</span>
-                  <label class="switch">
-                    <input type="checkbox" id="theme-toggle" />
-                    <span class="slider round"></span>
+              <!-- SECTION: APPEARANCE -->
+              <div class="settings-section appearance-section">
+                <h4 class="settings-subhead" data-i18n="settings_appearance">
+                  Apariencia
+                </h4>
+                <div class="segmented-control theme-switcher">
+                  <label class="segment-label">
+                    <input type="radio" name="theme" value="light" />
+                    <span class="segment-content">
+                      <span class="icon">☀️</span>
+                      <span class="text" data-i18n="theme_light">Claro</span>
+                    </span>
                   </label>
-                  <span class="theme-icon moon">🌙</span>
+                  <label class="segment-label">
+                    <input type="radio" name="theme" value="auto" />
+                    <span class="segment-content">
+                      <span class="icon">🌗</span>
+                      <span class="text" data-i18n="theme_auto">Auto</span>
+                    </span>
+                  </label>
+                  <label class="segment-label">
+                    <input type="radio" name="theme" value="dark" />
+                    <span class="segment-content">
+                      <span class="icon">🌙</span>
+                      <span class="text" data-i18n="theme_dark">Oscuro</span>
+                    </span>
+                  </label>
                 </div>
               </div>
 
               <div class="dropdown-divider"></div>
-              <h3 class="dropdown-header" data-i18n="profile_settings">
-                Ajustes
-              </h3>
 
-              <!-- Confirm Clear Toggle -->
-              <div class="setting-item">
-                <span class="setting-label" data-i18n="profile_quick_clear"
-                  >Borrado Rápido</span
-                >
-                <label class="switch-small">
-                  <input type="checkbox" id="confirm-clear-toggle" />
-                  <span class="slider-small round"></span>
-                </label>
+              <!-- SECTION: GAMEPLAY -->
+              <div class="settings-section gameplay-section">
+                <h4 class="settings-subhead" data-i18n="settings_gameplay">
+                  Jugabilidad
+                </h4>
+
+                <!-- Sound -->
+                <div class="setting-item">
+                  <span class="setting-label">
+                    <span class="icon-label">🔊</span>
+                    <span data-i18n="setting_sound">Sonido</span>
+                  </span>
+                  <label class="switch-small">
+                    <input type="checkbox" id="sound-toggle" checked />
+                    <span class="slider-small round"></span>
+                  </label>
+                </div>
+
+                <!-- Vibration (Mobile Only via JS) -->
+                <div class="setting-item" id="setting-vibration-container">
+                  <span class="setting-label">
+                    <span class="icon-label">📳</span>
+                    <span data-i18n="setting_vibration">Vibración</span>
+                  </span>
+                  <label class="switch-small">
+                    <input type="checkbox" id="vibration-toggle" checked />
+                    <span class="slider-small round"></span>
+                  </label>
+                </div>
+
+                <!-- Confirm Clear -->
+                <div class="setting-item">
+                  <div class="label-group">
+                    <span class="setting-label">
+                      <span class="icon-label">🛡️</span>
+                      <span data-i18n="setting_confirm_clear"
+                        >Confirmar Borrado</span
+                      >
+                    </span>
+                    <!-- <small class="setting-desc" data-i18n="setting_confirm_desc">Evita borrar todo por error</small> -->
+                  </div>
+                  <label class="switch-small">
+                    <input type="checkbox" id="confirm-clear-toggle" checked />
+                    <span class="slider-small round"></span>
+                  </label>
+                </div>
+
+                <!-- Language -->
+                <div class="setting-item">
+                  <span class="setting-label" data-i18n="profile_language"
+                    >Idioma</span
+                  >
+                  <select id="language-select" class="lang-select">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
               </div>
 
-              <!-- Language Option -->
-              <div class="setting-item">
-                <span class="setting-label" data-i18n="profile_language"
-                  >Idioma</span
+              <!-- LOGOUT (Bottom) -->
+              <div id="logout-wrapper" class="logout-container hidden">
+                <button
+                  id="btn-logout"
+                  class="btn-logout-danger"
+                  data-i18n="btn_logout"
                 >
-                <select id="language-select" class="lang-select">
-                  <option value="es">Español</option>
-                  <option value="en">English</option>
-                </select>
+                  Cerrar Sesión
+                </button>
               </div>
             </div>
           </div>
