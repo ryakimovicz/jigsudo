@@ -60,6 +60,7 @@ async function generateDailyPuzzle() {
     let finalSearchTargets = {};
     let finalSimonValues = [];
     let finalCodeSequence = [];
+    let finalGenerationSeed = 0;
 
     // --- BUCLE PRINCIPAL ---
     while (!success) {
@@ -292,13 +293,19 @@ async function generateDailyPuzzle() {
         finalSimonValues = finalTargets;
         finalGameData = gameData;
         finalCodeSequence = generateCodeSequence(finalTargets, nextRnd);
+        finalGenerationSeed = currentSeed;
         success = true;
       }
     }
 
     // --- SAVE ---
     const dailyPuzzle = {
-      meta: { version: "5.8-seed-fix", date: dateStr, seed: seedInt },
+      meta: {
+        version: "5.9-seed-info",
+        date: dateStr,
+        seed: seedInt,
+        generationSeed: finalGenerationSeed,
+      },
       data: {
         solution: finalGameData.solution,
         puzzle: finalGameData.puzzle,
@@ -314,7 +321,7 @@ async function generateDailyPuzzle() {
       path.join(PUZZLES_DIR, filename),
       JSON.stringify(dailyPuzzle, null, 2),
     );
-    console.log(`✅ Puzzle saved: ${filename}`);
+    console.log(`✅ Puzzle saved: ${filename} (Seed: ${finalGenerationSeed})`);
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     process.exit(1);
