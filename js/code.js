@@ -79,7 +79,7 @@ export function initCode() {
   attachCodeListeners();
 
   // Mark section for Debug Button detection
-  const memSection = document.getElementById("memory-game");
+  const memSection = document.getElementById("game-section");
   if (memSection) memSection.classList.add("code-mode");
 }
 
@@ -342,7 +342,7 @@ function winGame() {
   }
 
   const values = sequence.slice(0, 7); // Use up to 7, or all
-  const gameSection = document.getElementById("memory-game");
+  const gameSection = document.getElementById("game-section");
   const board = document.getElementById("memory-board");
 
   // Create Animation Container (Centered)

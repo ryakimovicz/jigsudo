@@ -347,7 +347,9 @@ export class GameManager {
       const { saveUserProgress } = await import("./db.js");
       const user = getCurrentUser();
       if (user) {
-        saveUserProgress(user.uid, this.state);
+        // Serialize nested arrays for Firestore
+        const cloudState = this._serializeState(this.state);
+        saveUserProgress(user.uid, cloudState);
       }
     } catch (e) {
       console.warn("Cloud save failed/skipped", e);
@@ -358,28 +360,72 @@ export class GameManager {
   handleCloudSync(remoteData) {
     if (!remoteData) return;
 
-    // Simple Strategy: If remote is "ahead" or we just logged in and local is fresh.
-    // For now, let's just overwrite local with remote if remote exists to ensure sync across devices.
-    // Ideally we check timestamps.
+    // Cloud data might have stringified arrays, deserialize them
+    const hydratedData = this._deserializeState(remoteData);
 
-    const remoteTime = new Date(remoteData.meta.lastPlayed).getTime();
+    const remoteTime = new Date(hydratedData.meta.lastPlayed).getTime();
     const localTime = new Date(this.state.meta.lastPlayed).getTime();
 
     console.log(`[Sync] Remote: ${remoteTime}, Local: ${localTime}`);
 
-    // If remote is newer OR local is basically empty/fresh seed
-    // (Simplified: Always load remote on login for now as "Restore Profile")
-    this.state = remoteData;
-    this.save(); // Save to local
+    // Prevent Infinite Loop: Check timestamp
+    if (remoteTime <= localTime) {
+      console.log("[Sync] Remote is not newer. Skipping sync/reload.");
+      return;
+    }
 
-    // Reload App state?
-    // Since specific game logic might have initialized (like Jigsaw pieces),
-    // we might need to reload the page or re-init modules.
-    // Easiest: Reload page.
-    // Better: Dispatch 'stateRestored' event.
+    // If remote is newer
+    this.state = hydratedData;
+    this.save(); // Save to local
 
     console.log("Cloud Save Restored. Reloading...");
     setTimeout(() => window.location.reload(), 500);
+  }
+
+  // FIRESTORE HELPER: Flatten nested arrays
+  _serializeState(state) {
+    // Deep clone to avoid mutating local state
+    const clone = JSON.parse(JSON.stringify(state));
+
+    // Stringify known 2D/3D arrays
+    if (clone.data) {
+      if (Array.isArray(clone.data.solution))
+        clone.data.solution = JSON.stringify(clone.data.solution);
+      if (Array.isArray(clone.data.initialPuzzle))
+        clone.data.initialPuzzle = JSON.stringify(clone.data.initialPuzzle);
+      if (Array.isArray(clone.data.chunks))
+        clone.data.chunks = JSON.stringify(clone.data.chunks);
+      if (clone.data.searchTargetsMap)
+        clone.data.searchTargetsMap = JSON.stringify(
+          clone.data.searchTargetsMap,
+        );
+    }
+    if (clone.sudoku && Array.isArray(clone.sudoku.currentBoard)) {
+      clone.sudoku.currentBoard = JSON.stringify(clone.sudoku.currentBoard);
+    }
+
+    return clone;
+  }
+
+  // FIRESTORE HELPER: Restore nested arrays
+  _deserializeState(cloudState) {
+    const clone = JSON.parse(JSON.stringify(cloudState));
+
+    if (clone.data) {
+      if (typeof clone.data.solution === "string")
+        clone.data.solution = JSON.parse(clone.data.solution);
+      if (typeof clone.data.initialPuzzle === "string")
+        clone.data.initialPuzzle = JSON.parse(clone.data.initialPuzzle);
+      if (typeof clone.data.chunks === "string")
+        clone.data.chunks = JSON.parse(clone.data.chunks);
+      if (typeof clone.data.searchTargetsMap === "string")
+        clone.data.searchTargetsMap = JSON.parse(clone.data.searchTargetsMap);
+    }
+    if (clone.sudoku && typeof clone.sudoku.currentBoard === "string") {
+      clone.sudoku.currentBoard = JSON.parse(clone.sudoku.currentBoard);
+    }
+
+    return clone;
   }
 
   getState() {

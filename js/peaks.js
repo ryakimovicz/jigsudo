@@ -52,7 +52,7 @@ export function initPeaks() {
 export function transitionToPeaks() {
   console.log("Transitioning to Peaks & Valleys...");
 
-  const gameSection = document.getElementById("memory-game");
+  const gameSection = document.getElementById("game-section");
   const sudokuControls = document.getElementById("sudoku-controls");
 
   if (!gameSection) return;
@@ -154,7 +154,7 @@ function updatePeaksTooltips() {
 }
 
 function handleBoardClick(e) {
-  const gameSection = document.getElementById("memory-game");
+  const gameSection = document.getElementById("game-section");
   if (!gameSection || !gameSection.classList.contains("peaks-mode")) return;
 
   const cell = e.target.closest(".mini-cell");

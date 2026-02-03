@@ -355,36 +355,60 @@
           </button>
           <h1 data-i18n="profile_title_page">Mi Perfil</h1>
           <div class="header-spacer"></div>
-          <!-- Balance content -->
         </header>
 
         <div class="scrollable-content">
-          <div class="profile-card glass-panel">
-            <div class="profile-header">
-              <div class="profile-avatar" id="profile-avatar">U</div>
-              <div class="profile-info">
-                <h2 id="profile-username">Usuario</h2>
-                <p id="profile-email">usuario@example.com</p>
-              </div>
+          <!-- 1. Identity Card -->
+          <div class="profile-card identity-card glass-panel">
+            <div class="profile-avatar-large" id="profile-avatar">U</div>
+            <div class="profile-identity">
+              <h2 id="profile-username">Usuario</h2>
+              <div class="profile-rank-badge" id="profile-rank">Novato</div>
             </div>
+            <!-- Future: Edit Button -->
+          </div>
 
-            <div class="profile-stats">
-              <div class="stat-item">
-                <span class="stat-value" id="stat-days">0</span>
-                <span class="stat-label" data-i18n="stat_days"
-                  >Días Jugados</span
-                >
-              </div>
-              <div class="stat-item">
-                <span class="stat-value" id="stat-streak">0</span>
-                <span class="stat-label" data-i18n="stat_streak"
-                  >Racha Actual</span
-                >
-              </div>
+          <!-- 2. Statistics Grid (Wordle Style) -->
+          <div class="section-title" data-i18n="stats_title">Estadísticas</div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-number" id="stat-played">0</span>
+              <span class="stat-label" data-i18n="stat_played">Jugadas</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="stat-winrate">0%</span>
+              <span class="stat-label" data-i18n="stat_winrate"
+                >% Victorias</span
+              >
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="stat-streak">0</span>
+              <span class="stat-label" data-i18n="stat_streak"
+                >Racha Actual</span
+              >
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="stat-max-streak">0</span>
+              <span class="stat-label" data-i18n="stat_max_streak"
+                >Racha Máx.</span
+              >
             </div>
           </div>
 
+          <!-- 3. History Heatmap (Calendar) -->
+          <div class="section-title" data-i18n="history_title">
+            Historial (Este Mes)
+          </div>
+          <div class="calendar-heatmap glass-panel">
+            <div class="calendar-grid" id="calendar-grid">
+              <!-- JS will populate days -->
+            </div>
+          </div>
+
+          <!-- 4. Settings / Actions -->
+          <div class="section-title" data-i18n="settings_title">Ajustes</div>
           <div class="profile-actions">
+            <!-- Future: Change Password -->
             <button
               id="btn-profile-logout"
               class="btn-danger full-width"
@@ -392,6 +416,10 @@
             >
               Cerrar Sesión
             </button>
+          </div>
+
+          <div class="profile-footer-info">
+            ID: <span id="profile-email-small">...</span>
           </div>
         </div>
       </section>

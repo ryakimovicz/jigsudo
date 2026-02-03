@@ -28,8 +28,15 @@ async function startApp() {
 
   console.log("Jigsudo App Starting...");
 
+  console.log("Jigsudo App Starting...");
+
   // Wait for Game Manager to fetch static puzzle or generate local
-  await gameManager.ready;
+  try {
+    await gameManager.ready;
+  } catch (err) {
+    console.error("[Main] Game Manager failed to initialize:", err);
+    // Ensure we don't block the UI entirely
+  }
 
   initLanguage();
   initHome();
