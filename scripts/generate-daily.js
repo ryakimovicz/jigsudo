@@ -64,7 +64,7 @@ async function generateDailyPuzzle() {
     // --- BUCLE PRINCIPAL ---
     while (!success) {
       attemptsGlobal++;
-      const currentSeed = baseSeed * 1000 + attemptsGlobal;
+      const currentSeed = baseSeed * 10000000 + attemptsGlobal;
 
       // Generador aleatorio determinista
       let localSeed = currentSeed;
@@ -294,9 +294,6 @@ async function generateDailyPuzzle() {
         success = true;
       }
     }
-
-    if (!success)
-      throw new Error("Could not generate valid puzzle after 5000 attempts.");
 
     // --- SAVE ---
     const dailyPuzzle = {
