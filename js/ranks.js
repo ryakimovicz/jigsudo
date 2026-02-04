@@ -1,20 +1,20 @@
 export const RANKS = [
   { id: 0, name: "Novato", minRP: 0, icon: "🌱" },
-  { id: 1, name: "Principiante", minRP: 15000, icon: "🥚" },
-  { id: 2, name: "Aficionado", minRP: 37500, icon: "🔨" },
-  { id: 3, name: "Estudiante", minRP: 75000, icon: "📚" },
-  { id: 4, name: "Analista", minRP: 120000, icon: "📈" },
-  { id: 5, name: "Lógico", minRP: 180000, icon: "🧩" },
-  { id: 6, name: "Estratega", minRP: 240000, icon: "♟️" },
-  { id: 7, name: "Veterano", minRP: 300000, icon: "🎖️" },
-  { id: 8, name: "Experto", minRP: 375000, icon: "🎓" },
-  { id: 9, name: "Maestro", minRP: 450000, icon: "🥋" },
-  { id: 10, name: "Sabio", minRP: 550000, icon: "🦉" },
-  { id: 11, name: "Erudito", minRP: 675000, icon: "📜" },
-  { id: 12, name: "Visionario", minRP: 825000, icon: "👁️" },
-  { id: 13, name: "Iluminado", minRP: 1050000, icon: "✨" },
-  { id: 14, name: "Oráculo", minRP: 1275000, icon: "🔮" },
-  { id: 15, name: "Eterno", minRP: 1500000, icon: "🌌" },
+  { id: 1, name: "Principiante", minRP: 3500, icon: "🥚" }, // ~2 días (+3.5k)
+  { id: 2, name: "Aficionado", minRP: 12000, icon: "🔨" }, // ~5 días (+8.5k)
+  { id: 3, name: "Estudiante", minRP: 30000, icon: "📚" }, // ~11 días (+18k)
+  { id: 4, name: "Analista", minRP: 60000, icon: "📈" }, // ~18 días (+30k)
+  { id: 5, name: "Lógico", minRP: 100000, icon: "🧩" }, // ~25 días (+40k)
+  { id: 6, name: "Estratega", minRP: 150000, icon: "♟️" }, // ~30 días (+50k) - CAPPED GAP
+  { id: 7, name: "Veterano", minRP: 200000, icon: "🎖️" }, // +50k
+  { id: 8, name: "Experto", minRP: 250000, icon: "🎓" }, // +50k
+  { id: 9, name: "Maestro", minRP: 300000, icon: "🥋" }, // +50k
+  { id: 10, name: "Sabio", minRP: 350000, icon: "🦉" }, // +50k
+  { id: 11, name: "Erudito", minRP: 400000, icon: "📜" }, // +50k
+  { id: 12, name: "Visionario", minRP: 450000, icon: "👁️" }, // +50k
+  { id: 13, name: "Iluminado", minRP: 500000, icon: "✨" }, // +50k
+  { id: 14, name: "Oráculo", minRP: 550000, icon: "🔮" }, // +50k
+  { id: 15, name: "Eterno", minRP: 600000, icon: "🌌" }, // +50k (Total ~365 days / 1 Year)
 ];
 
 export const SCORING = {
