@@ -92,11 +92,11 @@ function updateUIForLogin(user) {
   if (loginModal) loginModal.classList.add("hidden");
 
   // Update Dropdown UI
-  const btnLoginTrigger = document.getElementById("btn-login-trigger");
+  const loginWrapper = document.getElementById("login-wrapper");
   const loggedInView = document.getElementById("logged-in-view");
   const nameSpan = document.getElementById("user-display-name");
 
-  if (btnLoginTrigger) btnLoginTrigger.classList.add("hidden");
+  if (loginWrapper) loginWrapper.classList.add("hidden");
   if (loggedInView) loggedInView.classList.remove("hidden");
   if (nameSpan) {
     // Use displayName if available, otherwise email prefix
@@ -112,10 +112,10 @@ function updateUIForLogout() {
   }
 
   // Update Dropdown UI
-  const btnLoginTrigger = document.getElementById("btn-login-trigger");
+  const loginWrapper = document.getElementById("login-wrapper");
   const loggedInView = document.getElementById("logged-in-view");
 
-  if (btnLoginTrigger) btnLoginTrigger.classList.remove("hidden");
+  if (loginWrapper) loginWrapper.classList.remove("hidden");
   if (loggedInView) loggedInView.classList.add("hidden");
 }
 
