@@ -2,29 +2,43 @@
 #profile-section {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  overflow: hidden;
+  position: fixed; /* Overlay but constrained */
+  top: var(--header-height); /* Below Main Header */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 29000; /* Below Main Header (30000) */
   background-color: var(--bg-paper);
-  margin-top: var(--header-height);
+  overflow-y: auto;
+  margin-top: 0;
 }
 
-#profile-section .app-header {
-  height: var(--header-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  background-color: var(--bg-paper);
-  border-bottom: 1px solid var(--glass-border);
+/* Custom Scrollbar */
+#profile-section::-webkit-scrollbar {
+  width: 10px;
 }
 
-#profile-section .icon-btn {
-  font-size: 1.5rem;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-main);
+#profile-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#profile-section::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  border: 3px solid transparent; /* Padding trick */
+  background-clip: content-box;
+}
+
+#profile-section::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode #profile-section::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode #profile-section::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
 #profile-section .scrollable-content {
@@ -32,7 +46,8 @@
   max-width: 600px;
   margin: 0 auto;
   width: 100%;
-  overflow-y: auto;
+  flex: 1; /* Take remaining space */
+  /* Overflow moved to parent */
   padding-bottom: 80px; /* Space for footer/safe area */
 }
 
@@ -68,8 +83,9 @@
 .profile-avatar-large {
   width: 80px;
   height: 80px;
-  background-color: var(--primary-color);
-  color: white;
+  /* Light Mode: Use a lighter gray/blue (inverted from original dark slate) */
+  background-color: #e2e8f0;
+  color: var(--text-main); /* Dark text */
   font-family: var(--font-paper);
   font-size: 2.5rem;
   display: flex;
@@ -162,10 +178,54 @@
 }
 
 /* 2. Stats Grid */
+/* 2. Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 2x2 Grid */
   gap: 12px;
+  width: 100%;
+}
+
+.stats-grid.overview {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 24px;
+}
+
+.stats-grid.details {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Detail Box (Mini Card) */
+.stat-detail-box {
+  background: var(--bg-paper);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.detail-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.detail-value {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.detail-multi {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-sub {
+  font-size: 0.7rem;
+  color: var(--error);
 }
 
 .stat-box {
@@ -195,43 +255,97 @@
 }
 
 /* 3. Heatmap */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24px 0 12px;
+}
+
+.calendar-header .section-title {
+  margin: 0; /* Override default margin */
+}
+
+/* Base button is already define, add small var if needed... using icon-btn style from header */
+.icon-btn-small {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
 .calendar-heatmap {
   padding: 20px;
   background: white;
   border: 1px solid var(--glass-border);
+  /* Force Dimensions Aggressively */
+  display: flex !important;
+  flex-direction: column !important;
+  background: white; /* Ensure bg is visible */
+
+  /* Override glass-panel hidden defaults */
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+
+  /* Shrink to fit grid */
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr); /* 7 days */
-  gap: 6px;
+  grid-template-columns: repeat(7, 36px); /* Fixed Emoji Size */
+  justify-content: center;
+  gap: 3px; /* Tightest gap */
   width: 100%;
+  margin: 10px 0;
 }
 
 .calendar-day {
   aspect-ratio: 1;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.05); /* Grey/Empty */
+  min-height: 36px;
+  border-radius: 3px; /* Sharp "Pixel" corners */
+  background: #cbd5e1; /* Solid Opaque Gray (Slate 300) */
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 600;
+  font-size: 0.75rem;
+  color: #64748b; /* Muted Text */
+  font-weight: 700;
+  border: none;
+  position: relative;
 }
 
 .calendar-day.empty {
   background: transparent; /* Filler for start of month */
 }
 
+/* Header Day Style */
+.calendar-day.header-day {
+  background: transparent !important;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  border-radius: 0;
+  cursor: default;
+}
+
+/* Status Colors - Solid Blocks with superimposed text */
 .calendar-day.win {
   background: #4ade80; /* Green */
-  color: #14532d;
+  color: #064e3b; /* Dark Green Text */
 }
 
 .calendar-day.loss {
-  background: #f87171; /* Red */
-  color: #7f1d1d;
+  background: #facc15; /* Yellow */
+  color: #713f12; /* Dark Brown Text */
 }
 
 /* 4. Footer Info */
@@ -255,19 +369,40 @@ body.dark-mode .stat-box {
 }
 
 body.dark-mode .calendar-day {
-  background: rgba(255, 255, 255, 0.1);
+  background: #334155; /* Solid Opaque Dark Gray (Slate 700) */
+  color: #94a3b8;
+  border: none;
 }
 
 body.dark-mode .calendar-day.win {
   background: #22c55e;
-  color: white;
+  color: white; /* White text on Green */
 }
 
 body.dark-mode .calendar-day.loss {
-  background: #ef4444;
-  color: white;
+  background: #ca8a04; /* Dark Gold */
+  color: white; /* White text on Gold */
 }
 
 #profile-section.hidden {
   display: none;
 }
+
+/* Inverted Avatar for Dark Mode */
+body.dark-mode .profile-avatar-large {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  color: #e2e8f0;
+}
+
+/* Update Calendar Header for Vertical Layout */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 280px; /* Match Grid */
+  margin: 32px auto 4px auto; /* Spacing from Stats */
+  position: relative;
+}
+
+/* Ensure Profile Scrolls */

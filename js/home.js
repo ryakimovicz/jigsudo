@@ -1,6 +1,7 @@
 /* Main Menu Logic */
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
+import { showProfile, hideProfile } from "./profile.js";
 
 export function initHome() {
   console.log("Jigsudo Home Module Loaded");
@@ -345,7 +346,18 @@ export function initHome() {
   }
 
   // Placeholders for other buttons
-  document.getElementById("btn-stats")?.addEventListener("click", () => {
-    alert("Estadísticas: Próximamente");
-  });
+  // Stats Button -> Profile Toggle
+  const btnStats = document.getElementById("btn-stats");
+  if (btnStats) {
+    btnStats.addEventListener("click", () => {
+      if (window.location.hash === "#profile") {
+        hideProfile();
+      } else {
+        showProfile();
+      }
+    });
+
+    // Ensure icon state matches initial load (if landing on #profile)
+    // Actual icon switching happens in profile.js _showProfileUI/_hideProfileUI
+  }
 }

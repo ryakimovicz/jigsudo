@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="css/search.css" />
     <link rel="stylesheet" href="css/code.css" />
     <link rel="stylesheet" href="css/auth.css" />
-    <link rel="stylesheet" href="css/profile.css" />
+    <link rel="stylesheet" href="css/profile.css?v=17" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -398,14 +398,6 @@
 
       <!-- Profile Section -->
       <section id="profile-section" class="hidden">
-        <header class="app-header">
-          <button id="profile-back-btn" class="icon-btn" aria-label="Volver">
-            ←
-          </button>
-          <h1 data-i18n="profile_title_page">Mi Perfil</h1>
-          <div class="header-spacer"></div>
-        </header>
-
         <div class="scrollable-content">
           <!-- 1. Identity Card -->
           <div class="profile-card identity-card glass-panel">
@@ -442,35 +434,93 @@
           </div>
 
           <!-- 2. Statistics Grid (Wordle Style) -->
+          <!-- 2-Column Layout (Stats Left, Calendar Right) -->
+          <!-- 1. Stats Overview -->
           <div class="section-title" data-i18n="stats_title">Estadísticas</div>
-          <div class="stats-grid">
+          <div class="stats-grid overview">
+            <!-- Row 1: Activity -->
             <div class="stat-box">
               <span class="stat-number" id="stat-played">0</span>
-              <span class="stat-label" data-i18n="stat_played">Jugadas</span>
-            </div>
-            <div class="stat-box">
-              <span class="stat-number" id="stat-winrate">0%</span>
-              <span class="stat-label" data-i18n="stat_winrate"
-                >% Victorias</span
-              >
+              <span class="stat-label">Jugadas</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="stat-streak">0</span>
-              <span class="stat-label" data-i18n="stat_streak"
-                >Racha Actual</span
-              >
+              <span class="stat-label">Racha Actual</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="stat-max-streak">0</span>
-              <span class="stat-label" data-i18n="stat_max_streak"
-                >Racha Máx.</span
-              >
+              <span class="stat-label">Racha Máx.</span>
+            </div>
+
+            <!-- Row 2: Performance -->
+            <div class="stat-box">
+              <span class="stat-number" id="stat-max-score">0</span>
+              <span class="stat-label">Puntaje Máx.</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="stat-best-time">--:--</span>
+              <span class="stat-label">Tiempo Récord</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="stat-avg-time">--:--</span>
+              <span class="stat-label">Tiempo Prom.</span>
             </div>
           </div>
 
-          <!-- 3. History Heatmap (Calendar) -->
-          <div class="section-title" data-i18n="history_title">
-            Historial (Este Mes)
+          <!-- 2. Detailed Stage Stats -->
+          <div
+            class="section-title sub-title"
+            id="stats-details-title"
+            style="
+              margin-top: 24px;
+              margin-bottom: 8px;
+              font-size: 0.9rem;
+              opacity: 0.8;
+            "
+          >
+            Tiempos por Juego (Promedio)
+          </div>
+          <div class="stats-grid details">
+            <div class="stat-detail-box">
+              <span class="detail-label">Memoria</span>
+              <span class="detail-value" id="stat-avg-memory">--</span>
+            </div>
+            <div class="stat-detail-box">
+              <span class="detail-label">Rompecabezas</span>
+              <span class="detail-value" id="stat-avg-jigsaw">--</span>
+            </div>
+            <div class="stat-detail-box">
+              <span class="detail-label">Sudoku</span>
+              <span class="detail-value" id="stat-avg-sudoku">--</span>
+            </div>
+            <div class="stat-detail-box">
+              <span class="detail-label">Picos y Valles</span>
+              <div class="detail-multi">
+                <span id="stat-avg-peaks">--</span>
+                <span class="detail-sub" id="stat-avg-peaks-err"></span>
+              </div>
+            </div>
+            <div class="stat-detail-box">
+              <span class="detail-label">Sopa Números</span>
+              <span class="detail-value" id="stat-avg-search">--</span>
+            </div>
+            <div class="stat-detail-box">
+              <span class="detail-label">El Código</span>
+              <span class="detail-value" id="stat-avg-code">--</span>
+            </div>
+          </div>
+
+          <!-- 3. Calendar -->
+          <div class="calendar-header" style="margin-top: 32px">
+            <button id="cal-prev-btn" class="icon-btn-small">←</button>
+            <div
+              class="section-title history-title"
+              id="cal-month-label"
+              data-i18n="history_title"
+            >
+              Historial
+            </div>
+            <button id="cal-next-btn" class="icon-btn-small">→</button>
           </div>
           <div class="calendar-heatmap glass-panel">
             <div class="calendar-grid" id="calendar-grid">

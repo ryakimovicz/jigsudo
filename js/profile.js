@@ -3,8 +3,21 @@ import { getCurrentLang } from "./i18n.js";
 import { gameManager } from "./game-manager.js";
 import { getRankData } from "./ranks.js";
 
+export let currentViewDate = new Date();
+
 export function initProfile() {
   console.log("Profile Module Loaded");
+
+  // Calendar Listeners
+  const prevBtn = document.getElementById("cal-prev-btn");
+  const nextBtn = document.getElementById("cal-next-btn");
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => changeMonth(-1));
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => changeMonth(1));
+  }
 
   // Handle Initial Hash
   handleRouting();
@@ -75,6 +88,10 @@ function _showProfileUI() {
   // if (appHeader) appHeader.classList.add("hidden");
 
   updateProfileData();
+
+  // Update Header Button to Close Icon
+  const btnStats = document.getElementById("btn-stats");
+  if (btnStats) btnStats.textContent = "✕"; // Close Cross
 }
 
 function _hideProfileUI() {
@@ -88,6 +105,10 @@ function _hideProfileUI() {
   // Ideally we track previous state, but Home is safe default.
   if (menu) menu.classList.remove("hidden");
   // if (appHeader) appHeader.classList.remove("hidden");
+
+  // Restore Header Button to Stats Icon
+  const btnStats = document.getElementById("btn-stats");
+  if (btnStats) btnStats.textContent = "📊";
 }
 
 function updateProfileData() {
@@ -125,24 +146,121 @@ function updateProfileData() {
       };
 
   // 1. Basic Stats
-  const streakEl = document.getElementById("stat-streak");
-  const maxStreakEl = document.getElementById("stat-max-streak");
-  const playedEl = document.getElementById("stat-played");
-  const winRateEl = document.getElementById("stat-winrate");
+  if (document.getElementById("stat-played"))
+    document.getElementById("stat-played").textContent = stats.totalPlayed;
+  if (document.getElementById("stat-streak"))
+    document.getElementById("stat-streak").textContent = stats.currentStreak;
+  if (document.getElementById("stat-max-streak"))
+    document.getElementById("stat-max-streak").textContent = stats.maxStreak;
 
-  if (streakEl) streakEl.textContent = stats.currentStreak;
-  if (maxStreakEl) maxStreakEl.textContent = stats.maxStreak;
-  if (playedEl) playedEl.textContent = stats.totalPlayed;
+  // 2. Aggregate History Stats
+  let maxScore = 0;
+  let bestTime = Infinity;
+  let totalTime = 0;
+  let wonCount = 0;
 
-  if (winRateEl) {
-    const rate =
-      stats.totalPlayed > 0
-        ? ((stats.wins / stats.totalPlayed) * 100).toFixed(0)
-        : 0;
-    winRateEl.textContent = `${rate}%`;
+  // Stage Accumulators
+  const stageSums = {
+    memory: 0,
+    jigsaw: 0,
+    sudoku: 0,
+    peaks: 0,
+    search: 0,
+    code: 0,
+  };
+  const stageCounts = {
+    memory: 0,
+    jigsaw: 0,
+    sudoku: 0,
+    peaks: 0,
+    search: 0,
+    code: 0,
+  };
+  let totalPeaksErrors = 0;
+  let peaksErrorCount = 0;
+
+  if (stats.history) {
+    Object.values(stats.history).forEach((day) => {
+      if (day.score && day.score > maxScore) maxScore = day.score;
+
+      if (day.totalTime && day.status === "won") {
+        if (day.totalTime < bestTime) bestTime = day.totalTime;
+        totalTime += day.totalTime;
+        wonCount++;
+      }
+
+      if (day.stageTimes) {
+        for (const [stage, time] of Object.entries(day.stageTimes)) {
+          if (stageSums[stage] !== undefined && time > 0) {
+            stageSums[stage] += time;
+            stageCounts[stage]++;
+          }
+        }
+      }
+
+      if (day.peaksErrors !== undefined) {
+        totalPeaksErrors += day.peaksErrors;
+        peaksErrorCount++;
+      }
+    });
   }
 
-  // 2. Rank UI
+  // Format Helper
+  const fmtTime = (ms) => {
+    if (ms === Infinity || ms === 0 || isNaN(ms)) return "--:--";
+    const seq = Math.floor(ms / 1000);
+    const m = Math.floor(seq / 60);
+    const s = seq % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // Set Values
+  if (document.getElementById("stat-max-score"))
+    document.getElementById("stat-max-score").textContent =
+      maxScore.toLocaleString();
+  if (document.getElementById("stat-best-time"))
+    document.getElementById("stat-best-time").textContent =
+      wonCount > 0 ? fmtTime(bestTime) : "--:--";
+  if (document.getElementById("stat-avg-time"))
+    document.getElementById("stat-avg-time").textContent =
+      wonCount > 0 ? fmtTime(totalTime / wonCount) : "--:--";
+
+  // Stage Averages
+  if (document.getElementById("stat-avg-memory"))
+    document.getElementById("stat-avg-memory").textContent = stageCounts.memory
+      ? fmtTime(stageSums.memory / stageCounts.memory)
+      : "--:--";
+  if (document.getElementById("stat-avg-jigsaw"))
+    document.getElementById("stat-avg-jigsaw").textContent = stageCounts.jigsaw
+      ? fmtTime(stageSums.jigsaw / stageCounts.jigsaw)
+      : "--:--";
+  if (document.getElementById("stat-avg-sudoku"))
+    document.getElementById("stat-avg-sudoku").textContent = stageCounts.sudoku
+      ? fmtTime(stageSums.sudoku / stageCounts.sudoku)
+      : "--:--";
+  if (document.getElementById("stat-avg-search"))
+    document.getElementById("stat-avg-search").textContent = stageCounts.search
+      ? fmtTime(stageSums.search / stageCounts.search)
+      : "--:--";
+  if (document.getElementById("stat-avg-code"))
+    document.getElementById("stat-avg-code").textContent = stageCounts.code
+      ? fmtTime(stageSums.code / stageCounts.code)
+      : "--:--";
+
+  if (document.getElementById("stat-avg-peaks")) {
+    const avgPeaksTime = stageCounts.peaks
+      ? fmtTime(stageSums.peaks / stageCounts.peaks)
+      : "--:--";
+    const avgPeaksErr = peaksErrorCount
+      ? (totalPeaksErrors / peaksErrorCount).toFixed(1)
+      : "0";
+    document.getElementById("stat-avg-peaks").textContent = avgPeaksTime;
+    if (document.getElementById("stat-avg-peaks-err"))
+      document.getElementById("stat-avg-peaks-err").textContent =
+        `(${avgPeaksErr} err)`;
+  }
+
+  // Rank UI
   const currentRP = stats.currentRP || 0;
   const rankData = getRankData(currentRP);
 
@@ -165,5 +283,96 @@ function updateProfileData() {
     const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
     rpNextEl.textContent =
       typeof nextGoal === "number" ? nextGoal.toLocaleString() : nextGoal;
+  }
+
+  // 3. Render Calendar
+  renderCalendar(stats.history);
+}
+
+function changeMonth(delta) {
+  const target = new Date(
+    currentViewDate.getFullYear(),
+    currentViewDate.getMonth() + delta,
+    1,
+  );
+  const today = new Date();
+
+  // Reset time for fair comparison
+  target.setHours(0, 0, 0, 0);
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // If target is in the future relative to current month start, block it
+  if (target > currentMonthStart) {
+    return;
+  }
+
+  currentViewDate = target;
+  updateProfileData();
+}
+
+function renderCalendar(history = {}) {
+  const grid = document.getElementById("calendar-grid");
+  const label = document.getElementById("cal-month-label");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  try {
+    const year = currentViewDate.getFullYear();
+    const month = currentViewDate.getMonth();
+
+    // Update Label
+    const monthName = new Intl.DateTimeFormat(getCurrentLang(), {
+      month: "long",
+      year: "numeric",
+    }).format(currentViewDate);
+
+    // Days in Month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay();
+
+    if (label) {
+      label.textContent =
+        monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    }
+
+    // Headers (D L M X J V S)
+    const headers = ["D", "L", "M", "X", "J", "V", "S"];
+    headers.forEach((h) => {
+      const el = document.createElement("div");
+      el.className = "calendar-day header-day";
+      el.textContent = h;
+      grid.appendChild(el);
+    });
+
+    // Padding Days
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement("div");
+      empty.className = "calendar-day empty";
+      grid.appendChild(empty);
+    }
+
+    // Real Days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayEl = document.createElement("div");
+      dayEl.className = "calendar-day";
+      dayEl.textContent = d;
+
+      // Check Status
+      // Format YYYY-MM-DD
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+      if (history[dateStr]) {
+        if (history[dateStr].status === "won") {
+          dayEl.classList.add("win");
+        } else {
+          dayEl.classList.add("loss");
+        }
+      }
+
+      grid.appendChild(dayEl);
+    }
+  } catch (e) {
+    console.error("Calendar Error:", e);
   }
 }

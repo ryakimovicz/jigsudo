@@ -672,6 +672,7 @@ export class GameManager {
       timestamp: Date.now(),
       score: dailyScore,
       rp: rpEarned,
+      peaksErrors: peaksErrors,
     };
 
     // Persist
