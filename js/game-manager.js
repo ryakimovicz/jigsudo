@@ -1,5 +1,5 @@
 import { getDailySeed } from "./utils/random.js";
-import { generateDailyGame } from "./sudoku-logic.js";
+// Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
   countSequenceOccurrences,
@@ -10,10 +10,7 @@ import { calculateDailyScore, calculateRP, SCORING } from "./ranks.js";
 export class GameManager {
   constructor() {
     this.currentSeed = getDailySeed();
-    this.storageKey = `jigsudo_state_${this.currentSeed}`;
-    this.state = null;
-
-    this.ready = this.init(); // Promise that resolves when state is loaded
+    this.ready = this.prepareDaily(); // Initial Load
     this.cloudSaveTimeout = null;
 
     // Listen for tab focus/visibility to force save
@@ -22,6 +19,17 @@ export class GameManager {
         this.forceCloudSave();
       }
     });
+  }
+
+  /**
+   * Refreshes the daily seed and re-initializes the game state.
+   * Called on Page Load and when user clicks "Start" to ensure fresh date.
+   */
+  async prepareDaily() {
+    this.currentSeed = getDailySeed();
+    this.storageKey = `jigsudo_state_${this.currentSeed}`;
+    this.state = null;
+    return await this.init();
   }
 
   async init() {
@@ -294,7 +302,8 @@ export class GameManager {
 
   createNewState() {
     // Generate the Sudoku data
-    const gameData = generateDailyGame(this.currentSeed);
+    throw new Error("Local generation disabled (Cloud Only)");
+    // const gameData = generateDailyGame(this.currentSeed);
     // Note: Local generation does not support V2 Symmetric logic yet.
     // Ideally we should update generateDailyGame/Factory too, but strictly "Static First" now.
     // If fallback is disabled, this might never be called in prod.
@@ -713,7 +722,9 @@ export class GameManager {
         },
       };
 
-    const today = new Date().toISOString().split("T")[0];
+    // Use seed to determine the date (handles midnight crossing)
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
     // Check if already won today
     if (stats.history[today] && stats.history[today].status === "won") {
@@ -836,7 +847,8 @@ export class GameManager {
     // Fix: In JS getDay() for "2026-02-04" depends on timezone if not parsed correctly.
     // In recordWin, 'today' is "YYYY-MM-DD" from new Date().toISOString()
     // We should parse it as local or use the date object directly.
-    const dateObj = new Date(); // Use actual current date for weekday
+    // Use the puzzle date for weekday stats to handle midnight crossing correctly
+    const dateObj = new Date(today + "T12:00:00");
     const dayIdx = dateObj.getDay(); // 0=Sun, 6=Sat
     if (stats.weekdayStatsAccumulated[dayIdx]) {
       const w = stats.weekdayStatsAccumulated[dayIdx];

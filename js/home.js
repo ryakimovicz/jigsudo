@@ -2,6 +2,8 @@
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { showProfile, hideProfile } from "./profile.js";
+import { getDailySeed } from "./utils/random.js";
+import { gameManager } from "./game-manager.js";
 
 export function initHome() {
   console.log("Jigsudo Home Module Loaded");
@@ -302,9 +304,9 @@ export function initHome() {
   // Using direct onclick assignment to avoid listener stacking/loss
 
   // Define handler
-  const handleStart = () => {
+  const handleStart = async () => {
     if (currentMode === "daily") {
-      console.log("Starting Daily Game...");
+      console.log("Preparing Daily Game...");
 
       // Visual Feedback
       if (startBtn) {
@@ -312,24 +314,28 @@ export function initHome() {
         startBtn.disabled = true; // Prevent double-clicks
       }
 
-      import("./memory.js")
-        .then((module) => {
-          module.initMemoryGame();
-          // Note: initMemoryGame hides home, so button state reset isn't strictly needed immediately,
-          // but good practice if user comes back.
-          if (startBtn) {
-            startBtn.textContent =
-              translations[getCurrentLang()]?.btn_start || "EMPEZAR";
-            startBtn.disabled = false;
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load Memory Game", err);
-          if (startBtn) {
-            startBtn.textContent = "Error";
-            startBtn.disabled = false;
-          }
-        });
+      try {
+        // 1. Refresh Seed & State (Ensures fresh date if tab was open)
+        await gameManager.prepareDaily();
+
+        // 2. Load Memory Game
+        const module = await import("./memory.js");
+        module.initMemoryGame();
+
+        // Note: initMemoryGame hides home, so button state reset isn't strictly needed immediately,
+        // but good practice if user comes back.
+        if (startBtn) {
+          startBtn.textContent =
+            translations[getCurrentLang()]?.btn_start || "EMPEZAR";
+          startBtn.disabled = false;
+        }
+      } catch (err) {
+        console.error("Failed to start Memory Game", err);
+        if (startBtn) {
+          startBtn.textContent = "Error";
+          startBtn.disabled = false;
+        }
+      }
     } else {
       console.log("Starting Custom Game...");
       alert("Modo Personalizado: ¡Configura tu juego! (Próximamente)");
@@ -342,28 +348,62 @@ export function initHome() {
       const stats = JSON.parse(
         localStorage.getItem("jigsudo_user_stats") || "{}",
       );
-      const today = new Date().toISOString().split("T")[0];
+      // ALWAYS use the actual today's seed for the button state
+      const realTodaySeed = getDailySeed();
+      const seedStr = realTodaySeed.toString();
+      const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
       return stats.history?.[today]?.status === "won";
     } catch (e) {
       return false;
     }
   };
-  const isWon = checkDailyWin();
 
-  if (startBtn) {
+  const refreshStartButton = () => {
+    if (!startBtn) return;
+    const isWon = checkDailyWin();
+
     if (isWon && currentMode === "daily") {
       startBtn.textContent = "¡Completado!";
       startBtn.disabled = true;
       startBtn.classList.add("btn-won");
+      startBtn.onclick = null;
     } else {
+      startBtn.textContent =
+        translations[getCurrentLang()]?.btn_start || "EMPEZAR";
+      startBtn.disabled = false;
+      startBtn.classList.remove("btn-won");
       startBtn.onclick = handleStart;
     }
-  }
+  };
 
-  // Enable button now that listeners are ready (if not won)
-  if (currentMode === "daily" && startBtn && !isWon) {
-    startBtn.disabled = false;
-  }
+  // Initial State
+  refreshStartButton();
+
+  // Re-check when coming back to the tab (midnight transition)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshStartButton();
+    }
+  });
+
+  // REAL-TIME: If user stays on page, unlock exactly at midnight
+  const setupMidnightTimer = () => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+
+    // Schedule refresh at midnight
+    setTimeout(() => {
+      console.log("Midnight reached! Refreshing daily game state.");
+      refreshStartButton();
+      // Schedule the next one
+      setupMidnightTimer();
+    }, msUntilMidnight + 100); // 100ms buffer
+  };
+  setupMidnightTimer();
 
   // Placeholders for other buttons
   // Stats Button -> Profile Toggle
@@ -395,6 +435,9 @@ export function initHome() {
 
       if (menu) menu.classList.remove("hidden");
       if (gameSection) gameSection.classList.add("hidden");
+
+      // 4. Refresh Button State (in case day changed or game was just won)
+      refreshStartButton();
 
       // 3. Reset URL
       window.location.hash = "";
