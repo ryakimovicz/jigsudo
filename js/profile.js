@@ -1,7 +1,7 @@
 import { getCurrentUser, logoutUser } from "./auth.js";
 import { getCurrentLang } from "./i18n.js";
 import { gameManager } from "./game-manager.js";
-import { getRankData } from "./ranks.js";
+import { getRankData, calculateRP } from "./ranks.js";
 
 export let currentViewDate = new Date();
 
@@ -223,9 +223,10 @@ function updateProfileData() {
   };
 
   // Set Values
-  if (document.getElementById("stat-max-score"))
-    document.getElementById("stat-max-score").textContent =
-      maxScore.toLocaleString();
+  if (document.getElementById("stat-max-score")) {
+    const maxVal = calculateRP(maxScore);
+    document.getElementById("stat-max-score").textContent = maxVal.toFixed(2);
+  }
   if (document.getElementById("stat-best-time"))
     document.getElementById("stat-best-time").textContent =
       wonCount > 0 ? fmtTime(bestTime) : "--:--";
@@ -315,24 +316,20 @@ function renderWeekdayStats(history) {
   container.innerHTML = "";
 
   // 0=Sun, 1=Mon ... 6=Sat
+  // Added accumulators for Errors and Score
   const days = [
-    { label: "D", sum: 0, count: 0 },
-    { label: "L", sum: 0, count: 0 },
-    { label: "M", sum: 0, count: 0 },
-    { label: "M", sum: 0, count: 0 }, // Miércoles check
-    { label: "J", sum: 0, count: 0 },
-    { label: "V", sum: 0, count: 0 },
-    { label: "S", sum: 0, count: 0 },
+    { label: "D", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
+    { label: "L", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
+    { label: "M", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
+    { label: "X", sum: 0, count: 0, sumErrors: 0, sumScore: 0 }, // X for Miércoles
+    { label: "J", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
+    { label: "V", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
+    { label: "S", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
   ];
 
-  // Labels map based on 0-6 index
-  const labels = ["D", "L", "M", "X", "J", "V", "S"];
-
-  console.log("Processing History for Weekday Stats:", history);
   let hasData = false;
 
   Object.entries(history).forEach(([dateStr, data]) => {
-    // console.log("Processing Entry:", dateStr, data);
     if (data.status === "won" && data.totalTime > 0) {
       const parts = dateStr.split("-");
       if (parts.length === 3) {
@@ -342,6 +339,8 @@ function renderWeekdayStats(history) {
 
         if (!isNaN(dayIdx)) {
           days[dayIdx].sum += data.totalTime;
+          days[dayIdx].sumErrors += data.peaksErrors || 0;
+          days[dayIdx].sumScore += data.score || 0;
           days[dayIdx].count++;
           hasData = true;
         }
@@ -350,48 +349,77 @@ function renderWeekdayStats(history) {
   });
 
   if (!hasData) {
-    console.warn("No valid won games found for Weekday Stats");
     container.innerHTML =
-      "<div style='color: #888; padding: 20px; text-align: center;'>Sin datos suficientes</div>";
+      "<div style='color: #888; padding: 20px; text-align: center; grid-column: 1/-1;'>Sin datos suficientes</div>";
     return;
   }
 
   // Render Cards
+  const dayNames = [
+    "Domingo",
+    "Lunes",
+    "Martes",
+    "Miércoles",
+    "Jueves",
+    "Viernes",
+    "Sábado",
+  ];
+
   days.forEach((d, i) => {
     const card = document.createElement("div");
     card.className = "daily-stat-card";
 
-    const avg = d.count > 0 ? d.sum / d.count : 0;
+    // 1. Title (Day Name)
+    const lbl = document.createElement("div");
+    lbl.className = "daily-stat-label";
+    lbl.textContent = dayNames[i];
+    card.appendChild(lbl);
+
+    // 2. Metrics Grid (3 Cols)
+    const metricsGrid = document.createElement("div");
+    metricsGrid.className = "daily-metrics-grid";
+
+    // A. Time
+    const avgTime = d.count > 0 ? d.sum / d.count : 0;
     let timeStr = "--";
     if (d.count > 0) {
-      const seq = Math.floor(avg / 1000);
+      const seq = Math.floor(avgTime / 1000);
       const m = Math.floor(seq / 60);
       const s = seq % 60;
       timeStr = `${m}:${s.toString().padStart(2, "0")}`;
     }
+    const timeCol = createMetricCol("⏱️", timeStr, "Tiempo Promedio");
 
-    const dayNames = [
-      "Domingo",
-      "Lunes",
-      "Martes",
-      "Miércoles",
-      "Jueves",
-      "Viernes",
-      "Sábado",
-    ];
+    // B. Errors
+    const avgErrors = d.count > 0 ? d.sumErrors / d.count : 0;
+    const errorStr = d.count > 0 ? avgErrors.toFixed(1) : "--";
+    const errorCol = createMetricCol("❌", errorStr, "Errores Promedio");
 
-    const lbl = document.createElement("div");
-    lbl.className = "daily-stat-label";
-    lbl.textContent = dayNames[i];
+    // C. Score
+    // Calculate raw avg first, then convert to RP scale? Or convert each?
+    // Conversion is linear, so avg(RP) == convert(avg(Score))
+    const avgScoreRaw = d.count > 0 ? d.sumScore / d.count : 0;
+    const avgScoreRP = d.count > 0 ? calculateRP(avgScoreRaw).toFixed(2) : "--";
+    const scoreCol = createMetricCol("⭐", avgScoreRP, "Puntaje Promedio");
 
-    const val = document.createElement("div");
-    val.className = "daily-stat-value";
-    val.textContent = timeStr;
+    metricsGrid.appendChild(timeCol);
+    metricsGrid.appendChild(errorCol);
+    metricsGrid.appendChild(scoreCol);
 
-    card.appendChild(lbl);
-    card.appendChild(val);
+    card.appendChild(metricsGrid);
     container.appendChild(card);
   });
+}
+
+function createMetricCol(icon, value, title) {
+  const el = document.createElement("div");
+  el.className = "metric-col";
+  el.title = title;
+  el.innerHTML = `
+        <span class="metric-icon">${icon}</span>
+        <span class="metric-val">${value}</span>
+    `;
+  return el;
 }
 
 function changeMonth(delta) {

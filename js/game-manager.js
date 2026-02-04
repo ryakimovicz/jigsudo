@@ -714,7 +714,6 @@ export class GameManager {
       stageTimes: this.state.meta.stageTimes || {},
       timestamp: Date.now(),
       score: dailyScore,
-      rp: rpEarned,
       peaksErrors: peaksErrors,
     };
 
