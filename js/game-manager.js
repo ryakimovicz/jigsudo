@@ -643,6 +643,42 @@ export class GameManager {
         currentRP: 0,
         history: {},
         lastDecayCheck: null,
+        // Optimized Cache Stats
+        bestTime: Infinity,
+        bestScore: 0, // Raw Score (0-100k) or Unified? Let's use Unified (0-10) for UI display, or Raw for precision? User said 0-10.
+        // Wait, bestScore calculation depends on if we store Raw or Unified.
+        // Profile calculates unified from max(raw).
+        // Let's store RAW max to be safe/consistent with daily score calculation, converting at view time if needed, OR store unified float.
+        // User request: "bestScore (float): ... (0-10)". Okay, so we store the 0-10 value.
+        // But recordWin gives raw dailyScore. We must convert using calculateRP.
+        totalTimeAccumulated: 0,
+        totalScoreAccumulated: 0, // Sum of unified RP? Or Sum of Raw? Sum of Unified is better for "Average Score: 9.5"
+        totalPeaksErrorsAccumulated: 0,
+        stageTimesAccumulated: {
+          memory: 0,
+          jigsaw: 0,
+          sudoku: 0,
+          peaks: 0,
+          search: 0,
+          code: 0,
+        },
+        stageWinsAccumulated: {
+          memory: 0,
+          jigsaw: 0,
+          sudoku: 0,
+          peaks: 0,
+          search: 0,
+          code: 0,
+        },
+        weekdayStatsAccumulated: {
+          0: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+          1: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+          2: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+          3: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+          4: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+          5: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+          6: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
+        },
       };
 
     const today = new Date().toISOString().split("T")[0];
@@ -699,6 +735,84 @@ export class GameManager {
     const rpEarned = calculateRP(dailyScore);
 
     stats.currentRP = (stats.currentRP || 0) + rpEarned;
+
+    // --- Update Optimized Cache ---
+    // Initialize if missing (migration)
+    if (stats.bestTime === undefined) stats.bestTime = Infinity;
+    if (stats.bestScore === undefined) stats.bestScore = 0;
+    if (stats.totalTimeAccumulated === undefined)
+      stats.totalTimeAccumulated = 0;
+    if (stats.totalScoreAccumulated === undefined)
+      stats.totalScoreAccumulated = 0;
+    if (stats.totalPeaksErrorsAccumulated === undefined)
+      stats.totalPeaksErrorsAccumulated = 0;
+
+    // Nested Objects Migration
+    if (!stats.stageTimesAccumulated) {
+      stats.stageTimesAccumulated = {
+        memory: 0,
+        jigsaw: 0,
+        sudoku: 0,
+        peaks: 0,
+        search: 0,
+        code: 0,
+      };
+    }
+    if (!stats.stageWinsAccumulated) {
+      stats.stageWinsAccumulated = {
+        memory: 0,
+        jigsaw: 0,
+        sudoku: 0,
+        peaks: 0,
+        search: 0,
+        code: 0,
+      };
+    }
+    if (!stats.weekdayStatsAccumulated) {
+      stats.weekdayStatsAccumulated = {};
+      for (let i = 0; i < 7; i++) {
+        stats.weekdayStatsAccumulated[i] = {
+          sumTime: 0,
+          sumErrors: 0,
+          sumScore: 0,
+          count: 0,
+        };
+      }
+    }
+
+    // Updates
+    if (totalTimeMs > 0 && totalTimeMs < stats.bestTime) {
+      stats.bestTime = totalTimeMs;
+    }
+    if (rpEarned > stats.bestScore) {
+      stats.bestScore = rpEarned;
+    }
+    stats.totalTimeAccumulated += totalTimeMs;
+    stats.totalScoreAccumulated += rpEarned;
+    stats.totalPeaksErrorsAccumulated += peaksErrors;
+
+    // Update Stage Accumulators
+    const st = this.state.meta.stageTimes || {};
+    for (const [stage, time] of Object.entries(st)) {
+      if (stats.stageTimesAccumulated[stage] !== undefined) {
+        stats.stageTimesAccumulated[stage] += time;
+        stats.stageWinsAccumulated[stage]++;
+      }
+    }
+
+    // Update Weekday Accumulators
+    // Fix: In JS getDay() for "2026-02-04" depends on timezone if not parsed correctly.
+    // In recordWin, 'today' is "YYYY-MM-DD" from new Date().toISOString()
+    // We should parse it as local or use the date object directly.
+    const dateObj = new Date(); // Use actual current date for weekday
+    const dayIdx = dateObj.getDay(); // 0=Sun, 6=Sat
+    if (stats.weekdayStatsAccumulated[dayIdx]) {
+      const w = stats.weekdayStatsAccumulated[dayIdx];
+      w.sumTime += totalTimeMs;
+      w.sumErrors += peaksErrors;
+      w.sumScore += rpEarned;
+      w.count++;
+    }
 
     console.log(
       `[Score] Time: ${totalSeconds}s, Errors: ${peaksErrors} -> Score: ${dailyScore} -> RP: +${rpEarned}`,

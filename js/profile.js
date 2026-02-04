@@ -187,7 +187,27 @@ function updateProfileData() {
   let totalPeaksErrors = 0;
   let peaksErrorCount = 0;
 
-  if (stats.history) {
+  // Optimized Cache Strategy
+  const hasCache =
+    stats.stageTimesAccumulated !== undefined &&
+    stats.totalTimeAccumulated !== undefined;
+
+  if (hasCache) {
+    // O(1) Access!
+    bestTime = stats.bestTime || Infinity;
+    totalTime = stats.totalTimeAccumulated || 0;
+    wonCount = stats.wins || 0;
+    totalPeaksErrors = stats.totalPeaksErrorsAccumulated || 0;
+    peaksErrorCount = stats.wins || 0;
+
+    for (const [stage, time] of Object.entries(stats.stageTimesAccumulated)) {
+      if (stageSums[stage] !== undefined) {
+        stageSums[stage] = time;
+        stageCounts[stage] = stats.stageWinsAccumulated?.[stage] || 0;
+      }
+    }
+  } else if (stats.history) {
+    // Fallback: O(n) iteration for legacy data
     Object.values(stats.history).forEach((day) => {
       if (day.score && day.score > maxScore) maxScore = day.score;
 
@@ -224,12 +244,17 @@ function updateProfileData() {
 
   // Set Values
   if (document.getElementById("stat-max-score")) {
-    const maxVal = calculateRP(maxScore);
-    document.getElementById("stat-max-score").textContent = maxVal.toFixed(2);
+    const bScore = stats.bestScore;
+    document.getElementById("stat-max-score").textContent =
+      bScore !== undefined && bScore > 0
+        ? bScore.toFixed(2)
+        : calculateRP(maxScore).toFixed(2);
   }
+
   if (document.getElementById("stat-best-time"))
     document.getElementById("stat-best-time").textContent =
-      wonCount > 0 ? fmtTime(bestTime) : "--:--";
+      wonCount > 0 || bestTime !== Infinity ? fmtTime(bestTime) : "--:--";
+
   if (document.getElementById("stat-avg-time"))
     document.getElementById("stat-avg-time").textContent =
       wonCount > 0 ? fmtTime(totalTime / wonCount) : "--:--";
@@ -303,25 +328,27 @@ function updateProfileData() {
 
   // 4. Render Weekday Stats
   try {
-    renderWeekdayStats(stats.history || {});
+    renderWeekdayStats(stats);
   } catch (e) {
     console.error("Weekday Stats Render Error:", e);
   }
 }
 
-function renderWeekdayStats(history) {
+function renderWeekdayStats(stats) {
   const container = document.getElementById("daily-time-chart");
   if (!container) return;
 
   container.innerHTML = "";
 
+  const history = stats.history || {};
+  const cache = stats.weekdayStatsAccumulated;
+
   // 0=Sun, 1=Mon ... 6=Sat
-  // Added accumulators for Errors and Score
-  const days = [
+  let days = [
     { label: "D", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
     { label: "L", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
     { label: "M", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "X", sum: 0, count: 0, sumErrors: 0, sumScore: 0 }, // X for Miércoles
+    { label: "X", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
     { label: "J", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
     { label: "V", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
     { label: "S", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
@@ -329,24 +356,38 @@ function renderWeekdayStats(history) {
 
   let hasData = false;
 
-  Object.entries(history).forEach(([dateStr, data]) => {
-    if (data.status === "won" && data.totalTime > 0) {
-      const parts = dateStr.split("-");
-      if (parts.length === 3) {
-        const [y, m, d] = parts.map(Number);
-        const date = new Date(y, m - 1, d);
-        const dayIdx = date.getDay(); // 0-6
-
-        if (!isNaN(dayIdx)) {
-          days[dayIdx].sum += data.totalTime;
-          days[dayIdx].sumErrors += data.peaksErrors || 0;
-          days[dayIdx].sumScore += data.score || 0;
-          days[dayIdx].count++;
-          hasData = true;
-        }
+  if (cache) {
+    // Use Optimization Cache
+    for (let i = 0; i < 7; i++) {
+      if (cache[i] && cache[i].count > 0) {
+        days[i].sum = cache[i].sumTime;
+        days[i].sumErrors = cache[i].sumErrors;
+        days[i].sumScore = cache[i].sumScore;
+        days[i].count = cache[i].count;
+        hasData = true;
       }
     }
-  });
+  } else {
+    // Fallback to History Iteration
+    Object.entries(history).forEach(([dateStr, data]) => {
+      if (data.status === "won" && data.totalTime > 0) {
+        const parts = dateStr.split("-");
+        if (parts.length === 3) {
+          const [y, m, d] = parts.map(Number);
+          const date = new Date(y, m - 1, d);
+          const dayIdx = date.getDay(); // 0-6
+
+          if (!isNaN(dayIdx)) {
+            days[dayIdx].sum += data.totalTime;
+            days[dayIdx].sumErrors += data.peaksErrors || 0;
+            days[dayIdx].sumScore += data.score || 0;
+            days[dayIdx].count++;
+            hasData = true;
+          }
+        }
+      }
+    });
+  }
 
   if (!hasData) {
     container.innerHTML =
