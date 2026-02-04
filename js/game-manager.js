@@ -330,6 +330,12 @@ export class GameManager {
         values: [],
         coordinates: [],
       },
+      peaks: {
+        completed: false,
+      },
+      stats: {
+        peaksErrors: 0, // Track errors for scoring
+      },
       code: {
         completed: false,
       },
@@ -453,16 +459,22 @@ export class GameManager {
 
       // Dispatch Event
       window.dispatchEvent(
-        new CustomEvent("stageChanged", { detail: { stage: nextStage } }),
+        new CustomEvent("stage-changed", { detail: nextStage }),
       );
     }
   }
 
-  updateProgress(stage, data) {
-    // Generic updater
-    if (data) {
-      this.state[stage] = { ...this.state[stage], ...data };
+  // Generic State Update (called by Minigames)
+  updateProgress(section, data) {
+    if (!this.state || !this.state[section]) {
+      // Create if missing (e.g. stats)
+      if (section === "stats") this.state.stats = {};
+      else return;
     }
+
+    // Deep Merge or Shallow Merge? Shallow is usually enough for top keys
+    // data: { peaksErrors: 1 }
+    this.state[section] = { ...this.state[section], ...data };
     this.save();
   }
 

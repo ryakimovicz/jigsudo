@@ -1105,10 +1105,11 @@ function clearBoard() {
 // Helper for Debug/Hint Button
 export function provideHint() {
   console.log("Debug: Solving Sudoku (Smart 3x3)...");
-  const state = gameManager.getState();
-  const solution = state.data.solution; // 9x9 array
+  // Use the TRANSFORMED solution, not the raw one from state!
+  // This ensures we respect Jigsaw variations (LR, TB, HV)
+  const solution = gameManager.getTargetSolution();
   if (!solution) {
-    console.error("No solution found in state!");
+    console.error("No solution found via gameManager!");
     return;
   }
 

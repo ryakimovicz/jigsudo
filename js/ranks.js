@@ -1,41 +1,39 @@
 export const RANKS = [
   { id: 0, name: "Novato", minRP: 0, icon: "🌱" },
-  { id: 1, name: "Principiante", minRP: 3500, icon: "🥚" }, // ~2 días (+3.5k)
-  { id: 2, name: "Aficionado", minRP: 12000, icon: "🔨" }, // ~5 días (+8.5k)
-  { id: 3, name: "Estudiante", minRP: 30000, icon: "📚" }, // ~11 días (+18k)
-  { id: 4, name: "Analista", minRP: 60000, icon: "📈" }, // ~18 días (+30k)
-  { id: 5, name: "Lógico", minRP: 100000, icon: "🧩" }, // ~25 días (+40k)
-  { id: 6, name: "Estratega", minRP: 150000, icon: "♟️" }, // ~30 días (+50k) - CAPPED GAP
-  { id: 7, name: "Veterano", minRP: 200000, icon: "🎖️" }, // +50k
-  { id: 8, name: "Experto", minRP: 250000, icon: "🎓" }, // +50k
-  { id: 9, name: "Maestro", minRP: 300000, icon: "🥋" }, // +50k
-  { id: 10, name: "Sabio", minRP: 350000, icon: "🦉" }, // +50k
-  { id: 11, name: "Erudito", minRP: 400000, icon: "📜" }, // +50k
-  { id: 12, name: "Visionario", minRP: 450000, icon: "👁️" }, // +50k
-  { id: 13, name: "Iluminado", minRP: 500000, icon: "✨" }, // +50k
-  { id: 14, name: "Oráculo", minRP: 550000, icon: "🔮" }, // +50k
-  { id: 15, name: "Eterno", minRP: 600000, icon: "🌌" }, // +50k (Total ~365 days / 1 Year)
+  { id: 1, name: "Principiante", minRP: 20, icon: "🥚" }, // ~2 días (2x10)
+  { id: 2, name: "Aficionado", minRP: 70, icon: "🔨" }, // ~1 semana (7x10)
+  { id: 3, name: "Estudiante", minRP: 180, icon: "📚" }, // ~2.5 semanas
+  { id: 4, name: "Analista", minRP: 350, icon: "📈" }, // ~1.5 meses
+  { id: 5, name: "Lógico", minRP: 600, icon: "🧩" }, // ~2 meses
+  { id: 6, name: "Estratega", minRP: 900, icon: "♟️" }, // ~3 meses
+  { id: 7, name: "Veterano", minRP: 1200, icon: "🎖️" }, // ~4 meses
+  { id: 8, name: "Experto", minRP: 1500, icon: "🎓" }, // ~5 meses
+  { id: 9, name: "Maestro", minRP: 1800, icon: "🥋" }, // ~6 meses
+  { id: 10, name: "Sabio", minRP: 2100, icon: "🦉" }, // ~7 meses
+  { id: 11, name: "Erudito", minRP: 2400, icon: "📜" },
+  { id: 12, name: "Visionario", minRP: 2700, icon: "👁️" },
+  { id: 13, name: "Iluminado", minRP: 3000, icon: "✨" },
+  { id: 14, name: "Oráculo", minRP: 3300, icon: "🔮" },
+  { id: 15, name: "Eterno", minRP: 3650, icon: "🌌" }, // ~1 año (365x10)
 ];
 
 export const SCORING = {
   BASE_SCORE: 100000,
   ERROR_PENALTY: 300,
   TIME_PENALTY: 1, // per second
-  RP_DIVISOR: 60,
-  MISSED_DAY_RP: 500,
+  RP_DIVISOR: 10000, // Factor 10k -> 0-10 Scale
+  MISSED_DAY_RP: 3, // ~30% of a win (was 500/1600)
   PARTIAL_RP: {
-    memory: 100,
-    jigsaw: 100,
-    sudoku: 200,
-    peaks: 200,
+    memory: 0.5,
+    jigsaw: 0.5,
+    sudoku: 1,
+    peaks: 1,
   },
 };
 
 /**
  * Calculates the Daily Score (0 - 100,000)
- * @param {number} totalSeconds - Total Play Time
- * @param {number} errors - Total Errors (Peaks mainly)
- * @returns {number} The calculated score
+ * This is the RAW score.
  */
 export function calculateDailyScore(totalSeconds, errors = 0) {
   let score = SCORING.BASE_SCORE;
@@ -45,12 +43,13 @@ export function calculateDailyScore(totalSeconds, errors = 0) {
 }
 
 /**
- * Converts Daily Score to Rank Points
+ * Converts Daily Score to Unified Points (0-10 Scale)
  * @param {number} score
- * @returns {number} RP earned
+ * @returns {number} Points earned (2 decimals)
  */
 export function calculateRP(score) {
-  return Math.floor(score / SCORING.RP_DIVISOR);
+  const points = score / SCORING.RP_DIVISOR;
+  return Number(points.toFixed(2)); // Return float for precision (e.g. 9.85)
 }
 
 /**
