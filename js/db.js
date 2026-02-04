@@ -43,24 +43,37 @@ export async function loadUserProgress(userId) {
     const docSnap = await getDoc(userRef);
 
     if (docSnap.exists()) {
-      const remoteData = docSnap.data().progress;
-      const remoteTime = docSnap.data().lastUpdated;
+      const data = docSnap.data();
+      const remoteProgress = data.progress;
+      const remoteStats = data.stats; // New field
 
-      console.log("Remote progress found:", remoteData);
-
-      // Determine Conflict Resolution: Remote vs Local
-      // Simple strategy: Always prompt or Prefer Latest?
-      // For seamless UX: Prefer Latest.
-      // BUT if local is "fresh" session (empty), remote should overwrite.
+      console.log("Remote data found:", data);
 
       // Use GameManager to handle merge logic
-      gameManager.handleCloudSync(remoteData);
+      gameManager.handleCloudSync(remoteProgress, remoteStats);
     } else {
       console.log("No remote progress found. Creating new entry on next save.");
-      // First save will happen automatically on next update
     }
   } catch (error) {
     console.error("Error loading progress:", error);
+  }
+}
+
+export async function saveUserStats(userId, statsData) {
+  if (!userId) return;
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(
+      userRef,
+      {
+        stats: statsData,
+        lastUpdated: serverTimestamp(),
+      },
+      { merge: true },
+    );
+    console.log("Stats saved to cloud.");
+  } catch (error) {
+    console.error("Error saving stats:", error);
   }
 }
 

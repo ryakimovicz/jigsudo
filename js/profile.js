@@ -1,6 +1,7 @@
 import { getCurrentUser, logoutUser } from "./auth.js";
 import { getCurrentLang } from "./i18n.js";
 import { gameManager } from "./game-manager.js";
+import { getRankData } from "./ranks.js";
 
 export function initProfile() {
   console.log("Profile Module Loaded");
@@ -98,7 +99,6 @@ function updateProfileData() {
   const emailEl = document.getElementById("profile-email");
 
   if (!user) {
-    // Guest View
     if (nameEl) nameEl.textContent = "Invitado";
     if (emailEl) emailEl.textContent = "";
     if (avatarEl) avatarEl.textContent = "?";
@@ -112,17 +112,58 @@ function updateProfileData() {
   if (emailEl) emailEl.textContent = user.email;
   if (avatarEl) avatarEl.textContent = initial;
 
-  // Stats
-  const state = gameManager.state;
-  if (state && state.progress) {
-    const solvedCount = state.progress.stagesCompleted
-      ? state.progress.stagesCompleted.length
-      : 0;
+  // Stats from Global Storage
+  const statsStr = localStorage.getItem("jigsudo_user_stats");
+  const stats = statsStr
+    ? JSON.parse(statsStr)
+    : {
+        totalPlayed: 0,
+        wins: 0,
+        currentStreak: 0,
+        maxStreak: 0,
+        currentRP: 0,
+      };
 
-    const streakEl = document.getElementById("stat-streak");
-    const daysEl = document.getElementById("stat-days");
+  // 1. Basic Stats
+  const streakEl = document.getElementById("stat-streak");
+  const maxStreakEl = document.getElementById("stat-max-streak");
+  const playedEl = document.getElementById("stat-played");
+  const winRateEl = document.getElementById("stat-winrate");
 
-    if (daysEl) daysEl.textContent = solvedCount;
-    // Streak placeholder
+  if (streakEl) streakEl.textContent = stats.currentStreak;
+  if (maxStreakEl) maxStreakEl.textContent = stats.maxStreak;
+  if (playedEl) playedEl.textContent = stats.totalPlayed;
+
+  if (winRateEl) {
+    const rate =
+      stats.totalPlayed > 0
+        ? ((stats.wins / stats.totalPlayed) * 100).toFixed(0)
+        : 0;
+    winRateEl.textContent = `${rate}%`;
+  }
+
+  // 2. Rank UI
+  const currentRP = stats.currentRP || 0;
+  const rankData = getRankData(currentRP);
+
+  const rankIconEl = document.getElementById("profile-rank-icon");
+  const rankNameEl = document.getElementById("profile-rank-name");
+  const rankLevelEl = document.getElementById("profile-rank-level");
+  const progressFill = document.getElementById("profile-rank-progress");
+  const rpCurrentEl = document.getElementById("profile-rp-current");
+  const rpNextEl = document.getElementById("profile-rp-next");
+
+  if (rankIconEl) rankIconEl.textContent = rankData.rank.icon;
+  if (rankNameEl) rankNameEl.textContent = rankData.rank.name;
+  if (rankLevelEl) rankLevelEl.textContent = `Nvl. ${rankData.level}`;
+
+  if (progressFill) progressFill.style.width = `${rankData.progress}%`;
+
+  if (rpCurrentEl) rpCurrentEl.textContent = currentRP.toLocaleString();
+  if (rpNextEl) {
+    // If max rank, show infinite or current
+    const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
+    rpNextEl.textContent =
+      typeof nextGoal === "number" ? nextGoal.toLocaleString() : nextGoal;
   }
 }

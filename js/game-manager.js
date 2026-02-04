@@ -5,6 +5,7 @@ import {
   countSequenceOccurrences,
 } from "./search-gen.js";
 import { CONFIG } from "./config.js";
+import { calculateDailyScore, calculateRP, SCORING } from "./ranks.js";
 
 export class GameManager {
   constructor() {
@@ -499,47 +500,192 @@ export class GameManager {
     document.body.appendChild(overlay);
   }
 
-  // Helper to ensure stats exist on load
+  // --- Global Stats Management ---
+  // Replaces local-state-bound stats with persistent global stats
+
   _ensureStats() {
-    if (!this.state.stats) {
-      this.state.stats = {
+    // Legacy cleanup or init
+    if (this.state && !this.state.meta.stageTimes) {
+      this.state.meta.stageTimes = {};
+    }
+    this._checkRankDecay();
+  }
+
+  async _checkRankDecay() {
+    // Load global stats (not state-bound)
+    let stats =
+      this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+    if (!stats) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    const lastCheck = stats.lastDecayCheck || stats.lastPlayedDate;
+
+    // Only check if we haven't checked today
+    if (lastCheck && lastCheck !== today) {
+      // Check gap between today and last PLAYED date
+      // If lastPlayed was yesterday, gap is 1 day. No penalty.
+      // If lastPlayed was 2 days ago, gap is 2 days. Missed 1 day. Penalty.
+
+      const lastPlayed = stats.lastPlayedDate || today; // If never played, assume today? No, safe default.
+      if (!stats.lastPlayedDate) return;
+
+      const lastDate = new Date(lastPlayed);
+      const currDate = new Date(today);
+      lastDate.setHours(0, 0, 0, 0);
+      currDate.setHours(0, 0, 0, 0);
+
+      const diffTime = currDate - lastDate;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 1) {
+        const missed = diffDays - 1;
+        const penalty = missed * SCORING.MISSED_DAY_RP;
+
+        if (penalty > 0) {
+          console.log(
+            `[Rank] Decay applied: -${penalty} RP for ${missed} days.`,
+          );
+          stats.currentRP = Math.max(0, (stats.currentRP || 0) - penalty);
+
+          // Update Check Timestamp
+          stats.lastDecayCheck = today;
+          this.stats = stats;
+          localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+
+          // Trigger Profile UI update? (Will happen on reload/profile view)
+        }
+      }
+    }
+  }
+
+  // Called when stage changes in main loop (needs hook)
+  recordStageTime(stage, durationMs) {
+    if (!this.state) return;
+    if (!this.state.meta.stageTimes) this.state.meta.stageTimes = {};
+
+    const current = this.state.meta.stageTimes[stage] || 0;
+    this.state.meta.stageTimes[stage] = current + durationMs;
+    // Frequent saves might be heavy? Save on stage exit?
+    // For now rely on periodic saves or event-driven saves
+    this.save();
+  }
+
+  async handleCloudSync(remoteProgress, remoteStats) {
+    // 1. Progress (State) Sync
+    if (remoteProgress) {
+      // Logic to merge progress...
+      console.log("[GM] Syncing Progress...");
+      // If remote is newer, use it?
+      // Skipping detailed complexity for now, strictly implementing Stats Sync
+    }
+
+    // 2. Stats Sync
+    if (remoteStats) {
+      console.log("[GM] Syncing Global Stats:", remoteStats);
+      this.stats = remoteStats;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    }
+  }
+
+  // Updated to write to Global Storage
+  async recordWin() {
+    // 1. Load Global Stats
+    let stats = this.stats ||
+      JSON.parse(localStorage.getItem("jigsudo_user_stats")) || {
         totalPlayed: 0,
         wins: 0,
         currentStreak: 0,
         maxStreak: 0,
+        lastPlayedDate: null, // YYYY-MM-DD
+        currentRP: 0,
         history: {},
-        distribution: { "<2m": 0, "2-5m": 0, "+5m": 0 },
+        lastDecayCheck: null,
       };
-    }
-  }
 
-  recordWin() {
     const today = new Date().toISOString().split("T")[0];
-    if (
-      this.state.stats.history[today] &&
-      this.state.stats.history[today].result === "win"
-    )
-      return;
 
-    console.log("🏆 RECORDING WIN!");
-    const s = this.state.stats;
-    s.totalPlayed++;
-    s.wins++;
-    s.history[today] = { result: "win", timestamp: Date.now() };
+    // Check if already won today
+    if (stats.history[today] && stats.history[today].status === "won") {
+      console.log("Already won today. Stats not incremented.");
+      return;
+    }
+
+    console.log("🏆 RECORDING GLOBAL WIN!");
+
+    // Update Counters
+    stats.totalPlayed = (stats.totalPlayed || 0) + 1;
+    stats.wins = (stats.wins || 0) + 1;
 
     // Streak Logic
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = yesterday.toISOString().split("T")[0];
+    const last = stats.lastPlayedDate;
+    if (last) {
+      const lastDate = new Date(last);
+      const currDate = new Date(today);
+      // Zero time components for safety
+      lastDate.setHours(0, 0, 0, 0);
+      currDate.setHours(0, 0, 0, 0);
 
-    if (s.history[yStr] && s.history[yStr].result === "win") {
-      s.currentStreak++;
+      const diffTime = currDate - lastDate;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        stats.currentStreak = (stats.currentStreak || 0) + 1;
+      } else if (diffDays > 1) {
+        stats.currentStreak = 1; // Broken
+      }
     } else {
-      s.currentStreak = 1;
+      stats.currentStreak = 1;
     }
-    if (s.currentStreak > s.maxStreak) s.maxStreak = s.currentStreak;
 
-    this.save();
+    if (stats.currentStreak > (stats.maxStreak || 0)) {
+      stats.maxStreak = stats.currentStreak;
+    }
+
+    // SCORING
+    const startStr = this.state.meta.startedAt;
+    const totalTimeMs = startStr
+      ? Date.now() - new Date(startStr).getTime()
+      : 0;
+    const totalSeconds = Math.floor(totalTimeMs / 1000);
+
+    // Get Errors (Peaks) - assuming we tracked it in state.stats.peaksErrors
+    // We need to ensure we track this. For now default to 0.
+    const peaksErrors = this.state.stats?.peaksErrors || 0;
+
+    const dailyScore = calculateDailyScore(totalSeconds, peaksErrors);
+    const rpEarned = calculateRP(dailyScore);
+
+    stats.currentRP = (stats.currentRP || 0) + rpEarned;
+
+    console.log(
+      `[Score] Time: ${totalSeconds}s, Errors: ${peaksErrors} -> Score: ${dailyScore} -> RP: +${rpEarned}`,
+    );
+
+    stats.lastPlayedDate = today;
+    stats.lastDecayCheck = today;
+
+    // Save History Record
+    stats.history[today] = {
+      status: "won",
+      totalTime: totalTimeMs,
+      stageTimes: this.state.meta.stageTimes || {},
+      timestamp: Date.now(),
+      score: dailyScore,
+      rp: rpEarned,
+    };
+
+    // Persist
+    this.stats = stats;
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+
+    // Cloud Save
+    const { saveUserStats } = await import("./db.js");
+    const user = await import("./auth.js").then((m) => m.getCurrentUser());
+    if (user) {
+      saveUserStats(user.uid, stats);
+    }
+
+    this.save(); // Save game state too (marked completed)
   }
 }
 

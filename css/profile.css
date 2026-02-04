@@ -86,16 +86,79 @@
   line-height: 1.2;
 }
 
-.profile-rank-badge {
-  display: inline-block;
-  background: var(--accent-color);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
+/* Rank Display Styles */
+.rank-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px; /* Constrain width */
   margin-top: 8px;
+}
+
+.rank-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rank-icon {
+  font-size: 1.8rem;
+}
+
+.rank-title {
+  font-family: var(--font-header); /* Outfit */
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.rank-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.rank-progress-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.1); /* Track */
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Dark mode track */
+[data-theme="dark"] .rank-progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rank-progress-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--primary-main),
+    var(--secondary-main)
+  );
+  border-radius: 10px;
+  transition: width 0.5s ease-out;
+}
+
+.rank-details-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.rank-level {
+  font-weight: 700;
+  color: var(--primary-main);
 }
 
 /* 2. Stats Grid */
