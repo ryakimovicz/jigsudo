@@ -5,7 +5,7 @@ import {
   countSequenceOccurrences,
 } from "./search-gen.js";
 import { CONFIG } from "./config.js";
-import { calculateDailyScore, calculateRP, SCORING } from "./ranks.js";
+import { calculateRP, SCORING } from "./ranks.js";
 
 export class GameManager {
   constructor() {
