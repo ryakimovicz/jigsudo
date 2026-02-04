@@ -1,8 +1,5 @@
 /* Main Entry Point */
-console.log(
-  "%c🔥 MAIN.JS LOADED FROM SOURCE 🔥",
-  "color: red; font-size: 20px; font-weight: bold;",
-);
+
 import { initHome } from "./home.js";
 import { initLanguage } from "./i18n.js";
 import { initSudoku } from "./sudoku.js";
