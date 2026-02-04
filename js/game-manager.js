@@ -14,6 +14,14 @@ export class GameManager {
     this.state = null;
 
     this.ready = this.init(); // Promise that resolves when state is loaded
+    this.cloudSaveTimeout = null;
+
+    // Listen for tab focus/visibility to force save
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        this.forceCloudSave();
+      }
+    });
   }
 
   async init() {
@@ -346,18 +354,42 @@ export class GameManager {
     this.state.meta.lastPlayed = new Date().toISOString();
     localStorage.setItem(this.storageKey, JSON.stringify(this.state));
 
-    // CLOUD SYNC
-    // Dynamic Import to avoid circular dependencies at top level if desired,
-    // or just assume global auth state if module loaded.
-    // Better: Check if user is logged in via Auth module helper
+    // SMART CLOUD SYNC (Debounced)
+    this.saveCloudDebounced();
+  }
+
+  /**
+   * Debounces the cloud save to avoid hitting Firebase quotas.
+   * Default: 5 seconds of inactivity.
+   */
+  saveCloudDebounced(delay = 5000) {
+    if (this.cloudSaveTimeout) {
+      clearTimeout(this.cloudSaveTimeout);
+    }
+
+    this.cloudSaveTimeout = setTimeout(() => {
+      this.forceCloudSave();
+    }, delay);
+  }
+
+  /**
+   * Forces an immediate write to Firestore.
+   * Used on Stage Win, Game Complete, or App Suspend.
+   */
+  async forceCloudSave() {
+    if (this.cloudSaveTimeout) {
+      clearTimeout(this.cloudSaveTimeout);
+      this.cloudSaveTimeout = null;
+    }
+
     try {
       const { getCurrentUser } = await import("./auth.js");
       const { saveUserProgress } = await import("./db.js");
       const user = getCurrentUser();
-      if (user) {
+      if (user && this.state) {
         // Serialize nested arrays for Firestore
         const cloudState = this._serializeState(this.state);
-        saveUserProgress(user.uid, cloudState);
+        await saveUserProgress(user.uid, cloudState);
       }
     } catch (e) {
       console.warn("Cloud save failed/skipped", e);
@@ -455,7 +487,7 @@ export class GameManager {
       if (!this.state.progress.stagesCompleted.includes(currentStage)) {
         this.state.progress.stagesCompleted.push(currentStage);
       }
-      this.save();
+      this.forceCloudSave(); // Immediate Cloud Push on Stage Win
 
       // Dispatch Event
       window.dispatchEvent(
@@ -842,7 +874,7 @@ export class GameManager {
       saveUserStats(user.uid, stats);
     }
 
-    this.save(); // Save game state too (marked completed)
+    this.forceCloudSave(); // Save game state too (marked completed)
   }
 }
 

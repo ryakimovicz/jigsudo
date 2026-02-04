@@ -598,6 +598,11 @@ function disableCards(cardsToDisable) {
 
 function handleMatchSuccess(chunkIndex) {
   matchesFound++;
+
+  // SYNC STATE: Save matches count
+  gameManager.updateProgress("memory", { pairsFound: matchesFound });
+  gameManager.save();
+
   console.log(`Matched Pair for Chunk ${chunkIndex}!`);
 
   const idx = parseInt(chunkIndex);

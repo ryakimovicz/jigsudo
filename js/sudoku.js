@@ -947,6 +947,10 @@ function validateBoard() {
   if (!isFull) {
     if (missingCells < 5)
       console.log(`Sudoku: ${missingCells} cells remaining...`);
+
+    // SYNC STATE: Collect current board for persistence
+    syncSudokuState();
+    gameManager.save();
     return;
   }
 
@@ -957,8 +961,6 @@ function validateBoard() {
     );
     return;
   }
-
-  console.log("Sudoku Board Full - Validating Matrix...");
 
   console.log("Sudoku Board Full - Validating Matrix...");
 
@@ -985,6 +987,37 @@ function validateBoard() {
   } else {
     console.log(`Sudoku: Board full but ${errorCount} errors found.`);
   }
+}
+
+/**
+ * Reads the board from DOM and updates GameManager state
+ */
+export function syncSudokuState() {
+  const board = document.getElementById("memory-board");
+  if (!board) return;
+
+  const slots = Array.from(board.querySelectorAll(".sudoku-chunk-slot"));
+  const currentBoard = Array(9)
+    .fill()
+    .map(() => Array(9).fill(0));
+
+  slots.forEach((slot, slotIndex) => {
+    const cells = Array.from(slot.querySelectorAll(".mini-cell"));
+    cells.forEach((cell, localIndex) => {
+      const row = Math.floor(slotIndex / 3) * 3 + Math.floor(localIndex / 3);
+      const col = (slotIndex % 3) * 3 + (localIndex % 3);
+      const val = cell.textContent.trim();
+
+      // If it has notes, it's effectively 0 in currentBoard logic
+      if (val && !cell.classList.contains("has-notes")) {
+        currentBoard[row][col] = parseInt(val) || 0;
+      } else {
+        currentBoard[row][col] = 0;
+      }
+    });
+  });
+
+  gameManager.updateProgress("sudoku", { currentBoard });
 }
 
 function handleSudokuWin() {

@@ -247,6 +247,9 @@ function handleCodeClick(e) {
   if (val === expectedVal) {
     stepInLevel++;
 
+    // SYNC STATE: Save progress
+    gameManager.save();
+
     // Check if we hit the limit of the CURRENT TARGET level
     if (stepInLevel >= currentLevel) {
       // Check absolute victory (Level 7 / Sequence Max)

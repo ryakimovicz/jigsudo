@@ -204,6 +204,10 @@ function handleCorrectClick(cell, type) {
 
   foundTargets++;
   updateRemainingCounter();
+
+  // SYNC STATE: Save progress
+  gameManager.save();
+
   checkPeaksVictory();
 }
 
