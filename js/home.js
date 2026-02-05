@@ -38,6 +38,9 @@ export function initHome() {
   const solveBtn = document.getElementById("debug-help-btn");
   if (solveBtn) solveBtn.style.display = "none";
 
+  // Enforce Home State Class for CSS overrides
+  document.body.classList.add("home-active");
+
   // ... (existing constants) ...
 
   // Sidebar elements removed
@@ -344,6 +347,9 @@ export function initHome() {
         // 1. Refresh Seed & State (Ensures fresh date if tab was open)
         await gameManager.prepareDaily();
 
+        // Remove Home State
+        document.body.classList.remove("home-active");
+
         // 2. Load Memory Game
         const module = await import("./memory.js");
         module.initMemoryGame();
@@ -462,11 +468,18 @@ export function initHome() {
       if (menu) menu.classList.remove("hidden");
       if (gameSection) gameSection.classList.add("hidden");
 
-      // 4. Refresh Button State (in case day changed or game was just won)
-      refreshStartButton();
-
       // 3. Reset URL
       window.location.hash = "";
+
+      // 4. Update Header Info
+      refreshStartButton();
+
+      // 5. Hide Debug/Beta Button (Redundant but safe)
+      const debugBtn = document.getElementById("debug-help-btn");
+      if (debugBtn) debugBtn.style.display = "none";
+
+      // Restore Home State
+      document.body.classList.add("home-active");
     });
   }
 }
