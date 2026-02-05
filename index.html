@@ -37,6 +37,25 @@
       href="assets/images/favicon_dark.svg"
       media="(prefers-color-scheme: dark)"
     />
+
+    <!-- Social Media / Open Graph -->
+    <meta property="og:title" content="Jigsudo - Desafía tu mente" />
+    <meta
+      property="og:description"
+      content="Resuelve el puzzle diario. Una combinación única de lógica y rompecabezas. ¿Podrás completarlo?"
+    />
+    <meta property="og:image" content="https://jigsudo.web.app/assets/images/social-preview.png" />
+    <meta property="og:url" content="https://jigsudo.web.app" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Jigsudo - Puzzle Diario" />
+    <meta
+      name="twitter:description"
+      content="Juega Jigsudo gratis. El desafío diario que entrena tu cerebro."
+    />
+    <meta name="twitter:image" content="https://jigsudo.web.app/assets/images/social-preview.png" />
   </head>
   <body>
     <script>
@@ -243,6 +262,9 @@
                 <div class="settings-section" style="margin-top: 15px; text-align: center;">
                   <button id="btn-report-bug" class="btn-report-bug" onclick="window.openBugReportModal()">
                     Reportar Bug 🐛
+                  </button>
+                  <button id="btn-share-app" class="btn-report-bug" onclick="window.shareApp()" style="margin-top: 10px; border-color: var(--accent-color); color: var(--accent-color);">
+                    Compartir App 📢
                   </button>
                 </div>
               </div>

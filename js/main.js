@@ -219,6 +219,31 @@ function attachAuthListeners() {
     }
   });
 
+  // --- SOCIAL SHARE LOGIC ---
+  window.shareApp = async function () {
+    const shareData = {
+      title: "Jigsudo",
+      text: "¡Desafía tu mente con Jigsudo! 🧩✨ ¿Podrás resolver el puzzle del día?",
+      url: window.location.href, // Or hardcoded 'https://jigsudo.com'
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        console.log("Shared successfully");
+      } else {
+        // Fallback for Desktop
+        await navigator.clipboard.writeText(
+          `${shareData.text} Juega gratis aquí: ${shareData.url}`,
+        );
+        const { showToast } = await import("./ui.js");
+        showToast("¡Enlace copiado al portapapeles! 📋✨");
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+    }
+  };
+
   // --- BUG REPORT LOGIC (Global Export) ---
   // --- BUG REPORT LOGIC (Global Export) ---
   window.openBugReportModal = function () {
