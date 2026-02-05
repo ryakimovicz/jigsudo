@@ -3,6 +3,7 @@ import { getCurrentLang, updateTexts } from "./i18n.js";
 import { translations } from "./translations.js";
 import { gameManager } from "./game-manager.js";
 import { getRankData, calculateRP } from "./ranks.js";
+import { formatTime } from "./ui.js";
 
 export let currentViewDate = new Date();
 
@@ -277,13 +278,7 @@ export function updateProfileData() {
     });
   }
 
-  const fmtTime = (ms) => {
-    if (ms === Infinity || isNaN(ms)) return "--:--";
-    const seq = Math.floor(ms / 1000);
-    const m = Math.floor(seq / 60);
-    const s = seq % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  const fmtTime = (ms) => formatTime(ms);
 
   // Helper for consistent localized numbers (e.g. 9,50 in AR vs 9.50 in US)
   const fmtNumber = (num, decimals = 2) => {
@@ -507,13 +502,7 @@ function renderWeekdayStats(stats) {
 
     // A. Time
     const avgTime = d.count > 0 ? d.sum / d.count : 0;
-    let timeStr = "--";
-    if (d.count > 0) {
-      const seq = Math.floor(avgTime / 1000);
-      const m = Math.floor(seq / 60);
-      const s = seq % 60;
-      timeStr = `${m}:${s.toString().padStart(2, "0")}`;
-    }
+    let timeStr = formatTime(avgTime);
     const timeCol = createMetricCol("⏱️", timeStr, "Tiempo Promedio");
 
     // B. Errors

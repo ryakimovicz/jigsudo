@@ -1,4 +1,5 @@
 import { gameManager } from "./game-manager.js";
+import { formatTime } from "./ui.js";
 
 let timerInterval = null;
 
@@ -36,21 +37,8 @@ function updateTimerDisplay() {
   const now = Date.now();
   const elapsed = Math.max(0, now - start); // Avoid negative
 
-  const totalSeconds = Math.floor(elapsed / 1000);
-  const hrs = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-
   const timerElement = document.getElementById("memory-timer");
   if (timerElement) {
-    if (hrs > 0) {
-      timerElement.textContent = `⏱ ${hrs.toString().padStart(2, "0")}:${mins
-        .toString()
-        .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    } else {
-      timerElement.textContent = `⏱ ${mins.toString().padStart(2, "0")}:${secs
-        .toString()
-        .padStart(2, "0")}`;
-    }
+    timerElement.textContent = `⏱ ${formatTime(elapsed)}`;
   }
 }
