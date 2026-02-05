@@ -134,6 +134,10 @@ export function initMemoryGame() {
 }
 
 function debugAutoMatch() {
+  if (window.isGameTransitioning) {
+    console.log("Debug blocked: Transition in progress.");
+    return;
+  }
   const gameSection = document.getElementById("game-section"); // FIXED ID
   if (!gameSection) return;
 

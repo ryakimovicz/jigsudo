@@ -389,6 +389,7 @@ function restoreFoundSequences(data) {
 
 export function transitionToSearch() {
   console.log("Transitioning to Number Search...");
+  window.isGameTransitioning = true;
 
   const gameSection = document.getElementById("game-section");
   if (!gameSection) return;
@@ -419,11 +420,10 @@ export function transitionToSearch() {
     tooltipTitle.style.transition = "opacity 0.5s ease";
     tooltipDesc.style.opacity = "0";
     setTimeout(() => {
-      tooltipTitle.textContent = t.search_help_title || "Sopa de Números";
-      tooltipDesc.innerHTML =
-        t.search_help_desc || "Encuentra las secuencias numéricas ocultas.";
       tooltipTitle.style.opacity = "1";
       tooltipDesc.style.opacity = "1";
+      // Unlock
+      window.isGameTransitioning = false;
     }, 500);
   }
 
@@ -458,6 +458,7 @@ export function provideSearchHint() {
 
 export function transitionToCode() {
   console.log("Transitioning to The Code...");
+  window.isGameTransitioning = true;
 
   const gameSection = document.getElementById("game-section");
   if (!gameSection) return;
@@ -496,6 +497,8 @@ export function transitionToCode() {
       tooltipDesc.innerHTML = t.code_help_desc || "Memoriza la secuencia.";
       tooltipTitle.style.opacity = "1";
       tooltipDesc.style.opacity = "1";
+      // Unlock
+      window.isGameTransitioning = false;
     }, 500);
   }
 

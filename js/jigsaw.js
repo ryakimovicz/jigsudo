@@ -932,8 +932,13 @@ export function debugJigsawPlace() {
 export function checkBoardCompletion() {
   // Guard 0: Prevent double-trigger logic
   if (gameManager.getState().progress.currentStage !== "jigsaw") return;
-  if (boardContainer && boardContainer.classList.contains("board-complete"))
+  if (
+    document
+      .querySelector(".memory-board")
+      ?.classList.contains("board-complete")
+  )
     return;
+  if (window.isGameTransitioning) return;
 
   // 1. Clear previous errors first
   clearBoardErrors();
@@ -1072,6 +1077,7 @@ export function checkBoardCompletion() {
     }
 
     // Delay advance
+    window.isGameTransitioning = true;
     setTimeout(() => {
       // Timer Transition
       gameManager.stopStageTimer();
@@ -1079,6 +1085,12 @@ export function checkBoardCompletion() {
       gameManager.startStageTimer("sudoku");
 
       transitionToSudoku();
+      // release flag is handled in transitionToSudoku or after animation?
+      // better to keep it true until next stage is ready.
+      // But transitionToSudoku has 500ms animation.
+      setTimeout(() => {
+        window.isGameTransitioning = false;
+      }, 1000);
     }, 600);
   }
 

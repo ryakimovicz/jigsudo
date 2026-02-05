@@ -53,6 +53,7 @@ export function initPeaks() {
 
 export function transitionToPeaks() {
   console.log("Transitioning to Peaks & Valleys...");
+  window.isGameTransitioning = true;
 
   const gameSection = document.getElementById("game-section");
   const sudokuControls = document.getElementById("sudoku-controls");
@@ -90,10 +91,10 @@ export function transitionToPeaks() {
     tooltipTitle.style.transition = "opacity 0.5s ease";
     tooltipDesc.style.opacity = "0";
     setTimeout(() => {
-      tooltipTitle.textContent = t.peaks_help_title || "Picos y Valles";
-      tooltipDesc.innerHTML = t.peaks_help_desc || t.es.peaks_help_desc; // Fallback
       tooltipTitle.style.opacity = "1";
       tooltipDesc.style.opacity = "1";
+      // Unlock
+      window.isGameTransitioning = false;
     }, 500);
   }
 

@@ -345,6 +345,14 @@ function winGame() {
     if (titleContainer) titleContainer.style.display = "none";
   }
 
+  // DISABLE DEBUG BUTTON
+  const debugBtn = document.getElementById("debug-help-btn");
+  if (debugBtn) {
+    debugBtn.style.pointerEvents = "none";
+    debugBtn.style.opacity = "0.5";
+    debugBtn.onclick = null;
+  }
+
   const values = sequence.slice(0, 7); // Use up to 7, or all
   const gameSection = document.getElementById("game-section");
   const board = document.getElementById("memory-board");
@@ -544,7 +552,7 @@ function updateStatusDisplay() {
 }
 
 export function debugSolveCode() {
-  if (isMultipressBlocked) return;
+  if (isMultipressBlocked || window.isGameTransitioning) return;
   console.log("[Code] Debug Solve Triggered");
   isMultipressBlocked = true;
 

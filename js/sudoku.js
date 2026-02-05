@@ -9,6 +9,7 @@ let lockedNumber = null; // New State
 
 export function transitionToSudoku() {
   console.log("Transitioning to Sudoku Stage...");
+  window.isGameTransitioning = true;
   const lang = getCurrentLang();
   const t = translations[lang];
 
@@ -36,6 +37,8 @@ export function transitionToSudoku() {
       tooltipDesc.innerHTML = t.sudoku_help_desc;
       tooltipTitle.style.opacity = "1";
       tooltipDesc.style.opacity = "1";
+      // Unlock
+      window.isGameTransitioning = false;
     }, 500);
   }
 

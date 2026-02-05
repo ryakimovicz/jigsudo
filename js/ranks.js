@@ -41,7 +41,7 @@ export function calculateTimeBonus(totalSeconds) {
   const penalty = totalSeconds * decayPerSecond;
   const bonus = SCORING.MAX_BONUS - penalty;
   // Return raw precision for Leaderboard sorting (e.g. 5.123414)
-  return Math.max(0, bonus);
+  return Math.max(0, Math.min(SCORING.MAX_BONUS, bonus));
 }
 
 /**

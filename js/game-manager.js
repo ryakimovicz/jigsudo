@@ -584,6 +584,16 @@ export class GameManager {
     const points = SCORING.PARTIAL_RP[stage] || 0;
     if (points <= 0) return;
 
+    // IDEMPOTENCY CHECK:
+    // Only award points if we haven't already marked this stage as accumulated in the current session/day context.
+    if (
+      this.state.progress.stagesCompleted.includes(stage) &&
+      !this._processingWin
+    ) {
+      console.log(`[Score] Rejected Duplicate Award for ${stage}.`);
+      return;
+    }
+
     console.log(`[Score] Awarding Partial Points for ${stage}: +${points}`);
 
     // Update Global Stats
@@ -597,6 +607,13 @@ export class GameManager {
 
     // Also update localized accumulators for display
     stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + points;
+
+    // MARK AS COMPLETED in progress state to prevent double awards
+    if (!this._processingWin) {
+      if (!this.state.progress.stagesCompleted.includes(stage)) {
+        this.state.progress.stagesCompleted.push(stage);
+      }
+    }
 
     // Save
     this.stats = stats;
@@ -1027,6 +1044,14 @@ export class GameManager {
       }
 
       this.forceCloudSave(); // Save game state too (marked completed)
+
+      // Disable Debug Button on WIN
+      const debugBtn = document.getElementById("debug-help-btn");
+      if (debugBtn) {
+        debugBtn.style.pointerEvents = "none";
+        debugBtn.style.opacity = "0.5";
+        debugBtn.onclick = null;
+      }
 
       // Debug Feedback
       const { showToast } = await import("./ui.js");
