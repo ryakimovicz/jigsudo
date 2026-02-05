@@ -107,6 +107,9 @@ export async function registerUser(email, password, username) {
       displayName: username,
     });
 
+    // Force UI Update with new name (fix race condition)
+    updateUIForLogin(user);
+
     // 4. Index Username in Firestore immediately
     await saveUserStats(user.uid, { registeredAt: new Date() }, username);
 
@@ -242,8 +245,7 @@ function updateUIForLogin(user) {
     profileNameLarge.textContent = user.displayName || "Usuario";
   }
 
-  if (profileEmailSmall)
-    profileEmailSmall.textContent = user.uid.substring(0, 8) + "...";
+  if (profileEmailSmall) profileEmailSmall.textContent = "";
 
   // Wire up Buttons (Profile Sidebar)
   const btnChangeName = document.getElementById("btn-profile-change-name");
@@ -547,6 +549,14 @@ function showPasswordModal(actionType) {
     title.style.color = "#ff5555";
     newPassContainer.classList.add("hidden");
 
+    // Explicitly Reset Inputs (Fix for zombie state from Change Name)
+    if (confirmInput.closest(".password-wrapper")) {
+      confirmInput.closest(".password-wrapper").classList.remove("hidden");
+    } else {
+      confirmInput.classList.remove("hidden");
+    }
+    if (textInput) textInput.classList.add("hidden");
+
     const newBtnConfirm = btnConfirm.cloneNode(true);
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
 
@@ -603,8 +613,6 @@ function showPasswordModal(actionType) {
   }
 
   // Wiring Cancel
-  // Clone logic used above might have lost the reference to the active button if we click cancel and reopen
-  // Actually, btnCancel doesn't change behavior, so simple onclick is fine.
   btnCancel.onclick = () => {
     modal.classList.add("hidden");
     title.style.color = "";

@@ -235,6 +235,16 @@
                     <option value="en">English</option>
                   </select>
                 </div>
+                </div>
+
+
+
+                <!-- SECTION: SUPPORT -->
+                <div class="settings-section" style="margin-top: 15px; text-align: center;">
+                  <button id="btn-report-bug" class="btn-report-bug" onclick="window.openBugReportModal()">
+                    Reportar Bug 🐛
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -630,10 +640,6 @@
               Iniciar Sesión
             </button>
           </div>
-
-          <div class="profile-footer-info">
-            ID: <span id="profile-email-small">...</span>
-          </div>
         </div>
       </section>
 
@@ -1013,6 +1019,32 @@
           >
             Borrar Todo
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUG REPORT MODAL -->
+    <div id="report-bug-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3>Reportar Bug 🐛</h3>
+        <p class="modal-desc">
+          Describe el problema que encontraste. Si es posible, menciona qué
+          estabas haciendo cuando ocurrió.
+        </p>
+        <textarea
+          id="bug-report-text"
+          class="auth-input"
+          style="
+            min-height: 120px;
+            margin: 15px 0;
+            resize: vertical;
+            font-family: inherit;
+          "
+          placeholder="Escribe aquí los detalles..."
+        ></textarea>
+        <div class="modal-actions">
+          <button id="btn-cancel-bug" class="btn-secondary">Cancelar</button>
+          <button id="btn-submit-bug" class="btn-primary">Enviar Reporte</button>
         </div>
       </div>
     </div>

@@ -218,6 +218,76 @@ function attachAuthListeners() {
       loginModal.classList.add("hidden");
     }
   });
+
+  // --- BUG REPORT LOGIC (Global Export) ---
+  // --- BUG REPORT LOGIC (Global Export) ---
+  window.openBugReportModal = function () {
+    const modal = document.getElementById("report-bug-modal");
+    const dropdown = document.getElementById("profile-dropdown");
+    const bugText = document.getElementById("bug-report-text");
+    const btnCancel = document.getElementById("btn-cancel-bug");
+    const btnSubmit = document.getElementById("btn-submit-bug");
+
+    if (modal) {
+      modal.classList.remove("hidden");
+      if (dropdown) dropdown.classList.add("hidden");
+      if (bugText) {
+        bugText.value = "";
+        setTimeout(() => bugText.focus(), 100);
+      }
+
+      // --- Wire Buttons Lazy-Style (Every time modal opens) ---
+      if (btnCancel) {
+        btnCancel.onclick = () => modal.classList.add("hidden");
+      }
+
+      if (btnSubmit) {
+        btnSubmit.onclick = async () => {
+          const desc = bugText ? bugText.value.trim() : "";
+          if (!desc) {
+            alert("Por favor describe el problema.");
+            return;
+          }
+          btnSubmit.disabled = true;
+          btnSubmit.textContent = "Enviando...";
+          try {
+            const { submitBugReport } = await import("./db.js");
+            const { getCurrentUser } = await import("./auth.js");
+            const { showToast } = await import("./ui.js");
+            const result = await submitBugReport(desc, getCurrentUser());
+            if (result.success) {
+              showToast("¡Reporte enviado! Gracias. 🐛❤️");
+              modal.classList.add("hidden");
+            } else {
+              showToast("Error al enviar: " + result.error);
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Error al enviar.");
+          } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = "Enviar Reporte";
+          }
+        };
+      }
+    } else {
+      console.error("🐛 Modal #report-bug-modal NOT FOUND");
+      alert("Error: No se encuentra la ventana de reporte.");
+    }
+  };
+
+  // --- BUG REPORT LOGIC (Event Delegation) ---
+  // We use delegation to avoid "Element Not Found" issues if the DOM renders late.
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("#btn-report-bug");
+    if (!btn) return;
+
+    // Prevent default anchor/button behavior
+    e.preventDefault();
+    e.stopPropagation();
+
+    window.openBugReportModal();
+  }); // End Delegation
 }
 
 // Wait for DOM to be ready

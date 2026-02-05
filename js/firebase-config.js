@@ -24,7 +24,7 @@ if (isLocalhost) {
   try {
     const secrets = await import("./utils/secrets.js");
     if (secrets.API_KEY_DEV) {
-      console.log("[Firebase] Using DEV API Key");
+      // console.log("[Firebase] Using DEV API Key");
       firebaseConfig.apiKey = secrets.API_KEY_DEV;
     }
   } catch (e) {
@@ -40,6 +40,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-console.log("Firebase Initialized");
+// console.log("Firebase Initialized");
 
 export { auth, db };

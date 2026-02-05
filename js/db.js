@@ -12,10 +12,32 @@ import {
   query,
   where,
   getDocs,
+  addDoc,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { gameManager } from "./game-manager.js";
 
 // ... (rest of imports/vars)
+
+export async function submitBugReport(description, user) {
+  try {
+    const { CONFIG } = await import("./config.js");
+    const report = {
+      description: description,
+      userId: user ? user.uid : "anonymous",
+      userEmail: user ? user.email : null,
+      timestamp: serverTimestamp(),
+      userAgent: navigator.userAgent,
+      appVersion: CONFIG.version || "unknown",
+      url: window.location.href,
+    };
+
+    await addDoc(collection(db, "reports"), report);
+    return { success: true };
+  } catch (error) {
+    console.error("Error submitting report:", error);
+    return { success: false, error: error.message };
+  }
+}
 
 // Real-time listener unsubscribe function
 let unsubscribeProgress = null;
@@ -177,18 +199,7 @@ export async function wipeUserData(userId) {
   try {
     const userRef = doc(db, "users", userId);
     // Instead of deleting the whole doc, just delete game data
-    await setDoc(
-      userRef,
-      {
-        progress: deleteField(),
-        stats: deleteField(),
-        history: deleteField(), // legacy
-        sudoku: deleteField(), // legacy
-        currentStreak: deleteField(), // legacy
-        distribution: deleteField(), // legacy
-      },
-      { merge: true },
-    );
+    await deleteDoc(userRef);
 
     console.warn(`🔥 User Game Data Wiped for ${userId}`);
   } catch (error) {
