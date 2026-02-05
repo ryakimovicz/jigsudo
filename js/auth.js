@@ -12,6 +12,8 @@ import {
   deleteUser,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js";
+import { translations } from "./translations.js";
+import { getCurrentLang } from "./i18n.js";
 
 // ... (existing code)
 
@@ -431,10 +433,14 @@ function showPasswordModal(actionType) {
     modal.dataset.toggleListenerAttached = "true";
   }
 
+  // Determine Language
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+
   // Configure based on action
   if (actionType === "change_username") {
-    title.textContent = "Cambiar Nombre";
-    desc.textContent = "Ingresa tu nuevo nombre de usuario.";
+    title.textContent = t.modal_change_name_title;
+    desc.textContent = t.modal_change_name_desc;
     newPassContainer.classList.add("hidden");
     // Hide wrapper to hide icon too
     if (confirmInput.closest(".password-wrapper")) {
@@ -445,32 +451,33 @@ function showPasswordModal(actionType) {
 
     if (textInput) {
       textInput.classList.remove("hidden");
-      textInput.placeholder = "Nuevo nombre";
+      textInput.placeholder = t.modal_new_name_placeholder;
       textInput.value = auth.currentUser.displayName || "";
       textInput.focus();
     }
 
     const newBtnConfirm = btnConfirm.cloneNode(true);
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
+    newBtnConfirm.textContent = t.btn_confirm; // Reset text
 
     newBtnConfirm.onclick = async () => {
       const { showToast } = await import("./ui.js");
       const newName = textInput ? textInput.value.trim() : "";
       if (!newName) {
-        showToast("El nombre no puede estar vacío.");
+        showToast(t.toast_name_empty);
         return;
       }
 
       newBtnConfirm.disabled = true;
-      newBtnConfirm.textContent = "Guardando...";
+      newBtnConfirm.textContent = t.btn_saving;
 
       const result = await updateUsername(newName);
 
       newBtnConfirm.disabled = false;
-      newBtnConfirm.textContent = "Confirmar";
+      newBtnConfirm.textContent = t.btn_confirm;
 
       if (result.success) {
-        showToast("Nombre actualizado exitosamente.");
+        showToast(t.toast_name_success);
         modal.classList.add("hidden");
         // Sync Header
         const nameSpan = document.getElementById("user-display-name");
@@ -491,22 +498,29 @@ function showPasswordModal(actionType) {
       }
     };
   } else if (actionType === "change_password") {
-    title.textContent = "Cambiar Contraseña";
-    desc.textContent = "Ingresa tu contraseña actual y la nueva.";
+    title.textContent = t.modal_change_pw_title;
+    desc.textContent = t.modal_change_pw_desc;
     newPassContainer.classList.remove("hidden");
 
     // Show wrapper
-    if (confirmInput.closest(".password-wrapper")) {
-      confirmInput.closest(".password-wrapper").classList.remove("hidden");
+    const currentWrapper = confirmInput.closest(".password-wrapper");
+    if (currentWrapper) {
+      currentWrapper.classList.remove("hidden");
     } else {
       confirmInput.classList.remove("hidden");
     }
+
+    // Update Placeholders
+    confirmInput.placeholder = t.placeholder_current_pw;
+    newPassInput.placeholder = t.placeholder_new_pw;
+    if (verifyPassInput) verifyPassInput.placeholder = t.placeholder_verify_pw;
 
     if (textInput) textInput.classList.add("hidden");
 
     // Clone to remove old listeners
     const newBtnConfirm = btnConfirm.cloneNode(true);
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
+    newBtnConfirm.textContent = t.btn_confirm;
 
     newBtnConfirm.onclick = async () => {
       const { showToast } = await import("./ui.js");
@@ -515,56 +529,61 @@ function showPasswordModal(actionType) {
       const verifyPass = verifyPassInput ? verifyPassInput.value : "";
 
       if (!currentPass || !newPass || !verifyPass) {
-        showToast("Completa todos los campos.");
+        showToast(t.toast_pw_empty);
         return;
       }
       if (newPass !== verifyPass) {
-        showToast("Las contraseñas nuevas no coinciden.");
+        showToast(t.toast_pw_mismatch);
         return;
       }
       if (newPass.length < 6) {
-        showToast("La nueva contraseña debe tener al menos 6 caracteres.");
+        showToast(t.toast_pw_short);
         return;
       }
 
       newBtnConfirm.disabled = true;
-      newBtnConfirm.textContent = "Procesando...";
+      newBtnConfirm.textContent = t.btn_processing;
 
       const result = await updateUserPassword(currentPass, newPass);
 
       newBtnConfirm.disabled = false;
-      newBtnConfirm.textContent = "Confirmar";
+      newBtnConfirm.textContent = t.btn_confirm;
 
       if (result.success) {
-        showToast("Contraseña actualizada correctamente.");
+        showToast(t.toast_pw_success);
         modal.classList.add("hidden");
       } else {
         showToast("Error: " + result.error);
       }
     };
   } else if (actionType === "delete_account") {
-    title.textContent = "Eliminar Cuenta";
-    desc.textContent =
-      "⚠️ Esta acción es IRREVERSIBLE. Ingresa tu contraseña para confirmar.";
+    title.textContent = t.modal_delete_account_title;
+    desc.textContent = t.modal_delete_account_desc;
     title.style.color = "#ff5555";
     newPassContainer.classList.add("hidden");
 
     // Explicitly Reset Inputs (Fix for zombie state from Change Name)
-    if (confirmInput.closest(".password-wrapper")) {
-      confirmInput.closest(".password-wrapper").classList.remove("hidden");
+    const currentWrapper = confirmInput.closest(".password-wrapper");
+    if (currentWrapper) {
+      currentWrapper.classList.remove("hidden");
     } else {
       confirmInput.classList.remove("hidden");
     }
+
+    // Update Placeholder
+    confirmInput.placeholder = t.placeholder_current_pw;
+
     if (textInput) textInput.classList.add("hidden");
 
     const newBtnConfirm = btnConfirm.cloneNode(true);
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
+    newBtnConfirm.textContent = t.btn_confirm;
 
     newBtnConfirm.onclick = async () => {
       const { showToast } = await import("./ui.js");
       const currentPass = confirmInput.value;
       if (!currentPass) {
-        showToast("Ingresa tu contraseña.");
+        showToast(t.toast_pw_enter);
         return;
       }
 
@@ -593,17 +612,17 @@ function showPasswordModal(actionType) {
         if (btnConfirmDelete) {
           btnConfirmDelete.onclick = async () => {
             btnConfirmDelete.disabled = true;
-            btnConfirmDelete.textContent = "Borrando...";
+            btnConfirmDelete.textContent = t.btn_deleting;
 
             const result = await deleteUserAccount(currentPass);
 
             if (result.success) {
-              showToast("Cuenta eliminada. Hasta luego.");
+              showToast(t.toast_delete_success);
               setTimeout(() => window.location.reload(), 2000);
             } else {
               btnConfirmDelete.disabled = false;
-              btnConfirmDelete.textContent = "Borrar Todo";
-              showToast("Error al eliminar: " + result.error);
+              btnConfirmDelete.textContent = t.btn_delete_all;
+              showToast("Error: " + result.error);
               deleteModal.classList.add("hidden");
             }
           };

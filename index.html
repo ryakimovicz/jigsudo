@@ -481,29 +481,29 @@
             <!-- Row 1: Activity -->
             <div class="stat-box">
               <span class="stat-number" id="stat-played">0</span>
-              <span class="stat-label">Jugadas</span>
+              <span class="stat-label" data-i18n="stat_days">Jugadas</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="stat-streak">0</span>
-              <span class="stat-label">Racha Actual</span>
+              <span class="stat-label" data-i18n="stat_streak">Racha Actual</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="stat-max-streak">0</span>
-              <span class="stat-label">Racha Máx.</span>
+              <span class="stat-label" data-i18n="stat_max_streak">Racha Máx.</span>
             </div>
 
             <!-- Row 2: Performance -->
             <div class="stat-box">
               <span class="stat-number" id="stat-max-score">0</span>
-              <span class="stat-label">Puntaje Máx.</span>
+              <span class="stat-label" data-i18n="stat_max_score">Puntaje Máx.</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="stat-best-time">--:--</span>
-              <span class="stat-label">Tiempo Récord</span>
+              <span class="stat-label" data-i18n="stat_best_time">Tiempo Récord</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="stat-avg-time">--:--</span>
-              <span class="stat-label">Tiempo Prom.</span>
+              <span class="stat-label" data-i18n="stat_avg_time">Tiempo Prom.</span>
             </div>
           </div>
 
@@ -517,35 +517,36 @@
               font-size: 0.9rem;
               opacity: 0.8;
             "
+            data-i18n="stats_details_title"
           >
             Tiempos por Juego (Promedio)
           </div>
           <div class="stats-grid details">
             <div class="stat-detail-box">
-              <span class="detail-label">Memoria</span>
+              <span class="detail-label" data-i18n="p_game_memory">Memoria</span>
               <span class="detail-value" id="stat-avg-memory">--</span>
             </div>
             <div class="stat-detail-box">
-              <span class="detail-label">Rompecabezas</span>
+              <span class="detail-label" data-i18n="p_game_jigsaw">Rompecabezas</span>
               <span class="detail-value" id="stat-avg-jigsaw">--</span>
             </div>
             <div class="stat-detail-box">
-              <span class="detail-label">Sudoku</span>
+              <span class="detail-label" data-i18n="p_game_sudoku">Sudoku</span>
               <span class="detail-value" id="stat-avg-sudoku">--</span>
             </div>
             <div class="stat-detail-box">
-              <span class="detail-label">Picos y Valles</span>
+              <span class="detail-label" data-i18n="p_game_peaks">Picos y Valles</span>
               <div class="detail-multi">
                 <span id="stat-avg-peaks">--</span>
                 <span class="detail-sub" id="stat-avg-peaks-err"></span>
               </div>
             </div>
             <div class="stat-detail-box">
-              <span class="detail-label">Sopa Números</span>
+              <span class="detail-label" data-i18n="p_game_search">Sopa Números</span>
               <span class="detail-value" id="stat-avg-search">--</span>
             </div>
             <div class="stat-detail-box">
-              <span class="detail-label">El Código</span>
+              <span class="detail-label" data-i18n="p_game_code">El Código</span>
               <span class="detail-value" id="stat-avg-code">--</span>
             </div>
           </div>
@@ -581,7 +582,8 @@
                   margin-bottom: 12px;
                 "
               >
-                <div class="section-title history-title">Promedio Diario</div>
+              >
+                <div class="section-title history-title" data-i18n="daily_avg_title">Promedio Diario</div>
               </div>
               <div class="daily-time-chart" id="daily-time-chart">
                 <!-- Chart -->
@@ -995,8 +997,9 @@
     <!-- LOGOUT CONFIRMATION MODAL -->
     <div id="logout-confirm-modal" class="modal-overlay hidden">
       <div class="modal-content small-modal">
-        <h3>Cerrar Sesión</h3>
+        <h3 data-i18n="modal_logout_title">Cerrar Sesión</h3>
         <p
+          data-i18n="modal_logout_desc"
           style="
             margin-bottom: 20px;
             font-size: 0.95rem;
@@ -1006,10 +1009,10 @@
           ¿Estás seguro de que deseas salir?
         </p>
         <div class="modal-actions">
-          <button id="btn-cancel-logout-modal" class="btn-secondary">
+          <button id="btn-cancel-logout-modal" class="btn-secondary" data-i18n="btn_cancel">
             Cancelar
           </button>
-          <button id="btn-confirm-logout-modal" class="btn-danger">
+          <button id="btn-confirm-logout-modal" class="btn-danger" data-i18n="btn_logout">
             Cerrar Sesión
           </button>
         </div>
@@ -1019,8 +1022,9 @@
     <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
     <div id="delete-account-confirm-modal" class="modal-overlay hidden">
       <div class="modal-content small-modal" style="border: 2px solid #ff5555">
-        <h3 style="color: #ff5555">⚠️ Última Advertencia</h3>
+        <h3 style="color: #ff5555" data-i18n="modal_delete_confirm_title">⚠️ Última Advertencia</h3>
         <p
+          data-i18n-html="modal_delete_confirm_desc"
           style="
             margin-bottom: 20px;
             font-size: 0.95rem;
@@ -1031,13 +1035,14 @@
           siempre. Esta acción no se puede deshacer.
         </p>
         <div class="modal-actions">
-          <button id="btn-cancel-delete-modal" class="btn-secondary">
+          <button id="btn-cancel-delete-modal" class="btn-secondary" data-i18n="btn_cancel">
             Cancelar
           </button>
           <button
             id="btn-confirm-delete-modal"
             class="btn-delete-danger"
             style="background: #ff5555; color: white"
+            data-i18n="btn_delete_all"
           >
             Borrar Todo
           </button>

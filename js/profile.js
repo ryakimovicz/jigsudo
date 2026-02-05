@@ -1,5 +1,6 @@
 import { getCurrentUser, logoutUser } from "./auth.js";
-import { getCurrentLang } from "./i18n.js";
+import { getCurrentLang, updateTexts } from "./i18n.js";
+import { translations } from "./translations.js";
 import { gameManager } from "./game-manager.js";
 import { getRankData, calculateRP } from "./ranks.js";
 
@@ -24,6 +25,13 @@ export function initProfile() {
 
   // Listen for Hash Changes
   window.addEventListener("hashchange", handleRouting);
+
+  // Listen for Language Changes to re-render Profile (Rank, Calendar, etc.)
+  window.addEventListener("languageChanged", () => {
+    if (window.location.hash === "#profile") {
+      updateProfileData();
+    }
+  });
 
   // Back Button
   const backBtn = document.getElementById("profile-back-btn");
@@ -355,8 +363,26 @@ export function updateProfileData() {
   const rpNextEl = document.getElementById("profile-rp-next");
 
   if (rankIconEl) rankIconEl.textContent = rankData.rank.icon;
-  if (rankNameEl) rankNameEl.textContent = rankData.rank.name;
-  if (rankLevelEl) rankLevelEl.textContent = `Nvl. ${rankData.level}`;
+  if (rankNameEl) {
+    let lang = getCurrentLang() || "es";
+    // Safety: Ensure we use 'es' if 'es-ES' is passed and not found
+    if (!translations[lang]) lang = lang.split("-")[0];
+
+    // Safety: Ensure we use 'es' if 'es-ES' is passed and not found
+    if (!translations[lang]) lang = lang.split("-")[0];
+
+    if (translations[lang] && translations[lang][rankData.rank.nameKey]) {
+      rankNameEl.textContent = translations[lang][rankData.rank.nameKey];
+    } else {
+      rankNameEl.textContent = rankData.rank.nameKey;
+    }
+  }
+
+  if (rankLevelEl) {
+    const lang = getCurrentLang() || "es";
+    const prefix = translations[lang]?.rank_level_prefix || "Nvl.";
+    rankLevelEl.textContent = `${prefix} ${rankData.level}`;
+  }
 
   if (progressFill) progressFill.style.width = `${rankData.progress}%`;
 
@@ -381,6 +407,9 @@ export function updateProfileData() {
   } catch (e) {
     console.error("Weekday Stats Render Error:", e);
   }
+
+  // 5. Force UI Text Update (for static translations like Buttons/Headers)
+  updateTexts();
 }
 
 function renderWeekdayStats(stats) {
@@ -392,16 +421,21 @@ function renderWeekdayStats(stats) {
   const history = stats.history || {};
   const cache = stats.weekdayStatsAccumulated;
 
-  // 0=Sun, 1=Mon ... 6=Sat
-  let days = [
-    { label: "D", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "L", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "M", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "X", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "J", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "V", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-    { label: "S", sum: 0, count: 0, sumErrors: 0, sumScore: 0 },
-  ];
+  // Dynamic Day Labels based on Locale
+  const lang = getCurrentLang() || "es";
+  // Generate [Mon, Tue, ...] letters
+  // Start from Sunday? Existing logic assumes 0=Sun (Date.getDay)
+  // Let's generate standard week starting Sunday?
+  // We need 7 days starting from a known Sunday.
+  // Jan 5 2025 is a Sunday.
+  const formatter = new Intl.DateTimeFormat(lang, { weekday: "narrow" });
+
+  let days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(2025, 0, 5 + i); // Sun, Mon...
+    const label = formatter.format(d).toUpperCase();
+    days.push({ label, sum: 0, count: 0, sumErrors: 0, sumScore: 0 });
+  }
 
   let hasData = false;
 
@@ -440,21 +474,22 @@ function renderWeekdayStats(stats) {
   }
 
   if (!hasData) {
-    container.innerHTML =
-      "<div style='color: #888; padding: 20px; text-align: center; grid-column: 1/-1;'>Sin datos suficientes</div>";
+    const lang = getCurrentLang() || "es";
+    const msg = translations[lang]?.no_data || "Sin datos suficientes";
+    container.innerHTML = `<div style="color: #888; padding: 20px; text-align: center; grid-column: 1/-1;">${msg}</div>`;
     return;
   }
 
   // Render Cards
-  const dayNames = [
-    "Domingo",
-    "Lunes",
-    "Martes",
-    "Miércoles",
-    "Jueves",
-    "Viernes",
-    "Sábado",
-  ];
+  // Generate Day Names dynamically (Sunday...Saturday)
+  const formatterLong = new Intl.DateTimeFormat(lang, { weekday: "long" });
+  const dayNames = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(2025, 0, 5 + i); // Sun...Sat
+    let name = formatterLong.format(d);
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+    dayNames.push(name);
+  }
 
   days.forEach((d, i) => {
     const card = document.createElement("div");
@@ -598,7 +633,22 @@ function renderCalendar(history = {}) {
     }
 
     // Headers (D L M X J V S)
-    const headers = ["D", "L", "M", "X", "J", "V", "S"];
+    const headers = [];
+    const isEnglish = locale.startsWith("en");
+    // EN: "short" -> "Sun", "Mon" -> Slice(0,2) -> "Su", "Mo"
+    // ES: "narrow" -> "D", "L", "M"
+    const formatterHeaders = new Intl.DateTimeFormat(locale, {
+      weekday: isEnglish ? "short" : "narrow",
+    });
+
+    for (let i = 0; i < 7; i++) {
+      // Start from Sunday (Jan 5 2025)
+      const d = new Date(2025, 0, 5 + i);
+      let dayName = formatterHeaders.format(d).toUpperCase();
+      if (isEnglish) dayName = dayName.slice(0, 2);
+      headers.push(dayName);
+    }
+
     headers.forEach((h) => {
       const el = document.createElement("div");
       el.className = "calendar-day header-day";

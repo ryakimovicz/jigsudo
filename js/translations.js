@@ -131,6 +131,88 @@ export const translations = {
     link_login: "Inicia Sesión",
     auth_success: "¡Bienvenido!",
     auth_logout: "Sesión cerrada",
+
+    // Auth Modals & Toasts
+    modal_change_name_title: "Cambiar Nombre",
+    modal_change_name_desc: "Ingresa tu nuevo nombre de usuario.",
+    modal_new_name_placeholder: "Nuevo nombre",
+    modal_change_pw_title: "Cambiar Contraseña",
+    modal_change_pw_desc: "Ingresa tu contraseña actual y la nueva.",
+    modal_delete_account_title: "Eliminar Cuenta",
+    modal_delete_account_desc:
+      "⚠️ Esta acción es IRREVERSIBLE. Ingresa tu contraseña para confirmar.",
+
+    modal_logout_title: "Cerrar Sesión",
+    modal_logout_desc: "¿Estás seguro de que deseas salir?",
+
+    modal_delete_confirm_title: "⚠️ Última Advertencia",
+    modal_delete_confirm_desc:
+      "Se borrará <b>todo tu progreso, estadísticas y ranking</b> para siempre. Esta acción no se puede deshacer.",
+
+    btn_confirm: "Confirmar",
+    btn_saving: "Guardando...",
+    btn_processing: "Procesando...",
+    btn_deleting: "Borrando...",
+    btn_delete_all: "Borrar Todo",
+    btn_exiting: "Saliendo...",
+
+    toast_name_empty: "El nombre no puede estar vacío.",
+    toast_name_success: "Nombre actualizado exitosamente.",
+    toast_pw_empty: "Completa todos los campos.",
+    toast_pw_mismatch: "Las contraseñas nuevas no coinciden.",
+    toast_pw_short: "La nueva contraseña debe tener al menos 6 caracteres.",
+    toast_pw_success: "Contraseña actualizada correctamente.",
+    toast_pw_enter: "Ingresa tu contraseña.",
+    toast_delete_success: "Cuenta eliminada. Hasta luego.",
+    toast_logout_success: "Sesión cerrada correctamente.",
+    toast_logout_success: "Sesión cerrada correctamente.",
+    toast_logout_error: "Error al cerrar sesión: ",
+
+    // Placeholders
+    placeholder_current_pw: "Contraseña actual",
+    placeholder_new_pw: "Nueva contraseña (mín 6 caracteres)",
+    placeholder_verify_pw: "Repetir nueva contraseña",
+
+    // Profile Stats (Spanish)
+    profile_title_page: "Mi Perfil",
+    btn_view_profile: "Ver Perfil",
+    stat_days: "Niveles Completados",
+    stat_streak: "Racha Actual",
+    stat_max_streak: "Racha Máx.",
+    stat_max_score: "Puntaje Máx.",
+    stat_best_time: "Tiempo Récord",
+    stat_avg_time: "Tiempo Prom.",
+    stats_details_title: "Tiempos por Juego (Promedio)",
+    daily_avg_title: "Promedio Diario",
+    stats_title: "Estadísticas",
+    no_data: "Sin datos suficientes",
+
+    // Ranks (Spanish)
+    rank_0: "Novato",
+    rank_1: "Principiante",
+    rank_2: "Aficionado",
+    rank_3: "Estudiante",
+    rank_4: "Analista",
+    rank_5: "Lógico",
+    rank_6: "Estratega",
+    rank_7: "Veterano",
+    rank_8: "Experto",
+    rank_9: "Maestro",
+    rank_10: "Sabio",
+    rank_11: "Erudito",
+    rank_12: "Visionario",
+    rank_13: "Iluminado",
+    rank_14: "Oráculo",
+    rank_15: "Eterno",
+    rank_level_prefix: "Nvl.",
+
+    // Minigame Names for Profile (Spanish)
+    p_game_memory: "Memoria",
+    p_game_jigsaw: "Rompecabezas",
+    p_game_sudoku: "Sudoku",
+    p_game_peaks: "Picos y Valles",
+    p_game_search: "Sopa Números",
+    p_game_code: "El Código",
   },
   en: {
     app_title: "JIGSUDO",
@@ -273,7 +355,84 @@ export const translations = {
     // Profile
     profile_title_page: "My Profile",
     btn_view_profile: "View Profile",
+
+    // ... existing ...
     stat_days: "Levels Completed",
     stat_streak: "Current Streak",
+    stat_max_streak: "Max Streak",
+    stat_max_score: "Max Score",
+    stat_best_time: "Best Time",
+    stat_avg_time: "Avg Time",
+    stats_details_title: "Game Times (Average)",
+    daily_avg_title: "Daily Average",
+    stats_title: "Statistics",
+    no_data: "Not Enough Data",
+
+    // Ranks
+    rank_0: "Novice",
+    rank_1: "Beginner",
+    rank_2: "Amateur",
+    rank_3: "Student",
+    rank_4: "Analyst",
+    rank_5: "Logician",
+    rank_6: "Strategist",
+    rank_7: "Veteran",
+    rank_8: "Expert",
+    rank_9: "Master",
+    rank_10: "Sage",
+    rank_11: "Scholar",
+    rank_12: "Visionary",
+    rank_13: "Enlightened",
+    rank_14: "Oracle",
+    rank_15: "Eternal",
+    rank_level_prefix: "Lvl.",
+
+    // Minigame Names for Profile
+    p_game_memory: "Memory",
+    p_game_jigsaw: "Jigsaw",
+    p_game_sudoku: "Sudoku",
+    p_game_peaks: "Peaks & Valleys",
+    p_game_search: "Number Search",
+    p_game_code: "The Code",
+
+    // Auth Modals & Toasts
+    modal_change_name_title: "Change Username",
+    modal_change_name_desc: "Enter your new username.",
+    modal_new_name_placeholder: "New username",
+    modal_change_pw_title: "Change Password",
+    modal_change_pw_desc: "Enter your current and new password.",
+    modal_delete_account_title: "Delete Account",
+    modal_delete_account_desc:
+      "⚠️ This action is IRREVERSIBLE. Enter your password to confirm.",
+
+    modal_logout_title: "Log Out",
+    modal_logout_desc: "Are you sure you want to log out?",
+
+    modal_delete_confirm_title: "⚠️ Final Warning",
+    modal_delete_confirm_desc:
+      "This will delete <b>all your progress, stats, and ranking</b> forever. This action cannot be undone.",
+
+    btn_confirm: "Confirm",
+    btn_saving: "Saving...",
+    btn_processing: "Processing...",
+    btn_deleting: "Deleting...",
+    btn_delete_all: "Delete All",
+    btn_exiting: "Logging out...",
+
+    toast_name_empty: "Username cannot be empty.",
+    toast_name_success: "Username updated successfully.",
+    toast_pw_empty: "Please fill in all fields.",
+    toast_pw_mismatch: "New passwords do not match.",
+    toast_pw_short: "New password must be at least 6 characters.",
+    toast_pw_success: "Password updated successfully.",
+    toast_pw_enter: "Please enter your password.",
+    toast_delete_success: "Account deleted. Goodbye.",
+    toast_logout_success: "Logged out successfully.",
+    toast_logout_error: "Error logging out: ",
+
+    // Placeholders
+    placeholder_current_pw: "Current password",
+    placeholder_new_pw: "New password (min 6 chars)",
+    placeholder_verify_pw: "Repeat new password",
   },
 };

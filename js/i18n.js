@@ -50,7 +50,7 @@ export function initLanguage() {
   setupLanguageSelectorListener();
 }
 
-function updateTexts() {
+export function updateTexts() {
   const t = translations[currentLang];
   const jigsawMode = document
     .getElementById("game-section")
