@@ -251,10 +251,12 @@ function validateSequence() {
 
   // EASTER EGG CHECK: "5"
   if (currentNumString === "5") {
-    // Check if it's a valid target first? NO, override for Easter Egg.
-    // If "5" IS a target, it will match below and trigger found sequence simultaneously?
-    // Let's allow it. Emoji overlays don't block game logic.
     triggerEasterEgg("🍵");
+  }
+
+  // EASTER EGG CHECK: "6,9"
+  if (currentNumString === "6,9") {
+    triggerEasterEgg("😏");
   }
 
   const match = targets.find((t) => {
