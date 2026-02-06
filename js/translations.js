@@ -44,8 +44,7 @@ export const translations = {
             <strong>Picos y Valles</strong>, buscar en la <strong>Sopa de Números</strong> 
             y descifrar <strong>El Código</strong> final.`,
     menu_tagline: "Tu dosis diaria de números te está esperando",
-    btn_start: "EMPEZAR",
-    btn_start: "EMPEZAR",
+    btn_start: "JUGAR",
     btn_coming_soon: "PRÓXIMAMENTE",
     btn_solve: "Resolver",
 
@@ -277,8 +276,7 @@ export const translations = {
             <strong>Peaks and Valleys</strong>, search in the <strong>Number Search</strong> 
             and crack <strong>The Code</strong> at the end.`,
     menu_tagline: "Your daily dose of numbers is waiting for you",
-    btn_start: "START",
-    btn_start: "START",
+    btn_start: "PLAY",
     btn_coming_soon: "COMING SOON",
     btn_solve: "Solve",
 
