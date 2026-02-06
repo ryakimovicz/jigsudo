@@ -1,7 +1,6 @@
 export const translations = {
   es: {
     app_title: "JIGSUDO",
-    header_stats_label: "Estadísticas",
     header_profile_label: "Perfil",
 
     // Header Info
@@ -234,7 +233,6 @@ export const translations = {
   },
   en: {
     app_title: "JIGSUDO",
-    header_stats_label: "Statistics",
     header_profile_label: "Profile",
 
     // Header Info

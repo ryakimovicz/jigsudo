@@ -454,22 +454,6 @@ export function initHome() {
   };
   setupMidnightTimer();
 
-  // Placeholders for other buttons
-  // Stats Button -> Profile Toggle
-  const btnStats = document.getElementById("btn-stats");
-  if (btnStats) {
-    btnStats.addEventListener("click", () => {
-      if (window.location.hash === "#profile") {
-        hideProfile();
-      } else {
-        showProfile();
-      }
-    });
-
-    // Ensure icon state matches initial load (if landing on #profile)
-    // Actual icon switching happens in profile.js _showProfileUI/_hideProfileUI
-  }
-
   // Home Navigation (Title Click)
   const appTitle = document.querySelector(".app-title");
   if (appTitle) {
