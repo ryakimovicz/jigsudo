@@ -868,12 +868,17 @@ function promoteSingleCandidatesGlobal() {
       const notesGrid = cell.querySelector(".notes-grid");
       if (!notesGrid) return;
 
-      // Count VISIBLE notes
-      const visibleNotes = Array.from(
-        notesGrid.querySelectorAll(".note-slot"),
-      ).filter((n) => n.textContent !== ""); // Only currently visible ones
+      // Count VISIBLE notes vs USER-ACTIVATED notes
+      const allNoteSlots = Array.from(notesGrid.querySelectorAll(".note-slot"));
+      const visibleNotes = allNoteSlots.filter((n) => n.textContent !== "");
+      const userActiveNotes = allNoteSlots.filter(
+        (n) => n.dataset.userActive === "true",
+      );
 
-      if (visibleNotes.length === 1) {
+      // Promote ONLY if it was reduced from multiple candidates to one.
+      // If visible is 1 and userActive is 1, it means the user manually put only one note (drafting).
+      // We don't want to auto-promote drafting notes.
+      if (visibleNotes.length === 1 && userActiveNotes.length > 1) {
         cellsToPromote.push({
           cell: cell,
           num: visibleNotes[0].dataset.note,
