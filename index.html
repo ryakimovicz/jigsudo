@@ -426,6 +426,42 @@
         >
           JUGAR
         </button>
+
+        <!-- Ranking Section -->
+        <section id="ranking-container" class="ranking-container-multi">
+          <div class="ranking-header-main">
+            <h3 data-i18n="ranking_title">Clasificación</h3>
+            <button id="btn-refresh-ranking" class="btn-refresh" title="Actualizar">
+              🔄
+            </button>
+          </div>
+          
+          <div class="ranking-grid">
+            <!-- Daily -->
+            <div class="ranking-panel glass-panel active">
+              <h4 data-i18n="rank_tab_daily">Hoy</h4>
+              <div id="ranking-daily-wrapper" class="ranking-table-wrapper">
+                <div class="loader-small"></div>
+              </div>
+            </div>
+
+            <!-- Monthly -->
+            <div class="ranking-panel glass-panel active">
+              <h4 data-i18n="rank_tab_monthly">Mes</h4>
+              <div id="ranking-monthly-wrapper" class="ranking-table-wrapper">
+                <div class="loader-small"></div>
+              </div>
+            </div>
+
+            <!-- All Time -->
+            <div class="ranking-panel glass-panel active">
+              <h4 data-i18n="rank_tab_all">Siempre</h4>
+              <div id="ranking-alltime-wrapper" class="ranking-table-wrapper">
+                <div class="loader-small"></div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <!-- Profile Section -->

@@ -280,11 +280,17 @@ export class GameManager {
       }
 
       if (uid) {
+        let username = null;
+        const user = getCurrentUser();
+        if (user) {
+          username = user.displayName || user.email.split("@")[0];
+        }
+
         if (this.state) {
           const cloudState = this._serializeState(this.state);
           await saveUserProgress(uid, cloudState);
         }
-        if (this.stats) await saveUserStats(uid, this.stats);
+        if (this.stats) await saveUserStats(uid, this.stats, username);
       }
     } catch (e) {
       console.warn("Cloud save failed", e);
@@ -703,10 +709,13 @@ export class GameManager {
 
       const seedStr = this.currentSeed.toString();
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const currentMonth = today.substring(0, 7); // "YYYY-MM"
 
       stats.totalPlayed = (stats.totalPlayed || 0) + 1;
       stats.wins = (stats.wins || 0) + 1;
       const last = stats.lastPlayedDate;
+
+      // Handle Streak and RP Resets
       if (last) {
         const lastDate = new Date(last);
         const currDate = new Date(today);
@@ -715,10 +724,23 @@ export class GameManager {
         const diffDays = Math.ceil(
           (currDate - lastDate) / (1000 * 60 * 60 * 24),
         );
-        if (diffDays === 1)
+
+        if (diffDays === 1) {
           stats.currentStreak = (stats.currentStreak || 0) + 1;
-        else if (diffDays > 1) stats.currentStreak = 1;
-      } else stats.currentStreak = 1;
+        } else if (diffDays > 0) {
+          stats.currentStreak = 1;
+          stats.dailyRP = 0; // Reset Daily on first game of a new day
+        }
+
+        const lastMonth = last.substring(0, 7);
+        if (currentMonth !== lastMonth) {
+          stats.monthlyRP = 0; // Reset Monthly on first game of a new month
+        }
+      } else {
+        stats.currentStreak = 1;
+        stats.dailyRP = 0;
+        stats.monthlyRP = 0;
+      }
 
       if (stats.currentStreak > (stats.maxStreak || 0))
         stats.maxStreak = stats.currentStreak;
@@ -734,7 +756,13 @@ export class GameManager {
       if (4.0 + netChange < 0) netChange = -4.0;
 
       stats.currentRP = (stats.currentRP || 0) + netChange;
+      stats.dailyRP = (stats.dailyRP || 0) + netChange;
+      stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
+
       if (stats.currentRP < 0) stats.currentRP = 0;
+      if (stats.dailyRP < 0) stats.dailyRP = 0;
+      if (stats.monthlyRP < 0) stats.monthlyRP = 0;
+
       const dailyScore = Math.max(0, 4.0 + netChange);
 
       if (stats.bestTime === undefined) stats.bestTime = Infinity;

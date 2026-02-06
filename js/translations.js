@@ -44,6 +44,11 @@ export const translations = {
             y descifrar <strong>El Código</strong> final.`,
     menu_tagline: "Tu dosis diaria de números te está esperando",
     btn_start: "JUGAR",
+    ranking_title: "Clasificación",
+    rank_tab_daily: "Hoy",
+    rank_tab_monthly: "Mes",
+    rank_tab_all: "Siempre",
+    rank_empty: "No hay datos todavía",
     btn_coming_soon: "PRÓXIMAMENTE",
     btn_solve: "Resolver",
 
@@ -275,6 +280,11 @@ export const translations = {
             and crack <strong>The Code</strong> at the end.`,
     menu_tagline: "Your daily dose of numbers is waiting for you",
     btn_start: "PLAY",
+    ranking_title: "Leaderboard",
+    rank_tab_daily: "Today",
+    rank_tab_monthly: "Month",
+    rank_tab_all: "All Time",
+    rank_empty: "No data yet",
     btn_coming_soon: "COMING SOON",
     btn_solve: "Solve",
 

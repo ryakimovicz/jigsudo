@@ -125,35 +125,42 @@ body.dark-mode .main-header {
   /* Position safely between Header and Footer */
   margin-top: var(--header-height);
   height: calc(100dvh - var(--header-height) - var(--footer-height));
-  min-height: 0; /* Allow flex shrinking if necessary */
+  min-height: 0;
 
-  /* Centering Logic */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Vertically center content in safe zone */
+  justify-content: flex-start;
   align-items: center;
-  padding-top: 6vh; /* Start 6vh down from header */
+  padding-top: 2vh; /* Reduced gap from header */
 
-  padding-left: 20px; /* Horizontal padding only */
-  padding-right: 20px;
+  padding-left: 0; /* Horizontal padding removed to move scrollbar to edge */
+  padding-right: 0;
   gap: 20px;
   width: 100%;
-  max-width: 800px;
+  max-width: none; /* Covering full width to put scrollbar at the edge */
+  margin-left: 0;
+  margin-right: 0;
+
+  overflow-y: auto;
+  padding-bottom: 40px;
+}
+
+/* Internal wrapper to keep content centered */
+.menu-container > * {
+  width: 95%;
+  max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-
-  /* Ensure content doesn't overflow without scrolling if screen is weirdly small */
-  overflow-y: auto;
-  /* Hide scrollbar for cleaner look if content fits */
-  scrollbar-width: none;
 }
 
 /* Home Logo Section */
 .home-logo-container {
   display: flex;
+  justify-content: center; /* Force centering */
   align-items: center;
   gap: 15px;
   margin-bottom: 20px; /* Space before tabs */
+  width: 100%;
 }
 
 .home-logo {
@@ -194,7 +201,8 @@ body.dark-mode .dark-mode-logo {
   flex-direction: column;
   width: 100%;
   max-width: 600px; /* Keep consistent with panel/tabs */
-  align-items: center; /* Center children */
+  margin-left: auto;
+  margin-right: auto;
   /* No gap here, so we control overlap precisely */
 }
 
@@ -498,6 +506,10 @@ body.dark-mode .switch-row {
   transition: all 0.1s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
+  display: block;
+  margin: 0 auto;
+  width: fit-content; /* Ensure it stays compact */
+  max-width: 90%;
 }
 
 .btn-primary:hover {
@@ -1126,5 +1138,202 @@ body.dark-mode .segmented-control {
     width: 90%;
     right: 5%;
     top: 70px;
+  }
+}
+
+/* Ranking Section - Multi-Panel Grid */
+.ranking-container-multi {
+  width: 100%;
+  max-width: 1000px; /* Wider to accommodate 3 columns */
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 10px;
+}
+
+.ranking-header-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 0;
+  position: relative;
+  width: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(var(--accent-rgb), 0.05),
+    transparent
+  );
+  border-radius: 8px;
+}
+
+.ranking-header-main h3 {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+  width: auto; /* Allow button to sit next to it */
+}
+
+.btn-refresh {
+  position: relative; /* No longer absolute */
+  right: auto;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  color: var(--text-muted);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Forced 3 columns on desktop */
+  gap: 15px;
+  width: 100%;
+}
+
+/* Tablet: 2 columns if needed, but keep 3 if space allows */
+@media (max-width: 900px) {
+  .ranking-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+.ranking-panel {
+  display: flex !important;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px !important;
+  min-height: 400px;
+  grid-area: auto !important; /* Force reset from glass-panel stack */
+}
+
+/* Custom Scrollbar for Home */
+.menu-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+}
+
+.menu-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.menu-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
+
+body.dark-mode .menu-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.dark-mode .menu-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ranking-panel h4 {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-paper);
+  font-size: 1.3rem;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--glass-border);
+  padding-bottom: 10px;
+}
+
+/* Ranking Table Wrapper */
+.ranking-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-main);
+}
+
+.ranking-table th {
+  text-align: left;
+  padding: 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.ranking-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  font-size: 0.9rem;
+}
+
+body.dark-mode .ranking-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.rank-col {
+  width: 35px;
+  font-weight: 700;
+  text-align: center;
+}
+.score-col {
+  width: 70px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+.user-col {
+  font-weight: 500;
+}
+
+.top-player {
+  background: rgba(245, 158, 11, 0.05);
+}
+body.dark-mode .top-player {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.loader-small {
+  width: 30px;
+  height: 30px;
+  border: 4px solid var(--glass-border);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spinner 0.8s linear infinite;
+  margin: 40px auto;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .ranking-header-main h3 {
+    font-size: 1.4rem;
   }
 }

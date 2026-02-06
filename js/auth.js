@@ -338,6 +338,9 @@ function updateUIForLogin(user) {
     module.updateProfileData();
   });
 
+  // Force a cloud save to ensure username is synced to Firestore rankings
+  gameManager.forceCloudSave(user.uid);
+
   const btnLogout = document.getElementById("btn-profile-logout");
   if (btnLogout) {
     btnLogout.onclick = () => {

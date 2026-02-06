@@ -4,6 +4,7 @@ import { getCurrentLang } from "./i18n.js";
 import { showProfile, hideProfile } from "./profile.js";
 import { getDailySeed } from "./utils/random.js";
 import { gameManager } from "./game-manager.js";
+import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -481,6 +482,39 @@ export function initHome() {
 
       // Restore Home State
       document.body.classList.add("home-active");
+    });
+  }
+
+  // --- Ranking Logic ---
+  const containerDaily = document.getElementById("ranking-daily-wrapper");
+  const containerMonthly = document.getElementById("ranking-monthly-wrapper");
+  const containerAllTime = document.getElementById("ranking-alltime-wrapper");
+  const refreshBtn = document.getElementById("btn-refresh-ranking");
+
+  let currentRankings = null;
+
+  async function loadAndRenderAllRankings(force = false) {
+    if (containerDaily)
+      containerDaily.innerHTML = '<div class="loader-small"></div>';
+    if (containerMonthly)
+      containerMonthly.innerHTML = '<div class="loader-small"></div>';
+    if (containerAllTime)
+      containerAllTime.innerHTML = '<div class="loader-small"></div>';
+
+    currentRankings = await fetchRankings(force);
+
+    renderRankings(containerDaily, currentRankings, "daily");
+    renderRankings(containerMonthly, currentRankings, "monthly");
+    renderRankings(containerAllTime, currentRankings, "allTime");
+  }
+
+  // Initial Load
+  loadAndRenderAllRankings();
+
+  // Refresh Listener
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      loadAndRenderAllRankings(true);
     });
   }
 }

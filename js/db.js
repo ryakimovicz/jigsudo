@@ -118,6 +118,10 @@ export async function saveUserStats(userId, statsData, username = null) {
     const updateData = {
       stats: statsData,
       lastUpdated: serverTimestamp(),
+      // Top-level fields for efficient Firestore indexing
+      totalRP: statsData.currentRP || 0,
+      monthlyRP: statsData.monthlyRP || 0,
+      dailyRP: statsData.dailyRP || 0,
     };
 
     // If username is provided, save it as a top-level searchable field
