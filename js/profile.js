@@ -232,9 +232,10 @@ export function updateProfileData() {
   let totalPeaksErrors = 0;
   let peaksErrorCount = 0;
 
-  // Optimized Cache Strategy
+  // Optimized Cache Strategy (Only use cache if it has stage data)
   const hasCache =
-    stats.stageTimesAccumulated !== undefined &&
+    stats.stageTimesAccumulated &&
+    Object.keys(stats.stageTimesAccumulated).length > 0 &&
     stats.totalTimeAccumulated !== undefined;
 
   if (hasCache) {

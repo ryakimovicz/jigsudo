@@ -747,11 +747,10 @@ export class GameManager {
 
       const st = this.state.meta.stageTimes || {};
       for (const [stage, time] of Object.entries(st)) {
-        if (stats.stageTimesAccumulated[stage] !== undefined) {
-          stats.stageTimesAccumulated[stage] += time;
-          stats.stageWinsAccumulated[stage] =
-            (stats.stageWinsAccumulated[stage] || 0) + 1;
-        }
+        stats.stageTimesAccumulated[stage] =
+          (stats.stageTimesAccumulated[stage] || 0) + time;
+        stats.stageWinsAccumulated[stage] =
+          (stats.stageWinsAccumulated[stage] || 0) + 1;
       }
 
       const dayIdx = new Date(today + "T12:00:00").getDay();
