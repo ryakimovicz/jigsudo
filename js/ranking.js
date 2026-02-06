@@ -108,6 +108,14 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   const data = categoryData.top || [];
   const personal = categoryData.personal;
   const user = getCurrentUser();
+  const lang = getCurrentLang();
+  const t = translations[lang] || translations["es"];
+
+  // Format options for locale score
+  const scoreFormat = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
 
   // Create Table
   let html = `
@@ -115,8 +123,8 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
       <thead>
         <tr>
           <th class="rank-col">#</th>
-          <th class="user-col">Usuario</th>
-          <th class="score-col">Puntos</th>
+          <th class="user-col">${t.ranking_col_user || "Usuario"}</th>
+          <th class="score-col">${t.ranking_col_points || "Puntos"}</th>
         </tr>
       </thead>
       <tbody>
@@ -134,8 +142,8 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
       html += `
         <tr class="${isTop3 ? "top-player" : ""} ${isCurrentUser ? "current-user-row" : ""}">
           <td class="rank-col">${medal || index + 1}</td>
-          <td class="user-col">${entry.username} ${isCurrentUser ? "(Tú)" : ""}</td>
-          <td class="score-col">${entry.score.toFixed(1)}</td>
+          <td class="user-col">${entry.username} ${isCurrentUser ? t.ranking_you || "(Tú)" : ""}</td>
+          <td class="score-col">${scoreFormat.format(entry.score)}</td>
         </tr>
       `;
     });
@@ -148,8 +156,8 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
         </tr>
         <tr class="current-user-row personal-rank-row">
           <td class="rank-col">#${personal.rank}</td>
-          <td class="user-col">${personal.username} (Tú)</td>
-          <td class="score-col">${personal.score.toFixed(1)}</td>
+          <td class="user-col">${personal.username} ${t.ranking_you || "(Tú)"}</td>
+          <td class="score-col">${scoreFormat.format(personal.score)}</td>
         </tr>
       `;
     }

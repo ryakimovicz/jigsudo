@@ -79,10 +79,15 @@ export function showVictorySummary(stats, isHome = false) {
   }
 
   // Populating main stats
+  const scoreFormat = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
+
   if (timeEl) timeEl.textContent = formatTime(stats.totalTime);
   if (streakEl) streakEl.textContent = stats.streak || "1";
   if (errorsEl) errorsEl.textContent = stats.errors || "0";
-  if (scoreEl) scoreEl.textContent = `+${stats.score.toFixed(3)}`;
+  if (scoreEl) scoreEl.textContent = `+${scoreFormat.format(stats.score)}`;
 
   // Populating breakdown
   if (stageTimesContainer) {
@@ -192,6 +197,13 @@ async function handleShareVictory(stats) {
     }
 
     // 2. Populate Session Stats
+    const sessionScoreFormat = new Intl.NumberFormat(
+      lang === "es" ? "es-ES" : "en-US",
+      {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3,
+      },
+    );
     document.getElementById("vsc-stat-time").textContent = formatTime(
       stats.totalTime,
     );
@@ -200,7 +212,7 @@ async function handleShareVictory(stats) {
     document.getElementById("vsc-stat-errors").textContent =
       stats.errors || "0";
     document.getElementById("vsc-stat-score").textContent =
-      stats.score.toFixed(3);
+      sessionScoreFormat.format(stats.score);
 
     // 3. Populate Breakdown Grid
     const stageList = document.getElementById("vsc-stage-list");

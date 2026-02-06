@@ -116,6 +116,11 @@ export function initAuth() {
         gameManager.isWiping = false; // LOCK OFF
         document.body.classList.remove("syncing-account");
         console.log("[Auth] Session initialization complete. Lock released.");
+
+        // Dispatch custom event to signal that auth and data are ready
+        window.dispatchEvent(
+          new CustomEvent("authReady", { detail: { user } }),
+        );
       }
     } else {
       currentUser = null;
@@ -123,6 +128,11 @@ export function initAuth() {
       updateUIForLogout();
       // Ensure we clear any lingering user ID if logout is explicit
       gameManager.setUserId(null);
+
+      // Dispatch custom event to signal that auth state is determined (no user)
+      window.dispatchEvent(
+        new CustomEvent("authReady", { detail: { user: null } }),
+      );
     }
   });
 }

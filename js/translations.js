@@ -213,6 +213,10 @@ export const translations = {
     victory_share_title: "DESAFÍO COMPLETADO",
     btn_close: "Cerrar",
 
+    ranking_you: "(Tú)",
+    ranking_col_user: "Usuario",
+    ranking_col_points: "Puntos",
+
     stage_names: {
       memory: "Memoria",
       jigsaw: "Rompecabezas",
@@ -447,6 +451,10 @@ export const translations = {
     btn_share_result: "Share Result",
     victory_share_title: "CHALLENGE COMPLETED",
     btn_close: "Close",
+
+    ranking_you: "(You)",
+    ranking_col_user: "User",
+    ranking_col_points: "Points",
 
     stage_names: {
       memory: "Memory",

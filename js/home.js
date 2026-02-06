@@ -5,6 +5,7 @@ import { showProfile, hideProfile } from "./profile.js";
 import { getDailySeed } from "./utils/random.js";
 import { gameManager } from "./game-manager.js";
 import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js";
+import { getCurrentUser } from "./auth.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -254,9 +255,14 @@ export function initHome() {
 
   updateHeaderInfo();
 
-  // Listen for Language Changes to re-render date
+  // Listen for Language Changes to re-render date and rankings
   window.addEventListener("languageChanged", () => {
     updateHeaderInfo();
+    refreshStartButton();
+    // Re-render rankings to update localized decimal formatting
+    if (typeof loadAndRenderAllRankings === "function") {
+      loadAndRenderAllRankings();
+    }
   });
 
   // Placeholders for other buttons
@@ -533,4 +539,13 @@ export function initHome() {
       loadAndRenderAllRankings(true);
     });
   }
+
+  // Listen for auth state initialization to re-render rankings with user highlighting
+  // This ensures the current user's row is highlighted from the first load
+  window.addEventListener("authReady", () => {
+    console.log(
+      "[Home] Auth ready, re-rendering rankings to show user highlight",
+    );
+    loadAndRenderAllRankings();
+  });
 }

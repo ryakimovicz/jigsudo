@@ -804,11 +804,16 @@ async function handleShareStats() {
     }
 
     if (playedEl) playedEl.textContent = stats.totalPlayed || 0;
-    if (rpEl)
-      rpEl.textContent = (stats.currentRP || 0).toLocaleString(lang, {
-        minimumFractionDigits: 3,
-        maximumFractionDigits: 3,
-      });
+    if (rpEl) {
+      const rpFormat = new Intl.NumberFormat(
+        lang === "es" ? "es-ES" : "en-US",
+        {
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3,
+        },
+      );
+      rpEl.textContent = rpFormat.format(stats.currentRP || 0);
+    }
     if (streakEl) streakEl.textContent = stats.currentStreak || 0;
 
     // Set Global Average Time (calculated from history)
