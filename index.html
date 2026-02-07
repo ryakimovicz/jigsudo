@@ -560,7 +560,14 @@
                 </div>
               </div>
             </div>
-            <!-- Future: Edit Button -->
+            <!-- Verification Banner (Email) -->
+            <div id="profile-verification-banner" class="verification-banner hidden">
+                <div class="verification-content">
+                    <span class="warning-icon">⚠️</span>
+                    <span class="verification-text" data-i18n="profile_verify_email_banner">Tu correo no está verificado.</span>
+                    <button id="btn-resend-verification" class="btn-verify" data-i18n="btn_verify_now">Verificar ahora</button>
+                </div>
+            </div>
           </div>
 
           <!-- 2. Statistics Grid (Wordle Style) -->
@@ -941,6 +948,9 @@
                 👁️
               </button>
             </div>
+            <p class="auth-forgot-pw">
+              <a href="#" id="link-forgot-password" data-i18n="auth_forgot_password">¿Olvidaste tu contraseña?</a>
+            </p>
             <button
               type="submit"
               class="btn-primary auth-submit"
@@ -1134,6 +1144,37 @@
         <div class="modal-actions">
           <button id="btn-cancel-pwd" class="btn-secondary" data-i18n="btn_cancel">Cancelar</button>
           <button id="btn-confirm-pwd" class="btn-primary" data-i18n="btn_confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASS RESET MODAL -->
+    <div id="password-reset-modal" class="modal-overlay hidden">
+      <div class="modal-content small-modal">
+        <h3 data-i18n="auth_reset_pw_title">Recuperar Contraseña</h3>
+        <p
+          data-i18n="auth_reset_pw_desc"
+          style="
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+          "
+        >
+          Ingresa tu correo para recibir un enlace de recuperación.
+        </p>
+
+        <input
+          type="email"
+          id="reset-email-input"
+          class="auth-input"
+          data-i18n-placeholder="auth_email_placeholder"
+          placeholder="Email"
+          style="margin-bottom: 15px"
+        />
+
+        <div class="modal-actions">
+          <button id="btn-cancel-reset" class="btn-secondary" data-i18n="btn_cancel">Cancelar</button>
+          <button id="btn-confirm-reset" class="btn-primary" data-i18n="btn_confirm">Confirmar</button>
         </div>
       </div>
     </div>

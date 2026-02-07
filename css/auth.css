@@ -112,6 +112,26 @@ input::-webkit-credentials-auto-fill-button {
   right: 0;
 }
 
+.auth-forgot-pw {
+  text-align: right;
+  margin-top: -10px;
+  margin-bottom: 15px;
+  font-size: 0.85rem;
+  position: relative;
+  z-index: 5;
+}
+
+.auth-forgot-pw a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-forgot-pw a:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
 .auth-switch {
   text-align: center;
   font-size: 0.9rem;

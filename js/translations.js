@@ -158,9 +158,12 @@ export const translations = {
     auth_username_placeholder: "Nombre de usuario",
     auth_password_hint_placeholder: "Contraseña (mín. 6 caracteres)",
     auth_repeat_password_placeholder: "Repetir Contraseña",
-    auth_confirm_pwd_title: "Confirmar Contraseña",
     auth_confirm_pwd_desc: "Para continuar, ingresa tu contraseña actual.",
     auth_new_value_placeholder: "Nuevo valor",
+    auth_reset_pw_title: "Recuperar Contraseña",
+    auth_reset_pw_desc:
+      "Ingresa tu correo para recibir un enlace de recuperación.",
+    auth_forgot_password: "¿Olvidaste tu contraseña?",
 
     // Auth Modals & Toasts
     modal_change_name_title: "Cambiar Nombre",
@@ -196,16 +199,24 @@ export const translations = {
     err_auth_unauthorized_domain: "Dominio no autorizado para Google Login.",
     err_auth_general: "Error de autenticación: ",
     err_user_exists: "El nombre de usuario ya está en uso.",
+    toast_email_invalid: "El correo no es válido.",
+    toast_name_empty: "El nombre no puede estar vacío.",
 
     toast_name_empty: "El nombre no puede estar vacío.",
-    toast_name_success: "Nombre actualizado exitosamente.",
+    toast_name_success: "Nombre actualizado con éxito.",
     toast_pw_empty: "Completa todos los campos.",
     toast_pw_mismatch: "Las contraseñas nuevas no coinciden.",
     toast_pw_short: "La nueva contraseña debe tener al menos 6 caracteres.",
-    toast_pw_success: "Contraseña actualizada correctamente.",
+    toast_pw_success: "Contraseña actualizada con éxito.",
     toast_pw_enter: "Ingresa tu contraseña.",
-    toast_delete_success: "Cuenta eliminada. Hasta luego.",
-    toast_logout_success: "Sesión cerrada correctamente.",
+    toast_delete_success: "Cuenta eliminada correctamente.",
+    toast_reset_sent:
+      "Correo de recuperación enviado. Revisa tu bandeja de entrada.",
+    toast_verification_sent: "Correo de verificación enviado.",
+    toast_verification_too_many:
+      "Ya enviamos un mail recientemente. Por favor, espera un minuto antes de pedir otro.",
+    profile_verify_email_banner: "Tu correo no está verificado.",
+    btn_verify_now: "Verificar ahora",
     toast_logout_success: "Sesión cerrada correctamente.",
     toast_logout_error: "Error al cerrar sesión: ",
 
@@ -403,14 +414,6 @@ export const translations = {
     setting_sound: "Sound",
     setting_vibration: "Vibration",
     setting_confirm_clear: "Confirm Clear",
-    greeting_prefix: "Hi,",
-    // New Keys
-    theme_light: "Light",
-    theme_auto: "Auto",
-    theme_dark: "Dark",
-    setting_sound: "Sound",
-    setting_vibration: "Vibration",
-    setting_confirm_clear: "Confirm Clear",
     greeting_prefix: "Hello,",
     modal_dont_ask: "Don't ask again",
     btn_cancel: "Cancel",
@@ -464,6 +467,9 @@ export const translations = {
     auth_confirm_pwd_title: "Confirm Password",
     auth_confirm_pwd_desc: "To proceed, please enter your current password.",
     auth_new_value_placeholder: "New value",
+    auth_reset_pw_title: "Reset Password",
+    auth_reset_pw_desc: "Enter your email to receive a reset link.",
+    auth_forgot_password: "Forgot your password?",
 
     // Profile
     profile_title_page: "My Profile",
@@ -575,6 +581,7 @@ export const translations = {
     err_auth_general: "Authentication error: ",
     err_user_exists: "Username is already taken.",
 
+    toast_email_invalid: "The email is invalid.",
     toast_name_empty: "Username cannot be empty.",
     toast_name_success: "Username updated successfully.",
     toast_pw_empty: "Please fill in all fields.",
@@ -582,7 +589,13 @@ export const translations = {
     toast_pw_short: "New password must be at least 6 characters.",
     toast_pw_success: "Password updated successfully.",
     toast_pw_enter: "Please enter your password.",
-    toast_delete_success: "Account deleted. Goodbye.",
+    toast_delete_success: "Account deleted successfully.",
+    toast_reset_sent: "Reset email sent. Please check your inbox.",
+    toast_verification_sent: "Verification email sent.",
+    toast_verification_too_many:
+      "An email was already sent recently. Please wait a minute before requesting another.",
+    profile_verify_email_banner: "Your email is not verified.",
+    btn_verify_now: "Verify now",
     toast_logout_success: "Logged out successfully.",
     toast_logout_error: "Error logging out: ",
 

@@ -225,12 +225,60 @@ export function updateProfileData() {
           return;
         }
         btn.style.display = ""; // Reset
-        btn.closest(".profile-actions").classList.remove("hidden"); // Ensure parent is shown if user exists
+        if (btn.closest(".profile-actions")) {
+          btn.closest(".profile-actions").classList.remove("hidden");
+        }
       } else {
         btn.style.display = "none"; // Hide element
       }
     }
   });
+
+  // Email Verification Banner Logic
+  const verificationBanner = document.getElementById(
+    "profile-verification-banner",
+  );
+  if (verificationBanner) {
+    const isGoogleUser =
+      user &&
+      user.providerData &&
+      user.providerData.some((p) => p.providerId === "google.com");
+    const isEmailUser = user && !user.isAnonymous && !isGoogleUser;
+
+    if (isEmailUser && !user.emailVerified) {
+      verificationBanner.classList.remove("hidden");
+      const resendBtn = document.getElementById("btn-resend-verification");
+      if (resendBtn && !resendBtn.dataset.listenerAttached) {
+        resendBtn.onclick = async () => {
+          const { resendVerification } = await import("./auth.js");
+          const { showToast } = await import("./ui.js");
+          const lang = getCurrentLang() || "es";
+          const t = translations[lang] || translations["es"];
+
+          resendBtn.disabled = true;
+          const originalText = resendBtn.textContent;
+          resendBtn.textContent = "...";
+
+          const result = await resendVerification();
+
+          resendBtn.disabled = false;
+          resendBtn.textContent = originalText;
+
+          if (result.success) {
+            showToast(t.toast_verification_sent, 4000, "success");
+          } else if (result.errorCode === "auth/too-many-requests") {
+            showToast(t.toast_verification_too_many, 5000, "error");
+          } else {
+            showToast("Error: " + result.error, 4000, "error");
+          }
+        };
+        resendBtn.dataset.listenerAttached = "true";
+      }
+    } else {
+      verificationBanner.classList.add("hidden");
+    }
+  }
+
   // Stats from Global Storage
   const statsStr = localStorage.getItem("jigsudo_user_stats");
   const stats = statsStr

@@ -15,6 +15,8 @@ import {
   signInWithPopup,
   linkWithPopup,
   reauthenticateWithPopup,
+  sendPasswordResetEmail,
+  sendEmailVerification,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
@@ -86,6 +88,16 @@ export function initAuth() {
         console.log(
           "[Auth] User registration: Preserving guest data for migration.",
         );
+        // 4. Send Verification email (Optional but recommended)
+        try {
+          auth.languageCode = getCurrentLang();
+          await sendEmailVerification(user);
+          console.log("[Auth] Verification email sent to:", user.email);
+        } catch (e) {
+          console.warn("[Auth] Failed to send verification email:", e);
+        }
+
+        // Preserve guest state before clear all, so stats are migrated
         gameManager.setUserId(user.uid);
       } else if (storedUid && storedUid === user.uid) {
         console.log("[Auth] Session resumed: Skipping data wipe.");
@@ -845,4 +857,122 @@ function showPasswordModal(actionType) {
     modal.classList.add("hidden");
     title.style.color = "";
   };
+}
+
+export async function resendVerification() {
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous)
+    return { success: false, error: "No user logged in." };
+  try {
+    auth.languageCode = getCurrentLang();
+    await sendEmailVerification(user);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      errorCode: error.code,
+      error: translateAuthError(error.code) || error.message,
+    };
+  }
+}
+
+export async function sendResetPassword(email) {
+  if (!email) return { success: false, error: "Email is required." };
+  try {
+    auth.languageCode = getCurrentLang();
+    await sendPasswordResetEmail(auth, email);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: translateAuthError(error.code) || error.message,
+    };
+  }
+}
+
+// Logic to hook up forget password link
+function initForgotPasswordUI() {
+  const linkForgot = document.getElementById("link-forgot-password");
+  const modalReset = document.getElementById("password-reset-modal");
+  const btnCancelReset = document.getElementById("btn-cancel-reset");
+  const btnConfirmReset = document.getElementById("btn-confirm-reset");
+  const inputResetEmail = document.getElementById("reset-email-input");
+
+  console.log("[Auth] Initializing Forgot Password UI listeners...");
+
+  if (linkForgot && modalReset) {
+    linkForgot.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("[Auth] Forgot password link clicked");
+      // Hide auth modal if open
+      const authModal = document.getElementById("auth-modal");
+      if (authModal) authModal.classList.add("hidden");
+
+      modalReset.classList.remove("hidden");
+      if (inputResetEmail) {
+        // Pre-fill if user typed something in login-email
+        const loginEmail = document.getElementById("login-email");
+        if (loginEmail && loginEmail.value) {
+          inputResetEmail.value = loginEmail.value;
+        }
+        inputResetEmail.focus();
+      }
+    });
+  } else {
+    console.warn("[Auth] Forgot password elements not found:", {
+      linkForgot: !!linkForgot,
+      modalReset: !!modalReset,
+    });
+  }
+
+  if (btnCancelReset && modalReset) {
+    btnCancelReset.addEventListener("click", () => {
+      console.log("[Auth] Cancel reset clicked");
+      modalReset.classList.add("hidden");
+      // Optionally show login modal back
+      const authModal = document.getElementById("auth-modal");
+      if (authModal) authModal.classList.remove("hidden");
+    });
+  }
+
+  if (btnConfirmReset && modalReset && inputResetEmail) {
+    btnConfirmReset.addEventListener("click", async () => {
+      const email = inputResetEmail.value.trim();
+      console.log("[Auth] Confirm reset clicked for:", email);
+      if (!email) {
+        const { showToast } = await import("./ui.js");
+        const lang = getCurrentLang() || "es";
+        const t = translations[lang] || translations["es"];
+        showToast(t.toast_email_invalid, 3000, "error");
+        return;
+      }
+
+      btnConfirmReset.disabled = true;
+      const originalText = btnConfirmReset.textContent;
+      btnConfirmReset.textContent = "...";
+
+      const result = await sendResetPassword(email);
+
+      btnConfirmReset.disabled = false;
+      btnConfirmReset.textContent = originalText;
+
+      const { showToast } = await import("./ui.js");
+      const lang = getCurrentLang() || "es";
+      const t = translations[lang] || translations["es"];
+
+      if (result.success) {
+        showToast(t.toast_reset_sent, 4000, "success");
+        modalReset.classList.add("hidden");
+      } else {
+        showToast("Error: " + result.error, 4000, "error");
+      }
+    });
+  }
+}
+
+// Support both direct execution (module) and DOMContentLoaded
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initForgotPasswordUI);
+} else {
+  initForgotPasswordUI();
 }
