@@ -76,17 +76,53 @@ export async function cleanupLegacyStats(userId) {
   }
 }
 
-export async function checkUsernameAvailability(username) {
+export async function checkUsernameAvailability(
+  username,
+  excludeUserId = null,
+) {
   if (!username) return false;
   try {
     const usersRef = collection(db, "users");
-    const q = query(usersRef, where("username", "==", username));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.empty; // True if no documents found (available)
+    const lookName = username.toLowerCase();
+
+    console.log(
+      `[DB] Checking availability for: "${username}" (lc: "${lookName}"), excluding: ${excludeUserId}`,
+    );
+
+    // 1. Primary check: Case-insensitive via username_lc
+    const q1 = query(usersRef, where("username_lc", "==", lookName));
+    const snap1 = await getDocs(q1);
+
+    // If we find matches, check if any of them are NOT the current user
+    if (!snap1.empty) {
+      const otherUser = snap1.docs.find((doc) => doc.id !== excludeUserId);
+      if (otherUser) {
+        console.log(
+          `[DB] Conflict found in username_lc index: ${otherUser.id}`,
+        );
+        return false;
+      }
+    }
+
+    // 2. Secondary check: Case-sensitive fallback for legacy accounts (exact match)
+    // Even if it's the current user, we check this for extra safety.
+    const q2 = query(usersRef, where("username", "==", username));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) {
+      const otherUser = snap2.docs.find((doc) => doc.id !== excludeUserId);
+      if (otherUser) {
+        console.log(
+          `[DB] Conflict found in legacy username field: ${otherUser.id}`,
+        );
+        return false;
+      }
+    }
+
+    console.log(`[DB] Username "${username}" is available.`);
+    return true; // Available
   } catch (error) {
-    console.error("Availability check failed:", error);
-    return true; // Fail open or closed? Let's fail open to avoid blocking if network issues, or handle error upstream.
-    // Ideally fail open but warn.
+    console.error("[DB] Availability check failed:", error);
+    return true; // Fail open to avoid blocking UI
   }
 }
 
@@ -99,9 +135,9 @@ export async function saveUserStats(userId, statsData, username = null) {
       stats: statsData,
       lastUpdated: serverTimestamp(),
       // Top-level fields for efficient Firestore indexing
-      totalRP: statsData.currentRP || 0,
-      monthlyRP: statsData.monthlyRP || 0,
-      dailyRP: statsData.dailyRP || 0,
+      totalRP: Number(statsData.currentRP || 0),
+      monthlyRP: Number(statsData.monthlyRP || 0),
+      dailyRP: Number(statsData.dailyRP || 0),
       lastDailyUpdate: statsData.lastDailyUpdate || null,
       lastMonthlyUpdate: statsData.lastMonthlyUpdate || null,
     };
@@ -109,6 +145,7 @@ export async function saveUserStats(userId, statsData, username = null) {
     // If username is provided, save it as a top-level searchable field
     if (username) {
       updateData.username = username;
+      updateData.username_lc = username.toLowerCase();
     }
 
     if (gameManager.isWiping) {
@@ -161,9 +198,15 @@ export async function loadUserProgress(userId) {
       const remoteProgress = data.progress;
       const remoteStats = data.stats; // New field
 
-      console.log("Remote data found:", data);
-
-      // Use GameManager to handle merge logic
+      // SELF-HEALING: If user has a username but not the lowercase version, fix it now.
+      if (data.username && !data.username_lc) {
+        console.log("[DB] Migrating legacy username to lowercase index...");
+        await setDoc(
+          userRef,
+          { username_lc: data.username.toLowerCase() },
+          { merge: true },
+        );
+      }
       await gameManager.handleCloudSync(remoteProgress, remoteStats);
     } else {
       console.log("No remote progress found. Creating new entry on next save.");

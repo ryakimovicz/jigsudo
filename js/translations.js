@@ -142,6 +142,8 @@ export const translations = {
     btn_register: "Crear Cuenta",
     link_register: "Regístrate",
     link_login: "Inicia Sesión",
+    btn_google_login: "Continuar con Google",
+    auth_or: "o",
     auth_success: "¡Bienvenido!",
     auth_logout: "Sesión cerrada",
     guest: "Invitado",
@@ -169,6 +171,8 @@ export const translations = {
     modal_delete_account_title: "Eliminar Cuenta",
     modal_delete_account_desc:
       "⚠️ Esta acción es IRREVERSIBLE. Ingresa tu contraseña para confirmar.",
+    modal_delete_account_google_desc:
+      "⚠️ Esta acción es IRREVERSIBLE. Haz clic en Confirmar para re-autenticar con Google.",
 
     modal_logout_title: "Cerrar Sesión",
     modal_logout_desc: "¿Estás seguro de que deseas salir?",
@@ -189,6 +193,7 @@ export const translations = {
     err_auth_user_not_found: "Usuario no encontrado.",
     err_auth_wrong_password: "Contraseña incorrecta.",
     err_auth_too_many_requests: "Demasiados intentos. Intenta más tarde.",
+    err_auth_unauthorized_domain: "Dominio no autorizado para Google Login.",
     err_auth_general: "Error de autenticación: ",
     err_user_exists: "El nombre de usuario ya está en uso.",
 
@@ -440,6 +445,8 @@ export const translations = {
     btn_register: "Create Account",
     link_register: "Sign Up",
     link_login: "Log In",
+    btn_google_login: "Continue with Google",
+    auth_or: "or",
     auth_success: "Welcome!",
     auth_logout: "Logged out",
     guest: "Guest",
@@ -542,6 +549,8 @@ export const translations = {
     modal_delete_account_title: "Delete Account",
     modal_delete_account_desc:
       "⚠️ This action is IRREVERSIBLE. Enter your password to confirm.",
+    modal_delete_account_google_desc:
+      "⚠️ This action is IRREVERSIBLE. Click Confirm to re-authenticate with Google.",
 
     modal_logout_title: "Log Out",
     modal_logout_desc: "Are you sure you want to log out?",
@@ -562,6 +571,7 @@ export const translations = {
     err_auth_user_not_found: "User not found.",
     err_auth_wrong_password: "Incorrect password.",
     err_auth_too_many_requests: "Too many requests. Try again later.",
+    err_auth_unauthorized_domain: "Unauthorized domain for Google Login.",
     err_auth_general: "Authentication error: ",
     err_user_exists: "Username is already taken.",
 

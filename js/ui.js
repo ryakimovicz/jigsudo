@@ -3,7 +3,7 @@ import { getCurrentLang, updateTexts } from "./i18n.js";
 import { getCurrentUser } from "./auth.js";
 import { getRankData } from "./ranks.js";
 
-export function showToast(message, duration = 3000) {
+export function showToast(message, duration = 3000, type = "info") {
   let container = document.getElementById("toast-container");
 
   // Create container if missing
@@ -15,7 +15,7 @@ export function showToast(message, duration = 3000) {
 
   // Create Toast Element
   const toast = document.createElement("div");
-  toast.className = "toast-notification";
+  toast.className = `toast-notification toast-${type}`;
   toast.textContent = message;
 
   container.appendChild(toast);

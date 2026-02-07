@@ -11,6 +11,10 @@ import {
   updatePassword,
   deleteUser,
   signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup,
+  linkWithPopup,
+  reauthenticateWithPopup,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
@@ -26,7 +30,8 @@ export async function updateUsername(newUsername) {
 
     if (user.displayName === newUsername) return { success: true };
 
-    const isAvailable = await checkUsernameAvailability(newUsername);
+    // Always check availability, but pass our own UID to ignore our own record
+    const isAvailable = await checkUsernameAvailability(newUsername, user.uid);
     if (!isAvailable) {
       const t = translations[getCurrentLang()] || translations["es"];
       return { success: false, error: t.err_user_exists };
@@ -260,12 +265,133 @@ export async function logoutUser() {
   }
 }
 
-async function reauthenticateUser(user, currentPassword) {
-  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+export async function loginWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  const currentUser = auth.currentUser;
+
+  // Signal that we are transitioning, to prevent auto-wipe in onAuthStateChanged
+  isRegistering = true;
+
   try {
-    await reauthenticateWithCredential(user, credential);
-    return { success: true };
+    let result;
+    // If we have an anonymous user, try to LINK instead of just signing in.
+    // This turns the anonymous account into a permanent Google account (UID stays same).
+    if (currentUser && currentUser.isAnonymous) {
+      console.log("[Auth] Attempting to link guest account to Google...");
+      try {
+        result = await linkWithPopup(currentUser, provider);
+        console.log("[Auth] Account linked successfully.");
+      } catch (linkError) {
+        if (linkError.code === "auth/credential-already-in-use") {
+          console.log(
+            "[Auth] Google account already exists. Switching to Sign-In flow.",
+          );
+          // Fallback to normal sign-in (UID will change)
+          result = await signInWithPopup(auth, provider);
+        } else {
+          throw linkError;
+        }
+      }
+    } else {
+      result = await signInWithPopup(auth, provider);
+    }
+
+    const user = result.user;
+    const { saveUserStats, checkUsernameAvailability } =
+      await import("./db.js");
+
+    // Persist username to Firestore if it's a new or migrated account
+    // For Google users, we use their Google Display Name or email prefix, ensuring it's UNIQUE
+    let assignedName = user.displayName || user.email.split("@")[0];
+
+    // Check if this user (UID) already has a username in our DB to avoid overwriting or redundant checks
+    const { doc, getDoc } =
+      await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const { db } = await import("./firebase-config.js");
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const existingNameInDb = userDoc.exists() ? userDoc.data().username : null;
+
+    if (!existingNameInDb) {
+      // It's a new account or a migration, ensure the assignedName is unique
+      let isAvailable = await checkUsernameAvailability(assignedName);
+      let counter = 1;
+      const baseName = assignedName;
+
+      while (!isAvailable) {
+        assignedName = `${baseName}${counter}`;
+        isAvailable = await checkUsernameAvailability(assignedName);
+        counter++;
+      }
+    } else {
+      // User already exists, keep their current name
+      assignedName = existingNameInDb;
+    }
+
+    if (currentUser && currentUser.isAnonymous) {
+      // Migrating guest stats to permanent Google account
+      const guestStatsStr = localStorage.getItem("jigsudo_user_stats");
+      if (guestStatsStr) {
+        try {
+          const guestStats = JSON.parse(guestStatsStr);
+          await saveUserStats(user.uid, guestStats, assignedName);
+        } catch (e) {
+          console.warn("[Auth] Failed to migrate guest stats to Google:", e);
+        }
+      }
+    } else {
+      // Regular Google sign-in: Ensure username exists in DB for rankings
+      await saveUserStats(user.uid, {}, assignedName);
+    }
+
+    // Explicitly update Firebase profile name if it's missing (helps sync UI immediately)
+    if (!user.displayName && assignedName) {
+      await updateProfile(user, { displayName: assignedName });
+    }
+
+    // Refresh UI manually to ensure assignedName shows up immediately
+    updateUIForLogin(user);
+
+    return { success: true, user };
   } catch (error) {
+    console.error("Google Login Error:", error.code, error.message);
+    return { success: false, error: translateAuthError(error.code) };
+  } finally {
+    // Reset flag after a delay to ensure onAuthStateChanged processed it
+    setTimeout(() => {
+      isRegistering = false;
+    }, 2000);
+  }
+}
+
+async function reauthenticateUser(user, currentPassword = null) {
+  const isGoogleUser =
+    user &&
+    user.providerData &&
+    user.providerData.some((p) => p.providerId === "google.com");
+
+  try {
+    if (isGoogleUser) {
+      console.log("[Auth] Re-authenticating Google user...");
+      const provider = new GoogleAuthProvider();
+      await reauthenticateWithPopup(user, provider);
+      return { success: true };
+    } else {
+      if (!currentPassword) {
+        throw new Error("Password required for email re-authentication.");
+      }
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      return { success: true };
+    }
+  } catch (error) {
+    console.error(
+      "[Auth] Re-authentication failed:",
+      error.code,
+      error.message,
+    );
     return { success: false, error: translateAuthError(error.code) };
   }
 }
@@ -340,7 +466,8 @@ function updateUIForLogin(user) {
   if (loggedInView) loggedInView.classList.remove("hidden");
 
   if (nameSpan) {
-    const displayName = user.displayName || user.email.split("@")[0];
+    const displayName =
+      user.displayName || (user.email ? user.email.split("@")[0] : "Usuario");
     nameSpan.textContent = displayName;
   }
 
@@ -501,6 +628,8 @@ function translateAuthError(code) {
       return t.err_auth_wrong_password;
     case "auth/too-many-requests":
       return t.err_auth_too_many_requests;
+    case "auth/unauthorized-domain":
+      return t.err_auth_unauthorized_domain;
     default:
       return t.err_auth_general + code;
   }
@@ -552,6 +681,12 @@ function showPasswordModal(actionType) {
   const lang = getCurrentLang() || "es";
   const t = translations[lang] || translations["es"];
 
+  const user = auth.currentUser;
+  const isGoogleUser =
+    user &&
+    user.providerData &&
+    user.providerData.some((p) => p.providerId === "google.com");
+
   if (actionType === "change_username") {
     title.textContent = t.modal_change_name_title;
     desc.textContent = t.modal_change_name_desc;
@@ -574,7 +709,7 @@ function showPasswordModal(actionType) {
       const { showToast } = await import("./ui.js");
       const newName = textInput ? textInput.value.trim() : "";
       if (!newName) {
-        showToast(t.toast_name_empty);
+        showToast(t.toast_name_empty, 3000, "error");
         return;
       }
       newBtnConfirm.disabled = true;
@@ -583,7 +718,7 @@ function showPasswordModal(actionType) {
       newBtnConfirm.disabled = false;
       newBtnConfirm.textContent = t.btn_confirm;
       if (result.success) {
-        showToast(t.toast_name_success);
+        showToast(t.toast_name_success, 3000, "success");
         modal.classList.add("hidden");
         const nameSpan = document.getElementById("user-display-name");
         if (nameSpan) nameSpan.textContent = newName;
@@ -596,7 +731,7 @@ function showPasswordModal(actionType) {
           console.error("Error updating profile card:", e);
         }
       } else {
-        alert("Error: " + result.error);
+        showToast("Error: " + result.error, 3000, "error");
       }
     };
   } else if (actionType === "change_password") {
@@ -619,15 +754,15 @@ function showPasswordModal(actionType) {
       const newPass = newPassInput.value;
       const verifyPass = verifyPassInput ? verifyPassInput.value : "";
       if (!currentPass || !newPass || !verifyPass) {
-        showToast(t.toast_pw_empty);
+        showToast(t.toast_pw_empty, 3000, "error");
         return;
       }
       if (newPass !== verifyPass) {
-        showToast(t.toast_pw_mismatch);
+        showToast(t.toast_pw_mismatch, 3000, "error");
         return;
       }
       if (newPass.length < 6) {
-        showToast(t.toast_pw_short);
+        showToast(t.toast_pw_short, 3000, "error");
         return;
       }
       newBtnConfirm.disabled = true;
@@ -636,30 +771,40 @@ function showPasswordModal(actionType) {
       newBtnConfirm.disabled = false;
       newBtnConfirm.textContent = t.btn_confirm;
       if (result.success) {
-        showToast(t.toast_pw_success);
+        showToast(t.toast_pw_success, 3000, "success");
         modal.classList.add("hidden");
       } else {
-        showToast("Error: " + result.error);
+        showToast("Error: " + result.error, 3000, "error");
       }
     };
   } else if (actionType === "delete_account") {
     title.textContent = t.modal_delete_account_title;
-    desc.textContent = t.modal_delete_account_desc;
+    desc.textContent = isGoogleUser
+      ? t.modal_delete_account_google_desc
+      : t.modal_delete_account_desc;
     title.style.color = "#ff5555";
     newPassContainer.classList.add("hidden");
     const currentWrapper = confirmInput.closest(".password-wrapper");
-    if (currentWrapper) currentWrapper.classList.remove("hidden");
-    else confirmInput.classList.remove("hidden");
-    confirmInput.placeholder = t.placeholder_current_pw;
+
+    if (isGoogleUser) {
+      if (currentWrapper) currentWrapper.classList.add("hidden");
+      else confirmInput.classList.add("hidden");
+    } else {
+      if (currentWrapper) currentWrapper.classList.remove("hidden");
+      else confirmInput.classList.remove("hidden");
+      confirmInput.placeholder = t.placeholder_current_pw;
+    }
+
     if (textInput) textInput.classList.add("hidden");
     const newBtnConfirm = btnConfirm.cloneNode(true);
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
     newBtnConfirm.textContent = t.btn_confirm;
     newBtnConfirm.onclick = async () => {
       const { showToast } = await import("./ui.js");
-      const currentPass = confirmInput.value;
-      if (!currentPass) {
-        showToast(t.toast_pw_enter);
+      const currentPass = isGoogleUser ? null : confirmInput.value;
+
+      if (!isGoogleUser && !currentPass) {
+        showToast(t.toast_pw_enter, 3000, "error");
         return;
       }
       const deleteModal = document.getElementById(
@@ -683,12 +828,12 @@ function showPasswordModal(actionType) {
             btnConfirmDelete.textContent = t.btn_deleting;
             const result = await deleteUserAccount(currentPass);
             if (result.success) {
-              showToast(t.toast_delete_success);
+              showToast(t.toast_delete_success, 3000, "success");
               setTimeout(() => window.location.reload(), 2000);
             } else {
               btnConfirmDelete.disabled = false;
               btnConfirmDelete.textContent = t.btn_delete_all;
-              showToast("Error: " + result.error);
+              showToast("Error: " + result.error, 3000, "error");
               deleteModal.classList.add("hidden");
             }
           };

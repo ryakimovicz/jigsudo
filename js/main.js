@@ -4,7 +4,13 @@ import { initHome } from "./home.js";
 import { initLanguage } from "./i18n.js";
 import { initSudoku } from "./sudoku.js";
 import { gameManager } from "./game-manager.js";
-import { initAuth, loginUser, registerUser, logoutUser } from "./auth.js"; // Auth Import
+import {
+  initAuth,
+  loginUser,
+  registerUser,
+  logoutUser,
+  loginWithGoogle,
+} from "./auth.js"; // Auth Import
 import { initProfile, showProfile } from "./profile.js"; // Profile Import
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
 
@@ -171,6 +177,24 @@ function attachAuthListeners() {
         if (confirmInput) {
           confirmInput.type = newType;
         }
+      }
+    });
+  });
+
+  // Google Login Buttons
+  document.querySelectorAll(".btn-login-google").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const errBox = document.getElementById("auth-error-msg");
+      if (errBox) errBox.classList.add("hidden");
+
+      const res = await loginWithGoogle();
+      if (!res.success) {
+        if (errBox) {
+          errBox.textContent = res.error;
+          errBox.classList.remove("hidden");
+        }
+      } else {
+        loginModal.classList.add("hidden");
       }
     });
   });

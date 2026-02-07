@@ -203,6 +203,11 @@ export function updateProfileData() {
   }
 
   // Double Check: Hide individual buttons if guest (Nuclear Option)
+  const isGoogleUser =
+    user &&
+    user.providerData &&
+    user.providerData.some((p) => p.providerId === "google.com");
+
   const sensitiveButtons = [
     "btn-profile-change-name",
     "btn-profile-change-pw",
@@ -214,6 +219,11 @@ export function updateProfileData() {
     const btn = document.getElementById(id);
     if (btn) {
       if (user && !user.isAnonymous) {
+        // Special case: Google users don't have a Jigsudo password to change
+        if (id === "btn-profile-change-pw" && isGoogleUser) {
+          btn.style.display = "none";
+          return;
+        }
         btn.style.display = ""; // Reset
         btn.closest(".profile-actions").classList.remove("hidden"); // Ensure parent is shown if user exists
       } else {
