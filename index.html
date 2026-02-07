@@ -864,6 +864,7 @@
             <input
               type="email"
               id="login-email"
+              data-i18n-placeholder="auth_email_placeholder"
               placeholder="Email"
               required
               autocomplete="email"
@@ -873,6 +874,7 @@
               <input
                 type="password"
                 id="login-password"
+                data-i18n-placeholder="auth_password_placeholder"
                 placeholder="Contraseña"
                 required
                 autocomplete="current-password"
@@ -881,6 +883,7 @@
               <button
                 type="button"
                 class="toggle-password"
+                data-i18n-aria="aria_show_password"
                 aria-label="Mostrar contraseña"
               >
                 👁️
@@ -894,7 +897,7 @@
               Iniciar Sesión
             </button>
             <p class="auth-switch">
-              ¿No tienes cuenta?
+              <span data-i18n="auth_no_account">¿No tienes cuenta?</span>
               <a href="#" id="switch-to-register" data-i18n="link_register"
                 >Regístrate</a
               >
@@ -906,6 +909,7 @@
             <input
               type="text"
               id="register-username"
+              data-i18n-placeholder="auth_username_placeholder"
               placeholder="Nombre de usuario"
               required
               autocomplete="username"
@@ -914,6 +918,7 @@
             <input
               type="email"
               id="register-email"
+              data-i18n-placeholder="auth_email_placeholder"
               placeholder="Email"
               required
               autocomplete="email"
@@ -923,14 +928,17 @@
               <input
                 type="password"
                 id="register-password"
+                data-i18n-placeholder="auth_password_hint_placeholder"
                 placeholder="Contraseña (min 6 chars)"
                 required
+                minlength="6"
                 autocomplete="new-password"
                 class="auth-input"
               />
               <button
                 type="button"
                 class="toggle-password"
+                data-i18n-aria="aria_show_password"
                 aria-label="Mostrar contraseña"
               >
                 👁️
@@ -940,8 +948,10 @@
               <input
                 type="password"
                 id="register-password-confirm"
+                data-i18n-placeholder="auth_repeat_password_placeholder"
                 placeholder="Repetir Contraseña"
                 required
+                minlength="6"
                 autocomplete="new-password"
                 class="auth-input"
               />
@@ -954,7 +964,7 @@
               Crear Cuenta
             </button>
             <p class="auth-switch">
-              ¿Ya tienes cuenta?
+              <span data-i18n="auth_have_account">¿Ya tienes cuenta?</span>
               <a href="#" id="switch-to-login" data-i18n="link_login"
                 >Inicia Sesión</a
               >
@@ -968,9 +978,10 @@
     <!-- PASSWORD CONFIRMATION MODAL -->
     <div id="password-confirm-modal" class="modal-overlay hidden">
       <div class="modal-content small-modal">
-        <h3 id="pwd-modal-title">Confirmar Contraseña</h3>
+        <h3 id="pwd-modal-title" data-i18n="auth_confirm_pwd_title">Confirmar Contraseña</h3>
         <p
           id="pwd-modal-desc"
+          data-i18n="auth_confirm_pwd_desc"
           style="
             margin-bottom: 15px;
             font-size: 0.9rem;
@@ -985,6 +996,7 @@
           type="text"
           id="modal-text-input"
           class="auth-input hidden"
+          data-i18n-placeholder="auth_new_value_placeholder"
           placeholder="Nuevo valor"
           style="margin-bottom: 10px"
         />
@@ -994,12 +1006,14 @@
             type="password"
             id="confirm-password-input"
             class="auth-input"
+            data-i18n-placeholder="placeholder_current_pw"
             placeholder="Contraseña actual"
           />
           <button
             class="toggle-password"
             type="button"
             tabindex="-1"
+            data-i18n-aria="aria_show_password"
             onclick="toggleAuthPassword(this)"
           >
             👁️
@@ -1016,12 +1030,16 @@
               type="password"
               id="new-password-input"
               class="auth-input"
+              data-i18n-placeholder="placeholder_new_pw"
               placeholder="Nueva contraseña (mín 6 caracteres)"
+              required
+              minlength="6"
             />
             <button
               class="toggle-password"
               type="button"
               tabindex="-1"
+              data-i18n-aria="aria_show_password"
               onclick="toggleAuthPassword(this)"
             >
               👁️
@@ -1033,14 +1051,17 @@
               type="password"
               id="verify-password-input"
               class="auth-input"
+              data-i18n-placeholder="placeholder_verify_pw"
               placeholder="Repetir nueva contraseña"
+              required
+              minlength="6"
             />
           </div>
         </div>
 
         <div class="modal-actions">
-          <button id="btn-cancel-pwd" class="btn-secondary">Cancelar</button>
-          <button id="btn-confirm-pwd" class="btn-primary">Confirmar</button>
+          <button id="btn-cancel-pwd" class="btn-secondary" data-i18n="btn_cancel">Cancelar</button>
+          <button id="btn-confirm-pwd" class="btn-primary" data-i18n="btn_confirm">Confirmar</button>
         </div>
       </div>
     </div>

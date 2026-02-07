@@ -131,7 +131,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   `;
 
   if (data.length === 0) {
-    html += `<tr><td colspan="3" class="empty-row">No hay datos todavía</td></tr>`;
+    html += `<tr><td colspan="3" class="empty-row">${t.rank_empty || "No hay datos todavía"}</td></tr>`;
   } else {
     data.forEach((entry, index) => {
       const isTop3 = index < 3;

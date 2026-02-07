@@ -27,7 +27,8 @@ export async function updateUsername(newUsername) {
 
     const isAvailable = await checkUsernameAvailability(newUsername);
     if (!isAvailable) {
-      return { success: false, error: "El nombre de usuario ya está en uso." };
+      const t = translations[getCurrentLang()] || translations["es"];
+      return { success: false, error: t.err_user_exists };
     }
 
     await updateProfile(user, { displayName: newUsername });
@@ -156,7 +157,8 @@ export async function registerUser(email, password, username) {
       } catch (rollbackError) {
         console.error("Rollback failed:", rollbackError);
       }
-      return { success: false, error: "El nombre de usuario ya está en uso." };
+      const t = translations[getCurrentLang()] || translations["es"];
+      return { success: false, error: t.err_user_exists };
     }
 
     await updateProfile(user, { displayName: username });
@@ -437,22 +439,23 @@ function updateUIForLogout() {
 }
 
 function translateAuthError(code) {
+  const t = translations[getCurrentLang()] || translations["es"];
   switch (code) {
     case "auth/email-already-in-use":
-      return "El correo ya está registrado.";
+      return t.err_auth_email_in_use;
     case "auth/invalid-email":
-      return "Correo inválido.";
+      return t.err_auth_invalid_email;
     case "auth/weak-password":
-      return "La contraseña es muy débil (mínimo 6 caracteres).";
+      return t.err_auth_weak_password;
     case "auth/user-not-found":
-      return "Usuario no encontrado.";
+      return t.err_auth_user_not_found;
     case "auth/wrong-password":
     case "auth/invalid-credential":
-      return "Contraseña incorrecta.";
+      return t.err_auth_wrong_password;
     case "auth/too-many-requests":
-      return "Demasiados intentos. Intenta más tarde.";
+      return t.err_auth_too_many_requests;
     default:
-      return "Error de autenticación: " + code;
+      return t.err_auth_general + code;
   }
 }
 
