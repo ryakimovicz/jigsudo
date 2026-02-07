@@ -10,6 +10,7 @@ import {
   EmailAuthProvider,
   updatePassword,
   deleteUser,
+  signInAnonymously,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
@@ -52,8 +53,25 @@ export function initAuth() {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
-      console.log("User signed in:", user.uid);
+      console.log(
+        "User signed in:",
+        user.uid,
+        user.isAnonymous ? "(Anonymous)" : "(Permanent)",
+      );
 
+      if (user.isAnonymous) {
+        // GUEST FLOW (Anonymous UID for security/read access)
+        gameManager.setUserId(user.uid);
+        updateUIForLogout(); // Maintain Guest UI for anonymous sessions
+
+        // Dispatch custom event to signal that auth is ready (even as guest)
+        window.dispatchEvent(
+          new CustomEvent("authReady", { detail: { user } }),
+        );
+        return;
+      }
+
+      // PERMANENT USER FLOW
       const storedUid = gameManager.getUserId();
       console.log(
         `[Auth] Checking context: storedUid=${storedUid}, firebaseUid=${user.uid}`,
@@ -125,15 +143,23 @@ export function initAuth() {
       }
     } else {
       currentUser = null;
-      console.log("User signed out");
+      console.log("User signed out. Triggering anonymous sign-in...");
+
+      // Before anonymous sign-in, ensure UI reflects logged-out state (Guest)
       updateUIForLogout();
-      // Ensure we clear any lingering user ID if logout is explicit
       gameManager.setUserId(null);
 
-      // Dispatch custom event to signal that auth state is determined (no user)
-      window.dispatchEvent(
-        new CustomEvent("authReady", { detail: { user: null } }),
-      );
+      // Trigger anonymous sign-in for guests
+      try {
+        const result = await signInAnonymously(auth);
+        console.log("[Auth] Anonymous login success:", result.user.uid);
+      } catch (err) {
+        console.error("[Auth] Anonymous login failed:", err);
+        // Fallback: Notify app that auth is ready even if sign-in failed
+        window.dispatchEvent(
+          new CustomEvent("authReady", { detail: { user: null } }),
+        );
+      }
     }
   });
 }

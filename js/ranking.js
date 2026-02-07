@@ -6,6 +6,7 @@ import {
   orderBy,
   limit,
   getDocs,
+  where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
@@ -30,9 +31,29 @@ export async function fetchRankings(forceRefresh = false) {
   const { getUserRank } = await import("./db.js");
   const user = getCurrentUser();
 
+  const seedStr = (
+    await import("./game-manager.js")
+  ).gameManager.currentSeed.toString();
+  const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+  const currentMonth = today.substring(0, 7);
+
   const rankings = {
-    daily: await getTopRankings("dailyRP", 10, user, getUserRank),
-    monthly: await getTopRankings("monthlyRP", 10, user, getUserRank),
+    daily: await getTopRankings(
+      "dailyRP",
+      10,
+      user,
+      getUserRank,
+      "lastDailyUpdate",
+      today,
+    ),
+    monthly: await getTopRankings(
+      "monthlyRP",
+      10,
+      user,
+      getUserRank,
+      "lastMonthlyUpdate",
+      currentMonth,
+    ),
     allTime: await getTopRankings("totalRP", 10, user, getUserRank),
   };
 
@@ -43,8 +64,15 @@ export async function fetchRankings(forceRefresh = false) {
   return rankings;
 }
 
-async function getTopRankings(fieldName, limitCount, user, getUserRankFn) {
-  const top10 = await getTop10(fieldName, true);
+async function getTopRankings(
+  fieldName,
+  limitCount,
+  user,
+  getUserRankFn,
+  filterField = null,
+  filterValue = null,
+) {
+  const top10 = await getTop10(fieldName, true, filterField, filterValue);
 
   const result = {
     top: top10,
@@ -78,10 +106,25 @@ async function getTopRankings(fieldName, limitCount, user, getUserRankFn) {
   return result;
 }
 
-async function getTop10(fieldName, retryOnEmpty = false) {
+async function getTop10(
+  fieldName,
+  retryOnEmpty = false,
+  filterField = null,
+  filterValue = null,
+) {
   try {
     const usersRef = collection(db, "users");
-    const q = query(usersRef, orderBy(fieldName, "desc"), limit(10));
+    let q;
+    if (filterField && filterValue) {
+      q = query(
+        usersRef,
+        where(filterField, "==", filterValue),
+        orderBy(fieldName, "desc"),
+        limit(10),
+      );
+    } else {
+      q = query(usersRef, orderBy(fieldName, "desc"), limit(10));
+    }
     let querySnapshot = await getDocs(q);
 
     if (retryOnEmpty && querySnapshot.empty) {

@@ -102,6 +102,8 @@ export async function saveUserStats(userId, statsData, username = null) {
       totalRP: statsData.currentRP || 0,
       monthlyRP: statsData.monthlyRP || 0,
       dailyRP: statsData.dailyRP || 0,
+      lastDailyUpdate: statsData.lastDailyUpdate || null,
+      lastMonthlyUpdate: statsData.lastMonthlyUpdate || null,
     };
 
     // If username is provided, save it as a top-level searchable field

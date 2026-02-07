@@ -313,11 +313,13 @@ export class GameManager {
       }
 
       if (uid) {
-        let username = null;
         const user = getCurrentUser();
-        if (user) {
-          username = user.displayName || user.email.split("@")[0];
+        // Skip cloud save for anonymous users unless it's an explicit override (migration)
+        if (user && user.isAnonymous && !overrideUid) {
+          return;
         }
+
+        let username = null;
 
         if (this.state) {
           const cloudState = this._serializeState(this.state);
@@ -525,7 +527,18 @@ export class GameManager {
     const { saveUserStats } = await import("./db.js");
     const { getCurrentUser } = await import("./auth.js");
     const user = getCurrentUser();
-    if (user) saveUserStats(user.uid, stats);
+    if (user && !user.isAnonymous) {
+      const seedStr = this.currentSeed.toString();
+      const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const currentMonth = today.substring(0, 7);
+
+      const statsWithDates = {
+        ...stats,
+        lastDailyUpdate: today,
+        lastMonthlyUpdate: currentMonth,
+      };
+      saveUserStats(user.uid, statsWithDates);
+    }
   }
 
   showCriticalError(message) {
@@ -878,7 +891,18 @@ export class GameManager {
       const { stopTimer } = await import("./timer.js");
       stopTimer();
       const user = await import("./auth.js").then((m) => m.getCurrentUser());
-      if (user) await saveUserStats(user.uid, stats);
+      if (user && !user.isAnonymous) {
+        const seedStr = this.currentSeed.toString();
+        const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+        const currentMonth = today.substring(0, 7);
+
+        const statsWithDates = {
+          ...stats,
+          lastDailyUpdate: today,
+          lastMonthlyUpdate: currentMonth,
+        };
+        await saveUserStats(user.uid, statsWithDates);
+      }
       await this.forceCloudSave();
 
       const { showToast } = await import("./ui.js");

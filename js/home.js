@@ -512,6 +512,9 @@ export function initHome() {
       // Show Footer when returning Home
       const footer = document.querySelector(".main-footer");
       if (footer) footer.classList.remove("hidden");
+
+      // Force refresh rankings when returning to Home
+      loadAndRenderAllRankings(true);
     });
   }
 
@@ -538,8 +541,8 @@ export function initHome() {
     renderRankings(containerAllTime, currentRankings, "allTime");
   }
 
-  // Initial Load
-  loadAndRenderAllRankings();
+  // Initial Load (Force fresh rankings on startup)
+  loadAndRenderAllRankings(true);
 
   // Refresh Listener
   if (refreshBtn) {
@@ -554,6 +557,14 @@ export function initHome() {
     console.log(
       "[Home] Auth ready, re-rendering rankings to show user highlight",
     );
-    loadAndRenderAllRankings();
+    loadAndRenderAllRankings(true);
+  });
+
+  // Force refresh when returning to Home via Hash (Closing profile, back button, etc.)
+  window.addEventListener("hashchange", () => {
+    if (!window.location.hash || window.location.hash === "#") {
+      console.log("[Home] Hash cleared, forcing fresh ranking load...");
+      loadAndRenderAllRankings(true);
+    }
   });
 }
