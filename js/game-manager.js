@@ -192,6 +192,30 @@ export class GameManager {
   setJigsawVariation(variationKey) {
     if (!this.state) return;
     this.state.jigsaw.variation = variationKey;
+
+    // --- NORMALIZATION: Mirror the actual data matrices to match the physical board ---
+    // This ensures Sudoku, Peaks, and Search work with the coordinates that the user sees.
+    const variation = variationKey || "0";
+    if (variation !== "0") {
+      console.log(`[GM] Normalizing matrices for variation: ${variation}`);
+      this.state.data.initialPuzzle = this._transformMatrix(
+        this.state.data.initialPuzzle,
+        variation,
+      );
+      this.state.data.solution = this._transformMatrix(
+        this.state.data.solution,
+        variation,
+      );
+
+      // Also transform currentBoard if it exists (Sudoku state)
+      if (this.state.sudoku && this.state.sudoku.currentBoard) {
+        this.state.sudoku.currentBoard = this._transformMatrix(
+          this.state.sudoku.currentBoard,
+          variation,
+        );
+      }
+    }
+
     const map = this.state.data.searchTargetsMap;
     let variationData = null;
 
@@ -202,7 +226,8 @@ export class GameManager {
     }
 
     if (variationData) {
-      const solvedBoard = this.getTargetSolutionWithVariation(variationKey);
+      // getTargetSolution now returns the already transformed solution
+      const solvedBoard = this.getTargetSolution();
       this.state.search.targets = variationData.targets.map((snake, idx) => {
         if (!Array.isArray(snake) && snake.path && snake.numbers) return snake;
         if (!Array.isArray(snake)) return { id: idx, numbers: [], path: [] };
@@ -214,35 +239,43 @@ export class GameManager {
     this.save();
   }
 
-  getTargetSolution() {
-    return this.getTargetSolutionWithVariation(
-      this.state.jigsaw.variation || "0",
-    );
-  }
+  // Internal helper to transform a 9x9 matrix based on variation
+  _transformMatrix(matrix, variation) {
+    if (!matrix || variation === "0") return matrix;
 
-  getTargetSolutionWithVariation(variationKey) {
-    if (!this.state || !this.state.data.solution) return [];
-    const baseSolution = this.state.data.solution;
-    const variation = variationKey || "0";
-    if (variation === "0") return baseSolution;
-    const board = JSON.parse(JSON.stringify(baseSolution));
+    // Deep clone to avoid mutating original unintendedly (though here we want mutation)
+    const newBoard = JSON.parse(JSON.stringify(matrix));
+
     if (variation === "LR" || variation === "HV") {
+      // Mirror Horizontal (Left-Right)
       for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 3; c++) {
-          const temp = board[r][c];
-          board[r][c] = board[r][c + 6];
-          board[r][c + 6] = temp;
+          const temp = newBoard[r][c];
+          newBoard[r][c] = newBoard[r][c + 6];
+          newBoard[r][c + 6] = temp;
         }
       }
     }
+
     if (variation === "TB" || variation === "HV") {
+      // Mirror Vertical (Top-Bottom)
       for (let offset = 0; offset < 3; offset++) {
-        const tempRow = board[offset];
-        board[offset] = board[offset + 6];
-        board[offset + 6] = tempRow;
+        const tempRow = newBoard[offset];
+        newBoard[offset] = newBoard[offset + 6];
+        newBoard[offset + 6] = tempRow;
       }
     }
-    return board;
+
+    return newBoard;
+  }
+
+  getTargetSolution() {
+    return this.state?.data?.solution || [];
+  }
+
+  // DEPRECATED: Variations are now handled by transforming the base matrices in setJigsawVariation
+  getTargetSolutionWithVariation(variationKey) {
+    return this.getTargetSolution();
   }
 
   async save(syncToCloud = true) {
