@@ -96,6 +96,7 @@ export const translations = {
     alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
     alert_next_peaks: "Siguiente juego: Picos y Valles\nPróximamente",
     alert_next_search: "Siguiente juego: Sopa de Números\nPróximamente",
+    sudoku_key_completed: "Este número ya se ha usado 9 veces.",
 
     // Search Game Help
     search_help_title: "Cómo jugar", // Standardized
@@ -424,6 +425,7 @@ export const translations = {
       "Memorize the number sequence and repeat it on the correct cells.<br>The sequence grows each turn.",
     code_level_local: "Level",
     code_win: "CODE CRACKED!",
+    sudoku_key_completed: "This number has already been used 9 times.",
 
     // Authentication
     login_title: "Jigsudo Account",

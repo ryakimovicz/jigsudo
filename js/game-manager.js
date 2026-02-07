@@ -191,30 +191,52 @@ export class GameManager {
 
   setJigsawVariation(variationKey) {
     if (!this.state) return;
-    this.state.jigsaw.variation = variationKey;
 
-    // --- NORMALIZATION: Mirror the actual data matrices to match the physical board ---
-    // This ensures Sudoku, Peaks, and Search work with the coordinates that the user sees.
-    const variation = variationKey || "0";
-    if (variation !== "0") {
-      console.log(`[GM] Normalizing matrices for variation: ${variation}`);
+    const oldVariation = this.state.jigsaw.variation || "0";
+    const newVariation = variationKey || "0";
+
+    // GUARD: If same variation, do nothing (Idempotency)
+    if (oldVariation === newVariation) return;
+
+    console.log(`[GM] Switch Variation: ${oldVariation} -> ${newVariation}`);
+
+    // 1. REVERT OLD (Inverse of Mirror is Mirror)
+    if (oldVariation !== "0") {
       this.state.data.initialPuzzle = this._transformMatrix(
         this.state.data.initialPuzzle,
-        variation,
+        oldVariation,
       );
       this.state.data.solution = this._transformMatrix(
         this.state.data.solution,
-        variation,
+        oldVariation,
       );
-
-      // Also transform currentBoard if it exists (Sudoku state)
       if (this.state.sudoku && this.state.sudoku.currentBoard) {
         this.state.sudoku.currentBoard = this._transformMatrix(
           this.state.sudoku.currentBoard,
-          variation,
+          oldVariation,
         );
       }
     }
+
+    // 2. APPLY NEW
+    if (newVariation !== "0") {
+      this.state.data.initialPuzzle = this._transformMatrix(
+        this.state.data.initialPuzzle,
+        newVariation,
+      );
+      this.state.data.solution = this._transformMatrix(
+        this.state.data.solution,
+        newVariation,
+      );
+      if (this.state.sudoku && this.state.sudoku.currentBoard) {
+        this.state.sudoku.currentBoard = this._transformMatrix(
+          this.state.sudoku.currentBoard,
+          newVariation,
+        );
+      }
+    }
+
+    this.state.jigsaw.variation = newVariation;
 
     const map = this.state.data.searchTargetsMap;
     let variationData = null;

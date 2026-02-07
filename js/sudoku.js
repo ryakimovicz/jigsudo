@@ -3,6 +3,7 @@ import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { transitionToPeaks } from "./peaks.js";
 import { createMiniGrid, getChunksFromBoard } from "./memory.js";
+import { showToast } from "./ui.js";
 // State
 let selectedCell = null;
 let pencilMode = false;
@@ -135,6 +136,8 @@ export function initSudoku() {
       // Check if number is globally completed
       if (btn.classList.contains("key-completed")) {
         highlightSimilarCells(val);
+        const t = translations[getCurrentLang()];
+        showToast(t.sudoku_key_completed || "Number completed!");
         return;
       }
 
@@ -367,6 +370,8 @@ function updateKeypadHighlights(cell) {
       // Global Check first
       if (globalCounts[val] >= 9) {
         btn.classList.add("key-completed");
+        const t = translations[getCurrentLang()];
+        btn.title = t.sudoku_key_completed || "Number completed!";
         // If completed, we shouldn't really disable it locally in a way that hides completion
         // But maybe we want visual priority? key-completed should override.
       } else {
@@ -392,6 +397,8 @@ function updateKeypadHighlights(cell) {
       const val = btn.dataset.value;
       if (globalCounts[val] >= 9) {
         btn.classList.add("key-completed");
+        const t = translations[getCurrentLang()];
+        btn.title = t.sudoku_key_completed || "Number completed!";
       }
     });
   }

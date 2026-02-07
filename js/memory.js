@@ -169,7 +169,7 @@ export function attachDebugListener() {
 /**
  * Routes the application to a specific stage during resumption.
  */
-export function resumeToStage(stage) {
+export async function resumeToStage(stage) {
   console.log(`[Memory] Resuming to stage: ${stage}`);
 
   if (stage === "memory") {
@@ -213,31 +213,30 @@ export function resumeToStage(stage) {
   resumeMemoryState();
 
   if (stage === "jigsaw") {
-    import("./jigsaw.js").then((m) => {
-      m.resumeJigsawState();
-      m.transitionToJigsaw();
-    });
+    const m = await import("./jigsaw.js");
+    m.resumeJigsawState();
+    m.transitionToJigsaw();
   } else if (stage === "sudoku") {
-    import("./jigsaw.js").then((m) => m.resumeJigsawState());
-    import("./sudoku.js").then((m) => {
-      m.resumeSudokuState();
-      m.transitionToSudoku();
-    });
+    const jigsaw = await import("./jigsaw.js");
+    jigsaw.resumeJigsawState();
+    const sudoku = await import("./sudoku.js");
+    sudoku.resumeSudokuState();
+    sudoku.transitionToSudoku();
   } else if (stage === "peaks") {
-    import("./jigsaw.js").then((m) => m.resumeJigsawState());
-    import("./peaks.js").then((m) => {
-      m.transitionToPeaks();
-    });
+    const jigsaw = await import("./jigsaw.js");
+    jigsaw.resumeJigsawState();
+    const peaks = await import("./peaks.js");
+    peaks.transitionToPeaks();
   } else if (stage === "search") {
-    import("./jigsaw.js").then((m) => m.resumeJigsawState());
-    import("./search.js").then((m) => {
-      m.transitionToSearch();
-    });
+    const jigsaw = await import("./jigsaw.js");
+    jigsaw.resumeJigsawState();
+    const search = await import("./search.js");
+    search.transitionToSearch();
   } else if (stage === "code") {
-    import("./jigsaw.js").then((m) => m.resumeJigsawState());
-    import("./search.js").then((m) => {
-      m.transitionToCode();
-    });
+    const jigsaw = await import("./jigsaw.js");
+    jigsaw.resumeJigsawState();
+    const search = await import("./search.js");
+    search.transitionToCode();
   }
 
   // 5. Start Global Timer
