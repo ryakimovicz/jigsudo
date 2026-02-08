@@ -151,12 +151,21 @@ export function initAuth() {
 
         const isNowPlaying =
           !document.body.classList.contains("home-active") &&
-          !document.body.classList.contains("profile-active");
+          !document.body.classList.contains("profile-active") &&
+          !document.body.classList.contains("history-active");
         const isOnProfile =
           window.location.hash === "#profile" ||
           document.body.classList.contains("profile-active");
+        const isOnHistory =
+          window.location.hash === "#history" ||
+          document.body.classList.contains("history-active");
 
-        if ((wasPlaying || isNowPlaying) && !isOnProfile) {
+        if (
+          (wasPlaying || isNowPlaying) &&
+          !isOnProfile &&
+          !isOnHistory &&
+          !gameManager.isReplaying
+        ) {
           const state = gameManager.getState();
           const currentStage = state?.progress?.currentStage || "memory";
           console.log(`[Auth] Routing to stage: ${currentStage}`);
@@ -497,13 +506,16 @@ function updateUIForLogin(user) {
     nameSpan.textContent = displayName;
   }
 
-  const isProfileActive =
+  const isNavigating =
     document.body.classList.contains("profile-active") ||
-    window.location.hash === "#profile";
-  const menu = document.getElementById("menu-content");
+    document.body.classList.contains("history-active") ||
+    window.location.hash === "#profile" ||
+    window.location.hash === "#history";
   const gameSection = document.getElementById("game-section");
+  const isGameActive = gameSection && !gameSection.classList.contains("hidden");
 
-  if (!isProfileActive) {
+  if (!isNavigating && !isGameActive) {
+    const menu = document.getElementById("menu-content");
     if (menu) menu.classList.remove("hidden");
     if (gameSection) {
       gameSection.classList.add("hidden");
@@ -608,13 +620,16 @@ function updateUIForLogout() {
     module.updateProfileData();
   });
 
-  const isProfileActive =
+  const isNavigating =
     document.body.classList.contains("profile-active") ||
-    window.location.hash === "#profile";
-  const menu = document.getElementById("menu-content");
+    document.body.classList.contains("history-active") ||
+    window.location.hash === "#profile" ||
+    window.location.hash === "#history";
   const gameSection = document.getElementById("game-section");
+  const isGameActive = gameSection && !gameSection.classList.contains("hidden");
 
-  if (!isProfileActive) {
+  if (!isNavigating && !isGameActive) {
+    const menu = document.getElementById("menu-content");
     if (menu) menu.classList.remove("hidden");
     if (gameSection) {
       gameSection.classList.add("hidden");
@@ -629,9 +644,6 @@ function updateUIForLogout() {
       );
     }
   }
-
-  const debugBtn = document.getElementById("debug-help-btn");
-  if (debugBtn) debugBtn.style.display = "none";
 
   const btnGuestLogin = document.getElementById("btn-profile-login-guest");
   if (btnGuestLogin) {

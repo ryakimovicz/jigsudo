@@ -158,6 +158,27 @@ export class GameManager {
       console.log(
         "[GameManager] Replay Mode Active: Stats and RP will NOT be updated.",
       );
+      // User requested that History games always start from 0
+      console.log(
+        "[GameManager] Replay detected: Wiping local progress for a fresh start.",
+      );
+      localStorage.removeItem(this.storageKey);
+    } else {
+      // Current live day logic
+      this._ensureStats();
+      const dateStrToday = `${parts[0]}-${parts[1]}-${parts[2]}`;
+      const isAlreadyWon = this.stats.history[dateStrToday]?.status === "won";
+
+      if (isAlreadyWon) {
+        console.log(
+          "[GameManager] Today already won: Wiping progress for a fresh replay.",
+        );
+        localStorage.removeItem(this.storageKey);
+      } else {
+        console.log(
+          "[GameManager] Today in progress: Preserving state for resume.",
+        );
+      }
     }
 
     this.ready = this.init(); // Re-initialize with new seed
@@ -1183,12 +1204,12 @@ export class GameManager {
         const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
         const currentMonth = today.substring(0, 7);
 
-        const statsWithDates = {
-          ...stats,
-          lastDailyUpdate: today,
-          lastMonthlyUpdate: currentMonth,
-        };
-        await saveUserStats(user.uid, statsWithDates);
+        // Update permanent stats with these dates so future saves (like forceCloudSave) don't overwrite them with null
+        this.stats.lastDailyUpdate = today;
+        this.stats.lastMonthlyUpdate = currentMonth;
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+
+        await saveUserStats(user.uid, this.stats);
       }
       await this.forceCloudSave();
 

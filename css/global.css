@@ -434,8 +434,16 @@ body:not(.beta-mode) #debug-help-btn {
   display: none !important;
 }
 
-/* Hide on Home or Profile Screen if needed */
-body.home-active #debug-help-btn,
-body.profile-active #debug-help-btn {
+/* 
+   ROBUST VISIBILITY: 
+   Hide the wand if the game section is hidden (Home, Profile, History menus).
+   This avoids relying on complex body-class state tracking.
+*/
+#game-section.hidden ~ #debug-help-btn {
   display: none !important;
+}
+
+/* Ensure wand is on top of everything including game elements */
+.debug-fab {
+  z-index: 10005 !important;
 }

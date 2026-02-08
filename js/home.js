@@ -6,6 +6,7 @@ import { getDailySeed } from "./utils/random.js";
 import { gameManager } from "./game-manager.js";
 import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js";
 import { getCurrentUser } from "./auth.js";
+import { CONFIG } from "./config.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -35,10 +36,6 @@ window.toggleAuthPassword = function (btn) {
 
 export function initHome() {
   console.log("Jigsudo Home Module Loaded");
-
-  // Hide Solve button on Home
-  const solveBtn = document.getElementById("debug-help-btn");
-  if (solveBtn) solveBtn.style.display = "none";
 
   // Enforce Home State Class for CSS overrides
   document.body.classList.add("home-active");
@@ -626,6 +623,15 @@ export async function startDailyGame() {
     document.body.classList.remove("home-active");
     document.body.classList.remove("profile-active");
     document.body.classList.remove("history-active");
+    if (CONFIG.betaMode) document.body.classList.add("beta-mode");
+
+    // Clear hash to prevent accidental re-routing
+    if (
+      window.location.hash === "#history" ||
+      window.location.hash === "#profile"
+    ) {
+      history.replaceState(null, null, " ");
+    }
 
     // Hide Sections
     document.getElementById("menu-content")?.classList.add("hidden");

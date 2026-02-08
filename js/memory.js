@@ -40,10 +40,6 @@ const TOTAL_PAIRS = 9;
 export function initMemoryGame() {
   console.log("Initializing Memory Game...");
 
-  // Show Solve button (restore CSS control)
-  const solveBtn = document.getElementById("debug-help-btn");
-  if (solveBtn) solveBtn.style.display = ""; // Let CSS (debug-mode) handle it
-
   memorySection = document.getElementById("game-section"); // FIXED ID
   boardContainer = document.getElementById("memory-board");
 
