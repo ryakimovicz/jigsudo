@@ -13,6 +13,7 @@ import {
   signInAnonymously,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithCredential,
   linkWithPopup,
   reauthenticateWithPopup,
   sendPasswordResetEmail,
@@ -297,10 +298,12 @@ export async function loginWithGoogle() {
       } catch (linkError) {
         if (linkError.code === "auth/credential-already-in-use") {
           console.log(
-            "[Auth] Google account already exists. Switching to Sign-In flow.",
+            "[Auth] Google account already exists. Signing in directly...",
           );
-          // Fallback to normal sign-in (UID will change)
-          result = await signInWithPopup(auth, provider);
+          // CRUCIAL: Extract the credential from the error and sign in with it.
+          // This avoids opening a second popup and solves the 'popup-blocked' issue.
+          const credential = GoogleAuthProvider.credentialFromError(linkError);
+          result = await signInWithCredential(auth, credential);
         } else {
           throw linkError;
         }
@@ -674,6 +677,12 @@ function translateAuthError(code) {
       return t.err_auth_too_many_requests;
     case "auth/unauthorized-domain":
       return t.err_auth_unauthorized_domain;
+    case "auth/popup-closed-by-user":
+      return t.err_auth_popup_closed;
+    case "auth/cancelled-popup-request":
+      return t.err_auth_cancelled_popup;
+    case "auth/popup-blocked":
+      return t.err_auth_popup_blocked;
     default:
       return t.err_auth_general + code;
   }

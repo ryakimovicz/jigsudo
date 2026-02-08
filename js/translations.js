@@ -201,6 +201,12 @@ export const translations = {
     err_auth_wrong_password: "Contraseña incorrecta.",
     err_auth_too_many_requests: "Demasiados intentos. Intenta más tarde.",
     err_auth_unauthorized_domain: "Dominio no autorizado para Google Login.",
+    err_auth_popup_closed:
+      "La ventana de inicio de sesión se cerró antes de completar el proceso.",
+    err_auth_cancelled_popup:
+      "Ya hay una solicitud de inicio de sesión en curso. Por favor, espera.",
+    err_auth_popup_blocked:
+      "El navegador bloqueó la ventana de inicio de sesión. Por favor, permite los popups para este sitio.",
     err_auth_general: "Error de autenticación: ",
     err_user_exists: "El nombre de usuario ya está en uso.",
     toast_email_invalid: "El correo no es válido.",
@@ -590,6 +596,12 @@ export const translations = {
     err_auth_wrong_password: "Incorrect password.",
     err_auth_too_many_requests: "Too many requests. Try again later.",
     err_auth_unauthorized_domain: "Unauthorized domain for Google Login.",
+    err_auth_popup_closed:
+      "The login window was closed before completing the process.",
+    err_auth_cancelled_popup:
+      "A login request is already in progress. Please wait.",
+    err_auth_popup_blocked:
+      "The browser blocked the login window. Please allow popups for this site.",
     err_auth_general: "Authentication error: ",
     err_user_exists: "Username is already taken.",
 
