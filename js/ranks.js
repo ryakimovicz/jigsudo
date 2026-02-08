@@ -1,20 +1,20 @@
 export const RANKS = [
   { id: 0, nameKey: "rank_0", minRP: 0, icon: "🌱" },
-  { id: 1, nameKey: "rank_1", minRP: 20, icon: "🥚" }, // ~2 días (2x10)
-  { id: 2, nameKey: "rank_2", minRP: 70, icon: "🔨" }, // ~1 semana (7x10)
-  { id: 3, nameKey: "rank_3", minRP: 180, icon: "📚" }, // ~2.5 semanas
-  { id: 4, nameKey: "rank_4", minRP: 350, icon: "📈" }, // ~1.5 meses
-  { id: 5, nameKey: "rank_5", minRP: 600, icon: "🧩" }, // ~2 meses
-  { id: 6, nameKey: "rank_6", minRP: 900, icon: "♟️" }, // ~3 meses
-  { id: 7, nameKey: "rank_7", minRP: 1200, icon: "🎖️" }, // ~4 meses
-  { id: 8, nameKey: "rank_8", minRP: 1500, icon: "🎓" }, // ~5 meses
-  { id: 9, nameKey: "rank_9", minRP: 1800, icon: "🥋" }, // ~6 meses
-  { id: 10, nameKey: "rank_10", minRP: 2100, icon: "🦉" }, // ~7 meses
-  { id: 11, nameKey: "rank_11", minRP: 2400, icon: "📜" },
-  { id: 12, nameKey: "rank_12", minRP: 2700, icon: "👁️" },
-  { id: 13, nameKey: "rank_13", minRP: 3000, icon: "✨" },
-  { id: 14, nameKey: "rank_14", minRP: 3300, icon: "🔮" },
-  { id: 15, nameKey: "rank_15", minRP: 3650, icon: "🌌" }, // ~1 año (365x10)
+  { id: 1, nameKey: "rank_1", minRP: 10, icon: "🥚" }, // ~1 día
+  { id: 2, nameKey: "rank_2", minRP: 30, icon: "🔨" }, // ~3 días
+  { id: 3, nameKey: "rank_3", minRP: 60, icon: "📚" }, // ~1 semana
+  { id: 4, nameKey: "rank_4", minRP: 100, icon: "📈" }, // ~12 días
+  { id: 5, nameKey: "rank_5", minRP: 160, icon: "🧩" }, // ~3 semanas
+  { id: 6, nameKey: "rank_6", minRP: 250, icon: "♟️" }, // ~1 mes
+  { id: 7, nameKey: "rank_7", minRP: 400, icon: "🎖️" }, // ~1.5 meses
+  { id: 8, nameKey: "rank_8", minRP: 600, icon: "🎓" }, // ~2.2 meses
+  { id: 9, nameKey: "rank_9", minRP: 900, icon: "🥋" }, // ~3.5 meses
+  { id: 10, nameKey: "rank_10", minRP: 1300, icon: "🦉" }, // ~5 meses
+  { id: 11, nameKey: "rank_11", minRP: 1800, icon: "📜" }, // ~7 meses
+  { id: 12, nameKey: "rank_12", minRP: 2400, icon: "👁️" }, // ~9 meses
+  { id: 13, nameKey: "rank_13", minRP: 3100, icon: "✨" }, // ~1 año
+  { id: 14, nameKey: "rank_14", minRP: 4000, icon: "🔮" }, // ~1.3 años
+  { id: 15, nameKey: "rank_15", minRP: 5000, icon: "🌌" }, // ~1.5 años
 ];
 
 export const SCORING = {
