@@ -2,7 +2,7 @@
 #profile-section {
   display: block; /* Changed from flex to simplify flow */
   width: 100%;
-  margin-top: var(--header-height);
+  /* margin-top: var(--header-height); Handled by sticky flow now */
   background-color: var(--bg-paper);
   overflow: visible; /* Ensure content doesn't clip */
   height: auto;

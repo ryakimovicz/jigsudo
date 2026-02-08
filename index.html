@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/code.css" />
     <link rel="stylesheet" href="css/auth.css" />
     <link rel="stylesheet" href="css/profile.css?v=40" />
+    <link rel="stylesheet" href="css/sidebar.css" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -78,195 +79,88 @@
       <!-- Header -->
       <header class="main-header">
         <div class="header-left">
-          <h1 class="app-title">Jigsudo</h1>
-          <div class="header-info">
-            <span id="current-date"></span>
-            <span id="challenge-num"></span>
+          <button id="sidebar-toggle" aria-label="Toggle Sidebar">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+
+        <div class="header-center">
+          <img src="assets/images/logo_lightmode.svg" alt="Logo" class="header-logo light-only">
+          <img src="assets/images/logo_darkmode.svg" alt="Logo" class="header-logo dark-only">
+          <div class="header-text-block">
+            <h1 class="app-title">Jigsudo</h1>
+            <div class="header-meta">
+              <span id="current-date"></span>
+              <span id="challenge-num"></span>
+            </div>
           </div>
         </div>
 
         <div class="header-right">
-          <!-- Settings Menu -->
-          <div class="settings-wrapper" style="position: relative">
-            <button
-              id="btn-profile"
-              class="btn-icon"
-              aria-label="Perfil"
-              data-i18n-aria="header_profile_label"
-            >
-              ⚙️
-            </button>
-            <!-- Settings Dropdown -->
-            <div
-              id="profile-dropdown"
-              class="dropdown-content glass-panel hidden"
-            >
-              <!-- HEADER -->
-              <h3 class="dropdown-header" data-i18n="settings_title">
-                Configuración
-              </h3>
+          <!-- Now empty to allow perfect center alignment -->
+        </div>
+      </header>
 
-              <!-- SECTION: APPEARANCE -->
-              <div class="settings-section appearance-section">
-                <h4 class="settings-subhead" data-i18n="settings_appearance">
-                  Apariencia
-                </h4>
-                <div class="segmented-control theme-switcher">
-                  <label class="segment-label">
-                    <input type="radio" name="theme" value="light" />
-                    <span class="segment-content">
-                      <span class="icon">☀️</span>
-                      <span class="text" data-i18n="theme_light">Claro</span>
-                    </span>
-                  </label>
-                  <label class="segment-label">
-                    <input type="radio" name="theme" value="auto" />
-                    <span class="segment-content">
-                      <span class="icon">🌗</span>
-                      <span class="text" data-i18n="theme_auto">Auto</span>
-                    </span>
-                  </label>
-                  <label class="segment-label">
-                    <input type="radio" name="theme" value="dark" />
-                    <span class="segment-content">
-                      <span class="icon">🌙</span>
-                      <span class="text" data-i18n="theme_dark">Oscuro</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
+      <!-- Side Sidebar -->
+      <aside id="side-sidebar">
+        <div class="sidebar-content">
+          <nav class="sidebar-nav">
+            <p class="sidebar-section-label" data-i18n="sidebar_menu">Menú</p>
+            <ul class="sidebar-nav-list">
+              <li class="nav-item" id="nav-home" title="Inicio">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label" data-i18n="sidebar_home">Inicio</span>
+              </li>
+              <li class="nav-item" id="nav-history" title="Historial">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label" data-i18n="sidebar_history">Historial</span>
+              </li>
+              <li class="nav-item" id="nav-how-to" title="Guía">
+                <span class="nav-icon">📖</span>
+                <span class="nav-label" data-i18n="sidebar_how_to">Guía</span>
+              </li>
+              <li class="nav-item" id="nav-info" title="Información">
+                <span class="nav-icon">ℹ️</span>
+                <span class="nav-label" data-i18n="sidebar_info">Información</span>
+              </li>
+            </ul>
+          </nav>
+        </div>
 
-              <div class="dropdown-divider"></div>
+        <div class="sidebar-footer">
+          <div class="dropdown-divider"></div>
 
-              <!-- SECTION: GAMEPLAY -->
-              <div class="settings-section gameplay-section">
-                <h4 class="settings-subhead" data-i18n="settings_gameplay">
-                  Jugabilidad
-                </h4>
-
-                <!-- Sound -->
-                <div class="setting-item">
-                  <span class="setting-label">
-                    <span class="icon-label">🔊</span>
-                    <span data-i18n="setting_sound">Sonido</span>
-                  </span>
-                  <label class="switch-small">
-                    <input type="checkbox" id="sound-toggle" checked />
-                    <span class="slider-small round"></span>
-                  </label>
-                </div>
-
-                <!-- Vibration -->
-                <div class="setting-item" id="setting-vibration-container">
-                  <span class="setting-label">
-                    <span class="icon-label">📳</span>
-                    <span data-i18n="setting_vibration">Vibración</span>
-                  </span>
-                  <label class="switch-small">
-                    <input type="checkbox" id="vibration-toggle" checked />
-                    <span class="slider-small round"></span>
-                  </label>
-                </div>
-
-                <!-- Confirm Clear -->
-                <div class="setting-item">
-                  <div class="label-group">
-                    <span class="setting-label">
-                      <span class="icon-label">🛡️</span>
-                      <span data-i18n="setting_confirm_clear"
-                        >Confirmar Borrado</span
-                      >
-                    </span>
-                  </div>
-                  <label class="switch-small">
-                    <input type="checkbox" id="confirm-clear-toggle" checked />
-                    <span class="slider-small round"></span>
-                  </label>
-                </div>
-
-                <!-- Language -->
-                <div class="setting-item">
-                  <span class="setting-label" data-i18n="profile_language"
-                    >Idioma</span
-                  >
-                  <select id="language-select" class="lang-select">
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="settings-section" style="margin-top: 10px; text-align: center;">
-                <button id="btn-share-app" class="btn-profile-action" data-i18n="btn_share_app" onclick="window.shareApp()">
-                  Compartir App 📢
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Account Menu -->
-          <div class="auth-wrapper" style="position: relative">
-            <button
-              id="btn-auth"
-              class="btn-icon"
-              aria-label="Cuenta"
-              data-i18n-aria="header_account_label"
-            >
-              👤
+          <!-- Perfil Button Section -->
+          <div class="auth-wrapper sidebar-item-wrapper">
+            <button id="btn-auth" class="nav-item" title="Cuenta">
+              <span class="nav-icon">👤</span>
+              <span class="nav-label" data-i18n="menu_account">Cuenta</span>
             </button>
             <div id="auth-dropdown" class="dropdown-content glass-panel hidden">
-              <!-- HEADER -->
+              <button class="dropdown-close-btn" onclick="this.parentElement.classList.add('hidden')" aria-label="Cerrar">×</button>
               <h3 class="dropdown-header" data-i18n="menu_account">Cuenta</h3>
-
-              <!-- SECTION: ACCOUNT -->
               <div class="settings-section account-section">
-                <!-- Login State -->
                 <div id="login-wrapper">
-                  <div
-                    class="user-info-row centered"
-                    style="margin-bottom: 12px"
-                  >
-                    <button
-                      id="btn-guest-profile"
-                      class="btn-profile-link"
-                      title="Ver Perfil de Invitado"
-                    >
-                      <span
-                        class="user-avatar-placeholder"
-                        style="background: #e2e8f0; color: #64748b"
-                        >👤</span
-                      >
+                  <div class="user-info-row centered" style="margin-bottom: 12px">
+                    <button id="btn-guest-profile" class="btn-profile-link" title="Ver Perfil de Invitado">
+                      <span class="user-avatar-placeholder" style="background: #e2e8f0; color: #64748b">👤</span>
                       <strong>Invitado</strong>
                     </button>
                   </div>
-
-                  <button
-                    id="btn-login-trigger"
-                    class="btn-secondary full-width"
-                    data-i18n="btn_login_menu"
-                  >
-                    Iniciar Sesión
-                  </button>
+                  <button id="btn-login-trigger" class="btn-secondary full-width" data-i18n="btn_login_menu">Iniciar Sesión</button>
                 </div>
-
                 <div id="logged-in-view" class="hidden">
                   <div class="user-info-row centered">
-                    <button
-                      id="btn-view-profile"
-                      class="btn-profile-link"
-                      title="Ver Perfil"
-                    >
+                    <button id="btn-view-profile" class="btn-profile-link" title="Ver Perfil">
                       <span class="user-avatar-placeholder">👤</span>
                       <strong id="user-display-name">Usuario</strong>
                     </button>
                   </div>
                 </div>
-
-                <!-- PLAYER QUICK STATS (NEW) -->
                 <div class="dropdown-divider" style="margin: 12px 0"></div>
-                
                 <div class="player-quick-stats">
-                  <!-- Rank Row -->
                   <div class="quick-stat-row rank-info">
                     <span id="menu-rank-icon" class="stat-icon">🌱</span>
                     <div class="stat-main">
@@ -274,8 +168,6 @@
                       <span id="menu-rank-level" class="stat-value">Nvl. 0</span>
                     </div>
                   </div>
-
-                  <!-- RP Progress -->
                   <div class="rp-progress-container">
                     <div class="rp-labels">
                       <span id="menu-rp-current">0.000</span>
@@ -286,8 +178,6 @@
                       <div id="menu-rp-progress" class="rp-bar-fill" style="width: 0%"></div>
                     </div>
                   </div>
-
-                  <!-- Streak & Daily Grid -->
                   <div class="quick-stats-grid">
                     <div class="quick-stat-item">
                       <span class="item-icon">🔥</span>
@@ -308,23 +198,46 @@
               </div>
             </div>
           </div>
+
+          <!-- Ajustes Button Section -->
+          <div class="settings-wrapper sidebar-item-wrapper">
+            <button id="btn-profile" class="nav-item" title="Ajustes">
+              <span class="nav-icon">⚙️</span>
+              <span class="nav-label" data-i18n="settings_title">Ajustes</span>
+            </button>
+            <div id="profile-dropdown" class="dropdown-content glass-panel hidden">
+              <button class="dropdown-close-btn" onclick="this.parentElement.classList.add('hidden')" aria-label="Cerrar">×</button>
+              <h3 class="dropdown-header" data-i18n="settings_title">Configuración</h3>
+              <div class="settings-section appearance-section">
+                <h4 class="settings-subhead" data-i18n="settings_appearance">Apariencia</h4>
+                <div class="segmented-control theme-switcher">
+                  <label class="segment-label"><input type="radio" name="theme" value="light" /><span class="segment-content"><span class="icon">☀️</span><span class="text" data-i18n="theme_light">Claro</span></span></label>
+                  <label class="segment-label"><input type="radio" name="theme" value="auto" /><span class="segment-content"><span class="icon">🌗</span><span class="text" data-i18n="theme_auto">Auto</span></span></label>
+                  <label class="segment-label"><input type="radio" name="theme" value="dark" /><span class="segment-content"><span class="icon">🌙</span><span class="text" data-i18n="theme_dark">Oscuro</span></span></label>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="settings-section gameplay-section">
+                <h4 class="settings-subhead" data-i18n="settings_gameplay">Jugabilidad</h4>
+                <div class="setting-item"><span class="setting-label"><span class="icon-label">🔊</span><span data-i18n="setting_sound">Sonido</span></span><label class="switch-small"><input type="checkbox" id="sound-toggle" checked /><span class="slider-small round"></span></label></div>
+                <div class="setting-item" id="setting-vibration-container"><span class="setting-label"><span class="icon-label">📳</span><span data-i18n="setting_vibration">Vibración</span></span><label class="switch-small"><input type="checkbox" id="vibration-toggle" checked /><span class="slider-small round"></span></label></div>
+                <div class="setting-item"><div class="label-group"><span class="setting-label"><span class="icon-label">🛡️</span><span data-i18n="setting_confirm_clear">Confirmar Borrado</span></span></div><label class="switch-small"><input type="checkbox" id="confirm-clear-toggle" checked /><span class="slider-small round"></span></label></div>
+                <div class="setting-item"><span class="setting-label" data-i18n="profile_language">Idioma</span><select id="language-select" class="lang-select"><option value="es">Español</option><option value="en">English</option></select></div>
+              </div>
+              <div class="settings-section" style="margin-top: 10px; text-align: center;"><button id="btn-share-app" class="btn-profile-action" data-i18n="btn_share_app" onclick="window.shareApp()">Compartir App 📢</button></div>
+            </div>
+          </div>
         </div>
-      </header>
+      </aside>
+
+      <!-- Sidebar Overlay -->
+      <div id="sidebar-overlay" class="hidden"></div>
 
       <!-- Main Menu Content -->
       <main id="menu-content" class="menu-container">
         <!-- Logo Section -->
-        <div class="home-logo-container">
-          <img
-            src="assets/images/logo_lightmode.svg"
-            alt="Jigsudo Logo"
-            class="home-logo light-mode-logo"
-          />
-          <img
-            src="assets/images/logo_darkmode.svg"
-            alt="Jigsudo Logo"
-            class="home-logo dark-mode-logo"
-          />
+        <!-- Logo Section (REMOVED - now in Header) -->
+        <div class="home-logo-container" style="display: none;">
           <h1 class="home-logo-text">Jigsudo</h1>
         </div>
 
@@ -1440,5 +1353,7 @@
     <script type="module" src="js/home.js"></script>
     <script type="module" src="js/auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/sidebar.js" defer></script>
+    <script src="js/header.js" defer></script>
   </body>
 </html>

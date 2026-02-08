@@ -497,17 +497,22 @@ export function initHome() {
   };
   setupMidnightTimer();
 
-  // Home Navigation (Title Click)
-  const appTitle = document.querySelector(".app-title");
-  if (appTitle) {
-    appTitle.style.cursor = "pointer";
-    appTitle.addEventListener("click", () => {
+  // Home Navigation (Inicio Button)
+  const navHome = document.getElementById("nav-home");
+  if (navHome) {
+    navHome.addEventListener("click", () => {
       // 1. Close Profile
       hideProfile();
 
-      // 2. Reset to Home (if in Game)
+      // 2. Reset to Home (if in Game/Profile)
       const menu = document.getElementById("menu-content");
       const gameSection = document.getElementById("game-section");
+      const profileSection = document.getElementById("profile-section");
+
+      const isAlreadyAtHome =
+        menu &&
+        !menu.classList.contains("hidden") &&
+        (!profileSection || profileSection.classList.contains("hidden"));
 
       if (menu) menu.classList.remove("hidden");
       if (gameSection) gameSection.classList.add("hidden");
@@ -529,9 +534,27 @@ export function initHome() {
       const footer = document.querySelector(".main-footer");
       if (footer) footer.classList.remove("hidden");
 
-      // Force refresh rankings when returning to Home
-      loadAndRenderAllRankings(true);
+      // Close sidebar on mobile after clicking
+      if (window.innerWidth <= 768) {
+        document.getElementById("side-sidebar")?.classList.remove("expanded");
+        document.body.classList.remove("sidebar-expanded");
+        document.getElementById("sidebar-overlay")?.classList.add("hidden");
+      }
+
+      // Force refresh rankings ONLY if we were not already on Home
+      if (!isAlreadyAtHome) {
+        loadAndRenderAllRankings(true);
+      }
     });
+  }
+
+  // Remove Home Navigation from Title
+  const appTitle = document.querySelector(".app-title text, .app-title");
+  if (appTitle) {
+    appTitle.style.cursor = "default";
+    // We don't remove existing listener explicitly if we can't get it,
+    // but we can replace it or just not add it.
+    // Since this is init code, I'll just change what it does.
   }
 
   // --- Ranking Logic ---

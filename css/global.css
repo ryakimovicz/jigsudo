@@ -12,8 +12,13 @@
   --bg-tertiary: #e2e8f0; /* Lighter Slate - Tertiary Background */
 
   /* UI Utilities */
-  --header-height: 45px; /* Shorter header as requested */
+  --header-height-expanded: 90px;
+  --header-height-condensed: 45px;
+  --header-height: var(--header-height-expanded); /* Default */
   --footer-height: 30px; /* Slim footer estimated height */
+  --sidebar-width: 50px;
+  --sidebar-expanded-width: 200px;
+  --sidebar-current-width: var(--sidebar-width);
 
   /* Typography */
   --font-main: "Outfit", sans-serif;
@@ -92,6 +97,40 @@ body.profile-active {
   border: 1px solid var(--glass-border);
   box-shadow: var(--paper-shadow);
   border-radius: 12px;
+}
+
+/* Main Content Layout Adjustments for Sidebar */
+@media (min-width: 769px) {
+  #menu-content,
+  #profile-section,
+  #game-section {
+    margin-left: var(--sidebar-width);
+    transition:
+      margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: calc(100% - var(--sidebar-width));
+    will-change: margin-left, width;
+  }
+
+  body.sidebar-expanded #menu-content,
+  body.sidebar-expanded #profile-section,
+  body.sidebar-expanded #game-section {
+    margin-left: var(--sidebar-expanded-width);
+    width: calc(100% - var(--sidebar-expanded-width));
+  }
+
+  body.sidebar-expanded {
+    --sidebar-current-width: var(--sidebar-expanded-width);
+  }
+}
+
+@media (max-width: 768px) {
+  #menu-content,
+  #profile-section,
+  #game-section {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 
 /* Utility: Hidden */

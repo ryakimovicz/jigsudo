@@ -1,73 +1,182 @@
 /* Main Menu Styles - Nordic Paper Theme */
 
-/* Header */
+/* Main Header - Dynamic Redesign */
+body.header-condensed {
+  --header-height: var(--header-height-condensed);
+}
+
 .main-header {
   height: var(--header-height);
-  width: 100% !important;
-  max-width: none !important; /* Ensure no constraints */
-  display: flexbox; /* Fallback */
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
-  right: 0; /* Ensure spanning */
-  margin: 0 !important; /* No gaps */
-  z-index: 30000; /* Boost above Game Layers (20000+) */
-  background: rgba(
-    253,
-    251,
-    247,
-    0.9
-  ); /* Paper color with slight transparency */
+  right: 0;
+  z-index: 30000;
+  background: rgba(253, 251, 247, 0.95);
   border-bottom: 1px solid var(--glass-border);
-  backdrop-filter: blur(5px);
-  /* Top corners straight, bottom corners rounded */
-  border-radius: 0 0 12px 12px;
-  box-sizing: border-box; /* Include padding in width */
-  /* Ensure header acts as a reference for absolute centering */
+  backdrop-filter: blur(10px);
+  transition:
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.3s;
+  border-radius: 0;
+  will-change: height, padding-left;
 }
 
-/* Dark Mode Header */
-body.dark-mode .main-header {
-  background: rgba(30, 35, 41, 0.95) !important; /* Force override */
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--text-main); /* Ensure text color is inherited/set */
-  display: flex !important; /* Ensure visibility */
-  opacity: 1 !important;
+@media (min-width: 769px) {
+  .main-header {
+    padding-left: var(--sidebar-current-width);
+  }
 }
 
-/* Header Alignment */
-.header-left {
+body.header-condensed .main-header {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.header-left,
+.header-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   display: flex;
-  align-items: center; /* Or baseline */
-  gap: 15px;
-  flex: 1; /* Take up available space */
+  align-items: center;
+  z-index: 30002;
+}
+
+.header-left {
+  left: 0;
+  width: 60px; /* Width of the toggle area */
+  justify-content: center;
+}
+
+.header-right {
+  right: 20px;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Header Center - Dynamic Branding */
+.header-center {
+  flex: 1;
+  display: flex;
+  flex-direction: row; /* ALWAYS Row now */
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible;
+  position: relative;
+}
+
+body.header-condensed .header-center {
+  gap: 12px;
+}
+
+/* New Text Block Wrapper */
+.header-text-block {
+  display: flex;
+  flex-direction: column; /* ALWAYS Column for stability */
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+body.header-condensed .header-text-block {
+  /* No layout change to prevent JUMP */
+}
+
+.header-logo {
+  height: 64px; /* Grande! */
+  width: auto;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+body.header-condensed .header-logo {
+  height: 28px;
 }
 
 .app-title {
-  font-size: 1.5rem; /* Slightly smaller to fit everything */
+  font-size: 2.2rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text-main);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0;
-  line-height: 1;
+  line-height: 1.1;
+  will-change: transform, font-size;
+}
+
+body.header-condensed .app-title {
+  font-size: 1.25rem;
+  transform: translateY(11px); /* Center title in the 45px header */
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+#current-date {
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  transition:
+    opacity 0.3s,
+    max-width 0.4s;
   white-space: nowrap;
 }
 
-.header-info {
-  display: flex;
-  gap: 8px;
-  font-family: var(--font-main);
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  align-items: center;
-  white-space: nowrap;
+#challenge-num {
+  font-weight: 700;
+  color: var(--accent-color);
 }
+
+body.header-condensed .header-meta {
+  /* Move UP and RIGHT to sit next to the title */
+  transform: translate(90px, -11px);
+  font-size: 0.9rem;
+  gap: 8px;
+}
+
+body.header-condensed #current-date {
+  opacity: 0;
+  max-width: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Dark Mode Integration */
+body.dark-mode .main-header {
+  background: rgba(30, 35, 41, 0.95);
+}
+
+/* Helper Visibility */
+.light-only {
+  display: block;
+}
+.dark-only {
+  display: none;
+}
+body.dark-mode .light-only {
+  display: none;
+}
+/* Header sub-components moved to global redesign at top */
 
 #challenge-num {
   font-weight: 700;
@@ -114,19 +223,18 @@ body.dark-mode .main-header {
   transform: scale(1.05);
 }
 
-.header-right {
-  display: flex;
-  gap: 10px;
-}
+/* Header right moved to top */
 
 /* Menu Content Container */
 /* Menu Content Container - SAFE ZONE */
 .menu-container {
   /* Position safely between Header and Footer */
-  margin-top: var(--header-height);
+  /* Removed manual margin-top, now handled by sticky header flow */
+  position: relative;
   /* height: calc(100dvh - var(--header-height) - var(--footer-height));  <--- REMOVED for page flow */
   height: auto;
   min-height: 0;
+  will-change: margin-top;
 
   display: flex;
   flex-direction: column;
@@ -154,34 +262,12 @@ body.dark-mode .main-header {
   margin-right: auto;
 }
 
-/* Home Logo Section */
+/* Home Logo Section (REMOVED - now in Header) */
 .home-logo-container {
-  display: flex;
-  justify-content: center; /* Force centering */
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px; /* Space before tabs reduced */
-  width: 100%;
+  display: none;
 }
 
-.home-logo {
-  width: 60px; /* Adjust size as needed provided svg allows */
-  height: 60px;
-  object-fit: contain;
-}
-
-.home-logo-text {
-  font-family: var(--font-main); /* Outfit */
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--text-main);
-  margin: 0;
-  line-height: 1;
-}
-
-/* Theme Switching for Logo */
+/* Home Section Styles (Properly un-nested) */
 .light-mode-logo {
   display: block;
 }
@@ -1091,9 +1177,9 @@ input:checked + .slider-small:before {
 
 .dropdown-content {
   position: absolute;
-  top: 60px;
-  right: 20px;
-  width: 280px; /* Wider for better layout */
+  bottom: 20px; /* Align to the bottom of the buttons in the footer */
+  left: calc(100% + 10px); /* Open to the RIGHT of sidebar */
+  width: 300px;
   padding: 16px;
   border-radius: 12px;
   background: var(--bg-paper);
@@ -1111,6 +1197,25 @@ input:checked + .slider-small:before {
   pointer-events: auto !important;
 }
 
+.dropdown-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+  transition: color 0.2s;
+  z-index: 101;
+}
+
+.dropdown-close-btn:hover {
+  color: var(--accent-color);
+}
+
 .dropdown-header {
   margin: 0 0 8px 0;
   font-size: 1.1rem;
@@ -1118,6 +1223,19 @@ input:checked + .slider-small:before {
   border-bottom: 2px solid var(--accent-color);
   display: inline-block;
   padding-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .dropdown-content {
+    left: 10px !important;
+    right: 10px !important;
+    width: calc(100% - 20px) !important;
+    bottom: 20px !important; /* Lowered to align with footer padding */
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+  }
 }
 
 .settings-subhead {
@@ -1306,11 +1424,13 @@ body.dark-mode .segmented-control {
 }
 
 /* Mobile Adjustments */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .dropdown-content {
     width: 90%;
+    left: 5%;
     right: 5%;
-    top: 70px;
+    bottom: 20px; /* Open upwards from bottom on mobile */
+    top: auto;
   }
 }
 

@@ -10,6 +10,10 @@ export const translations = {
     soon: "(Próximamente)",
 
     // Sidebar
+    sidebar_home: "Inicio",
+    sidebar_history: "Historial",
+    sidebar_how_to: "Guía",
+    sidebar_info: "Info",
     sidebar_more_games: "Más Juegos",
     sidebar_close: "Cerrar",
 
@@ -60,7 +64,7 @@ export const translations = {
     profile_quick_clear: "Borrado Rápido",
     profile_language: "Idioma",
     settings_account: "Cuenta",
-    settings_title: "Configuración",
+    settings_title: "Ajustes",
     menu_account: "Cuenta",
     header_account_label: "Menú de Cuenta",
     settings_appearance: "Apariencia",
@@ -322,6 +326,10 @@ export const translations = {
     soon: "(Coming Soon)",
 
     // Sidebar
+    sidebar_home: "Home",
+    sidebar_history: "History",
+    sidebar_how_to: "Guide",
+    sidebar_info: "Info",
     sidebar_more_games: "More Games",
     sidebar_close: "Close",
 
