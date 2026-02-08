@@ -832,6 +832,43 @@ export class GameManager {
   }
 
   _ensureStats() {
+    // Ensure stats object exists
+    if (!this.stats) {
+      this.stats = JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+    }
+
+    // Initialize stats if null or missing critical fields
+    if (!this.stats) {
+      this.stats = {
+        played: 0,
+        currentStreak: 0,
+        maxStreak: 0,
+        currentRP: 0,
+        dailyRP: 0,
+        monthlyRP: 0,
+        bestScore: 0,
+        bestTime: null,
+        totalTimeAccumulated: 0,
+        totalScoreAccumulated: 0,
+        totalPeaksErrorsAccumulated: 0,
+        stageTimesAccumulated: {},
+        stageWinsAccumulated: {},
+        weekdayStatsAccumulated: {},
+        history: {},
+        lastPlayedDate: null,
+        lastDecayCheck: null,
+      };
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    }
+
+    // Ensure critical nested objects exist
+    if (!this.stats.history) this.stats.history = {};
+    if (!this.stats.stageTimesAccumulated)
+      this.stats.stageTimesAccumulated = {};
+    if (!this.stats.stageWinsAccumulated) this.stats.stageWinsAccumulated = {};
+    if (!this.stats.weekdayStatsAccumulated)
+      this.stats.weekdayStatsAccumulated = {};
+
     if (this.state && !this.state.meta.stageTimes)
       this.state.meta.stageTimes = {};
     this._checkRankDecay();

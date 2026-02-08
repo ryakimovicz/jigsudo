@@ -352,6 +352,21 @@ export function initHome() {
       }
 
       try {
+        // Safety guard: if isWiping has been stuck for more than 10 seconds, force clear it
+        if (gameManager.isWiping) {
+          if (!gameManager._wipingStartTime) {
+            gameManager._wipingStartTime = Date.now();
+          } else if (Date.now() - gameManager._wipingStartTime > 10000) {
+            console.error(
+              "[Home] isWiping stuck for >10s, force clearing. This may indicate a bug.",
+            );
+            gameManager.isWiping = false;
+            gameManager._wipingStartTime = null;
+          }
+        } else {
+          gameManager._wipingStartTime = null;
+        }
+
         if (gameManager.isWiping) {
           console.warn("[Home] Sync in progress. Blocking start.");
           return;

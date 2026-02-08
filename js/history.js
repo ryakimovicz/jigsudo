@@ -107,11 +107,15 @@ export async function updateHistoryUI() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const now = new Date();
 
-  // Probe current month puzzles
+  // First puzzle was generated on Feb 5, 2026 - skip earlier dates
+  const FIRST_PUZZLE_DATE = new Date(2026, 1, 5); // Month is 0-indexed
+
+  // Probe current month puzzles (only for dates where puzzles exist)
   const probes = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(year, month, d);
-    if (dateObj > now) continue;
+    if (dateObj > now) continue; // Skip future dates
+    if (dateObj < FIRST_PUZZLE_DATE) continue; // Skip dates before first puzzle
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     probes.push(checkPuzzleExists(dateStr));
   }
