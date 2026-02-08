@@ -292,14 +292,24 @@ body.dark-mode .debug-btn {
   display: flex;
   justify-content: stretch;
   gap: 10px;
-  margin-top: 5px;
+  margin-top: 15px;
 }
 
-.modal-actions button {
+.modal-actions button,
+.modal-actions a.btn-secondary,
+.modal-actions a.btn-primary {
   flex: 1;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 12px;
   font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
   font-family: var(--font-main);
   transition: all 0.2s ease;
 }

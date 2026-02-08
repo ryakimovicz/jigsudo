@@ -233,6 +233,53 @@ export async function registerUser(email, password, username) {
 
     await updateProfile(user, { displayName: username });
     updateUIForLogin(user);
+
+    // Show registration success modal IMMEDIATELY
+    const regModal = document.getElementById("registration-success-modal");
+    if (regModal) {
+      console.log(
+        "[Auth] Showing registration success modal (Pre-migration)...",
+      );
+      regModal.classList.remove("hidden");
+
+      // SMART REDIRECT: Detect email provider
+      const emailBtn = document.getElementById("btn-go-to-email");
+      const emailText = document.getElementById("go-to-email-text");
+      if (emailBtn && emailText) {
+        const domain = email.split("@")[1]?.toLowerCase();
+        const providers = {
+          "gmail.com": { name: "Gmail", url: "https://mail.google.com" },
+          "outlook.com": { name: "Outlook", url: "https://outlook.live.com" },
+          "hotmail.com": { name: "Hotmail", url: "https://outlook.live.com" },
+          "live.com": { name: "Live", url: "https://outlook.live.com" },
+          "yahoo.com": { name: "Yahoo", url: "https://mail.yahoo.com" },
+          "icloud.com": { name: "iCloud", url: "https://www.icloud.com/mail" },
+          "proton.me": { name: "Proton", url: "https://mail.proton.me" },
+          "protonmail.com": { name: "Proton", url: "https://mail.proton.me" },
+        };
+
+        const found = providers[domain];
+        const lang = getCurrentLang();
+        if (found) {
+          emailBtn.href = found.url;
+          emailBtn.classList.remove("hidden");
+          emailText.textContent = translations[lang].btn_go_to_email.replace(
+            "%%provider%%",
+            found.name,
+          );
+        } else {
+          emailBtn.classList.remove("hidden");
+          emailBtn.href = `https://${domain}`;
+          emailText.textContent = translations[lang].btn_go_to_generic_email;
+        }
+      }
+
+      const btnClose = document.getElementById("btn-close-reg-success");
+      if (btnClose) {
+        btnClose.onclick = () => regModal.classList.add("hidden");
+      }
+    }
+
     await saveUserStats(user.uid, { registeredAt: new Date() }, username);
 
     const guestStatsStr = localStorage.getItem("jigsudo_user_stats");
@@ -245,12 +292,6 @@ export async function registerUser(email, password, username) {
       } catch (e) {
         console.warn("[Auth] Failed to migrate guest stats:", e);
       }
-    }
-
-    try {
-      await gameManager.forceCloudSave(user.uid);
-    } catch (e) {
-      console.warn("[Auth] Failed to migrate guest state:", e);
     }
 
     return { success: true, user };
@@ -478,6 +519,26 @@ export async function deleteUserAccount(currentPassword) {
 
 export function getCurrentUser() {
   return currentUser;
+}
+
+/**
+ * Refreshes the user's data from Firebase.
+ * Only reloads if the user is not yet verified to save resources.
+ */
+export async function refreshUserStatus() {
+  const user = auth.currentUser;
+  if (user && !user.isAnonymous && !user.emailVerified) {
+    console.log("[Auth] Refreshing user status...");
+    try {
+      await user.reload();
+      currentUser = auth.currentUser; // Refresh local reference
+      return { success: true, user: currentUser };
+    } catch (e) {
+      console.error("[Auth] Failed to refresh user:", e);
+      return { success: false, error: e.message };
+    }
+  }
+  return { success: true, user: currentUser, skipped: true };
 }
 
 function updateUIForLogin(user) {

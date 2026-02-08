@@ -75,6 +75,8 @@ export function hideProfile() {
   window.location.hash = "";
 }
 
+let verificationInterval = null;
+
 // Internal UI Manipulation
 function _showProfileUI() {
   const section = document.getElementById("profile-section");
@@ -86,6 +88,44 @@ function _showProfileUI() {
   if (section) section.classList.remove("hidden");
   document.body.classList.add("profile-active");
   document.body.classList.remove("home-active"); // Ensure mutually exclusive if needed
+
+  // Try to refresh verification status if needed (Efficiently: only if not verified)
+  const startPolling = () => {
+    if (verificationInterval) return;
+    verificationInterval = setInterval(async () => {
+      const { refreshUserStatus } = await import("./auth.js");
+      const result = await refreshUserStatus();
+      if (result.success && !result.skipped) {
+        console.log("[Profile] Polling: Verification status refreshed.");
+        updateProfileData();
+        // If now verified, stop polling
+        if (result.user && result.user.emailVerified) {
+          stopPolling();
+        }
+      }
+    }, 10000); // 10 seconds
+  };
+
+  const stopPolling = () => {
+    if (verificationInterval) {
+      clearInterval(verificationInterval);
+      verificationInterval = null;
+    }
+  };
+
+  import("./auth.js").then(async (module) => {
+    const result = await module.refreshUserStatus();
+    if (result.success && !result.skipped) {
+      console.log("[Profile] Verification status refreshed on entry.");
+      updateProfileData(); // Re-render if state changed
+    }
+
+    // Start polling if still NOT verified
+    const user = module.getCurrentUser();
+    if (user && !user.isAnonymous && !user.emailVerified) {
+      startPolling();
+    }
+  });
 
   // Hide everything else
   if (menu) menu.classList.add("hidden");
@@ -106,6 +146,11 @@ function _showProfileUI() {
 }
 
 function _hideProfileUI() {
+  // Stop any active polling when leaving profile
+  if (verificationInterval) {
+    clearInterval(verificationInterval);
+    verificationInterval = null;
+  }
   const section = document.getElementById("profile-section");
   const menu = document.getElementById("menu-content");
   // const appHeader = document.querySelector(".main-header");

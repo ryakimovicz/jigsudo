@@ -145,6 +145,14 @@ export async function saveUserStats(userId, statsData, username = null) {
     };
 
     // If username is provided, save it as a top-level searchable field
+    const { getCurrentUser } = await import("./auth.js");
+    const user = getCurrentUser();
+    if (user) {
+      const isGoogleUser = user.providerData.some(
+        (p) => p.providerId === "google.com",
+      );
+      updateData.isVerified = user.emailVerified || isGoogleUser;
+    }
     if (username) {
       updateData.username = username;
       updateData.username_lc = username.toLowerCase();
@@ -252,12 +260,21 @@ export async function wipeUserData(userId) {
  * Efficiently calculates the rank of a user by counting documents with a higher score.
  * Cost: 1 document read.
  */
-export async function getUserRank(fieldName, score) {
+export async function getUserRank(fieldName, score, onlyVerified = false) {
   if (score === undefined || score === null) return null;
   try {
     const usersRef = collection(db, "users");
     // Rank = (Number of users with score > current score) + 1
-    const q = query(usersRef, where(fieldName, ">", score));
+    let q;
+    if (onlyVerified) {
+      q = query(
+        usersRef,
+        where("isVerified", "==", true),
+        where(fieldName, ">", score),
+      );
+    } else {
+      q = query(usersRef, where(fieldName, ">", score));
+    }
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count + 1;
   } catch (error) {

@@ -92,7 +92,8 @@ async function getTopRankings(
       };
     } else {
       // 2. Fetch actual rank using aggregation query (1 read)
-      const actualRank = await getUserRankFn(fieldName, userScore);
+      // Only count verified users for the rank
+      const actualRank = await getUserRankFn(fieldName, userScore, true);
       result.personal = {
         rank: actualRank,
         score: userScore,
@@ -118,11 +119,17 @@ async function getTop10(
       q = query(
         usersRef,
         where(filterField, "==", filterValue),
+        where("isVerified", "==", true),
         orderBy(fieldName, "desc"),
         limit(10),
       );
     } else {
-      q = query(usersRef, orderBy(fieldName, "desc"), limit(10));
+      q = query(
+        usersRef,
+        where("isVerified", "==", true),
+        orderBy(fieldName, "desc"),
+        limit(10),
+      );
     }
     let querySnapshot = await getDocs(q);
 

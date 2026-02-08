@@ -1366,6 +1366,33 @@
       </div>
     </div>
 
+    <!-- REGISTRATION SUCCESS MODAL -->
+    <div id="registration-success-modal" class="modal-overlay hidden">
+      <div class="modal-content small-modal">
+        <div class="modal-header">
+          <h2 data-i18n="modal_reg_success_title">¡Registro Exitoso! 🥳</h2>
+        </div>
+        <div class="modal-body">
+          <p class="verification-prompt-msg" data-i18n="modal_reg_success_body">
+            Te hemos enviado un correo de verificación. Por favor, revisa tu bandeja de entrada (y la carpeta de spam) para activar todas las funciones.
+          </p>
+          <div class="verification-benefits">
+            <h3 data-i18n="modal_reg_benefits_title">Beneficios de verificar:</h3>
+            <ul>
+              <li data-i18n="benefit_ranking">Aparecer en el Ranking Global</li>
+              <li data-i18n="benefit_cloud">Guardado en la Nube automático</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <a id="btn-go-to-email" class="btn-secondary hidden" target="_blank" rel="noopener noreferrer">
+            <span id="go-to-email-text">Ir a mi correo</span>
+          </a>
+          <button id="btn-close-reg-success" class="btn-primary" data-i18n="btn_close">Entendido</button>
+        </div>
+      </div>
+    </div>
+
     <!-- SCRIPTS -->
     <script type="module" src="js/home.js"></script>
     <script type="module" src="js/auth.js"></script>

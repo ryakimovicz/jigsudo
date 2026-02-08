@@ -229,8 +229,15 @@ export const translations = {
     toast_verification_sent: "Correo de verificación enviado.",
     toast_verification_too_many:
       "Ya enviamos un mail recientemente. Por favor, espera un minuto antes de pedir otro.",
-    profile_verify_email_banner: "Tu correo no está verificado.",
     btn_verify_now: "Verificar ahora",
+    modal_reg_success_title: "¡Registro Exitoso! 🥳",
+    modal_reg_success_body:
+      "Te hemos enviado un correo de verificación. Por favor, revisa tu bandeja de entrada (y la carpeta de spam) para activar todas las funciones.",
+    modal_reg_benefits_title: "Beneficios de verificar:",
+    benefit_ranking: "Aparecer en el Ranking Global",
+    benefit_cloud: "Guardado en la Nube automático",
+    btn_go_to_email: "Ir a %%provider%%",
+    btn_go_to_generic_email: "Abrir mi Correo",
     btn_change_email: "Cambiar Email",
     toast_email_change_sent:
       "Se ha enviado un enlace de confirmación a tu nuevo correo. El cambio se completará cuando hagas clic en él.",
@@ -626,8 +633,15 @@ export const translations = {
     toast_verification_sent: "Verification email sent.",
     toast_verification_too_many:
       "An email was already sent recently. Please wait a minute before requesting another.",
-    profile_verify_email_banner: "Your email is not verified.",
     btn_verify_now: "Verify now",
+    modal_reg_success_title: "Registration Successful! 🥳",
+    modal_reg_success_body:
+      "We've sent you a verification email. Please check your inbox (and spam folder) to activate all features.",
+    modal_reg_benefits_title: "Benefits of verification:",
+    benefit_ranking: "Appear on the Global Leaderboard",
+    benefit_cloud: "Automatic Cloud Saving",
+    btn_go_to_email: "Go to %%provider%%",
+    btn_go_to_generic_email: "Open my Email",
     btn_change_email: "Change Email",
     toast_email_change_sent:
       "A confirmation link has been sent to your new email. The change will be complete once you click it.",

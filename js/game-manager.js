@@ -440,6 +440,18 @@ export class GameManager {
   }
 
   async forceCloudSave(overrideUid = null) {
+    const { getCurrentUser } = await import("./auth.js");
+    const user = getCurrentUser();
+    if (user && !user.isAnonymous) {
+      const isGoogleUser = user.providerData.some(
+        (p) => p.providerId === "google.com",
+      );
+      if (!user.emailVerified && !isGoogleUser) {
+        console.log("[Sync] Guard: Cloud save blocked (email not verified).");
+        return;
+      }
+    }
+
     if (this.isWiping) {
       console.log("[GM] Wiping in progress. Save blocked.");
       return;
