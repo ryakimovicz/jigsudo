@@ -201,7 +201,9 @@ export function updateProfileData() {
   const emailEl = document.getElementById("profile-email");
 
   if (user && !user.isAnonymous) {
-    const displayName = user.displayName || "Usuario";
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang] || translations["es"];
+    const displayName = user.displayName || t.user_default || "Usuario";
     const initial = displayName.charAt(0).toUpperCase();
 
     if (nameEl) nameEl.textContent = displayName;
@@ -211,13 +213,16 @@ export function updateProfileData() {
       avatarEl.style.backgroundColor = ""; // Reset
     }
   } else {
-    // Guest
-    if (nameEl) nameEl.textContent = "Invitado";
-    if (emailEl) emailEl.textContent = "Sin cuenta";
+    // Guest (Anonymous)
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang] || translations["es"];
+
+    if (nameEl) nameEl.textContent = t.guest || "Anónimo";
+    if (emailEl) emailEl.textContent = t.auth_no_account || "Sin cuenta";
 
     // Guest Avatar
     if (avatarEl) {
-      avatarEl.textContent = "I";
+      avatarEl.textContent = (t.guest || "Anónimo").charAt(0).toUpperCase();
       avatarEl.style.backgroundColor = "#94a3b8";
     }
   }

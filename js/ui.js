@@ -176,7 +176,7 @@ async function handleShareVictory(stats) {
     if (usernameEl)
       usernameEl.textContent = user
         ? user.displayName || t.user_default || "Usuario"
-        : t.guest || "Invitado";
+        : t.guest || "Anónimo";
 
     if (rankEl) {
       // Get current RP from localstorage to show rank

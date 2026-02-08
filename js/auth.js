@@ -562,8 +562,15 @@ function updateUIForLogin(user) {
   if (loggedInView) loggedInView.classList.remove("hidden");
 
   if (nameSpan) {
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang] || translations["es"];
     const displayName =
-      user.displayName || (user.email ? user.email.split("@")[0] : "Usuario");
+      user.displayName ||
+      (user.email
+        ? user.email.split("@")[0]
+        : user.isAnonymous
+          ? t.guest || "Anónimo"
+          : t.user_default || "Usuario");
     nameSpan.textContent = displayName;
   }
 
@@ -596,8 +603,13 @@ function updateUIForLogin(user) {
   const profileNameLarge = document.getElementById("profile-name-large");
 
   if (profileEmail) profileEmail.textContent = user.email;
-  if (profileNameLarge)
-    profileNameLarge.textContent = user.displayName || "Usuario";
+  if (profileNameLarge) {
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang] || translations["es"];
+    profileNameLarge.textContent =
+      user.displayName ||
+      (user.isAnonymous ? t.guest || "Anónimo" : t.user_default || "Usuario");
+  }
 
   const btnChangeName = document.getElementById("btn-profile-change-name");
   if (btnChangeName)

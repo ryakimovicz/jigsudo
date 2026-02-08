@@ -150,7 +150,7 @@ export const translations = {
     auth_or: "o",
     auth_success: "¡Bienvenido!",
     auth_logout: "Sesión cerrada",
-    guest: "Invitado",
+    guest: "Anónimo",
     guest_profile_desc:
       "Inicia sesión para guardar tu progreso y aparecer en el ranking.",
     user_default: "Usuario",
@@ -481,7 +481,7 @@ export const translations = {
     auth_or: "or",
     auth_success: "Welcome!",
     auth_logout: "Logged out",
-    guest: "Guest",
+    guest: "Anonymous",
     guest_profile_desc:
       "Sign in to save your progress and appear in the ranking.",
     user_default: "User",
