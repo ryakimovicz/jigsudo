@@ -253,7 +253,7 @@ export const translations = {
     // Profile Stats (Spanish)
     profile_title_page: "Mi Perfil",
     btn_view_profile: "Ver Perfil",
-    stat_days: "Niveles Completados",
+    stat_days: "Jigsudos Completados",
     stat_streak: "Racha Actual",
     stat_streak_short: "Racha",
     stat_daily: "Hoy",
@@ -505,7 +505,7 @@ export const translations = {
     btn_view_profile: "View Profile",
 
     // ... existing ...
-    stat_days: "Levels Completed",
+    stat_days: "Jigsudos Completed",
     stat_streak: "Current Streak",
     stat_streak_short: "Streak",
     stat_daily: "Today",
