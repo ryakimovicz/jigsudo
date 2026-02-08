@@ -103,7 +103,9 @@ body.profile-active {
 @media (min-width: 769px) {
   #menu-content,
   #profile-section,
-  #game-section {
+  #history-section,
+  #game-section,
+  .main-footer {
     margin-left: var(--sidebar-width);
     transition:
       margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -114,7 +116,9 @@ body.profile-active {
 
   body.sidebar-expanded #menu-content,
   body.sidebar-expanded #profile-section,
-  body.sidebar-expanded #game-section {
+  body.sidebar-expanded #history-section,
+  body.sidebar-expanded #game-section,
+  body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
     width: calc(100% - var(--sidebar-expanded-width));
   }
@@ -127,7 +131,9 @@ body.profile-active {
 @media (max-width: 768px) {
   #menu-content,
   #profile-section,
-  #game-section {
+  #history-section,
+  #game-section,
+  .main-footer {
     margin-left: 0;
     width: 100%;
   }

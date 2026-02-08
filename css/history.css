@@ -2,9 +2,7 @@
 
 #history-section {
   padding: 20px;
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
+  /* margin and width handled by global.css sidebar rules */
 }
 
 #history-section.hidden {
@@ -13,6 +11,8 @@
 
 .history-page-wrapper {
   width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .history-card {
