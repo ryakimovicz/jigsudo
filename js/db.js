@@ -89,40 +89,42 @@ export async function checkUsernameAvailability(
       `[DB] Checking availability for: "${username}" (lc: "${lookName}"), excluding: ${excludeUserId}`,
     );
 
-    // 1. Primary check: Case-insensitive via username_lc
+    // 1. Check case-insensitive index (New System)
     const q1 = query(usersRef, where("username_lc", "==", lookName));
     const snap1 = await getDocs(q1);
 
-    // If we find matches, check if any of them are NOT the current user
     if (!snap1.empty) {
-      const otherUser = snap1.docs.find((doc) => doc.id !== excludeUserId);
-      if (otherUser) {
-        console.log(
-          `[DB] Conflict found in username_lc index: ${otherUser.id}`,
-        );
+      // Check if any match is NOT the current user
+      const conflict = snap1.docs.some((doc) => doc.id !== excludeUserId);
+      if (conflict) {
+        console.log(`[DB] Conflict found in username_lc index.`);
         return false;
       }
     }
 
-    // 2. Secondary check: Case-sensitive fallback for legacy accounts (exact match)
-    // Even if it's the current user, we check this for extra safety.
+    // 2. Fallback: Check case-sensitive exact match (Legacy Protection)
+    // This is vital for users who haven't logged in since the 'username_lc' system was added.
     const q2 = query(usersRef, where("username", "==", username));
     const snap2 = await getDocs(q2);
     if (!snap2.empty) {
-      const otherUser = snap2.docs.find((doc) => doc.id !== excludeUserId);
-      if (otherUser) {
-        console.log(
-          `[DB] Conflict found in legacy username field: ${otherUser.id}`,
-        );
+      const conflict = snap2.docs.some((doc) => doc.id !== excludeUserId);
+      if (conflict) {
+        console.log(`[DB] Conflict found in legacy username field.`);
         return false;
       }
     }
 
+    // 3. Extra Safety: Check for case-insensitive matches in legacy 'username' field
+    // Since we can't do case-insensitive queries in Firestore without a normalized field,
+    // and we hit this point only if 'username_lc' was missing, we can't do much more
+    // without a full collection scan (expensive). However, the 'username_lc' field
+    // will be populated as soon as those legacy users log in.
+
     console.log(`[DB] Username "${username}" is available.`);
-    return true; // Available
+    return true;
   } catch (error) {
     console.error("[DB] Availability check failed:", error);
-    return true; // Fail open to avoid blocking UI
+    return true; // Fail open to avoid blocking UI, but ideally would handle better
   }
 }
 
