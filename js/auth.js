@@ -90,13 +90,23 @@ export function initAuth() {
         console.log(
           "[Auth] User registration: Preserving guest data for migration.",
         );
-        // 4. Send Verification email (Optional but recommended)
-        try {
-          auth.languageCode = getCurrentLang();
-          await sendEmailVerification(user);
-          console.log("[Auth] Verification email sent to:", user.email);
-        } catch (e) {
-          console.warn("[Auth] Failed to send verification email:", e);
+
+        // Send verification email ONLY for email/password users
+        // Google users already have verified emails through Google's auth
+        const isGoogleUser = user.providerData.some(
+          (p) => p.providerId === "google.com",
+        );
+
+        if (!isGoogleUser) {
+          try {
+            auth.languageCode = getCurrentLang();
+            await sendEmailVerification(user);
+            console.log("[Auth] Verification email sent to:", user.email);
+          } catch (e) {
+            console.warn("[Auth] Failed to send verification email:", e);
+          }
+        } else {
+          console.log("[Auth] Google user - skipping verification email");
         }
 
         // Preserve guest state before clear all, so stats are migrated
