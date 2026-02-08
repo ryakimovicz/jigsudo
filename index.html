@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/code.css" />
     <link rel="stylesheet" href="css/auth.css" />
     <link rel="stylesheet" href="css/profile.css?v=40" />
+    <link rel="stylesheet" href="css/history.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -691,7 +692,24 @@
           </div>
         </div>
       </section>
-
+  
+      <!-- History (Historial) Section -->
+      <section id="history-section" class="hidden">
+        <div class="history-page-wrapper">
+          <div class="history-card">
+            <div class="history-header">
+              <button id="hist-prev-btn" class="icon-btn-medium">←</button>
+              <h2 id="hist-month-label" data-i18n="history_title">Historial de Puzzles</h2>
+              <button id="hist-next-btn" class="icon-btn-medium">→</button>
+            </div>
+            <p class="history-subtitle" data-i18n="history_select_date">Selecciona una fecha para jugar</p>
+            <div id="history-grid-container">
+              <!-- JS will populate -->
+            </div>
+          </div>
+        </div>
+      </section>
+  
       <!-- Game Section (Sudoku/Jigsaw) -->
       <section id="game-section" class="hidden">
         <!-- TEST PANELS FOR MOBILE -->

@@ -13,6 +13,7 @@ export class GameManager {
     this.ready = this.prepareDaily(); // Initial Load
     this.cloudSaveTimeout = null;
     this.isWiping = false;
+    this.isReplay = false;
 
     // Listen for tab focus/visibility to force save
     document.addEventListener("visibilitychange", () => {
@@ -33,6 +34,7 @@ export class GameManager {
 
     this.currentSeed = newSeed;
     this.storageKey = newStorageKey;
+    this.isReplay = false; // Normal start is never a replay
     this.state = null;
     return await this.init();
   }
@@ -91,6 +93,19 @@ export class GameManager {
       this.state = this.createStateFromJSON(dailyData);
       const activeUid = localStorage.getItem("jigsudo_active_uid");
       if (activeUid) this.state.meta.userId = activeUid;
+
+      // Record as played in history ONLY if it's the original day
+      const seedStr = this.currentSeed.toString();
+      const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      this._ensureStats();
+      if (!this.isReplay && !this.stats.history[dateStr]) {
+        this.stats.history[dateStr] = {
+          status: "played",
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      }
+
       this.save();
     } else {
       console.error("[GameManager] CRITICAL: No Save & No Network.");
@@ -123,6 +138,36 @@ export class GameManager {
     }
 
     return true;
+  }
+
+  async loadSpecificDay(dateStr) {
+    // Check if this is the current live day
+    const liveSeed = getDailySeed(); // Real Today Seed
+    const parts = dateStr.split("-");
+    const requestedSeed = parseInt(parts[0] + parts[1] + parts[2]);
+
+    console.log(
+      `[GameManager] Loading specific day: ${dateStr}, seed: ${requestedSeed}`,
+    );
+
+    this.storageKey = `jigsudo_state_${requestedSeed}`;
+    this.currentSeed = requestedSeed;
+    this.isReplay = requestedSeed !== liveSeed;
+
+    if (this.isReplay) {
+      console.log(
+        "[GameManager] Replay Mode Active: Stats and RP will NOT be updated.",
+      );
+    }
+
+    this.ready = this.init(); // Re-initialize with new seed
+    const success = await this.ready;
+
+    if (success) {
+      window.location.hash = ""; // Return to home view (which will now show the loaded game)
+      window.scrollTo(0, 0);
+    }
+    return success;
   }
 
   async fetchDailyPuzzle() {
@@ -955,48 +1000,9 @@ export class GameManager {
     try {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
       await this._checkRankDecay();
+      this._ensureStats();
 
-      let stats = this.stats ||
-        JSON.parse(localStorage.getItem("jigsudo_user_stats")) || {
-          totalPlayed: 0,
-          wins: 0,
-          currentStreak: 0,
-          maxStreak: 0,
-          lastPlayedDate: null,
-          currentRP: 0,
-          history: {},
-          lastDecayCheck: null,
-          bestTime: Infinity,
-          bestScore: 0,
-          totalTimeAccumulated: 0,
-          totalScoreAccumulated: 0,
-          totalPeaksErrorsAccumulated: 0,
-          stageTimesAccumulated: {
-            memory: 0,
-            jigsaw: 0,
-            sudoku: 0,
-            peaks: 0,
-            search: 0,
-            code: 0,
-          },
-          stageWinsAccumulated: {
-            memory: 0,
-            jigsaw: 0,
-            sudoku: 0,
-            peaks: 0,
-            search: 0,
-            code: 0,
-          },
-          weekdayStatsAccumulated: {
-            0: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-            1: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-            2: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-            3: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-            4: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-            5: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-            6: { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 },
-          },
-        };
+      let stats = this.stats;
       if (!stats.history) stats.history = {};
       if (!stats.stageTimesAccumulated) stats.stageTimesAccumulated = {};
       if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
@@ -1006,31 +1012,35 @@ export class GameManager {
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
       const currentMonth = today.substring(0, 7); // "YYYY-MM"
 
-      stats.totalPlayed = (stats.totalPlayed || 0) + 1;
-      stats.wins = (stats.wins || 0) + 1;
       const last = stats.lastPlayedDate;
+      const isAlreadyWon = stats.history[today]?.status === "won";
 
-      // Handle Streak and RP Resets
-      if (last) {
-        const lastDate = new Date(last);
-        const currDate = new Date(today);
-        lastDate.setHours(0, 0, 0, 0);
-        currDate.setHours(0, 0, 0, 0);
-        const diffDays = Math.ceil(
-          (currDate - lastDate) / (1000 * 60 * 60 * 24),
-        );
+      if (!this.isReplay && !isAlreadyWon) {
+        stats.totalPlayed = (stats.totalPlayed || 0) + 1;
+        stats.wins = (stats.wins || 0) + 1;
 
-        if (diffDays === 1) {
-          stats.currentStreak = (stats.currentStreak || 0) + 1;
-        } else if (diffDays > 0) {
+        // Handle Streak and RP Resets
+        if (last) {
+          const lastDate = new Date(last);
+          const currDate = new Date(today);
+          lastDate.setHours(0, 0, 0, 0);
+          currDate.setHours(0, 0, 0, 0);
+          const diffDays = Math.ceil(
+            (currDate - lastDate) / (1000 * 60 * 60 * 24),
+          );
+
+          if (diffDays === 1) {
+            stats.currentStreak = (stats.currentStreak || 0) + 1;
+          } else if (diffDays > 0) {
+            stats.currentStreak = 1;
+          }
+        } else {
           stats.currentStreak = 1;
         }
-      } else {
-        stats.currentStreak = 1;
-      }
 
-      if (stats.currentStreak > (stats.maxStreak || 0))
-        stats.maxStreak = stats.currentStreak;
+        if (stats.currentStreak > (stats.maxStreak || 0))
+          stats.maxStreak = stats.currentStreak;
+      }
 
       const startMs = this.state.meta.startedAt
         ? new Date(this.state.meta.startedAt).getTime()
@@ -1042,59 +1052,71 @@ export class GameManager {
       let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
       if (4.0 + netChange < 0) netChange = -4.0;
 
-      stats.currentRP = (stats.currentRP || 0) + netChange;
-      stats.dailyRP = (stats.dailyRP || 0) + netChange;
-      stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
-
-      if (stats.currentRP < 0) stats.currentRP = 0;
-      if (stats.dailyRP < 0) stats.dailyRP = 0;
-      if (stats.monthlyRP < 0) stats.monthlyRP = 0;
-
       const dailyScore = Math.max(0, 4.0 + netChange);
 
-      if (stats.bestTime === undefined) stats.bestTime = null;
-      if (
-        totalTimeMs > 0 &&
-        (stats.bestTime === null ||
-          stats.bestTime === Infinity ||
-          totalTimeMs < stats.bestTime)
-      ) {
-        stats.bestTime = totalTimeMs;
+      if (!this.isReplay && !isAlreadyWon) {
+        stats.currentRP = (stats.currentRP || 0) + netChange;
+        stats.dailyRP = (stats.dailyRP || 0) + netChange;
+        stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
+
+        if (stats.currentRP < 0) stats.currentRP = 0;
+        if (stats.dailyRP < 0) stats.dailyRP = 0;
+        if (stats.monthlyRP < 0) stats.monthlyRP = 0;
+
+        if (stats.bestTime === undefined) stats.bestTime = null;
+        if (
+          totalTimeMs > 0 &&
+          (stats.bestTime === null ||
+            stats.bestTime === Infinity ||
+            totalTimeMs < stats.bestTime)
+        ) {
+          stats.bestTime = totalTimeMs;
+        }
+        if (dailyScore > (stats.bestScore || 0)) stats.bestScore = dailyScore;
+        stats.totalTimeAccumulated =
+          (stats.totalTimeAccumulated || 0) + totalTimeMs;
+        stats.totalScoreAccumulated =
+          (stats.totalScoreAccumulated || 0) + netChange;
+        stats.totalPeaksErrorsAccumulated =
+          (stats.totalPeaksErrorsAccumulated || 0) + peaksErrors;
+
+        const st = this.state.meta.stageTimes || {};
+        for (const [stage, time] of Object.entries(st)) {
+          stats.stageTimesAccumulated[stage] =
+            (stats.stageTimesAccumulated[stage] || 0) + time;
+          stats.stageWinsAccumulated[stage] =
+            (stats.stageWinsAccumulated[stage] || 0) + 1;
+        }
+
+        const dayIdx = new Date(today + "T12:00:00").getDay();
+        if (!stats.weekdayStatsAccumulated[dayIdx])
+          stats.weekdayStatsAccumulated[dayIdx] = {
+            sumTime: 0,
+            sumErrors: 0,
+            sumScore: 0,
+            count: 0,
+          };
+        const w = stats.weekdayStatsAccumulated[dayIdx];
+        w.sumTime += totalTimeMs;
+        w.sumErrors += peaksErrors;
+        w.sumScore += dailyScore;
+        w.count++;
+
+        stats.lastPlayedDate = today; // Only update lastPlayedDate if it was a real win
+        stats.lastDecayCheck = today;
       }
-      if (dailyScore > (stats.bestScore || 0)) stats.bestScore = dailyScore;
-      stats.totalTimeAccumulated =
-        (stats.totalTimeAccumulated || 0) + totalTimeMs;
-      stats.totalScoreAccumulated =
-        (stats.totalScoreAccumulated || 0) + netChange;
-      stats.totalPeaksErrorsAccumulated =
-        (stats.totalPeaksErrorsAccumulated || 0) + peaksErrors;
 
       const st = this.state.meta.stageTimes || {};
-      for (const [stage, time] of Object.entries(st)) {
-        stats.stageTimesAccumulated[stage] =
-          (stats.stageTimesAccumulated[stage] || 0) + time;
-        stats.stageWinsAccumulated[stage] =
-          (stats.stageWinsAccumulated[stage] || 0) + 1;
-      }
 
-      const dayIdx = new Date(today + "T12:00:00").getDay();
-      if (!stats.weekdayStatsAccumulated[dayIdx])
-        stats.weekdayStatsAccumulated[dayIdx] = {
-          sumTime: 0,
-          sumErrors: 0,
-          sumScore: 0,
-          count: 0,
-        };
-      const w = stats.weekdayStatsAccumulated[dayIdx];
-      w.sumTime += totalTimeMs;
-      w.sumErrors += peaksErrors;
-      w.sumScore += dailyScore;
-      w.count++;
+      // Check if this win is on its original day
+      const isOriginalDay = !this.isReplay;
 
-      stats.lastPlayedDate = today;
-      stats.lastDecayCheck = today;
+      if (!stats.history[today]) stats.history[today] = {};
+
       stats.history[today] = {
         status: "won",
+        originalWin:
+          isOriginalDay || stats.history[today]?.originalWin || false,
         totalTime: totalTimeMs,
         stageTimes: st,
         timestamp: Date.now(),
@@ -1116,6 +1138,8 @@ export class GameManager {
       const { saveUserStats } = await import("./db.js");
       const { stopTimer } = await import("./timer.js");
       stopTimer();
+      const { getDailySeed } = await import("./utils/random.js");
+      const seedStr_daily = getDailySeed().toString(); // Renamed to avoid conflict with existing seedStr
       const user = await import("./auth.js").then((m) => m.getCurrentUser());
       if (user && !user.isAnonymous) {
         const seedStr = this.currentSeed.toString();

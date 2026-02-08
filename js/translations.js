@@ -209,6 +209,10 @@ export const translations = {
       "El navegador bloqueó la ventana de inicio de sesión. Por favor, permite los popups para este sitio.",
     err_auth_general: "Error de autenticación: ",
     err_user_exists: "El nombre de usuario ya está en uso.",
+
+    sidebar_history: "Historial",
+    history_title: "Historial de Puzzles",
+    history_select_date: "Selecciona una fecha para jugar",
     toast_email_invalid: "El correo no es válido.",
     toast_name_empty: "El nombre no puede estar vacío.",
 
@@ -604,6 +608,10 @@ export const translations = {
       "The browser blocked the login window. Please allow popups for this site.",
     err_auth_general: "Authentication error: ",
     err_user_exists: "Username is already taken.",
+
+    sidebar_history: "History",
+    history_title: "Puzzle History",
+    history_select_date: "Select a date to play",
 
     toast_email_invalid: "The email is invalid.",
     toast_name_empty: "Username cannot be empty.",

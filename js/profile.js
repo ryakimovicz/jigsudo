@@ -90,6 +90,8 @@ function _showProfileUI() {
   // Hide everything else
   if (menu) menu.classList.add("hidden");
   if (gameSection) gameSection.classList.add("hidden");
+  const historySection = document.getElementById("history-section");
+  if (historySection) historySection.classList.add("hidden");
   // if (appHeader) appHeader.classList.add("hidden");
 
   // Show Footer on Profile
@@ -797,6 +799,11 @@ function renderCalendar(history = {}) {
       if (history && history[dateStr]) {
         if (history[dateStr].status === "won") {
           dayEl.classList.add("win");
+
+          // Add dot marker for consistency with history view
+          const dot = document.createElement("span");
+          dot.className = "completed-dot";
+          dayEl.appendChild(dot);
         } else {
           dayEl.classList.add("loss");
         }

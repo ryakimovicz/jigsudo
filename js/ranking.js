@@ -31,9 +31,8 @@ export async function fetchRankings(forceRefresh = false) {
   const { getUserRank } = await import("./db.js");
   const user = getCurrentUser();
 
-  const seedStr = (
-    await import("./game-manager.js")
-  ).gameManager.currentSeed.toString();
+  const { getDailySeed } = await import("./utils/random.js");
+  const seedStr = getDailySeed().toString();
   const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
   const currentMonth = today.substring(0, 7);
 

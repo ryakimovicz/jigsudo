@@ -3,6 +3,7 @@
 import { initHome } from "./home.js";
 import { initLanguage } from "./i18n.js";
 import { initSudoku } from "./sudoku.js";
+import { initHistory } from "./history.js";
 import { gameManager } from "./game-manager.js";
 import {
   initAuth,
@@ -54,6 +55,7 @@ async function startApp() {
   initSudoku();
   initAuth(); // Initialize Firebase Auth listener
   initProfile(); // Profile Module
+  initHistory(); // History Module
 
   attachAuthListeners();
 

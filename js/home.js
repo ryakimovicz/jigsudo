@@ -359,27 +359,10 @@ export function initHome() {
         // 1. Refresh Seed & State (Ensures fresh date if tab was open)
         await gameManager.prepareDaily();
 
-        // Remove Home State
-        document.body.classList.remove("home-active");
+        // 2. Execute Start
+        await startDailyGame();
 
-        // 2. Load Memory Game (Routing)
-        const state = gameManager.getState();
-        const currentStage = state.progress.currentStage || "memory";
-        const module = await import("./memory.js");
-
-        if (currentStage === "memory") {
-          module.initMemoryGame();
-        } else {
-          console.log(`[Home] Resuming session at stage: ${currentStage}`);
-          if (module.resumeToStage) {
-            module.resumeToStage(currentStage);
-          } else {
-            // Fallback (should not happen if all stages implemented)
-            module.initMemoryGame();
-          }
-        }
-
-        // Note: initMemoryGame hides home, so button state reset isn't strictly needed immediately,
+        // Note: startDailyGame hides home, so button state reset isn't strictly needed immediately,
         // but good practice if user comes back.
         if (startBtn) {
           startBtn.textContent =
@@ -387,7 +370,7 @@ export function initHome() {
           startBtn.disabled = false;
         }
       } catch (err) {
-        console.error("Failed to start Memory Game", err);
+        console.error("Failed to start Daily Game", err);
         if (startBtn) {
           startBtn.textContent = "Error";
           startBtn.disabled = false;
@@ -508,14 +491,17 @@ export function initHome() {
       const menu = document.getElementById("menu-content");
       const gameSection = document.getElementById("game-section");
       const profileSection = document.getElementById("profile-section");
+      const historySection = document.getElementById("history-section");
 
       const isAlreadyAtHome =
         menu &&
         !menu.classList.contains("hidden") &&
-        (!profileSection || profileSection.classList.contains("hidden"));
+        (!profileSection || profileSection.classList.contains("hidden")) &&
+        (!historySection || historySection.classList.contains("hidden"));
 
       if (menu) menu.classList.remove("hidden");
       if (gameSection) gameSection.classList.add("hidden");
+      if (historySection) historySection.classList.add("hidden");
 
       // 3. Reset URL
       window.location.hash = "";
@@ -599,11 +585,60 @@ export function initHome() {
     loadAndRenderAllRankings(true);
   });
 
-  // Force refresh when returning to Home via Hash (Closing profile, back button, etc.)
   window.addEventListener("hashchange", () => {
-    if (!window.location.hash || window.location.hash === "#") {
+    const menu = document.getElementById("menu-content");
+    const isVisible = menu && !menu.classList.contains("hidden");
+
+    if (isVisible && (!window.location.hash || window.location.hash === "#")) {
       console.log("[Home] Hash cleared, forcing fresh ranking load...");
       loadAndRenderAllRankings(true);
     }
   });
+}
+
+/**
+ * Universal function to start/resume a daily game
+ * (Can be called from Home or History)
+ */
+export async function startDailyGame() {
+  try {
+    if (gameManager.isWiping) {
+      console.warn("[Home] Sync in progress. Blocking start.");
+      return;
+    }
+
+    // 1. UI Transitions
+    document.body.classList.remove("home-active");
+    document.body.classList.remove("profile-active");
+    document.body.classList.remove("history-active");
+
+    // Hide Sections
+    document.getElementById("menu-content")?.classList.add("hidden");
+    document.getElementById("profile-section")?.classList.add("hidden");
+    document.getElementById("history-section")?.classList.add("hidden");
+    // Show game section
+    document.getElementById("game-section")?.classList.remove("hidden");
+
+    // Hide Footer in game
+    const footer = document.querySelector(".main-footer");
+    if (footer) footer.classList.add("hidden");
+
+    // 2. Load Memory/Stage logic
+    const state = gameManager.getState();
+    const currentStage = state.progress.currentStage || "memory";
+    const module = await import("./memory.js");
+
+    if (currentStage === "memory") {
+      module.initMemoryGame();
+    } else {
+      console.log(`[Home] Resuming session at stage: ${currentStage}`);
+      if (module.resumeToStage) {
+        module.resumeToStage(currentStage);
+      } else {
+        module.initMemoryGame();
+      }
+    }
+  } catch (err) {
+    console.error("[Home] Failed to start Daily Game:", err);
+  }
 }
