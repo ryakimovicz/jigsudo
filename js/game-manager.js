@@ -74,6 +74,9 @@ export class GameManager {
 
     if (savedState) {
       this.state = savedState;
+      // Proactively load stats to ensure this.stats is populated before syncs
+      this.stats =
+        JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
       this._ensureStats();
       const activeUid = localStorage.getItem("jigsudo_active_uid");
       if (activeUid && !this.state.meta.userId) {
@@ -116,7 +119,7 @@ export class GameManager {
       console.warn(
         "[GameManager] Variation exists but search targets empty. Healing...",
       );
-      this._populateSearchTargets(this.state.jigsaw.variation);
+      await this._populateSearchTargets(this.state.jigsaw.variation);
     }
 
     return true;
@@ -201,14 +204,19 @@ export class GameManager {
     };
   }
 
-  setJigsawVariation(variationKey) {
+  async setJigsawVariation(variationKey) {
     if (!this.state) return;
 
     const oldVariation = this.state.jigsaw.variation || "0";
     const newVariation = variationKey || "0";
 
-    // GUARD: If same variation, do nothing (Idempotency)
-    if (oldVariation === newVariation) return;
+    // GUARD: If same variation AND targets exist, do nothing
+    if (
+      oldVariation === newVariation &&
+      this.state.search.targets &&
+      this.state.search.targets.length > 0
+    )
+      return;
 
     console.log(`[GM] Switch Variation: ${oldVariation} -> ${newVariation}`);
 
@@ -249,14 +257,14 @@ export class GameManager {
     }
 
     this.state.jigsaw.variation = newVariation;
-    this._populateSearchTargets(newVariation);
+    await this._populateSearchTargets(newVariation);
     this.save();
   }
 
   /**
    * Internal helper to populate search targets based on the current variation and map.
    */
-  _populateSearchTargets(variationKey) {
+  async _populateSearchTargets(variationKey) {
     const map = this.state.data.searchTargetsMap;
     let variationData = null;
 
@@ -278,7 +286,7 @@ export class GameManager {
       this.state.simon.coordinates = variationData.simon || [];
     } else {
       // FALLBACK: Local Generation (Async)
-      this.ensureSearchTargets();
+      await this.ensureSearchTargets();
     }
   }
 
@@ -440,33 +448,139 @@ export class GameManager {
 
   /**
    * Surgical Reset: Only wipes progress for the current day/seed.
-   * Preserves global stats, rank, and history.
+   * Preserves global stats, rank, and history from previous days.
    */
   async resetCurrentGame() {
     console.warn(`[GameManager] Surgical Reset for seed: ${this.currentSeed}`);
 
-    // 1. Wipe local state for this seed
+    // 1. Load Stats to revert RP and history
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+
+    let stats =
+      this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+
+    if (stats) {
+      // A. Revert PARTIAL RP earned during this session (awardStagePoints)
+      if (
+        this.state &&
+        this.state.progress &&
+        this.state.progress.stagesCompleted
+      ) {
+        this.state.progress.stagesCompleted.forEach((stage) => {
+          const p = SCORING.PARTIAL_RP[stage] || 0;
+          stats.currentRP = Math.max(0, (stats.currentRP || 0) - p);
+          stats.dailyRP = Math.max(0, (stats.dailyRP || 0) - p);
+          stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - p);
+          stats.totalScoreAccumulated = Math.max(
+            0,
+            (stats.totalScoreAccumulated || 0) - p,
+          );
+        });
+      }
+
+      // B. Revert records from recordWin (if already won)
+      if (stats.history && stats.history[today]) {
+        const h = stats.history[today];
+        if (h.status === "won") {
+          // netChange = score - 4.0 (bonus added to currentRP etc.)
+          const netChange = (h.score || 0) - 4.0;
+          stats.currentRP = Math.max(0, (stats.currentRP || 0) - netChange);
+          stats.dailyRP = Math.max(0, (stats.dailyRP || 0) - netChange);
+          stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - netChange);
+          stats.totalScoreAccumulated = Math.max(
+            0,
+            (stats.totalScoreAccumulated || 0) - netChange,
+          );
+
+          // Cumulative stats
+          stats.totalTimeAccumulated = Math.max(
+            0,
+            (stats.totalTimeAccumulated || 0) - (h.totalTime || 0),
+          );
+          stats.totalPeaksErrorsAccumulated = Math.max(
+            0,
+            (stats.totalPeaksErrorsAccumulated || 0) - (h.peaksErrors || 0),
+          );
+
+          // Deep Reversion of Stage Stats
+          if (stats.stageTimesAccumulated && h.stageTimes) {
+            for (const [stage, time] of Object.entries(h.stageTimes)) {
+              stats.stageTimesAccumulated[stage] = Math.max(
+                0,
+                (stats.stageTimesAccumulated[stage] || 0) - time,
+              );
+              if (stats.stageWinsAccumulated) {
+                stats.stageWinsAccumulated[stage] = Math.max(
+                  0,
+                  (stats.stageWinsAccumulated[stage] || 0) - 1,
+                );
+              }
+            }
+          }
+
+          // Weekday Stats Reversion
+          const dayIdx = new Date(today + "T12:00:00").getDay();
+          if (
+            stats.weekdayStatsAccumulated &&
+            stats.weekdayStatsAccumulated[dayIdx]
+          ) {
+            const w = stats.weekdayStatsAccumulated[dayIdx];
+            w.sumTime = Math.max(0, w.sumTime - (h.totalTime || 0));
+            w.sumErrors = Math.max(0, w.sumErrors - (h.peaksErrors || 0));
+            w.sumScore = Math.max(0, w.sumScore - (h.score || 0));
+            w.count = Math.max(0, w.count - 1);
+          }
+
+          // Streak and Win Count
+          stats.wins = Math.max(0, (stats.wins || 0) - 1);
+          stats.totalPlayed = Math.max(0, (stats.totalPlayed || 0) - 1);
+          delete stats.history[today];
+        }
+      }
+
+      // AGGRESSIVE: Always recalculate records to ensure consistency
+      // This is now OUTSIDE the history check to ensure ghost records are cleared even if history is empty
+      this._recalculateRecords(stats);
+
+      // Final Sanity Clamps
+      stats.currentRP = Math.max(0, stats.currentRP);
+      stats.dailyRP = Math.max(0, stats.dailyRP);
+      stats.monthlyRP = Math.max(0, stats.monthlyRP);
+
+      this.stats = stats;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+      console.log("[GM] Stats after resetToday:", stats);
+    }
+
+    // 2. Wipe local execution state for this seed
     localStorage.removeItem(this.storageKey);
 
-    // 2. Wipe cloud progress (if logged in)
+    // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
       const { getCurrentUser } = await import("./auth.js");
-      const { saveUserProgress } = await import("./db.js");
+      const { saveUserProgress, saveUserStats } = await import("./db.js");
+      const { showNotification } = await import("./ui.js");
       const user = getCurrentUser();
 
       if (user && !user.isAnonymous) {
-        console.log("[GameManager] Clearing cloud progress...");
-        // Send a "fresh" state to overwrite remote
+        showNotification("Sincronizando...", "info");
+        console.log("[GameManager] Re-syncing cloud...");
         const freshState = this.createStateFromJSON(
           await this.fetchDailyPuzzle(),
         );
-        await saveUserProgress(user.uid, this._serializeState(freshState));
+        // We await both to ensure they are on the wire before reload
+        await Promise.all([
+          saveUserProgress(user.uid, this._serializeState(freshState)),
+          saveUserStats(user.uid, this.stats),
+        ]);
+        console.log("[GameManager] Cloud sync complete.");
       }
     } catch (err) {
-      console.error("[GameManager] Cloud reset failed:", err);
+      console.error("[GameManager] Cloud re-sync failed:", err);
     }
 
-    // 3. Reload
+    // 4. Reload
     console.log("Reset complete. Reloading...");
     window.location.reload();
   }
@@ -938,9 +1052,15 @@ export class GameManager {
 
       const dailyScore = Math.max(0, 4.0 + netChange);
 
-      if (stats.bestTime === undefined) stats.bestTime = Infinity;
-      if (totalTimeMs > 0 && totalTimeMs < stats.bestTime)
+      if (stats.bestTime === undefined) stats.bestTime = null;
+      if (
+        totalTimeMs > 0 &&
+        (stats.bestTime === null ||
+          stats.bestTime === Infinity ||
+          totalTimeMs < stats.bestTime)
+      ) {
         stats.bestTime = totalTimeMs;
+      }
       if (dailyScore > (stats.bestScore || 0)) stats.bestScore = dailyScore;
       stats.totalTimeAccumulated =
         (stats.totalTimeAccumulated || 0) + totalTimeMs;
@@ -1018,6 +1138,70 @@ export class GameManager {
       console.error("Error saving stats:", err);
       return null;
     }
+  }
+
+  /**
+   * Scans history to re-calculate global records (streaks, best time, etc.)
+   */
+  _recalculateRecords(stats) {
+    if (!stats) return;
+
+    // Nuclear Reset: Always start from defaults to avoid ghost records
+    stats.maxStreak = 0;
+    stats.currentStreak = 0;
+    stats.bestTime = null; // JSON safe
+    stats.bestScore = 0;
+    stats.lastPlayedDate = stats.lastPlayedDate || null;
+
+    if (!stats.history) return;
+
+    const dates = Object.keys(stats.history)
+      .filter((date) => stats.history[date].status === "won")
+      .sort();
+
+    if (dates.length === 0) {
+      stats.lastPlayedDate = null;
+      return;
+    }
+
+    let maxStreak = 0;
+    let currentStreakCount = 0;
+    let lastDate = null;
+
+    let bestTime = null;
+    let bestScore = 0;
+
+    dates.forEach((dateStr) => {
+      const h = stats.history[dateStr];
+      const hTime = Number(h.totalTime || 0);
+      const hScore = Number(h.score || 0);
+
+      if (hTime > 0 && (bestTime === null || hTime < bestTime))
+        bestTime = hTime;
+      if (hScore > bestScore) bestScore = hScore;
+
+      const d = new Date(dateStr + "T12:00:00");
+      if (lastDate) {
+        const diff = Math.ceil((d - lastDate) / (1000 * 60 * 60 * 24));
+        if (diff === 1) {
+          currentStreakCount++;
+        } else {
+          currentStreakCount = 1;
+        }
+      } else {
+        currentStreakCount = 1;
+      }
+      if (currentStreakCount > maxStreak) maxStreak = currentStreakCount;
+      lastDate = d;
+    });
+
+    stats.maxStreak = maxStreak;
+    stats.bestTime = bestTime;
+    stats.bestScore = bestScore;
+    stats.lastPlayedDate = dates[dates.length - 1];
+
+    // Final current streak is the one active on the last recorded date
+    stats.currentStreak = currentStreakCount;
   }
 }
 export const gameManager = new GameManager();

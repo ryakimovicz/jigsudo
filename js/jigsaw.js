@@ -943,7 +943,7 @@ export function debugJigsawPlace() {
 }
 
 // Validation Logic
-export function checkBoardCompletion() {
+export async function checkBoardCompletion() {
   // Guard 0: Prevent double-trigger logic
   if (gameManager.getState().progress.currentStage !== "jigsaw") return;
   if (
@@ -1080,7 +1080,7 @@ export function checkBoardCompletion() {
     console.log(
       `Detected Variation: [${bestMatchKey}] (${maxMatches}/9 matches)`,
     );
-    gameManager.setJigsawVariation(bestMatchKey);
+    await gameManager.setJigsawVariation(bestMatchKey);
 
     // Clean errors and Add Victory Animation
     clearBoardErrors();

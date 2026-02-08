@@ -404,7 +404,9 @@ export function updateProfileData() {
 
   if (document.getElementById("stat-best-time"))
     document.getElementById("stat-best-time").textContent =
-      wonCount > 0 || bestTime !== Infinity ? fmtTime(bestTime) : "--:--";
+      wonCount > 0 && bestTime !== Infinity && bestTime !== null
+        ? fmtTime(bestTime)
+        : "--:--";
 
   if (document.getElementById("stat-avg-time"))
     document.getElementById("stat-avg-time").textContent =

@@ -10,19 +10,24 @@ let isSelecting = false;
 let currentPath = []; // Array of {r, c}
 let currentCells = []; // Array of DOM Elements
 
-export function initSearch() {
+export async function initSearch() {
   console.log("Initializing Search Stage...");
+
+  // Ensure gameManager is fully loaded (healing search targets happens in init)
+  await gameManager.ready;
 
   const searchData = gameManager.getState().search;
 
-  if (!searchData || !searchData.targets.length) {
-    console.warn("Search targets not ready yet. Waiting...");
-    // Render "Loading" or empty state
+  if (!searchData || !searchData.targets || searchData.targets.length === 0) {
+    console.warn(
+      "Search targets still missing after init. Waiting for event...",
+    );
+    // Render empty state
     renderTargets({ targets: [], found: [] });
 
-    // Listen for self-healing completion
+    // Listen for late self-healing completion
     const onReady = () => {
-      console.log("Search targets ready via event.");
+      console.log("Search targets ready via late event.");
       const newData = gameManager.getState().search;
       renderTargets(newData);
       if (newData.found && newData.found.length > 0) {
@@ -32,7 +37,6 @@ export function initSearch() {
     };
     window.addEventListener("search-targets-ready", onReady);
 
-    // Attach listeners anyway so they are ready
     attachSearchListeners();
     return;
   }
@@ -447,7 +451,7 @@ export async function transitionToSearch() {
   }
 
   // 6. Initialize Search Logic
-  initSearch();
+  await initSearch();
 
   // 6.5 Update Stage in State
   if (gameManager.getState().progress.currentStage !== "search") {
