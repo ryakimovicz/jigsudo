@@ -18,7 +18,7 @@ export const RANKS = [
 ];
 
 export const SCORING = {
-  SECONDS_IN_DAY: 86400, // 24 * 60 * 60
+  BONUS_DECAY_SECONDS: 21600, // 6 hours (6 * 60 * 60)
   MAX_BONUS: 6.0,
   ERROR_PENALTY_RP: 0.5,
   MISSED_DAY_RP: 3,
@@ -34,10 +34,10 @@ export const SCORING = {
 };
 
 /**
- * Calculates Time Bonus: Linear decay from 6.0 to 0 over 24 hours.
+ * Calculates Time Bonus: Linear decay from 6.0 to 0 over 6 hours.
  */
 export function calculateTimeBonus(totalSeconds) {
-  const decayPerSecond = SCORING.MAX_BONUS / SCORING.SECONDS_IN_DAY;
+  const decayPerSecond = SCORING.MAX_BONUS / SCORING.BONUS_DECAY_SECONDS;
   const penalty = totalSeconds * decayPerSecond;
   const bonus = SCORING.MAX_BONUS - penalty;
   // Return raw precision for Leaderboard sorting (e.g. 5.123414)
