@@ -59,44 +59,31 @@ body.dark-mode {
   transform: scale(1.1);
 }
 
-/* Segmented Control for Guide */
-.guide-nav-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 25px;
+/* (Segmented Control styles removed) */
+
+.jigsaw-slot.locked {
+  cursor: not-allowed !important;
+  position: relative;
 }
 
-.guide-selector.segmented-control {
-  display: flex;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 5px;
-  border-radius: 12px;
-  gap: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.jigsaw-slot.locked::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.05); /* Light Mode Overlay */
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
 }
 
-.guide-selector .seg-btn {
-  padding: 10px 30px;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 700;
-  cursor: pointer;
-  border-radius: 9px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  font-family: var(--font-paper);
-  font-size: 1rem;
-}
-
-.guide-selector .seg-btn.active {
-  background: var(--bg-paper);
-  color: var(--primary-color);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-body.dark-mode .guide-selector .seg-btn.active {
-  background: #334155;
-  color: var(--primary-color);
+body.dark-mode .jigsaw-slot.locked::after {
+  background: rgba(0, 0, 0, 0.3); /* Dark Mode Overlay */
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
 body.dark-mode .guide-selector {

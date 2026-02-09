@@ -16,7 +16,6 @@ let dragStartY = 0;
 const DRAG_THRESHOLD = 5;
 
 export function initGuide() {
-  setupTabSwitching();
   setupRouting();
   setupTutorialListeners();
   setupSidebarConnection();
@@ -32,28 +31,7 @@ function setupSidebarConnection() {
   }
 }
 
-function setupTabSwitching() {
-  const tabs = document.querySelectorAll(".guide-selector .seg-btn");
-  const contents = document.querySelectorAll(".guide-tab-content");
-
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const target = tab.getAttribute("data-target");
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      contents.forEach((c) => {
-        c.classList.add("hidden");
-        if (c.id === target) {
-          c.classList.remove("hidden");
-          // If switching to tutorial, start it immediately
-          if (target === "guide-tutorial") {
-            startTutorial();
-          }
-        }
-      });
-    });
-  });
-}
+// function setupTabSwitching() { ... } // Removed
 
 function setupRouting() {
   window.addEventListener("hashchange", handleGuideRouting);
@@ -93,6 +71,7 @@ function showGuide() {
   document.body.classList.remove("home-active");
 
   updateGuideSidebarStatus();
+  startTutorial();
 }
 
 function hideGuide() {
@@ -145,7 +124,6 @@ function setupTutorialListeners() {
 }
 
 function startTutorial() {
-  document.getElementById("tutorial-step-info").classList.add("hidden");
   document.getElementById("tutorial-game-area").classList.remove("hidden");
 
   currentTutorialStage = 1;
@@ -536,13 +514,19 @@ function renderTutorialJigsaw() {
     if (pieceIdx !== null) {
       slot.innerHTML = getBlockTable(pieceIdx, i, conflicts);
       slot.classList.add("filled");
+
+      // Fixed pieces: Corners (0, 2, 6, 8) and Center (4)
+      const isFixed = [0, 2, 4, 6, 8].includes(i);
+      if (isFixed) {
+        slot.classList.add("locked");
+      }
     } else {
       slot.innerHTML = '<div class="slot-placeholder"></div>';
     }
 
     slot.onclick = () => {
-      // Locked center (4)
-      if (i === 4) return;
+      // Locked pieces cannot be selected or interact with selection
+      if (slot.classList.contains("locked")) return;
 
       const selected = document.querySelector(
         ".jigsaw-piece.selected, .jigsaw-slot.selected",
@@ -899,6 +883,9 @@ function handlePointerDown(e) {
   )
     return;
 
+  // Prevent dragging locked pieces
+  if (target.classList.contains("locked")) return;
+
   potentialDragTarget = target;
   dragStartX = e.clientX;
   dragStartY = e.clientY;
@@ -1036,6 +1023,14 @@ function handleDrop(source, target) {
     : sourceIdx;
 
   if (isTargetBoard) {
+    // Prevent dropping into locked slots
+    if (target.classList.contains("locked")) {
+      const content = source.querySelector(".mini-sudoku-grid");
+      if (content) content.style.opacity = "1";
+      deselectGeneric();
+      return;
+    }
+
     const targetPieceIdx = tutorialState.jigsawSlots[targetIdx];
 
     // Swap or Move
