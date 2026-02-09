@@ -719,8 +719,13 @@ export function handlePointerMove(e) {
         return;
       }
 
+      // Wrap the clone in a container to maintain Container Query context
+      const dragWrapper = document.createElement("div");
+      dragWrapper.className = "dragging-clone";
+
       dragClone = content.cloneNode(true);
-      dragClone.classList.add("dragging-clone");
+      dragClone.classList.add("mini-sudoku-grid"); // Keep original class for styles
+      dragWrapper.appendChild(dragClone);
 
       // Normalize Size: Always use the size of a Panel Piece
       const referencePiece =
@@ -729,17 +734,22 @@ export function handlePointerMove(e) {
       const targetRect = target.getBoundingClientRect();
 
       // 1. Start with ORIGINAL size
-      dragClone.style.width = `${targetRect.width}px`;
-      dragClone.style.height = `${targetRect.height}px`;
+      dragWrapper.style.width = `${targetRect.width}px`;
+      dragWrapper.style.height = `${targetRect.height}px`;
+      dragWrapper.style.left = `${targetRect.left}px`;
+      dragWrapper.style.top = `${targetRect.top}px`;
 
-      document.body.appendChild(dragClone);
+      document.body.appendChild(dragWrapper);
 
-      // 2. Force DOM Reflow so the browser registers the starting size
-      void dragClone.offsetWidth;
+      // 2. Force DOM Reflow
+      void dragWrapper.offsetWidth;
 
       // 3. Set FINAL size (animates due to CSS transition)
-      dragClone.style.width = `${refRect.width}px`;
-      dragClone.style.height = `${refRect.height}px`;
+      dragWrapper.style.width = `${refRect.width}px`;
+      dragWrapper.style.height = `${refRect.height}px`;
+
+      // Assign to global dragClone for position updates (but it's the wrapper now)
+      dragClone = dragWrapper;
 
       // Hide the original content to mimic "lifting"
       content.style.opacity = "0";

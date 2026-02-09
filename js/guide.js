@@ -15,6 +15,12 @@ let dragStartX = 0;
 let dragStartY = 0;
 const DRAG_THRESHOLD = 5;
 
+// Sudoku Tutorial State
+let selectedCell = null;
+let tutorialPencilMode = false;
+let undoStack = [];
+let lockedNumber = null;
+
 export function initGuide() {
   setupRouting();
   setupTutorialListeners();
@@ -36,6 +42,58 @@ function setupSidebarConnection() {
 function setupRouting() {
   window.addEventListener("hashchange", handleGuideRouting);
   handleGuideRouting();
+
+  // Physical Keyboard Support for Tutorial
+  document.addEventListener("keydown", (e) => {
+    if (window.location.hash !== "#guide") return;
+    if (currentTutorialStage !== 3) return; // Only for Sudoku stage
+
+    const key = e.key;
+
+    // Numbers 1-9
+    if (key >= "1" && key <= "9") {
+      handleTutorialNumberInput(key);
+      return;
+    }
+
+    // Backspace / Delete
+    if (key === "Backspace" || key === "Delete") {
+      clearTutorialSelectedCell();
+      return;
+    }
+
+    // Escape -> Deselect
+    if (key === "Escape") {
+      deselectTutorialCell();
+      return;
+    }
+
+    // Shortcuts
+    const lowerKey = key.toLowerCase();
+    if (lowerKey === "w" || lowerKey === "p" || lowerKey === "n") {
+      toggleTutorialPencilMode();
+    } else if (lowerKey === "q") {
+      handleTutorialUndo();
+    } else if (lowerKey === "e") {
+      clearTutorialSelectedCell();
+    }
+  });
+
+  // Global Click Listener for Tutorial Deselection (Parity)
+  document.addEventListener("click", (e) => {
+    if (window.location.hash !== "#guide") return;
+    if (currentTutorialStage !== 3) return;
+
+    const isControl = e.target.closest(".tutorial-sudoku-controls");
+    const isBoard = e.target.closest("#tutorial-sudoku-grid");
+    const isGenericNav = e.target.closest(".tutorial-nav");
+
+    if (!isControl && !isBoard && !isGenericNav) {
+      if (lockedNumber) unlockTutorialNumber();
+      deselectTutorialCell();
+      highlightSimilarTutorialCells(null);
+    }
+  });
 }
 
 function handleGuideRouting() {
@@ -133,58 +191,93 @@ function startTutorial() {
 
 function initTutorialState() {
   const board = [
-    [5, 3, 4, 6, 7, 8, 9, 1, 2],
-    [6, 7, 2, 1, 9, 5, 3, 4, 8],
-    [1, 9, 8, 3, 4, 2, 5, 6, 7],
-    [8, 5, 9, 7, 6, 1, 4, 2, 3],
-    [4, 2, 6, 8, 5, 3, 7, 9, 1],
-    [7, 1, 3, 9, 2, 4, 8, 5, 6],
-    [9, 6, 1, 5, 3, 7, 2, 8, 4],
-    [2, 8, 7, 4, 1, 9, 6, 3, 5],
-    [3, 4, 5, 2, 8, 6, 1, 7, 9],
+    [8, 9, 5, 6, 3, 1, 2, 4, 7],
+    [1, 4, 3, 2, 5, 7, 9, 6, 8],
+    [7, 6, 2, 4, 9, 8, 3, 1, 5],
+    [2, 3, 6, 9, 1, 5, 7, 8, 4],
+    [4, 7, 1, 3, 8, 2, 5, 9, 6],
+    [9, 5, 8, 7, 4, 6, 1, 2, 3],
+    [3, 8, 7, 1, 2, 4, 6, 5, 9],
+    [6, 1, 4, 5, 7, 9, 8, 3, 2],
+    [5, 2, 9, 8, 6, 3, 4, 7, 1],
   ];
 
   tutorialState = {
     solution: board,
     emptyCells: [
-      { r: 0, c: 7, val: 1 },
-      { r: 6, c: 2, val: 1 },
-      { r: 1, c: 2, val: 2 },
-      { r: 7, c: 0, val: 2 },
-      { r: 0, c: 1, val: 3 },
-      { r: 8, c: 0, val: 3 },
-      { r: 2, c: 4, val: 4 },
-      { r: 8, c: 1, val: 4 },
-      { r: 0, c: 0, val: 5 },
-      { r: 1, c: 5, val: 5 },
-      { r: 4, c: 2, val: 6 },
-      { r: 5, c: 8, val: 6 },
-      { r: 1, c: 1, val: 7 },
-      { r: 2, c: 8, val: 7 },
-      { r: 4, c: 3, val: 8 },
-      { r: 7, c: 1, val: 8 },
-      { r: 0, c: 6, val: 9 },
-      { r: 7, c: 5, val: 9 },
+      { r: 7, c: 1, val: 1 },
+      { r: 2, c: 7, val: 1 },
+      { r: 3, c: 0, val: 2 },
+      { r: 4, c: 5, val: 2 },
+      { r: 3, c: 1, val: 3 },
+      { r: 8, c: 5, val: 3 },
+      { r: 6, c: 5, val: 4 },
+      { r: 1, c: 1, val: 4 },
+      { r: 1, c: 4, val: 5 },
+      { r: 8, c: 0, val: 5 },
+      { r: 7, c: 0, val: 6 },
+      { r: 4, c: 8, val: 6 },
+      { r: 0, c: 8, val: 7 },
+      { r: 7, c: 4, val: 7 },
+      { r: 7, c: 6, val: 8 },
+      { r: 1, c: 8, val: 8 },
+      { r: 8, c: 2, val: 9 },
+      { r: 1, c: 6, val: 9 },
     ],
   };
 
-  tutorialState.memoryPairsSelected = [1, 3, 5, 7]; // 4 side pairs
+  // Memory & Jigsaw configuration (4 specific pieces to find: 1, 3, 5, 7)
+  tutorialState.memoryPairsSelected = [1, 3, 5, 7];
   tutorialState.matchesFound = 0;
 
-  // Track pieces in board slots (0-8)
-  // Initially center and corners are fixed
+  // Jigsaw Slots (Fix corners/center, leave others null)
   tutorialState.jigsawSlots = [0, null, 2, null, 4, null, 6, null, 8];
 
-  tutorialState.piecesToPlace = [1, 3, 5, 7]; // 4 side pieces
+  // Remaining pieces to place (Indices of the 9 blocks: 0-8)
+  // Initially we show the ones NOT in jigsawSlots (1, 3, 5, 7)
+  tutorialState.piecesToPlace = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+  // Peaks & Valleys (Calculated once for this board)
+  const allP = [
+    { r: 0, c: 1, val: 9 },
+    { r: 0, c: 3, val: 6 },
+    { r: 1, c: 6, val: 9 },
+    { r: 1, c: 8, val: 8 },
+    { r: 2, c: 0, val: 7 },
+    { r: 4, c: 7, val: 9 },
+    { r: 5, c: 0, val: 9 },
+    { r: 6, c: 8, val: 9 },
+    { r: 7, c: 5, val: 9 },
+    { r: 8, c: 2, val: 9 },
+  ];
+  const allV = [
+    { r: 0, c: 5, val: 1 },
+    { r: 1, c: 0, val: 1 },
+    { r: 2, c: 7, val: 1 },
+    { r: 3, c: 0, val: 2 },
+    { r: 3, c: 4, val: 1 },
+    { r: 4, c: 2, val: 1 },
+    { r: 5, c: 6, val: 1 },
+    { r: 6, c: 3, val: 1 },
+    { r: 7, c: 1, val: 1 },
+    { r: 8, c: 5, val: 3 },
+    { r: 8, c: 8, val: 1 },
+  ];
+
+  tutorialState.allPeaks = allP;
+  tutorialState.allValleys = allV;
+
+  // The 5 Specific Targets requested by user: Peak 9, 8, 7 | Valley 2, 3
   tutorialState.peaksRemaining = [
-    { r: 0, c: 5 },
-    { r: 2, c: 1 },
-    { r: 4, c: 7 },
+    { r: 0, c: 1, val: 9 },
+    { r: 1, c: 8, val: 8 },
+    { r: 2, c: 0, val: 7 },
   ];
   tutorialState.valleysRemaining = [
-    { r: 1, c: 7 },
-    { r: 6, c: 4 },
+    { r: 3, c: 0, val: 2 },
+    { r: 8, c: 5, val: 3 },
   ];
+  tutorialState.peaksErrors = 0; // Initialize error counter
   tutorialState.searchSequences = [
     {
       path: [
@@ -553,22 +646,41 @@ function renderTutorialJigsaw() {
     (idx) => idx !== null,
   );
 
-  tutorialState.piecesToPlace.forEach((pieceIdx) => {
-    if (placedPieceIndices.includes(pieceIdx)) return;
+  // Use 4 fixed slots for pieces to find: 1, 3, 5, 7
+  const piecesToFind = [1, 3, 5, 7];
+  piecesToFind.forEach((pieceIdx) => {
+    const slot = document.createElement("div");
+    slot.className = "jigsaw-panel-slot";
+    slot.dataset.pieceIdx = pieceIdx;
 
-    const piece = document.createElement("div");
-    piece.className = "jigsaw-piece glass-panel";
-    piece.innerHTML = getBlockTable(pieceIdx);
-    piece.dataset.pieceIdx = pieceIdx;
+    if (!placedPieceIndices.includes(pieceIdx)) {
+      const piece = document.createElement("div");
+      piece.className = "jigsaw-piece glass-panel";
+      piece.innerHTML = getBlockTable(pieceIdx);
+      piece.dataset.pieceIdx = pieceIdx;
 
-    piece.onclick = () => {
-      deselectGeneric();
-      piece.classList.add("selected");
-      const gameArea = document.getElementById("tutorial-game-area");
-      if (gameArea) gameArea.classList.add("selection-active");
+      piece.onclick = (e) => {
+        e.stopPropagation(); // prevent slot click
+        deselectGeneric();
+        piece.classList.add("selected");
+        const gameArea = document.getElementById("tutorial-game-area");
+        if (gameArea) gameArea.classList.add("selection-active");
+      };
+      slot.appendChild(piece);
+    } else {
+      slot.classList.add("empty");
+    }
+
+    slot.onclick = () => {
+      const selected = document.querySelector(
+        ".jigsaw-piece.selected, .jigsaw-slot.selected",
+      );
+      if (selected) {
+        handleDrop(selected, slot);
+      }
     };
 
-    panel.appendChild(piece);
+    panel.appendChild(slot);
   });
 
   jigsawWrapper.appendChild(board);
@@ -585,79 +697,161 @@ function renderTutorialSudoku() {
   sudokuWrapper.className = "sudoku-tutorial-wrapper";
 
   const board = document.createElement("div");
-  board.className = "tutorial-sudoku-board";
-  let html = `<table class="sudoku-table tutorial">`;
-  for (let r = 0; r < 9; r++) {
-    html += "<tr>";
-    for (let c = 0; c < 9; c++) {
+  board.className = "tutorial-sudoku-board sudoku-mode";
+  board.id = "tutorial-sudoku-grid";
+
+  // Create 9 slots (3x3 grid of 3x3 grids)
+  for (let sIdx = 0; sIdx < 9; sIdx++) {
+    const slot = document.createElement("div");
+    slot.className = "sudoku-chunk-slot";
+    slot.dataset.slotIndex = sIdx;
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "mini-sudoku-grid";
+
+    for (let cIdx = 0; cIdx < 9; cIdx++) {
+      const cell = document.createElement("div");
+      cell.className = "mini-cell";
+
+      const r = Math.floor(sIdx / 3) * 3 + Math.floor(cIdx / 3);
+      const c = (sIdx % 3) * 3 + (cIdx % 3);
       const val = tutorialState.solution[r][c];
       const isEmpty = tutorialState.emptyCells.some(
         (cell) => cell.r === r && cell.c === c,
       );
+
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.dataset.correct = val;
+
       if (isEmpty) {
-        html += `<td class="empty" data-r="${r}" data-c="${c}" data-correct="${val}"></td>`;
+        cell.classList.add("empty", "user-filled"); // user-filled so we can edit it
       } else {
-        html += `<td class="given">${val}</td>`;
+        cell.classList.add("given", "has-number");
+        cell.textContent = val;
       }
+
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        selectTutorialCell(cell);
+      };
+
+      miniGrid.appendChild(cell);
     }
-    html += "</tr>";
+    slot.appendChild(miniGrid);
+    board.appendChild(slot);
   }
-  board.innerHTML = html + "</table>";
 
   const keypad = document.createElement("div");
-  keypad.className = "tutorial-keypad";
-  keypad.style.marginTop = "20px";
+  keypad.className = "tutorial-sudoku-controls";
+
+  // Actions Row (Undo, Pencil, Clear)
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "control-row secondary";
+
+  const btnUndo = document.createElement("button");
+  btnUndo.className = "btn-sudoku-action";
+  btnUndo.innerHTML = '<span class="icon">↩️</span>';
+  btnUndo.onclick = handleTutorialUndo;
+
+  const btnPencil = document.createElement("button");
+  btnPencil.id = "tutorial-pencil";
+  btnPencil.className = "btn-sudoku-action";
+  btnPencil.innerHTML = '<span class="icon">✏️</span>';
+  btnPencil.onclick = toggleTutorialPencilMode;
+
+  const btnClear = document.createElement("button");
+  btnClear.className = "btn-sudoku-action";
+  btnClear.innerHTML = '<span class="icon">🗑️</span>';
+  btnClear.onclick = clearTutorialSelectedCell;
+
+  actionsRow.appendChild(btnUndo);
+  actionsRow.appendChild(btnPencil);
+  actionsRow.appendChild(btnClear);
+
+  // Numbers Row
+  const numbersRow = document.createElement("div");
+  numbersRow.className = "control-row primary numbers";
+
   for (let i = 1; i <= 9; i++) {
     const btn = document.createElement("button");
     btn.textContent = i;
-    btn.className = "keypad-btn glass-panel";
-    btn.onclick = () => {
-      const sel = board.querySelector(".selected");
-      if (!sel) return;
+    btn.className = "sudoku-num";
+    btn.dataset.value = i;
 
-      const correctVal = parseInt(sel.dataset.correct);
-      if (i === correctVal) {
-        sel.textContent = i;
-        sel.classList.remove("selected", "empty");
-        sel.classList.add("correct");
-        if (board.querySelectorAll(".empty").length === 0) {
-          setTimeout(() => nextTutorialStage(), 1000);
-        }
+    btn.onclick = () => {
+      if (lockedNumber) {
+        if (lockedNumber === i.toString()) unlockTutorialNumber();
+        else lockTutorialNumber(i.toString());
       } else {
-        sel.classList.add("error-blink");
-        setTimeout(() => sel.classList.remove("error-blink"), 500);
+        handleTutorialNumberInput(i.toString());
       }
     };
-    keypad.appendChild(btn);
+
+    // Long Press to Lock
+    let pressTimer;
+    const startPress = () => {
+      pressTimer = setTimeout(() => lockTutorialNumber(i.toString()), 600);
+    };
+    const cancelPress = () => clearTimeout(pressTimer);
+    btn.onmousedown = startPress;
+    btn.ontouchstart = startPress;
+    btn.onmouseup = cancelPress;
+    btn.onmouseleave = cancelPress;
+    btn.ontouchend = cancelPress;
+
+    numbersRow.appendChild(btn);
   }
 
-  board.querySelectorAll("td.empty").forEach((td) => {
-    td.onclick = () => {
-      board
-        .querySelectorAll("td")
-        .forEach((t) => t.classList.remove("selected"));
-      td.classList.add("selected");
-    };
-  });
+  keypad.appendChild(actionsRow);
+  keypad.appendChild(numbersRow);
+
+  board.onclick = () => {
+    deselectTutorialCell();
+  };
 
   sudokuWrapper.appendChild(board);
   sudokuWrapper.appendChild(keypad);
   container.appendChild(sudokuWrapper);
+
+  // Initial UI sync
+  updateTutorialKeypadHighlights();
 }
 
-// --- STAGE 4: PEAKS ---
+// --- STAGE 4: PEAKS & VALLEYS ---
 function renderTutorialPeaks() {
   const container = document.getElementById("tutorial-board-container");
   container.innerHTML = "";
 
   const board = document.createElement("div");
-  board.className = "tutorial-sudoku-board";
-  let html = `<table class="sudoku-table tutorial peaks">`;
+  board.className = "tutorial-sudoku-board"; // Uses grid layout
 
-  for (let r = 0; r < 9; r++) {
-    html += "<tr>";
-    for (let c = 0; c < 9; c++) {
+  // Render 9 chunks
+  for (let chunkIndex = 0; chunkIndex < 9; chunkIndex++) {
+    const chunk = document.createElement("div");
+    chunk.className = "sudoku-chunk-slot";
+    chunk.dataset.slotIndex = chunkIndex;
+
+    const chunkGrid = document.createElement("div");
+    chunkGrid.className = "mini-sudoku-grid";
+
+    // 9 cells per chunk
+    for (let i = 0; i < 9; i++) {
+      const r = Math.floor(chunkIndex / 3) * 3 + Math.floor(i / 3);
+      const c = (chunkIndex % 3) * 3 + (i % 3);
       const val = tutorialState.solution[r][c];
+
+      const cell = document.createElement("div");
+      cell.className = "mini-cell user-filled"; // Always filled in Peaks mode
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      // Wrap number in span for animation (matches daily game)
+      const numSpan = document.createElement("span");
+      numSpan.className = "curr-number";
+      numSpan.textContent = val;
+      cell.appendChild(numSpan);
+
       const isPendingPeak = tutorialState.peaksRemaining.some(
         (p) => p.r === r && p.c === c,
       );
@@ -665,50 +859,110 @@ function renderTutorialPeaks() {
         (v) => v.r === r && v.c === c,
       );
 
-      // Mark all OTHER peaks and valleys automatically
-      let cls = "";
-      if (!isPendingPeak && !isPendingValley) {
-        // Simple logic for dummy peaks/valleys to show "pre-marked" state
-        if ((r + c) % 5 === 0) cls = "cell-peak";
-        else if ((r + c) % 7 === 0) cls = "cell-valley";
-      }
-
-      html += `<td class="${cls}" data-r="${r}" data-c="${c}">${val}</td>`;
-    }
-    html += "</tr>";
-  }
-  board.innerHTML = html + "</table>";
-
-  board.querySelectorAll("td").forEach((td) => {
-    td.onclick = () => {
-      const r = parseInt(td.dataset.r);
-      const c = parseInt(td.dataset.c);
-
-      const pIdx = tutorialState.peaksRemaining.findIndex(
-        (p) => p.r === r && p.c === c,
-      );
-      const vIdx = tutorialState.valleysRemaining.findIndex(
+      // Check if it should be pre-marked (Found)
+      // It is found if it is in allPeaks/allValleys BUT NOT in Remaining
+      const isPeak = tutorialState.allPeaks.some((p) => p.r === r && p.c === c);
+      const isValley = tutorialState.allValleys.some(
         (v) => v.r === r && v.c === c,
       );
 
-      if (pIdx !== -1) {
-        td.classList.add("cell-peak");
-        tutorialState.peaksRemaining.splice(pIdx, 1);
-      } else if (vIdx !== -1) {
-        td.classList.add("cell-valley");
-        tutorialState.valleysRemaining.splice(vIdx, 1);
+      if (isPeak && !isPendingPeak) {
+        cell.classList.add("peak-found");
+        cell.title = "Pico";
+      } else if (isValley && !isPendingValley) {
+        cell.classList.add("valley-found");
+        cell.title = "Valle";
       }
 
-      if (
-        tutorialState.peaksRemaining.length === 0 &&
-        tutorialState.valleysRemaining.length === 0
-      ) {
-        setTimeout(() => nextTutorialStage(), 1000);
-      }
-    };
-  });
+      // Add click listener
+      cell.onclick = () => handleTutorialPeakClick(cell, r, c);
+
+      chunkGrid.appendChild(cell);
+    }
+    chunk.appendChild(chunkGrid);
+    board.appendChild(chunk);
+  }
 
   container.appendChild(board);
+
+  // Add Stats Counter (Matches Daily Game)
+  const statsDiv = document.createElement("div");
+  statsDiv.className = "peaks-stats";
+  statsDiv.id = "tutorial-peaks-stats";
+  statsDiv.innerHTML = `
+    <span class="remaining-label">Faltan:</span>
+    <span id="tutorial-peaks-remaining">0</span>
+    <span class="separator">|</span>
+    <span class="error-label">Errores:</span>
+    <span id="tutorial-peaks-errors">0</span>
+  `;
+  container.appendChild(statsDiv);
+
+  updateTutorialPeaksCounters();
+}
+
+function updateTutorialPeaksCounters() {
+  const remEl = document.getElementById("tutorial-peaks-remaining");
+  const errEl = document.getElementById("tutorial-peaks-errors");
+
+  if (remEl) {
+    const remaining =
+      tutorialState.peaksRemaining.length +
+      tutorialState.valleysRemaining.length;
+    remEl.textContent = remaining;
+  }
+
+  if (errEl) {
+    errEl.textContent = tutorialState.peaksErrors || 0;
+  }
+}
+
+function handleTutorialPeakClick(cell, r, c) {
+  // Check if it's a pending target
+  const pIdx = tutorialState.peaksRemaining.findIndex(
+    (p) => p.r === r && p.c === c,
+  );
+  const vIdx = tutorialState.valleysRemaining.findIndex(
+    (v) => v.r === r && v.c === c,
+  );
+
+  let found = false;
+
+  if (pIdx !== -1) {
+    cell.classList.add("peak-found");
+    tutorialState.peaksRemaining.splice(pIdx, 1);
+    found = true;
+  } else if (vIdx !== -1) {
+    cell.classList.add("valley-found");
+    tutorialState.valleysRemaining.splice(vIdx, 1);
+    found = true;
+  } else {
+    // Error shake if clicking a non-target or already found one
+    if (
+      !cell.classList.contains("peak-found") &&
+      !cell.classList.contains("valley-found")
+    ) {
+      if (!tutorialState.peaksErrors) tutorialState.peaksErrors = 0;
+      tutorialState.peaksErrors++;
+      updateTutorialPeaksCounters();
+
+      const numSpan = cell.querySelector(".curr-number");
+      if (numSpan) {
+        numSpan.classList.add("error-shake");
+        setTimeout(() => numSpan.classList.remove("error-shake"), 500);
+      }
+    }
+  }
+
+  if (found) {
+    updateTutorialPeaksCounters();
+    if (
+      tutorialState.peaksRemaining.length === 0 &&
+      tutorialState.valleysRemaining.length === 0
+    ) {
+      setTimeout(() => nextTutorialStage(), 1000);
+    }
+  }
 }
 
 // --- STAGE 5: SEARCH ---
@@ -911,7 +1165,9 @@ function handlePointerMove(e) {
   const dropTarget = elements.find(
     (el) =>
       el.classList.contains("jigsaw-slot") ||
-      el.classList.contains("jigsaw-piece"),
+      el.classList.contains("jigsaw-piece") ||
+      el.classList.contains("jigsaw-panel-slot") ||
+      el.classList.contains("tutorial-jigsaw-panel"),
   );
 
   document
@@ -935,19 +1191,27 @@ function startDragging(e) {
     return;
   }
 
+  // Wrap the clone in a container to maintain Container Query context
+  const dragWrapper = document.createElement("div");
+  dragWrapper.className = "dragging-clone";
+
   dragClone = content.cloneNode(true);
-  dragClone.classList.add("dragging-clone");
+  dragClone.classList.add("mini-sudoku-grid"); // Keep original grid class
+  dragWrapper.appendChild(dragClone);
 
   const rect = target.getBoundingClientRect();
-  dragClone.style.width = `${rect.width}px`;
-  dragClone.style.height = `${rect.height}px`;
-  dragClone.style.left = `${rect.left}px`;
-  dragClone.style.top = `${rect.top}px`;
+  dragWrapper.style.width = `${rect.width}px`;
+  dragWrapper.style.height = `${rect.height}px`;
+  dragWrapper.style.left = `${rect.left}px`;
+  dragWrapper.style.top = `${rect.top}px`;
 
-  document.body.appendChild(dragClone);
+  document.body.appendChild(dragWrapper);
 
   dragOffsetX = rect.width / 2;
   dragOffsetY = rect.height / 2;
+
+  // Assign to global dragClone for position updates
+  dragClone = dragWrapper;
 
   content.style.opacity = "0";
   updateDragPosition(e.clientX, e.clientY);
@@ -963,7 +1227,9 @@ function handlePointerUp(e) {
   const dropTarget = elements.find(
     (el) =>
       el.classList.contains("jigsaw-slot") ||
-      el.classList.contains("jigsaw-piece"),
+      el.classList.contains("jigsaw-piece") ||
+      el.classList.contains("jigsaw-panel-slot") ||
+      el.classList.contains("tutorial-jigsaw-panel"),
   );
 
   const sourceContent = selectedPieceElement.querySelector(".mini-sudoku-grid");
@@ -1039,7 +1305,7 @@ function handleDrop(source, target) {
       tutorialState.jigsawSlots[sourceIdx] = targetPieceIdx;
     }
   } else {
-    // Drop back to panel (only if source was board)
+    // Drop back to panel (anywhere in panel or specific slot)
     if (isSourceBoard) {
       tutorialState.jigsawSlots[sourceIdx] = null;
     }
@@ -1122,4 +1388,488 @@ function checkJigsawBoardConflicts() {
   }
 
   return conflicts;
+}
+
+// --- SUDOKU TUTORIAL HELPERS ---
+function selectTutorialCell(cell, skipPaint = false) {
+  // If clicking a 'given' number, deselect but highlight matches
+  if (cell.classList.contains("given")) {
+    deselectTutorialCell();
+    const val = cell.textContent.trim();
+    highlightSimilarTutorialCells(val);
+    return;
+  }
+
+  if (selectedCell) selectedCell.classList.remove("selected-cell");
+
+  // PAINT MODE: If we have a locked number, apply it immediately!
+  if (lockedNumber && !skipPaint) {
+    if (selectedCell) selectedCell.classList.remove("selected-cell");
+    selectedCell = cell;
+    selectedCell.classList.add("selected-cell");
+    handleTutorialNumberInput(lockedNumber);
+    return;
+  }
+
+  if (selectedCell) {
+    selectedCell.classList.remove("selected-cell");
+  }
+
+  selectedCell = cell;
+  selectedCell.classList.add("selected-cell");
+  updateTutorialKeypadHighlights();
+
+  // Highlight similar numbers
+  const val = cell.textContent.trim();
+  if (val && !cell.classList.contains("has-notes")) {
+    highlightSimilarTutorialCells(val);
+  } else {
+    highlightSimilarTutorialCells(null);
+  }
+}
+
+function deselectTutorialCell() {
+  if (selectedCell) {
+    selectedCell.classList.remove("selected-cell");
+    selectedCell = null;
+    updateTutorialKeypadHighlights();
+    highlightSimilarTutorialCells(null);
+  }
+}
+
+function handleTutorialNumberInput(num) {
+  if (!selectedCell) return;
+  if (selectedCell.classList.contains("given")) return;
+
+  // KEY DISABLED CHECK (Note Constraint)
+  if (!tutorialPencilMode && selectedCell.classList.contains("has-notes")) {
+    const notesGrid = selectedCell.querySelector(".notes-grid");
+    if (notesGrid) {
+      const slot = notesGrid.querySelector(`[data-note="${num}"]`);
+      const allNoteSlots = Array.from(notesGrid.querySelectorAll(".note-slot"));
+      const visibleNotesCount = allNoteSlots.filter(
+        (n) => n.textContent,
+      ).length;
+
+      // Enforce constraint only if there are visible notes
+      if (visibleNotesCount > 0 && (!slot || !slot.textContent)) {
+        return; // Block input
+      }
+    }
+  }
+
+  pushTutorialAction(selectedCell);
+
+  if (tutorialPencilMode) {
+    toggleTutorialNote(selectedCell, num);
+  } else {
+    // If clicking a number that is already there, clear it? Or just replace.
+    // Daily game: Replaces or Clears? Replaces.
+    selectedCell.textContent = num;
+    selectedCell.classList.add("user-filled");
+    selectedCell.classList.remove("has-notes", "error");
+
+    // Clear notes grid if any
+    const notesGrid = selectedCell.querySelector(".notes-grid");
+    if (notesGrid) notesGrid.remove();
+
+    updateTutorialKeypadHighlights();
+    highlightSimilarTutorialCells(num);
+    validateTutorialBoard();
+  }
+}
+
+function toggleTutorialPencilMode() {
+  tutorialPencilMode = !tutorialPencilMode;
+  const btn = document.getElementById("tutorial-pencil");
+  if (btn) btn.classList.toggle("active", tutorialPencilMode);
+  updateTutorialKeypadHighlights();
+}
+
+function clearTutorialSelectedCell() {
+  if (!selectedCell || selectedCell.classList.contains("given")) return;
+  pushTutorialAction(selectedCell);
+  selectedCell.textContent = "";
+  selectedCell.classList.remove("user-filled", "has-notes", "error");
+  const notesGrid = selectedCell.querySelector(".notes-grid");
+  if (notesGrid) notesGrid.remove();
+
+  updateTutorialKeypadHighlights();
+  highlightSimilarTutorialCells(null);
+  validateTutorialBoard();
+}
+
+function pushTutorialAction(cell) {
+  const hasNotes = !!cell.querySelector(".notes-grid");
+  undoStack.push({
+    cell,
+    previousText: hasNotes ? "" : cell.textContent,
+    previousClasses: [...cell.classList],
+    previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
+  });
+}
+
+function handleTutorialUndo() {
+  if (undoStack.length === 0) return;
+  const action = undoStack.pop();
+  const cell = action.cell;
+
+  cell.textContent = action.previousText;
+  cell.className = "mini-cell";
+  action.previousClasses.forEach((c) => {
+    if (c !== "selected-cell") cell.classList.add(c);
+  });
+
+  const existingNotes = cell.querySelector(".notes-grid");
+  if (existingNotes) existingNotes.remove();
+  if (action.previousNotes) cell.appendChild(action.previousNotes);
+
+  selectTutorialCell(cell, true);
+  validateTutorialBoard();
+}
+
+function lockTutorialNumber(num) {
+  lockedNumber = num;
+  document
+    .querySelectorAll(".tutorial-sudoku-controls .sudoku-num")
+    .forEach((btn) => {
+      btn.classList.toggle("locked-num", btn.dataset.value === num);
+    });
+  highlightSimilarTutorialCells(num);
+
+  if (selectedCell && !selectedCell.classList.contains("given")) {
+    handleTutorialNumberInput(num);
+  }
+}
+
+function unlockTutorialNumber() {
+  lockedNumber = null;
+  document
+    .querySelectorAll(".tutorial-sudoku-controls .sudoku-num")
+    .forEach((btn) => {
+      btn.classList.remove("locked-num");
+    });
+  if (selectedCell) {
+    const val = selectedCell.textContent.trim();
+    highlightSimilarTutorialCells(
+      val && !selectedCell.classList.contains("has-notes") ? val : null,
+    );
+  } else {
+    highlightSimilarTutorialCells(null);
+  }
+}
+
+function updateTutorialKeypadHighlights() {
+  const board = document.getElementById("tutorial-sudoku-grid");
+  if (!board) return;
+
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
+  const globalCounts = {};
+  board.querySelectorAll(".mini-cell").forEach((c) => {
+    const v = c.textContent.trim();
+    if (v && !c.classList.contains("has-notes")) {
+      globalCounts[v] = (globalCounts[v] || 0) + 1;
+    }
+  });
+
+  document
+    .querySelectorAll(".tutorial-sudoku-controls .sudoku-num")
+    .forEach((btn) => {
+      const val = btn.dataset.value;
+      btn.classList.remove("key-completed", "key-present", "key-disabled");
+      btn.title = ""; // Reset tooltip
+
+      if (globalCounts[val] >= 9) {
+        btn.classList.add("key-completed");
+        btn.title = t.sudoku_key_completed || "Number completed!";
+      }
+
+      if (selectedCell) {
+        const cellVal = selectedCell.textContent.trim();
+        const hasNotes = selectedCell.classList.contains("has-notes");
+
+        if (!hasNotes && cellVal === val) {
+          btn.classList.add("key-present");
+        }
+
+        // Note presence check
+        const notesGrid = selectedCell.querySelector(".notes-grid");
+        let noteExists = false;
+        let visibleNotesCount = 0;
+
+        if (notesGrid) {
+          const slot = notesGrid.querySelector(`[data-note="${val}"]`);
+          if (slot && slot.textContent) noteExists = true;
+
+          visibleNotesCount = Array.from(
+            notesGrid.querySelectorAll(".note-slot"),
+          ).filter((n) => n.textContent).length;
+        }
+
+        if (noteExists) btn.classList.add("key-present");
+
+        // KEY DISABLED LOGIC: If cell has notes and this num is NOT among them (and notes are visible)
+        if (
+          !tutorialPencilMode &&
+          hasNotes &&
+          !noteExists &&
+          visibleNotesCount > 0
+        ) {
+          btn.classList.add("key-disabled");
+        }
+      }
+    });
+}
+
+function highlightSimilarTutorialCells(val) {
+  const board = document.getElementById("tutorial-sudoku-grid");
+  if (!board) return;
+  board
+    .querySelectorAll(".highlight-match")
+    .forEach((el) => el.classList.remove("highlight-match"));
+  if (!val) return;
+  board.querySelectorAll(".mini-cell").forEach((cell) => {
+    if (cell.textContent === val && !cell.classList.contains("has-notes")) {
+      cell.classList.add("highlight-match");
+    }
+  });
+}
+
+function toggleTutorialNote(cell, num) {
+  const wasUserFilled = cell.classList.contains("user-filled");
+  const existingVal = wasUserFilled ? cell.textContent.trim() : "";
+  const hasNotes = cell.classList.contains("has-notes");
+
+  // Parity Change: capture main number transition BEFORE clearing content
+  cell.classList.add("has-notes");
+  cell.classList.remove("user-filled", "error");
+
+  let notesGrid = cell.querySelector(".notes-grid");
+  if (!notesGrid) {
+    cell.textContent = ""; // Clear main ONLY if no grid exists yet
+    notesGrid = document.createElement("div");
+    notesGrid.className = "notes-grid";
+    for (let i = 1; i <= 9; i++) {
+      const slot = document.createElement("div");
+      slot.classList.add("note-slot");
+      slot.dataset.note = i;
+      slot.dataset.userActive = "false";
+      notesGrid.appendChild(slot);
+    }
+    cell.appendChild(notesGrid);
+  }
+
+  // Conversion logic (High Fidelity Parity)
+  let convertedThisTurn = false;
+  if (wasUserFilled && existingVal && !hasNotes) {
+    const oldSlot = notesGrid.querySelector(`[data-note="${existingVal}"]`);
+    if (oldSlot) {
+      oldSlot.dataset.userActive = "true";
+      oldSlot.textContent = existingVal;
+      if (existingVal === num) convertedThisTurn = true;
+    }
+  }
+
+  const slot = notesGrid.querySelector(`[data-note="${num}"]`);
+  if (slot) {
+    if (convertedThisTurn) {
+      // Keep it active
+    } else {
+      const isVisible = !!slot.textContent;
+      const shouldBeVisible = !isVisible;
+      slot.dataset.userActive = shouldBeVisible ? "true" : "false";
+
+      if (shouldBeVisible) {
+        const coords = getTutorialCellCoordinates(cell);
+        const conflictCount = getTutorialConflictCount(coords, num);
+        slot.dataset.pinnedConflictCount =
+          conflictCount > 0 ? conflictCount : "0";
+      } else {
+        slot.dataset.pinnedConflictCount = "0";
+      }
+      slot.textContent = shouldBeVisible ? num : "";
+
+      // Fidelity Logic: Only promote if we REMOVED a note (matches Daily Jigsudo)
+      if (!shouldBeVisible) {
+        promoteTutorialSingleCandidatesGlobal();
+      }
+    }
+  }
+
+  updateTutorialKeypadHighlights();
+  // REMOVED updateTutorialNoteVisibility() to prevent premature suppression/promotion
+}
+
+let isTutorialPromoting = false;
+function promoteTutorialSingleCandidatesGlobal() {
+  if (isTutorialPromoting) return;
+  isTutorialPromoting = true;
+
+  const board = document.getElementById("tutorial-sudoku-grid");
+  if (!board) {
+    isTutorialPromoting = false;
+    return;
+  }
+
+  const cellsToPromote = [];
+  board.querySelectorAll(".mini-cell").forEach((cell) => {
+    if (!cell.classList.contains("has-notes")) return;
+
+    const notesGrid = cell.querySelector(".notes-grid");
+    if (!notesGrid) return;
+
+    const allNoteSlots = Array.from(notesGrid.querySelectorAll(".note-slot"));
+    const visibleNotes = allNoteSlots.filter((n) => n.textContent !== "");
+    const userActiveNotes = allNoteSlots.filter(
+      (n) => n.dataset.userActive === "true",
+    );
+
+    // Promote ONLY if it was reduced from multiple candidates to one by board logic.
+    if (visibleNotes.length === 1 && userActiveNotes.length > 1) {
+      cellsToPromote.push({
+        cell: cell,
+        num: visibleNotes[0].dataset.note,
+      });
+    }
+  });
+
+  cellsToPromote.forEach((action) => {
+    if (action.cell.classList.contains("has-notes")) {
+      selectTutorialCell(action.cell, true);
+      const wasPencil = tutorialPencilMode;
+      tutorialPencilMode = false;
+      handleTutorialNumberInput(action.num);
+      tutorialPencilMode = wasPencil;
+    }
+  });
+
+  isTutorialPromoting = false;
+}
+
+function getTutorialCellCoordinates(cell) {
+  const slot = cell.closest(".sudoku-chunk-slot");
+  const slotIndex = parseInt(slot.dataset.slotIndex);
+  const cells = Array.from(slot.querySelectorAll(".mini-cell"));
+  const localIndex = cells.indexOf(cell);
+
+  const row = Math.floor(slotIndex / 3) * 3 + Math.floor(localIndex / 3);
+  const col = (slotIndex % 3) * 3 + (localIndex % 3);
+
+  return { slotIndex, row, col };
+}
+
+function getTutorialConflictCount(coords, num) {
+  const board = document.getElementById("tutorial-sudoku-grid");
+  const slots = Array.from(board.querySelectorAll(".sudoku-chunk-slot"));
+  let count = 0;
+
+  slots.forEach((slot, sIdx) => {
+    const cells = slot.querySelectorAll(".mini-cell");
+    cells.forEach((cell, lIdx) => {
+      const val = cell.textContent.trim();
+      if (!val || cell.classList.contains("has-notes")) return;
+
+      if (val === num) {
+        const r = Math.floor(sIdx / 3) * 3 + Math.floor(lIdx / 3);
+        const c = (sIdx % 3) * 3 + (lIdx % 3);
+
+        if (r === coords.row || c === coords.col || sIdx === coords.slotIndex) {
+          count++;
+        }
+      }
+    });
+  });
+  return count;
+}
+
+function updateTutorialNoteVisibility() {
+  const board = document.getElementById("tutorial-sudoku-grid");
+  if (!board) return;
+
+  const slots = Array.from(board.querySelectorAll(".sudoku-chunk-slot"));
+  slots.forEach((slot, slotIndex) => {
+    const cells = slot.querySelectorAll(".mini-cell");
+    cells.forEach((cell, localIndex) => {
+      if (!cell.classList.contains("has-notes")) return;
+
+      const notesGrid = cell.querySelector(".notes-grid");
+      if (!notesGrid) return;
+
+      const r = Math.floor(slotIndex / 3) * 3 + Math.floor(localIndex / 3);
+      const c = (slotIndex % 3) * 3 + (localIndex % 3);
+      const coords = { slotIndex, row: r, col: c };
+
+      const noteSlots = notesGrid.querySelectorAll(".note-slot");
+      noteSlots.forEach((nSlot) => {
+        const num = nSlot.dataset.note;
+        const userWants = nSlot.dataset.userActive === "true";
+
+        if (!userWants) {
+          nSlot.textContent = "";
+          return;
+        }
+
+        const currentConflictCount = getTutorialConflictCount(coords, num);
+        if (currentConflictCount > 0) {
+          const pinnedCount = parseInt(nSlot.dataset.pinnedConflictCount) || 0;
+          if (currentConflictCount <= pinnedCount) {
+            nSlot.textContent = num;
+          } else {
+            nSlot.textContent = "";
+            nSlot.dataset.pinnedConflictCount = "0";
+          }
+        } else {
+          nSlot.dataset.pinnedConflictCount = "0";
+          nSlot.textContent = num;
+        }
+      });
+    });
+  });
+
+  // Fidelity Logic: Trigger Promotion after note visibility pass
+  promoteTutorialSingleCandidatesGlobal();
+}
+
+function validateTutorialBoard() {
+  const board = document.getElementById("tutorial-sudoku-grid");
+  if (!board) return;
+
+  const cells = Array.from(board.querySelectorAll(".mini-cell"));
+  cells.forEach((c) => c.classList.remove("error"));
+
+  // Check if Full
+  let isFull = true;
+  cells.forEach((cell) => {
+    if (
+      cell.textContent.trim() === "" ||
+      cell.classList.contains("has-notes")
+    ) {
+      isFull = false;
+    }
+  });
+
+  if (!isFull) {
+    updateTutorialNoteVisibility();
+    return;
+  }
+
+  // Board is FULL: Check against solution (High-parity daily logic)
+  let errorCount = 0;
+  cells.forEach((cell) => {
+    const val = cell.textContent.trim();
+    const correct = cell.dataset.correct;
+    // Given numbers are in dataset too but they can't be wrong (unless logic failed)
+    if (val !== correct) {
+      if (cell.classList.contains("user-filled")) {
+        cell.classList.add("error");
+      }
+      errorCount++;
+    }
+  });
+
+  if (errorCount === 0) {
+    setTimeout(() => nextTutorialStage(), 1000);
+  }
 }

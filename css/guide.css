@@ -174,6 +174,100 @@ body.dark-mode .guide-selector {
   gap: 15px;
 }
 
+.sudoku-tutorial-wrapper {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 30px !important;
+  width: 100% !important;
+  max-width: 900px !important;
+  margin: 0 auto !important;
+}
+
+.tutorial-sudoku-board {
+  flex: 0 0 auto !important;
+  width: min(400px, 50vw) !important; /* Slightly smaller board */
+  height: auto !important;
+  aspect-ratio: 1/1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+
+  /* Use Variables for Dark Mode Parity */
+  background: var(--sudoku-grid-line) !important;
+  border: 4px solid var(--bg-secondary) !important;
+  gap: 2px !important;
+
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Remove hardcoded overrides */
+
+.mini-sudoku-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.tutorial-sudoku-controls {
+  flex: 0 0 160px !important; /* Narrower keypad */
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding-top: 5px !important;
+}
+
+/* Keypad Grid for Side Layout */
+.tutorial-sudoku-controls .control-row.primary.numbers {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 6px !important;
+}
+
+.tutorial-sudoku-controls .sudoku-num {
+  width: 100% !important;
+  aspect-ratio: 1/1 !important;
+  height: auto !important;
+  font-size: 1.2rem !important; /* Smaller text */
+  border-radius: 10px !important;
+}
+
+.tutorial-sudoku-controls .control-row.secondary {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 6px !important;
+}
+
+.tutorial-sudoku-controls .btn-sudoku-action {
+  aspect-ratio: 1/1 !important;
+  height: auto !important;
+  width: 100% !important;
+}
+
+.tutorial-sudoku-board .mini-cell.user-filled {
+  color: var(--accent-color) !important;
+  font-weight: 900 !important;
+}
+
+/* Responsive: Stack on mobile */
+@media (max-width: 768px) {
+  .sudoku-tutorial-wrapper {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 20px !important;
+  }
+  .tutorial-sudoku-board {
+    width: 90vw !important;
+  }
+  .tutorial-sudoku-controls {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 320px !important;
+  }
+}
+
 .tutorial-title-group {
   flex: 1;
   display: flex;
@@ -443,34 +537,16 @@ body.dark-mode .tutorial-board-container .memory-card-back {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  width: min(320px, 95vw); /* Align with daily scale */
+  width: min(300px, 80vw); /* Reduced to leave more space on sides */
   aspect-ratio: 1/1;
-  gap: 4px; /* Daily gap */
-  background: var(--bg-secondary); /* Daily background */
-  padding: 4px; /* Daily padding */
-  border-radius: 8px; /* Daily board radius */
+  gap: 4px;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: 8px;
   border: none;
-  margin: 0 auto 30px auto;
+  margin: 0 auto 20px auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
-}
-
-.jigsaw-slot {
-  width: 100%;
-  height: 100%;
-  background: var(--bg-tertiary); /* Daily slot background */
-  border-radius: 10px; /* Daily slot radius */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: none;
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
-}
-
-.jigsaw-slot:not(.filled) .slot-placeholder {
-  display: none;
 }
 
 .tutorial-jigsaw-panel {
@@ -478,7 +554,13 @@ body.dark-mode .tutorial-board-container .memory-card-back {
   justify-content: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 10px;
+  min-height: 100px; /* Ensure it's a generous drop target */
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  width: 100%;
 }
 
 /* Jigsaw Interaction & Drag-Drop */
@@ -492,22 +574,43 @@ body.dark-mode .tutorial-board-container .memory-card-back {
   z-index: 9999;
   opacity: 0.9;
   transform: scale(1.1);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: block;
+  overflow: hidden;
   transition:
     width 0.3s ease,
     height 0.3s ease,
     transform 0.3s ease;
 }
 
-.jigsaw-slot.drop-hover {
+.dragging-clone .mini-sudoku-grid {
+  width: 100% !important;
+  height: 100% !important;
+  container-type: size !important; /* Fix: Numbers resolve cqw correctly inside wrapper */
+}
+
+.jigsaw-slot.drop-hover,
+.jigsaw-panel-slot.drop-hover {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 2px solid var(--primary-color, #fbbf24) !important;
   box-shadow: 0 0 15px var(--primary-color, #fbbf24);
 }
 
-.tutorial-jigsaw-panel .jigsaw-piece.drop-hover {
-  border-color: #fff !important;
-  box-shadow: 0 0 15px #fff;
+.jigsaw-panel-slot {
+  width: 74px; /* slightly larger than piece (70px + 2px borders) */
+  height: 74px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-sizing: border-box;
+}
+
+.jigsaw-panel-slot.empty {
+  border: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 .jigsaw-piece {
@@ -525,6 +628,7 @@ body.dark-mode .tutorial-board-container .memory-card-back {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 0; /* Changed from default margin to fit in slot */
 }
 
 body.dark-mode .jigsaw-piece {
@@ -573,57 +677,40 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
 }
 
 /* Sudoku Tutorial */
-.sudoku-table.tutorial {
-  border: 4px solid var(--bg-secondary);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--bg-secondary);
+/* Peaks & Valleys Tutorial Styles */
+
+.peak-found {
+  background-color: rgba(251, 191, 36, 0.3) !important; /* Amber-400 alpha */
+  box-shadow: inset 0 0 10px #fbbf24 !important;
+  color: var(--card-text) !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease;
 }
 
-.sudoku-table.tutorial td {
-  width: 45px;
-  height: 45px;
-  background: white;
-  border-right: 1px solid var(--sudoku-grid-line);
-  border-bottom: 1px solid var(--sudoku-grid-line);
-  text-align: center;
-  vertical-align: middle;
-  font-family: "Outfit", sans-serif;
-  font-weight: 700;
-  font-size: 1.2rem;
-  color: #333;
+.valley-found {
+  background-color: rgba(33, 150, 243, 0.3) !important; /* Blue-500 alpha */
+  box-shadow: inset 0 0 10px #2196f3 !important;
+  color: var(--card-text) !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease;
 }
 
-body.dark-mode .sudoku-table.tutorial td {
-  background: #2a2a2a;
-  color: #eee;
+.error-shake {
+  animation: errorShake 0.4s ease-in-out;
+  color: #ef4444 !important; /* Red-500 */
 }
 
-.sudoku-table.tutorial td:nth-child(3n) {
-  border-right: 3px solid var(--sudoku-grid-line);
-}
-.sudoku-table.tutorial tr:nth-child(3n) td {
-  border-bottom: 3px solid var(--sudoku-grid-line);
-}
-.sudoku-table.tutorial td:last-child {
-  border-right: none;
-}
-.sudoku-table.tutorial tr:last-child td {
-  border-bottom: none;
-}
-
-.sudoku-table.tutorial td.empty {
-  background: rgba(var(--accent-rgb), 0.05);
-}
-
-.sudoku-table.tutorial td.selected {
-  outline: 2px solid var(--primary-color, #fbbf24);
-  background: rgba(var(--primary-rgb), 0.1);
-}
-
-.sudoku-table.tutorial td.correct {
-  color: var(--primary-color, #fbbf24);
-  font-weight: 900;
+@keyframes errorShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 /* Interaction Feedback */
@@ -652,13 +739,70 @@ body.dark-mode .sudoku-table.tutorial td {
   padding: 40px;
   animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+/* Peaks & Valleys Tutorial Styles */
 
-.cell-peak {
-  background-color: rgba(251, 191, 36, 0.4) !important;
-  color: #fff;
+/* Override user-filled color for Peaks to be neutral (matches daily game) */
+.tutorial-sudoku-board .mini-cell.user-filled {
+  color: var(--card-text) !important;
+  font-weight: 700 !important; /* Reset to normal weight vs 900 */
 }
 
-.cell-valley {
-  background-color: rgba(96, 165, 250, 0.4) !important;
-  color: #fff;
+.peak-found {
+  background-color: rgba(251, 191, 36, 0.3) !important; /* Amber-400 alpha */
+  box-shadow: inset 0 0 10px #fbbf24 !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease;
+}
+
+.peak-found .curr-number {
+  color: var(--card-text) !important; /* Ensure visibility */
+}
+
+.valley-found {
+  background-color: rgba(33, 150, 243, 0.3) !important; /* Blue-500 alpha */
+  box-shadow: inset 0 0 10px #2196f3 !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease;
+}
+
+.valley-found .curr-number {
+  color: var(--card-text) !important;
+}
+
+.error-shake {
+  animation: errorShake 0.4s ease-in-out;
+  color: #ef4444 !important; /* Red-500 */
+  display: inline-block; /* Required for transform */
+}
+
+@keyframes errorShake {
+  0%,
+  100% {
+    transform: translateX(0);
+    color: var(--card-text);
+  }
+  25% {
+    transform: translateX(-5px);
+    color: #ef4444;
+  }
+  75% {
+    transform: translateX(5px);
+    color: #ef4444;
+  }
+}
+/* Fix for "Thick Lines" in Sudoku Tutorial */
+/* The daily game uses borders, but the tutorial uses gaps. */
+/* We must disable the inherited borders for the tutorial to avoid double thickness */
+
+.tutorial-sudoku-board .sudoku-chunk-slot {
+  border: none !important; /* Disable inherited daily game borders */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure mini-grids fill the slot completely */
+.tutorial-sudoku-board .mini-sudoku-grid {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
 }

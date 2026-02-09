@@ -158,16 +158,24 @@
 /* Drag & Drop Styles */
 .dragging-clone {
   position: fixed;
-  pointer-events: none; /* Let clicks pass through to detect drop target */
+  pointer-events: none;
   z-index: 9999;
   opacity: 0.9;
   transform: scale(1.1);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  /* Enable transition for size (shrink effect) but NOT for position (lag) */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  /* Use explicit container sizing for the inner grid */
+  display: block;
+  overflow: hidden;
   transition:
     width 0.4s ease,
     height 0.4s ease,
     transform 0.4s ease;
+}
+
+.dragging-clone .mini-sudoku-grid {
+  width: 100% !important;
+  height: 100% !important;
+  container-type: size !important; /* Ensure internal numbers resolve cqw correctly */
 }
 
 /* Override Selected State during Drag (No glow/scale on the empty hole) */
