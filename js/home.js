@@ -499,9 +499,7 @@ export function initHome() {
       // 1. Close Profile
       hideProfile();
 
-      // 2. Reset to Home (if in Game/Profile)
       const menu = document.getElementById("menu-content");
-      const gameSection = document.getElementById("game-section");
       const profileSection = document.getElementById("profile-section");
       const historySection = document.getElementById("history-section");
 
@@ -512,10 +510,9 @@ export function initHome() {
         (!historySection || historySection.classList.contains("hidden"));
 
       if (menu) menu.classList.remove("hidden");
-      if (gameSection) gameSection.classList.add("hidden");
-      if (historySection) historySection.classList.add("hidden");
+      // gameSection, historySection, profileSection visibility will be handled by their respective routers.
 
-      // 3. Reset URL
+      // 3. Reset URL (This triggers the routers)
       window.location.hash = "";
 
       // 4. Update Header Info

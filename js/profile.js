@@ -153,16 +153,19 @@ function _hideProfileUI() {
   }
   const section = document.getElementById("profile-section");
   const menu = document.getElementById("menu-content");
-  // const appHeader = document.querySelector(".main-header");
 
   if (section) section.classList.add("hidden");
   document.body.classList.remove("profile-active");
-  document.body.classList.add("home-active"); // Return to home active if we are hiding profile
 
-  // Restore Home (Or Game? Simple state for now: return to Home)
-  // Ideally we track previous state, but Home is safe default.
-  if (menu) menu.classList.remove("hidden");
-  // if (appHeader) appHeader.classList.remove("hidden");
+  const hash = window.location.hash;
+  const isInternalRouting =
+    hash === "#history" || hash === "#guide" || hash === "#game";
+
+  // ONLY restore home and class if we are actually going "home" (no hash)
+  if (!isInternalRouting) {
+    document.body.classList.add("home-active");
+    if (menu) menu.classList.remove("hidden");
+  }
 
   // Show Footer when returning from Profile (to Home)
   const footer = document.querySelector(".main-footer");

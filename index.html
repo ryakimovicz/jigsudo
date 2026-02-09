@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="css/auth.css" />
     <link rel="stylesheet" href="css/profile.css?v=40" />
     <link rel="stylesheet" href="css/history.css" />
+    <link rel="stylesheet" href="css/guide.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -705,6 +706,82 @@
             <p class="history-subtitle" data-i18n="history_select_date">Selecciona una fecha para jugar</p>
             <div id="history-grid-container">
               <!-- JS will populate -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guide (Guía) Section -->
+      <section id="guide-section" class="hidden">
+        <div class="guide-page-wrapper scrollable-content">
+          <div class="guide-card glass-panel">
+            <div class="guide-header-top">
+              <h2 data-i18n="guide_title">Guía de Juego</h2>
+              <button id="btn-guide-close" class="close-btn">&times;</button>
+            </div>
+            
+            <!-- Segmented Control for Guide -->
+            <div class="guide-nav-wrapper">
+              <div class="segmented-control guide-selector">
+                <button class="seg-btn active" data-target="guide-general" data-i18n="guide_tab_general">General</button>
+                <button class="seg-btn" data-target="guide-tutorial" data-i18n="guide_tab_tutorial">Tutorial</button>
+              </div>
+            </div>
+            
+            <div class="guide-content-area">
+              <!-- General Section -->
+              <div id="guide-general" class="guide-tab-content">
+                <div class="guide-scroll-area">
+                  <h3 data-i18n="guide_intro_h">¿Qué es Jigsudo?</h3>
+                  <p data-i18n="guide_intro_p">Jigsudo es un puzzle diario que combina memoria, lógica y deducción. Tu objetivo es completar el tablero de Sudoku atravesando distintas etapas.</p>
+                  
+                  <h3 data-i18n="guide_pages_h">Secciones</h3>
+                  <ul class="guide-list">
+                    <li><strong>🏠 <span data-i18n="sidebar_home">Inicio</span>:</strong> <span data-i18n="guide_page_home">Acceso al puzzle diario y rankings.</span></li>
+                    <li><strong>📅 <span data-i18n="sidebar_history">Historial</span>:</strong> <span data-i18n="guide_page_history">Juega puzzles de días anteriores y consulta tus rachas.</span></li>
+                    <li><strong>👤 <span data-i18n="menu_account">Cuenta</span>:</strong> <span data-i18n="guide_page_profile">Gestiona tu perfil, sincronización en la nube y estadísticas personales.</span></li>
+                  </ul>
+
+                  <h3 data-i18n="guide_controls_h">Controles y Atajos</h3>
+                  <ul class="guide-list">
+                    <li><strong>Mouse/Tap:</strong> <span data-i18n="guide_control_mouse">Selecciona casillas, piezas o cartas.</span></li>
+                    <li><strong>Teclas 1-9:</strong> <span data-i18n="guide_control_nums">Ingresa números en el Sudoku.</span></li>
+                    <li><strong>Tecla E / Borrar:</strong> <span data-i18n="guide_control_delete">Limpia una casilla o nota.</span></li>
+                    <li><strong>Tecla N / Notas:</strong> <span data-i18n="guide_control_notes">Activa el modo lápiz (notas).</span></li>
+                    <li><strong>Escape:</strong> <span data-i18n="guide_control_esc">Cancela selección o cierra menús.</span></li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Tutorial Container -->
+              <div id="guide-tutorial" class="guide-tab-content hidden">
+                <div id="tutorial-container">
+                  <div id="tutorial-step-info" class="tutorial-step-info glass-panel">
+                    <h4 id="tutorial-step-title">Bienvenido</h4>
+                    <p id="tutorial-step-desc">Este tutorial te guiará por todas las etapas del juego con un tablero simplificado.</p>
+                    <button id="btn-start-tutorial" class="btn-primary" data-i18n="btn_start_tutorial">Empezar Tutorial</button>
+                  </div>
+                  
+                  <div id="tutorial-game-area" class="hidden">
+                    <div id="tutorial-header" class="tutorial-header">
+                       <div class="tutorial-header-main">
+                          <button id="btn-tutorial-prev" class="tutorial-nav-btn" title="Anterior">←</button>
+                          <div class="tutorial-title-group">
+                             <span id="tutorial-stage-name">Etapa 1: Memoria</span>
+                             <div id="tutorial-progress-bar"><div id="tutorial-progress-fill" style="width: 0%;"></div></div>
+                          </div>
+                          <button id="btn-tutorial-next" class="tutorial-nav-btn" title="Siguiente">→</button>
+                       </div>
+                       <div id="tutorial-stage-description" class="tutorial-stage-description">
+                          <!-- Filled by JS -->
+                       </div>
+                    </div>
+                    <div id="tutorial-board-container" class="tutorial-board-container">
+                       <!-- Dynamic content rendered by JS -->
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

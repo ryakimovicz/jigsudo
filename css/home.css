@@ -364,10 +364,17 @@ body.dark-mode .tab-btn.active {
   color: var(--primary-color);
 }
 
-/* Panel Container - Deck Layout */
+/* Universal Glass Panel Base Styles (Shared across app) */
+.glass-panel {
+  background: var(--bg-paper);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Home Panel Specific - Deck Layout */
 .home-panels {
   position: relative;
-  /* z-index: 10; REMOVED to allow interleaving with tabs */
   width: 100%;
   max-width: 600px;
   grid-template-areas: "stack";
@@ -375,15 +382,13 @@ body.dark-mode .tab-btn.active {
   margin-top: 0;
 }
 
-/* Base Panel Styles (Shared) */
-.glass-panel {
-  /* Both panels share this class */
+/* Base Panel Animation Defaults (Scoped to Home Panels) */
+.home-panels .glass-panel {
   grid-area: stack; /* Occupy same space */
-  background: var(--bg-paper);
   width: 100%;
   height: auto;
-  min-height: 336px; /* Enforce consistency (Daily was ~335px) */
-  align-self: start; /* Align to top */
+  min-height: 336px;
+  align-self: start;
 
   /* The Deck Animation */
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -392,18 +397,17 @@ body.dark-mode .tab-btn.active {
   /* Default State (Inactive/Behind) */
   opacity: 0;
   transform: scale(0.95) translateY(10px);
-  z-index: 2; /* Bottom Layer */
+  z-index: 2;
   pointer-events: none;
-  /* border: 1px solid var(--glass-border);  Already in global */
 }
 
-/* Active State (Front) */
-.glass-panel.active {
+/* Active State (Front) - Scoped to Home Panels */
+.home-panels .glass-panel.active {
   opacity: 1;
   transform: scale(1) translateY(0);
-  z-index: 15; /* Front Layer (Below Active Tab 20) */
+  z-index: 15;
   pointer-events: all;
-  position: relative; /* Default context */
+  position: relative;
 }
 
 /* Dark Mode Background Override */

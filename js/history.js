@@ -96,6 +96,15 @@ export function hideHistoryUI() {
   const section = document.getElementById("history-section");
   if (section) section.classList.add("hidden");
   document.body.classList.remove("history-active");
+
+  const hash = window.location.hash;
+  const isInternalRouting =
+    hash === "#profile" || hash === "#guide" || hash === "#game";
+
+  if (!isInternalRouting) {
+    document.body.classList.add("home-active");
+    document.getElementById("menu-content")?.classList.remove("hidden");
+  }
 }
 
 export async function updateHistoryUI() {

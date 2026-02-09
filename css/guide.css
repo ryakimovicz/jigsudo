@@ -1,0 +1,677 @@
+.guide-page-wrapper {
+  animation: fadeIn 0.4s ease-out;
+}
+
+:root {
+  --header-height: 120px;
+  --footer-height: 80px;
+  --card-grad-1: #cdd9e5;
+  --card-grad-2: #adbac7;
+  --card-text: #1e293b;
+  --sudoku-grid-line: #333;
+}
+
+body.dark-mode {
+  --card-grad-1: #64748b;
+  --card-grad-2: #475569;
+  --card-text: #ffffff;
+  --sudoku-grid-line: #eee;
+}
+
+.guide-card {
+  padding: 25px;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.guide-header-top h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  background: linear-gradient(90deg, #fff, #aaa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.close-btn:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Segmented Control for Guide */
+.guide-nav-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 25px;
+}
+
+.guide-selector.segmented-control {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 5px;
+  border-radius: 12px;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.guide-selector .seg-btn {
+  padding: 10px 30px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 9px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  font-family: var(--font-paper);
+  font-size: 1rem;
+}
+
+.guide-selector .seg-btn.active {
+  background: var(--bg-paper);
+  color: var(--primary-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .guide-selector .seg-btn.active {
+  background: #334155;
+  color: var(--primary-color);
+}
+
+body.dark-mode .guide-selector {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Content Area */
+.guide-content-area {
+  flex: 1;
+}
+
+.guide-tab-content {
+  animation: slideUp 0.3s ease-out;
+}
+
+.guide-tab-content.hidden {
+  display: none;
+}
+
+.guide-list {
+  list-style: none;
+  padding: 0;
+}
+
+.guide-list li {
+  margin-bottom: 12px;
+  padding-left: 25px;
+  position: relative;
+}
+
+.guide-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color, #fbbf24);
+}
+
+/* Mechanics Grid */
+.mechanic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.mechanic-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 15px;
+  border-radius: 12px;
+  transition: transform 0.3s;
+}
+
+.mechanic-item:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mechanic-item h4 {
+  margin: 0 0 10px 0;
+  color: var(--primary-color, #fbbf24);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Tutorial Styles */
+.tutorial-step-info {
+  margin-bottom: 20px;
+  padding: 20px;
+  border-left: 4px solid var(--primary-color, #fbbf24);
+}
+
+.tutorial-header {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tutorial-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.tutorial-title-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.tutorial-nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tutorial-nav-btn:hover:not(:disabled) {
+  background: var(--primary-color, #fbbf24);
+  color: #1e293b;
+  transform: scale(1.1);
+}
+
+.tutorial-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+#tutorial-stage-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--primary-color, #fbbf24);
+  text-align: center;
+}
+
+.tutorial-stage-description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color, #fbbf24);
+}
+
+.tutorial-stage-description strong {
+  color: var(--primary-color, #fbbf24);
+  font-weight: 600;
+}
+
+#tutorial-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#tutorial-progress-fill {
+  height: 100%;
+  background: var(--primary-color, #fbbf24);
+  transition: width 0.5s ease;
+}
+
+.tutorial-board-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  position: relative;
+}
+
+/* Tutorial specific layout adjustments */
+.tutorial-board-container .memory-grid {
+  grid-template-columns: repeat(
+    4,
+    1fr
+  ) !important; /* Forces 8 cards in 4x2 for tutorial */
+  perspective: 1000px; /* Perspective belongs on the container for uniform 3D feel */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .guide-page-wrapper {
+    padding: 10px;
+  }
+  .guide-card {
+    padding: 15px;
+  }
+  .guide-tab {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Tutorial Mini-Games Styles */
+:root {
+  --sudoku-grid-line: #333;
+}
+body.dark-mode {
+  --sudoku-grid-line: #eee;
+}
+
+.mini-sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+  gap: 0;
+  container-type: size;
+  contain: layout paint style;
+  border-radius: 0; /* Standardized to Sudoku style */
+  overflow: hidden;
+}
+
+.mini-cell {
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18cqw;
+  font-weight: 700;
+  font-family: "Outfit", sans-serif;
+  color: #333;
+  line-height: 1;
+  border-right: 1px solid var(--sudoku-grid-line);
+  border-bottom: 1px solid var(--sudoku-grid-line);
+  box-sizing: border-box;
+}
+
+body.dark-mode .mini-cell {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+/* Cleanup for outer edges of mini-grids */
+.mini-cell:nth-child(3n) {
+  border-right: none;
+}
+.mini-cell:nth-child(n + 7) {
+  border-bottom: none;
+}
+
+body.dark-mode .mini-cell {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+.mini-cell:nth-child(3n) {
+  border-right: none;
+}
+.mini-cell:nth-child(n + 7) {
+  border-bottom: none;
+}
+
+/* Card Overrides for Guide */
+.tutorial-board-container .memory-card {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.2s ease-out,
+    box-shadow 0.2s ease;
+}
+
+.tutorial-board-container .memory-card.flipped {
+  transform: rotateY(180deg);
+  cursor: default;
+}
+
+.tutorial-board-container .memory-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.tutorial-board-container .memory-card.flipped .memory-card-inner {
+  /* Rotation moved back to the card itself to match daily game */
+  transform: none;
+}
+
+.tutorial-board-container .memory-card-front,
+.tutorial-board-container .memory-card-back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tutorial-board-container .memory-card-front {
+  background: linear-gradient(135deg, var(--card-grad-1), var(--card-grad-2));
+  color: var(--card-text);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+body.dark-mode .tutorial-board-container .memory-card-front {
+  background: linear-gradient(135deg, var(--card-grad-1), var(--card-grad-2));
+  color: var(--card-text);
+}
+
+.tutorial-board-container .memory-card-back {
+  background: var(--bg-secondary);
+  transform: rotateY(180deg);
+  border: 2px solid #1e293b;
+  border-radius: 6px;
+  overflow: hidden;
+  /* Daily Game Strategy: Hide content when not flipped to prevent bleaching */
+  visibility: hidden;
+  transition: visibility 0s linear 0.1s;
+}
+
+body.dark-mode .tutorial-board-container .memory-card-back {
+  border-color: var(--primary-color, #fbbf24);
+  background: #1a1c1e;
+}
+
+.tutorial-board-container .memory-card.flipped .memory-card-back {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Jigsaw Tutorial */
+.tutorial-jigsaw-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: min(320px, 95vw); /* Align with daily scale */
+  aspect-ratio: 1/1;
+  gap: 4px; /* Daily gap */
+  background: var(--bg-secondary); /* Daily background */
+  padding: 4px; /* Daily padding */
+  border-radius: 8px; /* Daily board radius */
+  border: none;
+  margin: 0 auto 30px auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+}
+
+.jigsaw-slot {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-tertiary); /* Daily slot background */
+  border-radius: 10px; /* Daily slot radius */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+}
+
+.jigsaw-slot:not(.filled) .slot-placeholder {
+  display: none;
+}
+
+.tutorial-jigsaw-panel {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Jigsaw Interaction & Drag-Drop */
+.jigsaw-piece.dragging-source {
+  opacity: 0.2;
+}
+
+.dragging-clone {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.9;
+  transform: scale(1.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  transition:
+    width 0.3s ease,
+    height 0.3s ease,
+    transform 0.3s ease;
+}
+
+.jigsaw-slot.drop-hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 2px solid var(--primary-color, #fbbf24) !important;
+  box-shadow: 0 0 15px var(--primary-color, #fbbf24);
+}
+
+.tutorial-jigsaw-panel .jigsaw-piece.drop-hover {
+  border-color: #fff !important;
+  box-shadow: 0 0 15px #fff;
+}
+
+.jigsaw-piece {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #1e293b; /* Daily Light Mode Border */
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body.dark-mode .jigsaw-piece {
+  border-color: var(--primary-color, #fbbf24); /* Daily Dark Mode Border */
+}
+
+.jigsaw-piece:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.jigsaw-piece.selected {
+  border-color: #fff;
+  box-shadow: 0 0 15px var(--primary-color, #fbbf24);
+  transform: scale(1.1);
+}
+
+/* Slots and filled pieces should be flush */
+.jigsaw-slot.filled {
+  background: transparent;
+}
+
+.jigsaw-slot.filled .mini-sudoku-grid {
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+}
+
+body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
+  border-color: var(--primary-color, #fbbf24);
+}
+
+/* Error feedback */
+.jigsaw-slot.error-blink {
+  animation: jigsawError 0.5s ease;
+}
+
+@keyframes jigsawError {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+  50% {
+    border-color: #ff5555;
+    background: rgba(255, 85, 85, 0.2);
+  }
+}
+
+/* Sudoku Tutorial */
+.sudoku-table.tutorial {
+  border: 4px solid var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.sudoku-table.tutorial td {
+  width: 45px;
+  height: 45px;
+  background: white;
+  border-right: 1px solid var(--sudoku-grid-line);
+  border-bottom: 1px solid var(--sudoku-grid-line);
+  text-align: center;
+  vertical-align: middle;
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+body.dark-mode .sudoku-table.tutorial td {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+.sudoku-table.tutorial td:nth-child(3n) {
+  border-right: 3px solid var(--sudoku-grid-line);
+}
+.sudoku-table.tutorial tr:nth-child(3n) td {
+  border-bottom: 3px solid var(--sudoku-grid-line);
+}
+.sudoku-table.tutorial td:last-child {
+  border-right: none;
+}
+.sudoku-table.tutorial tr:last-child td {
+  border-bottom: none;
+}
+
+.sudoku-table.tutorial td.empty {
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+.sudoku-table.tutorial td.selected {
+  outline: 2px solid var(--primary-color, #fbbf24);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.sudoku-table.tutorial td.correct {
+  color: var(--primary-color, #fbbf24);
+  font-weight: 900;
+}
+
+/* Interaction Feedback */
+.error-blink {
+  animation: errorBlink 0.5s;
+}
+
+@keyframes errorBlink {
+  0%,
+  100% {
+    transform: translateX(0);
+    box-shadow: none;
+  }
+  25% {
+    transform: translateX(-5px);
+    box-shadow: 0 0 15px red;
+  }
+  75% {
+    transform: translateX(5px);
+    box-shadow: 0 0 15px red;
+  }
+}
+
+.tutorial-finish {
+  text-align: center;
+  padding: 40px;
+  animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cell-peak {
+  background-color: rgba(251, 191, 36, 0.4) !important;
+  color: #fff;
+}
+
+.cell-valley {
+  background-color: rgba(96, 165, 250, 0.4) !important;
+  color: #fff;
+}

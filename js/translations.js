@@ -1,6 +1,64 @@
 export const translations = {
   es: {
     app_title: "JIGSUDO",
+    // Guide & Tutorial
+    guide_title: "Guía de Juego",
+    guide_tab_general: "General",
+    guide_tab_tutorial: "Tutorial",
+    guide_intro_h: "¿Qué es Jigsudo?",
+    guide_intro_p:
+      "Jigsudo es un puzzle diario que combina memoria, lógica y deducción. Tu objetivo es completar el tablero de Sudoku atravesando distintas etapas.",
+    guide_controls_h: "Controles y Atajos",
+    guide_pages_h: "Secciones",
+    guide_page_home: "Acceso al puzzle diario y rankings.",
+    guide_page_history:
+      "Juega puzzles de días anteriores y consulta tus rachas.",
+    guide_page_profile:
+      "Gestiona tu perfil, sincronización en la nube y estadísticas personales.",
+    guide_control_mouse: "Selecciona casillas, piezas o cartas.",
+    guide_control_nums: "Ingresa números en el Sudoku.",
+    guide_control_delete: "Limpia una casilla o nota.",
+    guide_control_notes: "Activa el modo lápiz (notas).",
+    guide_control_esc: "Cancela selección o cierra menús.",
+    guide_mem_desc:
+      "Encuentra los pares de bloques. Cada bloque es una sección 3x3 del Sudoku final.",
+    guide_jig_desc:
+      "Coloca los bloques encontrados en su posición correcta en el tablero 9x9.",
+    guide_sudoku_desc:
+      "Completa el tablero numérico siguiendo las reglas clásicas del Sudoku.",
+    guide_peaks_desc:
+      "Identifica los números mayores y menores respecto a sus vecinos.",
+    guide_search_desc:
+      "Encuentra las secuencias numéricas ocultas en el tablero.",
+    guide_code_desc: "Revela y repite el patrón final de seguridad.",
+    btn_start_tutorial: "Empezar Tutorial",
+    btn_memorize: "Memorizar",
+    tutorial_welcome_title: "Bienvenido",
+    tutorial_welcome_desc:
+      "Este tutorial te guiará por todas las etapas del juego con un tablero simplificado.",
+    tutorial_stage_1_title: "Etapa 1: Juego de Memoria",
+    tutorial_stage_1_desc:
+      "<strong>Objetivo:</strong> Encuentra los pares de bloques 3x3. Cada bloque es una sección del Sudoku final.<br><strong>Controles:</strong> Haz clic en dos cartas para revelarlas. Usa el botón 'Memorizar' para echar un vistazo rápido.",
+    tutorial_stage_2_title: "Etapa 2: Rompecabezas",
+    tutorial_stage_2_desc:
+      "<strong>Objetivo:</strong> Coloca las piezas obtenidas en su lugar correcto en el tablero 9x9.<br><strong>Controles:</strong> Selecciona una pieza del panel lateral y luego haz clic en el espacio vacío del tablero.",
+    tutorial_stage_3_title: "Etapa 3: Sudoku",
+    tutorial_stage_3_desc:
+      "<strong>Objetivo:</strong> Completa las 18 celdas vacías siguiendo las reglas del Sudoku.<br><strong>Controles:</strong> Selecciona una celda y usa el teclado numérico o las teclas 1-9. Usa 'E' o 'Borrar' para limpiar.",
+    tutorial_stage_4_title: "Etapa 4: Picos y Valles",
+    tutorial_stage_4_desc:
+      "<strong>Objetivo:</strong> Identifica los números más altos y más bajos comparados con sus vecinos.<br><strong>Controles:</strong> Selecciona ▲ (Pico) o ▼ (Valle) y haz clic en la celda correspondiente.",
+    tutorial_stage_5_title: "Etapa 5: Sopa de Números",
+    tutorial_stage_5_desc:
+      "<strong>Objetivo:</strong> Localiza las 3 secuencias ocultas en el tablero.<br><strong>Controles:</strong> Haz clic y arrastra sobre las celdas que forman la secuencia completa.",
+    tutorial_stage_6_title: "Etapa 6: El Código",
+    tutorial_stage_6_desc:
+      "<strong>Objetivo:</strong> Se revelará un código de seguridad. Debes repetirlo exactamente.<br><strong>Controles:</strong> Utiliza el teclado en pantalla o las teclas numéricas para ingresar la secuencia.",
+    tutorial_finish_title: "¡Tutorial Completado!",
+    tutorial_finish_desc:
+      "Felicidades, has dominado todas las mecánicas de Jigsudo. ¡Ya puedes enfrentarte al desafío de hoy!",
+    btn_finish_tutorial: "Finalizar",
+
     header_profile_label: "Perfil",
 
     // Header Info
@@ -37,6 +95,7 @@ export const translations = {
     game_sudoku: "Sudoku",
     game_peaks: "Picos y Valles",
     game_search: "Sopa de Números",
+    game_code: "El Código",
 
     // Menu Main Content
     menu_title: "Seis desafíos, un solo tablero",
@@ -334,6 +393,62 @@ export const translations = {
   },
   en: {
     app_title: "JIGSUDO",
+    // Guide & Tutorial
+    guide_title: "Game Guide",
+    guide_tab_general: "General",
+    guide_tab_tutorial: "Tutorial",
+    guide_intro_h: "What is Jigsudo?",
+    guide_intro_p:
+      "Jigsudo is a daily puzzle that combines memory, logic, and deduction. Your goal is to complete the Sudoku board through different stages.",
+    guide_controls_h: "Controls and Shortcuts",
+    guide_pages_h: "Sections",
+    guide_page_home: "Access the daily puzzle and rankings.",
+    guide_page_history:
+      "Play puzzles from previous days and check your streaks.",
+    guide_page_profile: "Manage your profile, cloud sync, and personal stats.",
+    guide_control_mouse: "Select cells, pieces, or cards.",
+    guide_control_nums: "Input numbers in the Sudoku.",
+    guide_control_delete: "Clear a cell or note.",
+    guide_control_notes: "Toggle pencil mode (notes).",
+    guide_control_esc: "Cancel selection or close menus.",
+    guide_mem_desc:
+      "Find the pairs of blocks. Each block is a 3x3 section of the final Sudoku.",
+    guide_jig_desc:
+      "Place the found blocks in their correct position on the 9x9 board.",
+    guide_sudoku_desc:
+      "Complete the numeric board following the classic rules of Sudoku.",
+    guide_peaks_desc:
+      "Identify the higher and lower numbers relative to their neighbors.",
+    guide_search_desc: "Find the hidden numeric sequences on the board.",
+    guide_code_desc: "Reveal and repeat the final security pattern.",
+    btn_start_tutorial: "Start Tutorial",
+    btn_memorize: "Memorize",
+    tutorial_welcome_title: "Welcome",
+    tutorial_welcome_desc:
+      "This tutorial will guide you through all stages of the game with a simplified board.",
+    tutorial_stage_1_title: "Stage 1: Memory Game",
+    tutorial_stage_1_desc:
+      "<strong>Goal:</strong> Find the 3x3 block pairs. Each block is a section of the final Sudoku.<br><strong>Controls:</strong> Click two cards to reveal them. Use 'Memorize' for a quick peek.",
+    tutorial_stage_2_title: "Stage 2: Jigsaw",
+    tutorial_stage_2_desc:
+      "<strong>Goal:</strong> Place the collected pieces in their correct position on the 9x9 board.<br><strong>Controls:</strong> Select a piece from the panel and click on an empty board slot.",
+    tutorial_stage_3_title: "Stage 3: Sudoku",
+    tutorial_stage_3_desc:
+      "<strong>Goal:</strong> Fill the 18 empty cells following Sudoku rules.<br><strong>Controls:</strong> Select a cell and use the keypad or 1-9 keys. Use 'E' or 'Clear' to wipe.",
+    tutorial_stage_4_title: "Stage 4: Peaks and Valleys",
+    tutorial_stage_4_desc:
+      "<strong>Goal:</strong> Identify the highest and lowest numbers compared to their neighbors.<br><strong>Controls:</strong> Select ▲ (Peak) or ▼ (Valley) and click on the corresponding cell.",
+    tutorial_stage_5_title: "Stage 5: Number Search",
+    tutorial_stage_5_desc:
+      "<strong>Goal:</strong> Locate the 3 sequences hidden on the board.<br><strong>Controls:</strong> Click and drag over the cells that form the sequence.",
+    tutorial_stage_6_title: "Stage 6: The Code",
+    tutorial_stage_6_desc:
+      "<strong>Goal:</strong> A security code will be revealed. You must repeat it exactly.<br><strong>Controls:</strong> Use the onscreen keypad or number keys to enter the sequence.",
+    tutorial_finish_title: "Tutorial Completed!",
+    tutorial_finish_desc:
+      "Congratulations, you've mastered Jigsudo! You're ready for today's challenge.",
+    btn_finish_tutorial: "Finish",
+
     header_profile_label: "Profile",
 
     // Header Info
@@ -368,8 +483,9 @@ export const translations = {
     game_memory: "Memory Game",
     game_jigsaw: "Jigsaw Puzzle",
     game_sudoku: "Sudoku",
-    game_peaks: "Peaks & Valleys",
+    game_peaks: "Peaks and Valleys",
     game_search: "Number Search",
+    game_code: "The Code",
 
     // Menu Main Content
     menu_title: "Six challenges, one single board",

@@ -77,7 +77,8 @@ body {
 
 /* Enable scrolling only on Home and Profile */
 body.home-active,
-body.profile-active {
+body.profile-active,
+body.guide-active {
   overflow-y: auto;
 }
 
@@ -100,10 +101,28 @@ body.profile-active {
 }
 
 /* Main Content Layout Adjustments for Sidebar */
+.scrollable-content {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  padding-bottom: 120px;
+}
+
+/* Sidebar Active Highlighting */
+.nav-item.active {
+  color: var(--accent-color) !important;
+  background: rgba(var(--accent-rgb), 0.1) !important;
+  border-right: 3px solid var(--accent-color);
+}
+
 @media (min-width: 769px) {
   #menu-content,
   #profile-section,
   #history-section,
+  #guide-section,
   #game-section,
   .main-footer {
     margin-left: var(--sidebar-width);
@@ -117,6 +136,7 @@ body.profile-active {
   body.sidebar-expanded #menu-content,
   body.sidebar-expanded #profile-section,
   body.sidebar-expanded #history-section,
+  body.sidebar-expanded #guide-section,
   body.sidebar-expanded #game-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
@@ -132,6 +152,7 @@ body.profile-active {
   #menu-content,
   #profile-section,
   #history-section,
+  #guide-section,
   #game-section,
   .main-footer {
     margin-left: 0;

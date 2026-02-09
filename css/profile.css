@@ -39,13 +39,7 @@ body.dark-mode #profile-section::-webkit-scrollbar-thumb:hover {
 }
 
 #profile-section .scrollable-content {
-  padding: 20px;
-  max-width: 800px; /* Increased from 600px to fit side-by-side panels */
-  margin: 0 auto;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-  padding-bottom: 160px; /* Even more space to ensure separation from footer */
+  padding-bottom: 160px; /* Specific padding for profile footer separation */
 }
 
 /* Titles */
