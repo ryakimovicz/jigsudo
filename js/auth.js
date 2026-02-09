@@ -10,7 +10,6 @@ import {
   EmailAuthProvider,
   updatePassword,
   deleteUser,
-  signInAnonymously,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithCredential,
@@ -187,23 +186,16 @@ export function initAuth() {
       }
     } else {
       currentUser = null;
-      console.log("User signed out. Triggering anonymous sign-in...");
+      console.log("[Auth] No user detected. Standard Guest Mode (Local-only).");
 
-      // Before anonymous sign-in, ensure UI reflects logged-out state (Guest)
+      // Before signal, ensure UI reflects logged-out state (Guest/Anonymous)
       updateUIForLogout();
       gameManager.setUserId(null);
 
-      // Trigger anonymous sign-in for guests
-      try {
-        const result = await signInAnonymously(auth);
-        console.log("[Auth] Anonymous login success:", result.user.uid);
-      } catch (err) {
-        console.error("[Auth] Anonymous login failed:", err);
-        // Fallback: Notify app that auth is ready even if sign-in failed
-        window.dispatchEvent(
-          new CustomEvent("authReady", { detail: { user: null } }),
-        );
-      }
+      // Notify app that auth check is complete (even if no user found)
+      window.dispatchEvent(
+        new CustomEvent("authReady", { detail: { user: null } }),
+      );
     }
   });
 }
