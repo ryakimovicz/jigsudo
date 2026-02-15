@@ -1,9 +1,9 @@
 # Jigsudo
 
 <div align="center">
-  <img src="https://jigsudo.web.app/assets/images/social-preview.png" alt="Jigsudo Logo" width="600">
+  <img src="assets/images/logo_darkmode.svg" alt="Jigsudo Logo" width="100">
   <br>
-  <p><b>Six challenges, one board. Your daily dose of logic.</b></p>
+  <p><b>Six challenges, one board. Your daily dose of numbers.</b></p>
   <p>
     <img src="https://img.shields.io/badge/Language-English%20%2F%20Spanish-blue" alt="Bilingual">
     <img src="https://img.shields.io/badge/Tech-JS%20%7C%20CSS%20%7C%20Firebase-green" alt="Tech Stack">
