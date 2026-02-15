@@ -20,12 +20,12 @@
 
 ### 🎮 The Six Stages of Jigsudo
 
-1.  **Memory**: Match Sudoku blocks to unlock pieces for your board.
-2.  **Jigsaw**: Assemble the board with the collected pieces.
-3.  **Sudoku Core**: Solve the logic puzzle on your custom grid.
-4.  **Peaks & Valleys**: Master the numerical sequences.
-5.  **Number Search**: Find hidden patterns in the grid.
-6.  **The Code**: Break the final sequence to claim victory.
+1.  **Memory**: Start with an empty board. Find Sudoku block pairs to unlock the 9 pieces (3x3 blocks). Finding the center piece automatically fixes it in place.
+2.  **Jigsaw**: Place the remaining 8 pieces from your collection onto the board. You must complete the assembly to enable the next challenge.
+3.  **Sudoku Core**: Once assembled, solve the Sudoku by completing the grid with numbers 1 to 9, ensuring no repeats in rows, columns, or 3x3 blocks.
+4.  **Peaks & Valleys**: On the solved Sudoku, identify the Peaks (numbers larger than their neighbors) and Valleys (smaller than their neighbors). These cells become blocked once found.
+5.  **Number Search**: Find hidden number sequences winding through the board, avoiding the cells already blocked by Peaks and Valleys. These also become blocked.
+6.  **The Code**: The final challenge activates in the last 4 free cells. Memorize and repeat the flashing sequence, which grows each turn until reaching 7 digits.
 
 ### 🚀 Key Features
 
@@ -49,12 +49,12 @@
 
 ### 🎮 Las Seis Etapas de Jigsudo
 
-1.  **Memoria**: Encuentra bloques de Sudoku para desbloquear piezas.
-2.  **Rompecabezas**: Arma el tablero con las piezas recolectadas.
-3.  **Sudoku Central**: Resuelve el puzzle sobre tu tablero personalizado.
-4.  **Picos y Valles**: Domina las secuencias numéricas.
-5.  **Sopa de Números**: Encuentra patrones en la cuadrícula.
-6.  **El Código**: Descifra la secuencia final para ganar.
+1.  **Memoria**: Comienza con el tablero vacío. Encuentra pares de bloques sudoku para desbloquear las 9 piezas (bloques 3x3). Al encontrar la pieza central, esta se fija automáticamente en su lugar.
+2.  **Rompecabezas**: Coloca las 8 piezas restantes de tu colección en el tablero. Debes completar el ensamblaje para habilitar el siguiente desafío.
+3.  **Sudoku**: Con el tablero armado, resuelve el Sudoku completando la cuadrícula con números del 1 al 9 sin repetirlos en filas, columnas o bloques de 3x3.
+4.  **Picos y Valles**: Sobre el Sudoku resuelto, identifica los Picos (números mayores que sus vecinos) y Valles (menores que sus vecinos). Al encontrarlos, estas celdas se bloquean.
+5.  **Sopa de Números**: Encuentra secuencias numéricas ocultas serpenteando por el tablero, evitando las celdas bloqueadas por los Picos y Valles. Al hallarlas, también se bloquean.
+6.  **El Código**: El desafío final se activa en las últimas 4 celdas libres. Memoriza y repite la secuencia que parpadea en el tablero, la cual crece en cada turno hasta llegar a 7 dígitos.
 
 ### 🚀 Funciones Principales
 
