@@ -819,7 +819,7 @@ export class GameManager {
     }
   }
 
-  advanceStage() {
+  async advanceStage() {
     const stages = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
     const currentIdx = stages.indexOf(this.state.progress.currentStage);
     if (currentIdx >= 0 && currentIdx < stages.length - 1) {
@@ -828,7 +828,7 @@ export class GameManager {
       this.state.progress.currentStage = nextStage;
       if (!this.state.progress.stagesCompleted.includes(currentStage)) {
         this.state.progress.stagesCompleted.push(currentStage);
-        this.awardStagePoints(currentStage);
+        await this.awardStagePoints(currentStage);
       }
       this.forceCloudSave();
       window.dispatchEvent(

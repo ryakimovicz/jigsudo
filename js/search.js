@@ -370,14 +370,14 @@ function handleFoundSequence(target) {
     const boardWrapper = document.querySelector(".board-wrapper");
     boardWrapper.classList.add("search-win"); // Green Glow or similar
 
-    setTimeout(() => {
+    setTimeout(async () => {
       boardWrapper.classList.remove("search-win");
 
       // Timer Transition
       gameManager.stopStageTimer(); // End Search
       gameManager.startStageTimer("code"); // Start Code
 
-      gameManager.awardStagePoints("search"); // Advances to 'code'
+      await gameManager.awardStagePoints("search"); // Advances to 'code'
       transitionToCode();
     }, 500);
   }

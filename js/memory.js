@@ -853,12 +853,12 @@ function handleMatchSuccess(chunkIndex) {
     if (boardContainer) boardContainer.classList.add("board-complete");
 
     // 3. Transition to Jigsaw (Keep Timer Running!)
-    setTimeout(() => {
+    setTimeout(async () => {
       if (boardContainer) boardContainer.classList.remove("board-complete");
 
       // Timer Transition
       gameManager.stopStageTimer();
-      gameManager.awardStagePoints("memory"); // Award RP
+      await gameManager.awardStagePoints("memory"); // Award RP
       gameManager.startStageTimer("jigsaw");
 
       transitionToJigsaw();

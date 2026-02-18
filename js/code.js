@@ -562,7 +562,7 @@ async function finalizeVictory() {
   console.log("Victory Animation Complete");
   // Ensure we capture the final stage time (Code)
   gameManager.stopStageTimer();
-  gameManager.awardStagePoints("code"); // Award RP
+  await gameManager.awardStagePoints("code"); // Award RP
 
   // Record Win and capture session stats
   const sessionStats = await gameManager.recordWin();

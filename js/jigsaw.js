@@ -1102,10 +1102,10 @@ export async function checkBoardCompletion() {
 
     // Delay advance
     window.isGameTransitioning = true;
-    setTimeout(() => {
+    setTimeout(async () => {
       // Timer Transition
       gameManager.stopStageTimer();
-      gameManager.awardStagePoints("jigsaw"); // Award RP
+      await gameManager.awardStagePoints("jigsaw"); // Award RP
       gameManager.startStageTimer("sudoku");
 
       transitionToSudoku();
