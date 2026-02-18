@@ -1,14 +1,9 @@
-/* Info Page Styles */
 #info-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
+  /* gap, padding, width handled by scrollable-content or defaults */
   width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding-bottom: 80px; /* Space for footer */
+  padding-bottom: 0; /* Handled by scrollable wrapper */
 }
 
 /* Info Cards */

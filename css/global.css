@@ -124,6 +124,7 @@ body.info-active {
   #profile-section,
   #history-section,
   #guide-section,
+  #info-section,
   #game-section,
   .main-footer {
     margin-left: var(--sidebar-width);
@@ -138,6 +139,7 @@ body.info-active {
   body.sidebar-expanded #profile-section,
   body.sidebar-expanded #history-section,
   body.sidebar-expanded #guide-section,
+  body.sidebar-expanded #info-section,
   body.sidebar-expanded #game-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
@@ -154,6 +156,7 @@ body.info-active {
   #profile-section,
   #history-section,
   #guide-section,
+  #info-section,
   #game-section,
   .main-footer {
     margin-left: 0;
