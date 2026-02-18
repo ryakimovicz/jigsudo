@@ -1076,14 +1076,6 @@ export function resumeSudokuState() {
         slot.innerHTML = "";
         slot.appendChild(content);
         slot.classList.add("filled");
-
-        // DEBUG: Check chunk content being rendered
-        if (slotIndex === 0) {
-          console.log(
-            `[Sudoku] Hydrating Slot 0 with Chunk:`,
-            chunks[slotIndex],
-          );
-        }
       }
     }
 
