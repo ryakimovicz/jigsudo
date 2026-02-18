@@ -132,6 +132,7 @@ function _showProfileUI() {
   if (gameSection) gameSection.classList.add("hidden");
   const historySection = document.getElementById("history-section");
   if (historySection) historySection.classList.add("hidden");
+  document.getElementById("info-section")?.classList.add("hidden");
   // if (appHeader) appHeader.classList.add("hidden");
 
   // Show Footer on Profile

@@ -38,9 +38,22 @@ function initInfoPage() {
 }
 
 function showInfoSection() {
-  // Hide all main sections
-  document.querySelectorAll("main > section, #menu-content").forEach((el) => {
-    el.classList.add("hidden");
+  // Hide all main sections explicitly
+  const sectionsToHide = [
+    "menu-content",
+    "game-section",
+    "profile-section",
+    "history-section",
+    "guide-section",
+  ];
+
+  sectionsToHide.forEach((id) => {
+    document.getElementById(id)?.classList.add("hidden");
+  });
+
+  // Also hide main direct children as fallback
+  document.querySelectorAll("main > section").forEach((el) => {
+    if (el.id !== "info-section") el.classList.add("hidden");
   });
 
   // Show Info Section

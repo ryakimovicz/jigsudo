@@ -498,6 +498,7 @@ export function initHome() {
     navHome.addEventListener("click", () => {
       // 1. Close Profile
       hideProfile();
+      document.getElementById("info-section")?.classList.add("hidden");
 
       const menu = document.getElementById("menu-content");
       const profileSection = document.getElementById("profile-section");
@@ -634,6 +635,7 @@ export async function startDailyGame() {
     document.getElementById("menu-content")?.classList.add("hidden");
     document.getElementById("profile-section")?.classList.add("hidden");
     document.getElementById("history-section")?.classList.add("hidden");
+    document.getElementById("info-section")?.classList.add("hidden");
     // Show game section
     document.getElementById("game-section")?.classList.remove("hidden");
 

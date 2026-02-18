@@ -87,6 +87,7 @@ export function showHistoryUI() {
   if (homeContent) homeContent.classList.add("hidden");
   if (gameSection) gameSection.classList.add("hidden");
   if (profileSection) profileSection.classList.add("hidden");
+  document.getElementById("info-section")?.classList.add("hidden");
 
   document.body.classList.add("history-active");
   updateHistoryUI();
