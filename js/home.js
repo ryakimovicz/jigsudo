@@ -7,6 +7,7 @@ import { gameManager } from "./game-manager.js";
 import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js";
 import { getCurrentUser } from "./auth.js";
 import { CONFIG } from "./config.js";
+import { updateSidebarActiveState } from "./sidebar.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -496,51 +497,8 @@ export function initHome() {
   const navHome = document.getElementById("nav-home");
   if (navHome) {
     navHome.addEventListener("click", () => {
-      // 1. Close Profile
-      hideProfile();
-      document.getElementById("info-section")?.classList.add("hidden");
-
-      const menu = document.getElementById("menu-content");
-      const profileSection = document.getElementById("profile-section");
-      const historySection = document.getElementById("history-section");
-
-      const isAlreadyAtHome =
-        menu &&
-        !menu.classList.contains("hidden") &&
-        (!profileSection || profileSection.classList.contains("hidden")) &&
-        (!historySection || historySection.classList.contains("hidden"));
-
-      if (menu) menu.classList.remove("hidden");
-      // gameSection, historySection, profileSection visibility will be handled by their respective routers.
-
-      // 3. Reset URL (This triggers the routers)
+      // Just change hash, let handleRouting do the rest
       window.location.hash = "";
-
-      // 4. Update Header Info
-      refreshStartButton();
-
-      // 5. Hide Debug/Beta Button (Redundant but safe)
-      const debugBtn = document.getElementById("debug-help-btn");
-      if (debugBtn) debugBtn.style.display = "none";
-
-      // Restore Home State
-      document.body.classList.add("home-active");
-
-      // Show Footer when returning Home
-      const footer = document.querySelector(".main-footer");
-      if (footer) footer.classList.remove("hidden");
-
-      // Close sidebar on mobile after clicking
-      if (window.innerWidth <= 768) {
-        document.getElementById("side-sidebar")?.classList.remove("expanded");
-        document.body.classList.remove("sidebar-expanded");
-        document.getElementById("sidebar-overlay")?.classList.add("hidden");
-      }
-
-      // Force refresh rankings ONLY if we were not already on Home
-      if (!isAlreadyAtHome) {
-        loadAndRenderAllRankings(true);
-      }
     });
   }
 
@@ -595,15 +553,63 @@ export function initHome() {
     loadAndRenderAllRankings(true);
   });
 
-  window.addEventListener("hashchange", () => {
-    const menu = document.getElementById("menu-content");
-    const isVisible = menu && !menu.classList.contains("hidden");
+  // Show Home Logic (Internal)
+  const showHome = () => {
+    console.log("[Home] Showing Home View");
 
-    if (isVisible && (!window.location.hash || window.location.hash === "#")) {
-      console.log("[Home] Hash cleared, forcing fresh ranking load...");
-      loadAndRenderAllRankings(true);
+    // 1. UI Reset
+    hideProfile();
+    document.getElementById("info-section")?.classList.add("hidden");
+    document.getElementById("guide-section")?.classList.add("hidden");
+    document.getElementById("game-section")?.classList.add("hidden");
+    document.getElementById("profile-section")?.classList.add("hidden");
+    document.getElementById("history-section")?.classList.add("hidden");
+
+    // 2. Show Menu
+    const menu = document.getElementById("menu-content");
+    if (menu) {
+      menu.classList.remove("hidden");
+      // Fix: Unhide children components that might have been hidden by Info page
+      document.getElementById("ranking-container")?.classList.remove("hidden");
+      // Remove hidden from panels (display is controlled by .active)
+      document.getElementById("panel-daily")?.classList.remove("hidden");
+      document.getElementById("panel-custom")?.classList.remove("hidden");
     }
-  });
+
+    // 3. Sidebar State
+    updateSidebarActiveState("nav-home");
+
+    // 4. Header & Footer
+    const footer = document.querySelector(".main-footer");
+    if (footer) footer.classList.remove("hidden");
+    document.body.classList.add("home-active");
+    document.body.classList.remove(
+      "profile-active",
+      "history-active",
+      "guide-active",
+    );
+
+    const debugBtn = document.getElementById("debug-help-btn");
+    if (debugBtn) debugBtn.style.display = "none";
+
+    // 5. Logic
+    updateHeaderInfo();
+    refreshStartButton();
+    loadAndRenderAllRankings(true);
+  };
+
+  // Centralized Routing Handler
+  const handleRouting = () => {
+    const hash = window.location.hash;
+    // Empty hash or # is Home
+    if (!hash || hash === "#") {
+      showHome();
+    }
+  };
+
+  window.addEventListener("hashchange", handleRouting);
+  // Check on initial load too!
+  handleRouting();
 }
 
 /**

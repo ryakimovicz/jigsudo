@@ -1,6 +1,10 @@
-/* Guide and Tutorial Module for Jigsudo */
+import { updateSidebarActiveState } from "./sidebar.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  initGuide();
+});
 
 let currentTutorialStage = 1;
 let tutorialState = null;
@@ -120,6 +124,7 @@ function showGuide() {
     "#game-section",
     "#profile-section",
     "#history-section",
+    "#info-section",
   ];
   sectionsToHide.forEach((selector) => {
     document.querySelector(selector)?.classList.add("hidden");
@@ -133,6 +138,9 @@ function showGuide() {
   document.body.classList.add("guide-active");
   document.body.classList.remove("home-active");
 
+  updateSidebarActiveState("nav-how-to");
+
+  // Re-init slider logic if needed or just let CSS handle it
   updateGuideSidebarStatus();
   startTutorial();
 }
@@ -144,7 +152,10 @@ function hideGuide() {
 
   const hash = window.location.hash;
   const isInternalRouting =
-    hash === "#profile" || hash === "#history" || hash === "#game";
+    hash === "#profile" ||
+    hash === "#history" ||
+    hash === "#game" ||
+    hash === "#info";
 
   // Only restore home if we're not heading to another section
   if (!isInternalRouting) {

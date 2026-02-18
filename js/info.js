@@ -1,5 +1,6 @@
 import { RANKS } from "./ranks.js";
 import { CONFIG } from "./config.js";
+import { updateSidebarActiveState } from "./sidebar.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initInfoPage();
@@ -21,19 +22,36 @@ function initInfoPage() {
   const navInfo = document.getElementById("nav-info");
   if (navInfo) {
     navInfo.addEventListener("click", () => {
-      showInfoSection();
+      window.location.hash = "#info";
       const sidebarBtn = document.getElementById("sidebar-toggle");
       // Mobile: Close sidebar on click
       if (window.innerWidth <= 768 && sidebarBtn) {
-        // Trigger close via existing sidebar logic (assumes sidebar-overlay click or toggle)
         document.getElementById("sidebar-overlay").click();
       }
     });
   }
 
-  // Check Hash on Load
+  // Handle Routing
+  handleInfoRouting();
+  window.addEventListener("hashchange", handleInfoRouting);
+}
+
+function handleInfoRouting() {
   if (window.location.hash === "#info") {
     showInfoSection();
+  } else {
+    // Optional: Hide info if not target?
+    // The other routers (home, profile, etc.) handle hiding info.
+    // But we should ensure we hide ourselves if we are NOT the target?
+    // Actually, `showHome` etc hide `#info-section`.
+    // So we don't strictly need to do anything here if not info.
+    const infoSection = document.getElementById("info-section");
+    if (infoSection && !infoSection.classList.contains("hidden")) {
+      // If we are visible but hash is NOT #info, we should probably hide?
+      // But let's trust the destination router to hide us.
+      // Exception: If we just loaded valid page and hash changed to something handled by no one?
+      // No, let's stick to positive action.
+    }
   }
 }
 
@@ -51,7 +69,8 @@ function showInfoSection() {
     document.getElementById(id)?.classList.add("hidden");
   });
 
-  // Also hide main direct children as fallback
+  // Also hide main direct children as fallback (This matches what caused the bug, but we keep it for now)
+  // We need to be careful with this. It hides #ranking-container inside #menu-content.
   document.querySelectorAll("main > section").forEach((el) => {
     if (el.id !== "info-section") el.classList.add("hidden");
   });
@@ -60,8 +79,7 @@ function showInfoSection() {
   const infoSection = document.getElementById("info-section");
   if (infoSection) {
     infoSection.classList.remove("hidden");
-    // Update URL without reload
-    history.pushState(null, null, "#info");
+    updateSidebarActiveState("nav-info");
   }
 }
 

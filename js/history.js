@@ -2,6 +2,7 @@ import { getCurrentLang, updateTexts } from "./i18n.js";
 import { translations } from "./translations.js";
 import { gameManager } from "./game-manager.js";
 import { startDailyGame } from "./home.js";
+import { updateSidebarActiveState } from "./sidebar.js";
 
 export let histViewDate = new Date();
 let puzzleExistsCache = {};
@@ -90,6 +91,7 @@ export function showHistoryUI() {
   document.getElementById("info-section")?.classList.add("hidden");
 
   document.body.classList.add("history-active");
+  updateSidebarActiveState("nav-history");
   updateHistoryUI();
 }
 
@@ -100,7 +102,10 @@ export function hideHistoryUI() {
 
   const hash = window.location.hash;
   const isInternalRouting =
-    hash === "#profile" || hash === "#guide" || hash === "#game";
+    hash === "#profile" ||
+    hash === "#guide" ||
+    hash === "#game" ||
+    hash === "#info";
 
   if (!isInternalRouting) {
     document.body.classList.add("home-active");

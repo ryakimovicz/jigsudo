@@ -139,6 +139,27 @@ function _showProfileUI() {
   const footer = document.querySelector(".main-footer");
   if (footer) footer.classList.remove("hidden");
 
+  // Highlight Sidebar Button (Cuenta)
+  // We accept that this might be called "btn-auth" in the HTML
+  // Note: We need to ensure we import this function if not available,
+  // but looking at imports, we need to add it to the top of the file first.
+  // Wait, I can't add import here. I must do it in a separate block or relying on dynamic import?
+  // Better to add the static import at the top of the file in a separate step?
+  // actually I can use dynamic import for safety if I don't want to mess with top of file,
+  // or just edit the top of file.
+  // Let's edit the top of the file as well in the next step.
+  // For now, let's assume I will add it.
+
+  // Actually, I can use the global scope if it was attached? No it's a module.
+  // I will use dynamic import for this specific function to avoid changing top of file if I can avoid it?
+  // No, `sidebar.js` exports it.
+  // Let's just use dynamic import for now to keep it localized and safer vs file shifts.
+  import("./sidebar.js").then((mod) => {
+    if (mod.updateSidebarActiveState) {
+      mod.updateSidebarActiveState("btn-auth");
+    }
+  });
+
   updateProfileData();
 
   // Update Header Button to Close Icon
@@ -160,7 +181,10 @@ function _hideProfileUI() {
 
   const hash = window.location.hash;
   const isInternalRouting =
-    hash === "#history" || hash === "#guide" || hash === "#game";
+    hash === "#history" ||
+    hash === "#guide" ||
+    hash === "#game" ||
+    hash === "#info";
 
   // ONLY restore home and class if we are actually going "home" (no hash)
   if (!isInternalRouting) {

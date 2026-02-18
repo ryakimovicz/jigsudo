@@ -1,3 +1,14 @@
+export function updateSidebarActiveState(activeId) {
+  const navItems = document.querySelectorAll(".nav-item");
+  navItems.forEach((item) => {
+    if (item.id === activeId) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("side-sidebar");
   const toggleBtn = document.getElementById("sidebar-toggle");
