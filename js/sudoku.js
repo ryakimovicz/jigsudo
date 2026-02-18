@@ -1076,6 +1076,14 @@ export function resumeSudokuState() {
         slot.innerHTML = "";
         slot.appendChild(content);
         slot.classList.add("filled");
+
+        // DEBUG: Check chunk content being rendered
+        if (slotIndex === 0) {
+          console.log(
+            `[Sudoku] Hydrating Slot 0 with Chunk:`,
+            chunks[slotIndex],
+          );
+        }
       }
     }
 
@@ -1093,13 +1101,28 @@ export function resumeSudokuState() {
         if (initialVal === 0) {
           cell.classList.add("user-filled");
         }
-      } else if (isPostSudoku && solution) {
-        // FALLBACK: If we are in later stages, any empty cell must be filled from solution
-        const solVal = solution[row][col];
-        if (solVal !== 0) {
-          cell.textContent = solVal;
-          if (initialVal === 0) {
-            cell.classList.add("user-filled");
+      } else {
+        // CRITICAL FIX: Explicitly clear cell if state says it's empty.
+        // This prevents "ghost" numbers from underlying Jigsaw pieces (if they reverted to default permutation)
+        // from bleeding through into the Sudoku grid.
+        if (!cell.classList.contains("has-notes")) {
+          cell.textContent = "";
+          cell.classList.remove(
+            "user-filled",
+            "error",
+            "related-cell",
+            "highlight-match",
+          );
+        }
+
+        if (isPostSudoku && solution) {
+          // FALLBACK: If we are in later stages, any empty cell must be filled from solution
+          const solVal = solution[row][col];
+          if (solVal !== 0) {
+            cell.textContent = solVal;
+            if (initialVal === 0) {
+              cell.classList.add("user-filled");
+            }
           }
         }
       }

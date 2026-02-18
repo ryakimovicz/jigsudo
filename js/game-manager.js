@@ -137,6 +137,17 @@ export class GameManager {
       await this._populateSearchTargets(this.state.jigsaw.variation);
     }
 
+    // DEBUG: Check loaded state
+    if (CONFIG.debugMode) {
+      console.log(
+        `[GameManager] Loaded Variation: ${this.state.jigsaw.variation}`,
+      );
+      console.log(
+        `[GameManager] Loaded InitialPuzzle Row 0:`,
+        JSON.stringify(this.state.data.initialPuzzle[0]),
+      );
+    }
+
     return true;
   }
 
@@ -285,6 +296,11 @@ export class GameManager {
       return;
 
     console.log(`[GM] Switch Variation: ${oldVariation} -> ${newVariation}`);
+    if (this.state.data && this.state.data.initialPuzzle) {
+      console.log(
+        `[GM] Pre-Transform InitialPuzzle (0,0): ${this.state.data.initialPuzzle[0][0]}`,
+      );
+    }
 
     // 1. REVERT OLD (Inverse of Mirror is Mirror)
     if (oldVariation !== "0") {
@@ -296,7 +312,20 @@ export class GameManager {
         this.state.data.solution,
         oldVariation,
       );
-      if (this.state.sudoku && this.state.sudoku.currentBoard) {
+
+      // Ensure Sudoku State Exists
+      if (!this.state.sudoku) this.state.sudoku = {};
+
+      if (!this.state.sudoku.currentBoard) {
+        // Init from ALREADY REVERTED initialPuzzle -> No need to transform
+        console.warn(
+          "[GM] CurrentBoard missing during revert. Initializing from reverted puzzle.",
+        );
+        this.state.sudoku.currentBoard = JSON.parse(
+          JSON.stringify(this.state.data.initialPuzzle),
+        );
+      } else {
+        // Transform existing board
         this.state.sudoku.currentBoard = this._transformMatrix(
           this.state.sudoku.currentBoard,
           oldVariation,
@@ -314,7 +343,20 @@ export class GameManager {
         this.state.data.solution,
         newVariation,
       );
-      if (this.state.sudoku && this.state.sudoku.currentBoard) {
+
+      // Ensure Sudoku State Exists
+      if (!this.state.sudoku) this.state.sudoku = {};
+
+      if (!this.state.sudoku.currentBoard) {
+        // Init from ALREADY TRANSFORMED initialPuzzle -> No need to transform
+        console.warn(
+          "[GM] CurrentBoard missing during apply. Initializing from transformed puzzle.",
+        );
+        this.state.sudoku.currentBoard = JSON.parse(
+          JSON.stringify(this.state.data.initialPuzzle),
+        );
+      } else {
+        // Transform existing board
         this.state.sudoku.currentBoard = this._transformMatrix(
           this.state.sudoku.currentBoard,
           newVariation,
@@ -324,6 +366,20 @@ export class GameManager {
 
     this.state.jigsaw.variation = newVariation;
     await this._populateSearchTargets(newVariation);
+
+    if (this.state.data && this.state.data.initialPuzzle) {
+      console.log(
+        `[GM] Post-Transform InitialPuzzle Row 0:`,
+        JSON.stringify(this.state.data.initialPuzzle[0]),
+      );
+    }
+    if (this.state.sudoku && this.state.sudoku.currentBoard) {
+      console.log(
+        `[GM] Post-Transform CurrentBoard Row 0:`,
+        JSON.stringify(this.state.sudoku.currentBoard[0]),
+      );
+    }
+
     this.save();
   }
 
