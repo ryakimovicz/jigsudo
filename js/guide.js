@@ -21,6 +21,11 @@ let tutorialPencilMode = false;
 let undoStack = [];
 let lockedNumber = null;
 
+// Search Stage State
+let isSearchSelecting = false;
+let currentSearchCells = [];
+let currentSearchPath = [];
+
 export function initGuide() {
   setupRouting();
   setupTutorialListeners();
@@ -277,37 +282,71 @@ function initTutorialState() {
     { r: 3, c: 0, val: 2 },
     { r: 8, c: 5, val: 3 },
   ];
-  tutorialState.peaksErrors = 0; // Initialize error counter
-  tutorialState.searchSequences = [
+  tutorialState.peaksErrors = 0;
+
+  // SEARCH STAGE: 4 user targets (Lengths 6, 5, 4, 3)
+  // Manually verified to be STRICTLY orthogonal.
+  tutorialState.searchTargets = [
     {
+      id: "s1", // 6 digits
+      numbers: [5, 8, 7, 4, 6, 2],
       path: [
-        { r: 0, c: 0 },
-        { r: 0, c: 1 },
-        { r: 0, c: 2 },
-      ],
-      found: false,
-    },
-    {
-      path: [
-        { r: 5, c: 0 },
-        { r: 6, c: 1 },
-        { r: 7, c: 2 },
-        { r: 8, c: 3 },
-      ],
-      found: false,
-    },
-    {
-      path: [
-        { r: 2, c: 2 },
-        { r: 3, c: 2 },
-        { r: 4, c: 2 },
+        { r: 5, c: 1 },
         { r: 5, c: 2 },
-        { r: 6, c: 2 },
+        { r: 5, c: 3 },
+        { r: 5, c: 4 },
+        { r: 5, c: 5 },
+        { r: 4, c: 5 },
       ],
-      found: false,
+      isRequired: true,
+    },
+    {
+      id: "s2", // 5 digits
+      numbers: [2, 4, 9, 8, 3],
+      path: [
+        { r: 1, c: 3 },
+        { r: 2, c: 3 },
+        { r: 2, c: 4 },
+        { r: 2, c: 5 },
+        { r: 2, c: 6 },
+      ],
+      isRequired: true,
+    },
+    {
+      id: "s3", // 4 digits
+      numbers: [5, 7, 8, 4],
+      path: [
+        { r: 3, c: 5 },
+        { r: 3, c: 6 },
+        { r: 3, c: 7 },
+        { r: 3, c: 8 },
+      ],
+      isRequired: true,
+    },
+    {
+      id: "s4", // 3 digits
+      numbers: [3, 6, 9],
+      path: [
+        { r: 3, c: 1 },
+        { r: 3, c: 2 },
+        { r: 3, c: 3 },
+      ],
+      isRequired: true,
     },
   ];
-  tutorialState.codeTarget = [3, 1, 9, 5, 4];
+
+  // Clear any pre-found (all non-targets are visually handled by render logic)
+  tutorialState.searchFound = [];
+
+  // CODE STAGE: 3-digit sequence -> 5-digit sequence
+  // Base: [2, 8, 5] (Locations: (2,2), (4,4), (2,8))
+  // Extended: [2, 8, 5, 2, 8]
+  tutorialState.codeTarget = [2, 8, 5, 2, 8];
+  tutorialState.codePath = [
+    { r: 2, c: 2 },
+    { r: 4, c: 4 },
+    { r: 2, c: 8 },
+  ];
 }
 
 function loadStage(stage) {
@@ -970,125 +1009,292 @@ function renderTutorialSearch() {
   const container = document.getElementById("tutorial-board-container");
   container.innerHTML = "";
 
+  const searchWrapper = document.createElement("div");
+  searchWrapper.className = "sudoku-tutorial-wrapper search-mode";
+
   const board = document.createElement("div");
   board.className = "tutorial-sudoku-board";
-  let html = `<table class="sudoku-table tutorial search">`;
+  board.id = "tutorial-search-grid";
 
-  for (let r = 0; r < 9; r++) {
-    html += "<tr>";
-    for (let c = 0; c < 9; c++) {
+  // Render 9 chunks (matches daily game)
+  for (let sIdx = 0; sIdx < 9; sIdx++) {
+    const slot = document.createElement("div");
+    slot.className = "sudoku-chunk-slot";
+    slot.dataset.slotIndex = sIdx;
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "mini-sudoku-grid";
+
+    for (let cIdx = 0; cIdx < 9; cIdx++) {
+      const cell = document.createElement("div");
+      cell.className = "mini-cell";
+
+      const r = Math.floor(sIdx / 3) * 3 + Math.floor(cIdx / 3);
+      const c = (sIdx % 3) * 3 + (cIdx % 3);
       const val = tutorialState.solution[r][c];
 
-      // Check if this cell is part of a sequence
-      const isTarget = tutorialState.searchSequences.some((seq) =>
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.textContent = val;
+
+      // Class Logic
+      // Class Logic
+      const isPeak = tutorialState.allPeaks.some((p) => p.r === r && p.c === c);
+      const isValley = tutorialState.allValleys.some(
+        (v) => v.r === r && v.c === c,
+      );
+
+      // Check if this cell is part of a TARGET sequence
+      const isTarget = tutorialState.searchTargets.some((seq) =>
         seq.path.some((p) => p.r === r && p.c === c),
       );
 
-      // Pre-mark some OTHER cells as "found" sequences to show progression
-      const isDummy = !isTarget && (r === c || r + c === 8);
+      // Check if ALREADY FOUND (could be target or pre-found filler)
+      // Actually, we are not using explicit filler objects anymore.
+      // Logic: If it is NOT a Peak, NOT a Valley, NOT a User Target, and NOT Code -> It is a filled "Found" cell.
 
-      html += `<td class="${isDummy ? "correct" : ""}" data-r="${r}" data-c="${c}">${val}</td>`;
-    }
-    html += "</tr>";
-  }
-  board.innerHTML = html + "</table>";
+      const isCode = tutorialState.codePath.some((p) => p.r === r && p.c === c);
 
-  board.querySelectorAll("td").forEach((td) => {
-    td.onclick = () => {
-      const r = parseInt(td.dataset.r);
-      const c = parseInt(td.dataset.c);
+      let cellClass = "mini-cell";
 
-      tutorialState.searchSequences.forEach((seq) => {
-        if (seq.path.some((p) => p.r === r && p.c === c)) {
-          seq.path.forEach((p) => {
-            const cell = board.querySelector(
-              `td[data-r="${p.r}"][data-c="${p.c}"]`,
-            );
-            if (cell) cell.classList.add("correct");
-          });
-          seq.found = true;
+      if (isPeak) {
+        cellClass += " peak-found";
+        cell.title = "Pico";
+      } else if (isValley) {
+        cellClass += " valley-found";
+        cell.title = "Valle";
+      } else if (isCode) {
+        // Leave clean for next stage (or maybe mark as 'potential'?)
+        // For now, normal cell.
+      } else if (isTarget) {
+        // If this specific target is found, mark it
+        const owningSeq = tutorialState.searchTargets.find((s) =>
+          s.path.some((p) => p.r === r && p.c === c),
+        );
+        if (owningSeq && tutorialState.searchFound.includes(owningSeq.id)) {
+          cellClass += " search-found-cell";
         }
-      });
-
-      if (tutorialState.searchSequences.every((s) => s.found)) {
-        setTimeout(() => nextTutorialStage(), 1000);
+      } else {
+        // It's a filler cell (pre-found)
+        cellClass += " search-found-cell";
       }
-    };
-  });
 
-  container.appendChild(board);
+      cell.className = cellClass;
+      cell.textContent = val;
+
+      // If it was already found by user
+      const isFoundByUser = tutorialState.searchTargets.some(
+        (seq) =>
+          tutorialState.searchFound.includes(seq.id) &&
+          seq.path.some((p) => p.r === r && p.c === c),
+      );
+      if (isFoundByUser) cell.classList.add("search-found-cell");
+
+      miniGrid.appendChild(cell);
+    }
+    slot.appendChild(miniGrid);
+    board.appendChild(slot);
+  }
+
+  // Targets UI
+  const targetContainer = document.createElement("div");
+  targetContainer.className = "search-targets-container";
+  const list = document.createElement("div");
+  list.className = "search-targets-list";
+
+  tutorialState.searchTargets.forEach((target) => {
+    const chip = document.createElement("div");
+    chip.className = "search-target-chip";
+    if (tutorialState.searchFound.includes(target.id))
+      chip.classList.add("found");
+    chip.textContent = target.numbers.join(" - ");
+    list.appendChild(chip);
+  });
+  targetContainer.appendChild(list);
+
+  searchWrapper.appendChild(board);
+  searchWrapper.appendChild(targetContainer);
+  container.appendChild(searchWrapper);
 }
 
 // --- STAGE 6: CODE ---
+// --- STAGE 6: CODE (SIMON STYLE) ---
+let codeLevel = 1; // 1=Len3, 2=Len4, 3=Len5
+let codeStep = 0;
+let isCodeInputBlocked = true;
+let codeSequence = [];
+let tutorialIdleTimer = null;
+
 function renderTutorialCode() {
   const container = document.getElementById("tutorial-board-container");
   container.innerHTML = "";
 
-  const codeWrapper = document.createElement("div");
-  codeWrapper.className = "code-tutorial-wrapper";
-  codeWrapper.style.textAlign = "center";
-
-  const display = document.createElement("div");
-  display.className = "code-display glass-panel";
-  display.style.fontSize = "2.5rem";
-  display.style.padding = "20px";
-  display.style.marginBottom = "30px";
-  display.style.fontFamily = "monospace";
-  display.style.letterSpacing = "10px";
-  display.textContent = "_ _ _ _ _";
-  codeWrapper.appendChild(display);
-
-  const keypad = document.createElement("div");
-  keypad.className = "tutorial-keypad";
-  keypad.style.display = "grid";
-  keypad.style.gridTemplateColumns = "repeat(3, 1fr)";
-  keypad.style.gap = "10px";
-  keypad.style.maxWidth = "250px";
-  keypad.style.margin = "0 auto";
-
-  let userSeq = [];
-  const target = tutorialState.codeTarget;
-
-  for (let i = 1; i <= 9; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    btn.className = "keypad-btn glass-panel";
-    btn.onclick = () => {
-      const nextNum = target[userSeq.length];
-      if (i === nextNum) {
-        userSeq.push(i);
-        display.textContent =
-          userSeq.join(" ") + " " + "_ ".repeat(5 - userSeq.length);
-        display.style.color = "var(--primary-color)";
-        if (userSeq.length === 5) {
-          setTimeout(() => finishTutorial(), 1000);
-        }
-      } else {
-        // Reset on error
-        userSeq = [];
-        display.textContent = "_ _ _ _ _";
-        display.style.color = "#ff5555";
-        setTimeout(() => {
-          display.style.color = "";
-        }, 300);
-      }
-    };
-    keypad.appendChild(btn);
+  // Reset State on Initial Render
+  if (!container.dataset.codeInitialized) {
+    codeLevel = 1; // Start at Length 3
+    codeStep = 0;
+    isCodeInputBlocked = true;
+    tutorialIdleTimer = null;
+    container.dataset.codeInitialized = "true";
   }
 
-  codeWrapper.appendChild(keypad);
+  const codeWrapper = document.createElement("div");
+  codeWrapper.className = "sudoku-tutorial-wrapper code-mode"; // Re-use layout styles
+
+  const board = document.createElement("div");
+  board.className = "tutorial-sudoku-board";
+  board.id = "tutorial-code-grid";
+
+  // Render Full 9x9 Board
+  for (let sIdx = 0; sIdx < 9; sIdx++) {
+    const slot = document.createElement("div");
+    slot.className = "sudoku-chunk-slot";
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "mini-sudoku-grid";
+
+    for (let cIdx = 0; cIdx < 9; cIdx++) {
+      const cell = document.createElement("div");
+      // Default: "search-found-cell" (Dimmed) to show they are done
+      let cellClass = "mini-cell search-found-cell";
+
+      const r = Math.floor(sIdx / 3) * 3 + Math.floor(cIdx / 3);
+      const c = (sIdx % 3) * 3 + (cIdx % 3);
+      const val = tutorialState.solution[r][c];
+
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.textContent = val;
+
+      // Check if this is a CODE active cell
+      const isCode = tutorialState.codePath.some((p) => p.r === r && p.c === c);
+
+      if (isCode) {
+        // Highlight as ACTIVE code cell
+        cellClass = "mini-cell code-cell"; // Use code.css class
+        cell.onclick = () => handleTutorialCodeClick(cell, val);
+      }
+
+      cell.className = cellClass;
+      miniGrid.appendChild(cell);
+    }
+    slot.appendChild(miniGrid);
+    board.appendChild(slot);
+  }
+
+  // Visual Only - No Text Instructions
+  const statusPanel = document.createElement("div");
+  statusPanel.className = "code-status-panel glass-panel";
+  statusPanel.style.marginTop = "20px";
+  statusPanel.style.height = "20px"; // Min height to keep layout stable if needed
+  statusPanel.style.opacity = "0"; // Invisible but present
+
+  codeWrapper.appendChild(board);
+  codeWrapper.appendChild(statusPanel);
   container.appendChild(codeWrapper);
 
-  // Initial Hint after 2s
+  // Start Sequence
   setTimeout(() => {
-    if (userSeq.length === 0) {
-      const hint = document.createElement("p");
-      hint.style.marginTop = "20px";
-      hint.style.opacity = "0.7";
-      hint.textContent = `HINT: ${target.slice(0, 3).join(" ")} ...`;
-      codeWrapper.appendChild(hint);
+    playTutorialCodeSequence();
+  }, 1000);
+}
+
+function startTutorialIdleTimer() {
+  clearTutorialIdleTimer();
+  tutorialIdleTimer = setTimeout(() => {
+    playTutorialCodeSequence();
+  }, 4000); // 4s idle -> replay
+}
+
+function clearTutorialIdleTimer() {
+  if (tutorialIdleTimer) {
+    clearTimeout(tutorialIdleTimer);
+    tutorialIdleTimer = null;
+  }
+}
+
+function playTutorialCodeSequence() {
+  isCodeInputBlocked = true;
+  codeStep = 0;
+  clearTutorialIdleTimer();
+
+  // Level 1->3, 2->4, 3->5
+  const currentLen = codeLevel + 2;
+  codeSequence = tutorialState.codeTarget.slice(0, currentLen);
+
+  let delay = 500;
+
+  codeSequence.forEach((val) => {
+    setTimeout(() => {
+      highlightTutorialCodeCell(val);
+    }, delay);
+    delay += 800;
+  });
+
+  setTimeout(() => {
+    isCodeInputBlocked = false;
+    startTutorialIdleTimer(); // Start waiting for user
+  }, delay);
+}
+
+function highlightTutorialCodeCell(val) {
+  const cells = document.querySelectorAll("#tutorial-code-grid .code-cell");
+  cells.forEach((cell) => {
+    if (parseInt(cell.textContent) === val) {
+      cell.classList.add("simon-active");
+      setTimeout(() => cell.classList.remove("simon-active"), 500);
     }
-  }, 2000);
+  });
+}
+
+function handleTutorialCodeClick(cell, val) {
+  if (isCodeInputBlocked) return;
+
+  clearTutorialIdleTimer(); // Interaction detected
+
+  const expected = codeSequence[codeStep];
+
+  // Visual Feedback
+  cell.classList.add("simon-active");
+  setTimeout(() => cell.classList.remove("simon-active"), 200);
+
+  if (val === expected) {
+    codeStep++;
+
+    // Refresh Idle Timer if correct but sequence not done
+    if (codeStep < codeSequence.length) {
+      startTutorialIdleTimer();
+    }
+
+    if (codeStep >= codeSequence.length) {
+      // Level Complete
+      isCodeInputBlocked = true;
+      clearTutorialIdleTimer();
+
+      if (codeLevel < 3) {
+        // Next Level
+        codeLevel++;
+        setTimeout(() => {
+          playTutorialCodeSequence();
+        }, 1000);
+      } else {
+        // Victory!
+        setTimeout(() => finishTutorial(), 500);
+      }
+    }
+  } else {
+    // Error -> Penalty Reset
+    cell.classList.add("simon-error");
+    setTimeout(() => cell.classList.remove("simon-error"), 500);
+
+    isCodeInputBlocked = true;
+
+    // Reset to Level 1 (Penalty)
+    setTimeout(() => {
+      codeLevel = 1;
+      playTutorialCodeSequence();
+    }, 1000);
+  }
 }
 
 function nextTutorialStage() {
@@ -1107,7 +1313,9 @@ function finishTutorial() {
             <button id="btn-tutorial-home" class="btn-primary">${t.btn_finish_tutorial}</button>
         </div>
     `;
-  document.getElementById("btn-tutorial-home").onclick = hideGuide;
+  document.getElementById("btn-tutorial-home").onclick = () => {
+    window.location.href = "/";
+  };
 }
 // --- DRAG & DROP ENGINE ---
 function initTutorialDragAndDrop() {
@@ -1124,57 +1332,108 @@ function handlePointerDown(e) {
   // Only Mouse or Pen
   if (e.pointerType === "touch") return;
 
-  // Only if in Jigsaw Stage
-  if (currentTutorialStage !== 2) return;
+  // Interaction based on Stage
+  if (currentTutorialStage === 2) {
+    const target = e.target.closest(".jigsaw-piece, .jigsaw-slot");
+    if (!target) return;
 
-  const target = e.target.closest(".jigsaw-piece, .jigsaw-slot");
-  if (!target) return;
+    // If slot is empty, ignore
+    if (
+      target.classList.contains("jigsaw-slot") &&
+      !target.classList.contains("filled")
+    )
+      return;
 
-  // If slot is empty, ignore
-  if (
-    target.classList.contains("jigsaw-slot") &&
-    !target.classList.contains("filled")
-  )
-    return;
+    // Prevent dragging locked pieces
+    if (target.classList.contains("locked")) return;
 
-  // Prevent dragging locked pieces
-  if (target.classList.contains("locked")) return;
+    potentialDragTarget = target;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+  } else if (currentTutorialStage === 5) {
+    // Search Selection Start
+    const cell = e.target.closest(".mini-cell");
+    if (!cell) return;
 
-  potentialDragTarget = target;
-  dragStartX = e.clientX;
-  dragStartY = e.clientY;
+    // Selection cannot start on Peaks/Valleys or found cells
+    if (
+      cell.classList.contains("peak-found") ||
+      cell.classList.contains("valley-found") ||
+      cell.classList.contains("search-found-cell")
+    )
+      return;
+
+    isSearchSelecting = true;
+    currentSearchCells = [];
+    currentSearchPath = [];
+    addCellToSearchSelection(cell);
+  }
+}
+
+function addCellToSearchSelection(cell) {
+  const r = parseInt(cell.dataset.r);
+  const c = parseInt(cell.dataset.c);
+  currentSearchCells.push(cell);
+  currentSearchPath.push({ r, c });
+  cell.classList.add("search-selected");
 }
 
 function handlePointerMove(e) {
-  if (potentialDragTarget && !dragClone) {
-    const dx = Math.abs(e.clientX - dragStartX);
-    const dy = Math.abs(e.clientY - dragStartY);
+  if (currentTutorialStage === 2) {
+    if (potentialDragTarget && !dragClone) {
+      const dx = Math.abs(e.clientX - dragStartX);
+      const dy = Math.abs(e.clientY - dragStartY);
 
-    if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
-      startDragging(e);
+      if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+        startDragging(e);
+      }
     }
-  }
 
-  if (!dragClone) return;
-  e.preventDefault();
+    if (!dragClone) return;
+    e.preventDefault();
 
-  updateDragPosition(e.clientX, e.clientY);
+    updateDragPosition(e.clientX, e.clientY);
 
-  // Highlight targets
-  const elements = document.elementsFromPoint(e.clientX, e.clientY);
-  const dropTarget = elements.find(
-    (el) =>
-      el.classList.contains("jigsaw-slot") ||
-      el.classList.contains("jigsaw-piece") ||
-      el.classList.contains("jigsaw-panel-slot") ||
-      el.classList.contains("tutorial-jigsaw-panel"),
-  );
+    // Highlight targets
+    const elements = document.elementsFromPoint(e.clientX, e.clientY);
+    const dropTarget = elements.find(
+      (el) =>
+        el.classList.contains("jigsaw-slot") ||
+        el.classList.contains("jigsaw-piece") ||
+        el.classList.contains("jigsaw-panel-slot") ||
+        el.classList.contains("tutorial-jigsaw-panel"),
+    );
 
-  document
-    .querySelectorAll(".drop-hover")
-    .forEach((el) => el.classList.remove("drop-hover"));
-  if (dropTarget) {
-    dropTarget.classList.add("drop-hover");
+    document
+      .querySelectorAll(".drop-hover")
+      .forEach((el) => el.classList.remove("drop-hover"));
+    if (dropTarget) {
+      dropTarget.classList.add("drop-hover");
+    }
+  } else if (currentTutorialStage === 5 && isSearchSelecting) {
+    e.preventDefault();
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = el?.closest(".mini-cell");
+
+    if (!cell || currentSearchCells.includes(cell)) return;
+
+    // Validate neighbor (Orthogonal)
+    const lastCell = currentSearchCells[currentSearchCells.length - 1];
+    const lr = parseInt(lastCell.dataset.r);
+    const lc = parseInt(lastCell.dataset.c);
+    const nr = parseInt(cell.dataset.r);
+    const nc = parseInt(cell.dataset.c);
+
+    if (Math.abs(lr - nr) + Math.abs(lc - nc) === 1) {
+      // Must not be found/peak/valley
+      if (
+        !cell.classList.contains("peak-found") &&
+        !cell.classList.contains("valley-found") &&
+        !cell.classList.contains("search-found-cell")
+      ) {
+        addCellToSearchSelection(cell);
+      }
+    }
   }
 }
 
@@ -1218,41 +1477,92 @@ function startDragging(e) {
 }
 
 function handlePointerUp(e) {
-  potentialDragTarget = null;
+  if (currentTutorialStage === 2) {
+    potentialDragTarget = null;
 
-  if (!dragClone) return;
-  e.preventDefault();
+    if (!dragClone) return;
+    e.preventDefault();
 
-  const elements = document.elementsFromPoint(e.clientX, e.clientY);
-  const dropTarget = elements.find(
-    (el) =>
-      el.classList.contains("jigsaw-slot") ||
-      el.classList.contains("jigsaw-piece") ||
-      el.classList.contains("jigsaw-panel-slot") ||
-      el.classList.contains("tutorial-jigsaw-panel"),
-  );
+    const elements = document.elementsFromPoint(e.clientX, e.clientY);
+    const dropTarget = elements.find(
+      (el) =>
+        el.classList.contains("jigsaw-slot") ||
+        el.classList.contains("jigsaw-piece") ||
+        el.classList.contains("jigsaw-panel-slot") ||
+        el.classList.contains("tutorial-jigsaw-panel"),
+    );
 
-  const sourceContent = selectedPieceElement.querySelector(".mini-sudoku-grid");
+    const sourceContent =
+      selectedPieceElement.querySelector(".mini-sudoku-grid");
 
-  if (dropTarget) {
-    handleDrop(selectedPieceElement, dropTarget);
+    if (dropTarget) {
+      handleDrop(selectedPieceElement, dropTarget);
+    } else {
+      // Return to source
+      if (sourceContent) sourceContent.style.opacity = "1";
+    }
+
+    // Cleanup
+    if (dragClone) {
+      dragClone.remove();
+      dragClone = null;
+    }
+    if (selectedPieceElement) {
+      selectedPieceElement.classList.remove("dragging-source");
+      selectedPieceElement = null;
+    }
+    document
+      .querySelectorAll(".drop-hover")
+      .forEach((el) => el.classList.remove("drop-hover"));
+  } else if (currentTutorialStage === 5 && isSearchSelecting) {
+    isSearchSelecting = false;
+    validateSearchSelection();
+  }
+}
+
+function validateSearchSelection() {
+  const currentNumString = currentSearchCells
+    .map((c) => c.textContent.trim())
+    .join(",");
+
+  const match = tutorialState.searchTargets.find((t) => {
+    if (tutorialState.searchFound.includes(t.id)) return false;
+    return t.numbers.join(",") === currentNumString;
+  });
+
+  if (match) {
+    tutorialState.searchFound.push(match.id);
+    currentSearchCells.forEach((c) => {
+      c.classList.remove("search-selected");
+      c.classList.add("search-found-cell");
+    });
+
+    // Update Chips
+    const chips = document.querySelectorAll(".search-target-chip");
+    chips.forEach((chip) => {
+      const nums = chip.textContent.split(" - ").join(",");
+      if (nums === currentNumString) chip.classList.add("found");
+    });
+
+    if (
+      tutorialState.searchFound.length === tutorialState.searchTargets.length
+    ) {
+      setTimeout(() => nextTutorialStage(), 1000);
+    }
   } else {
-    // Return to source
-    if (sourceContent) sourceContent.style.opacity = "1";
+    // Error feedback
+    const errorCells = [...currentSearchCells];
+    errorCells.forEach((c) => {
+      c.classList.remove("search-selected");
+      c.classList.add("search-error");
+    });
+    setTimeout(() => {
+      errorCells.forEach((c) => c.classList.remove("search-error"));
+    }, 500);
   }
 
-  // Cleanup
-  if (dragClone) {
-    dragClone.remove();
-    dragClone = null;
-  }
-  if (selectedPieceElement) {
-    selectedPieceElement.classList.remove("dragging-source");
-    selectedPieceElement = null;
-  }
-  document
-    .querySelectorAll(".drop-hover")
-    .forEach((el) => el.classList.remove("drop-hover"));
+  currentSearchCells = [];
+  currentSearchPath = [];
 }
 
 function updateDragPosition(x, y) {

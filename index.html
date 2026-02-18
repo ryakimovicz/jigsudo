@@ -19,7 +19,9 @@
     <link rel="stylesheet" href="css/auth.css" />
     <link rel="stylesheet" href="css/profile.css?v=40" />
     <link rel="stylesheet" href="css/history.css" />
+    <link rel="stylesheet" href="css/history.css" />
     <link rel="stylesheet" href="css/guide.css" />
+    <link rel="stylesheet" href="css/info.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -747,6 +749,43 @@
           </div>
         </div>
       </section>
+
+      <!-- Info Section -->
+      <section id="info-section" class="hidden">
+        <!-- Header -->
+        <header class="info-header">
+            <h2 class="section-title">Información</h2>
+        </header>
+
+        <!-- Scoring Rules -->
+        <div class="info-card glass-panel">
+            <h3>📊 Sistema de Puntuación (RP)</h3>
+            <p>Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.</p>
+            <ul>
+                <li><strong>Base RP:</strong> Puntos garantizados por terminar.</li>
+                <li><strong>Bonus de Tiempo:</strong> Hasta <strong>+6.0 RP</strong> si eres rápido. Decrece durante 6 horas.</li>
+                <li><strong>Penalización:</strong> <strong>-0.5 RP</strong> por cada error cometido.</li>
+                <li><strong>Racha Diaria:</strong> Juega todos los días para demostrar tu constancia.</li>
+            </ul>
+        </div>
+
+        <!-- Ranks System -->
+        <div class="info-card glass-panel">
+            <h3>🏆 Sistema de Rangos</h3>
+            <p>Acumula RP para subir de nivel y desbloquear nuevos rangos. Cada rango representa tu maestría en Jigsudo.</p>
+            <div id="ranks-table-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Community/More -->
+        <div class="info-card glass-panel">
+            <h3>🌐 Comunidad</h3>
+            <p>Jigsudo es un proyecto independiente. ¡Gracias por jugar!</p>
+            <p>Versión: <span id="app-version">1.0.0</span></p>
+            <p><a href="https://github.com/ryakimovicz/jigsudo" target="_blank" style="color: var(--accent-color);">Ver en GitHub</a></p>
+        </div>
+      </section>
   
       <!-- Game Section (Sudoku/Jigsaw) -->
       <section id="game-section" class="hidden">
@@ -1434,6 +1473,8 @@
     <!-- SCRIPTS -->
     <script type="module" src="js/home.js"></script>
     <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/guide.js"></script>
+    <script type="module" src="js/info.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/sidebar.js" defer></script>
     <script src="js/header.js" defer></script>
