@@ -49,11 +49,13 @@ export function initHistory() {
     });
   }
 
-  // Handle Initial Hash
-  handleHistRouting();
-
-  // Listen for Hash Changes
-  window.addEventListener("hashchange", handleHistRouting);
+  // Handle Initial Hash - handled by router.js
+  // Listen for Router Changes
+  window.addEventListener("routeChanged", ({ detail }) => {
+    if (detail.hash === "#history") {
+      updateHistoryUI(); // Refresh list
+    }
+  });
 
   // Listen for Language Changes
   window.addEventListener("languageChanged", () => {
@@ -66,15 +68,6 @@ export function initHistory() {
     navHistory.addEventListener("click", () => {
       window.location.hash = "history";
     });
-  }
-}
-
-function handleHistRouting() {
-  const hash = window.location.hash;
-  if (hash === "#history") {
-    showHistoryUI();
-  } else {
-    hideHistoryUI();
   }
 }
 

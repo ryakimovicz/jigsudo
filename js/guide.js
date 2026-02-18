@@ -31,10 +31,13 @@ let currentSearchCells = [];
 let currentSearchPath = [];
 
 export function initGuide() {
-  setupRouting();
+  // setupRouting(); // Handled by router.js
   setupTutorialListeners();
   setupSidebarConnection();
   initTutorialDragAndDrop();
+  // Re-init slider logic
+  updateGuideSidebarStatus();
+  startTutorial();
 }
 
 function setupSidebarConnection() {
@@ -48,102 +51,60 @@ function setupSidebarConnection() {
 
 // function setupTabSwitching() { ... } // Removed
 
-function setupRouting() {
-  window.addEventListener("hashchange", handleGuideRouting);
-  handleGuideRouting();
+// Routing handled by router.js
+// function setupRouting() { ... }
 
-  // Physical Keyboard Support for Tutorial
-  document.addEventListener("keydown", (e) => {
-    if (window.location.hash !== "#guide") return;
-    if (currentTutorialStage !== 3) return; // Only for Sudoku stage
+// Physical Keyboard Support for Tutorial
+document.addEventListener("keydown", (e) => {
+  if (window.location.hash !== "#guide") return;
+  if (currentTutorialStage !== 3) return; // Only for Sudoku stage
 
-    const key = e.key;
+  const key = e.key;
 
-    // Numbers 1-9
-    if (key >= "1" && key <= "9") {
-      handleTutorialNumberInput(key);
-      return;
-    }
-
-    // Backspace / Delete
-    if (key === "Backspace" || key === "Delete") {
-      clearTutorialSelectedCell();
-      return;
-    }
-
-    // Escape -> Deselect
-    if (key === "Escape") {
-      deselectTutorialCell();
-      return;
-    }
-
-    // Shortcuts
-    const lowerKey = key.toLowerCase();
-    if (lowerKey === "w" || lowerKey === "p" || lowerKey === "n") {
-      toggleTutorialPencilMode();
-    } else if (lowerKey === "q") {
-      handleTutorialUndo();
-    } else if (lowerKey === "e") {
-      clearTutorialSelectedCell();
-    }
-  });
-
-  // Global Click Listener for Tutorial Deselection (Parity)
-  document.addEventListener("click", (e) => {
-    if (window.location.hash !== "#guide") return;
-    if (currentTutorialStage !== 3) return;
-
-    const isControl = e.target.closest(".tutorial-sudoku-controls");
-    const isBoard = e.target.closest("#tutorial-sudoku-grid");
-    const isGenericNav = e.target.closest(".tutorial-nav");
-
-    if (!isControl && !isBoard && !isGenericNav) {
-      if (lockedNumber) unlockTutorialNumber();
-      deselectTutorialCell();
-      highlightSimilarTutorialCells(null);
-    }
-  });
-}
-
-function handleGuideRouting() {
-  if (window.location.hash === "#guide") {
-    showGuide();
-  } else {
-    // Hide guide if we are moving to any other state
-    const guideSection = document.getElementById("guide-section");
-    if (guideSection && !guideSection.classList.contains("hidden")) {
-      hideGuide();
-    }
+  // Numbers 1-9
+  if (key >= "1" && key <= "9") {
+    handleTutorialNumberInput(key);
+    return;
   }
-}
 
-function showGuide() {
-  // Hide other MAIN functional sections and the menu container
-  // We avoid hiding ALL sections because some (like rankings) are nested inside the menu
-  const sectionsToHide = [
-    "#game-section",
-    "#profile-section",
-    "#history-section",
-    "#info-section",
-  ];
-  sectionsToHide.forEach((selector) => {
-    document.querySelector(selector)?.classList.add("hidden");
-  });
-  document.getElementById("menu-content")?.classList.add("hidden");
-
-  const guideSection = document.getElementById("guide-section");
-  if (guideSection) {
-    guideSection.classList.remove("hidden");
+  // Backspace / Delete
+  if (key === "Backspace" || key === "Delete") {
+    clearTutorialSelectedCell();
+    return;
   }
-  document.body.classList.add("guide-active");
-  document.body.classList.remove("home-active");
 
-  updateSidebarActiveState("nav-how-to");
+  // Escape -> Deselect
+  if (key === "Escape") {
+    deselectTutorialCell();
+    return;
+  }
 
-  // Re-init slider logic if needed or just let CSS handle it
-  updateGuideSidebarStatus();
-  startTutorial();
-}
+  // Shortcuts
+  const lowerKey = key.toLowerCase();
+  if (lowerKey === "w" || lowerKey === "p" || lowerKey === "n") {
+    toggleTutorialPencilMode();
+  } else if (lowerKey === "q") {
+    handleTutorialUndo();
+  } else if (lowerKey === "e") {
+    clearTutorialSelectedCell();
+  }
+});
+
+// Global Click Listener for Tutorial Deselection (Parity)
+document.addEventListener("click", (e) => {
+  if (window.location.hash !== "#guide") return;
+  if (currentTutorialStage !== 3) return;
+
+  const isControl = e.target.closest(".tutorial-sudoku-controls");
+  const isBoard = e.target.closest("#tutorial-sudoku-grid");
+  const isGenericNav = e.target.closest(".tutorial-nav");
+
+  if (!isControl && !isBoard && !isGenericNav) {
+    if (lockedNumber) unlockTutorialNumber();
+    deselectTutorialCell();
+    highlightSimilarTutorialCells(null);
+  }
+});
 
 function hideGuide() {
   const guideSection = document.getElementById("guide-section");
@@ -158,11 +119,12 @@ function hideGuide() {
     hash === "#info";
 
   // Only restore home if we're not heading to another section
-  if (!isInternalRouting) {
-    document.body.classList.add("home-active");
-    const menuContent = document.getElementById("menu-content");
-    if (menuContent) menuContent.classList.remove("hidden");
-  }
+  // REMOVED: Router handles this.
+  // if (!isInternalRouting) {
+  //   document.body.classList.add("home-active");
+  //   const menuContent = document.getElementById("menu-content");
+  //   if (menuContent) menuContent.classList.remove("hidden");
+  // }
 
   updateGuideSidebarStatus();
 }

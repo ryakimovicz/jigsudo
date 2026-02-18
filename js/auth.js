@@ -20,6 +20,7 @@ import {
   verifyBeforeUpdateEmail,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js";
+import { router } from "./router.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 
@@ -566,29 +567,15 @@ function updateUIForLogin(user) {
     nameSpan.textContent = displayName;
   }
 
-  const isNavigating =
-    document.body.classList.contains("profile-active") ||
-    document.body.classList.contains("history-active") ||
-    window.location.hash === "#profile" ||
-    window.location.hash === "#history";
+  /* Refactored to use Router */
+  const isNavigating = router.isNavigating();
+
   const gameSection = document.getElementById("game-section");
   const isGameActive = gameSection && !gameSection.classList.contains("hidden");
 
   if (!isNavigating && !isGameActive) {
-    const menu = document.getElementById("menu-content");
-    if (menu) menu.classList.remove("hidden");
-    if (gameSection) {
-      gameSection.classList.add("hidden");
-      document.body.classList.add("home-active");
-      gameSection.classList.remove(
-        "memory-mode",
-        "jigsaw-mode",
-        "sudoku-mode",
-        "peaks-mode",
-        "search-mode",
-        "code-mode",
-      );
-    }
+    // If not navigating and not playing, show Home
+    router.navigateTo("#");
   }
 
   const profileEmail = document.getElementById("profile-email-display");
@@ -685,29 +672,17 @@ function updateUIForLogout() {
     module.updateProfileData();
   });
 
-  const isNavigating =
-    document.body.classList.contains("profile-active") ||
-    document.body.classList.contains("history-active") ||
-    window.location.hash === "#profile" ||
-    window.location.hash === "#history";
+  /* Refactored to use Router */
+  const isNavigating = router.isNavigating();
   const gameSection = document.getElementById("game-section");
   const isGameActive = gameSection && !gameSection.classList.contains("hidden");
 
   if (!isNavigating && !isGameActive) {
-    const menu = document.getElementById("menu-content");
-    if (menu) menu.classList.remove("hidden");
-    if (gameSection) {
-      gameSection.classList.add("hidden");
-      document.body.classList.add("home-active");
-      gameSection.classList.remove(
-        "memory-mode",
-        "jigsaw-mode",
-        "sudoku-mode",
-        "peaks-mode",
-        "search-mode",
-        "code-mode",
-      );
-    }
+    // If not navigating and not playing, ensure we are at Home
+    router.navigateTo("#");
+  } else if (!isGameActive) {
+    // If we ARE navigating but not playing, let the router handle the current hash
+    router.handleRoute();
   }
 
   const btnGuestLogin = document.getElementById("btn-profile-login-guest");

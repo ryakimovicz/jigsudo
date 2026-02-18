@@ -254,6 +254,10 @@ body.dark-mode .light-only {
   padding-bottom: 40px;
 }
 
+#menu-content.hidden {
+  display: none !important;
+}
+
 /* Internal wrapper to keep content centered */
 .menu-container > * {
   width: 95%;

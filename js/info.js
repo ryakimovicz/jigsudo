@@ -31,30 +31,11 @@ function initInfoPage() {
     });
   }
 
-  // Handle Routing
-  handleInfoRouting();
-  window.addEventListener("hashchange", handleInfoRouting);
+  // Handle Routing - managed by router.js
+  // window.addEventListener("hashchange", handleInfoRouting);
 }
 
-function handleInfoRouting() {
-  if (window.location.hash === "#info") {
-    showInfoSection();
-  } else {
-    // Optional: Hide info if not target?
-    // The other routers (home, profile, etc.) handle hiding info.
-    // But we should ensure we hide ourselves if we are NOT the target?
-    // Actually, `showHome` etc hide `#info-section`.
-    // So we don't strictly need to do anything here if not info.
-    const infoSection = document.getElementById("info-section");
-    if (infoSection && !infoSection.classList.contains("hidden")) {
-      // If we are visible but hash is NOT #info, we should probably hide?
-      // But let's trust the destination router to hide us.
-      // Exception: If we just loaded valid page and hash changed to something handled by no one?
-      // No, let's stick to positive action.
-    }
-  }
-}
-
+// handleInfoRouting removed - Router handles visibility
 function showInfoSection() {
   // Hide all main sections explicitly
   const sectionsToHide = [

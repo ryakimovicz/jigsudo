@@ -21,11 +21,9 @@ export function initProfile() {
     nextBtn.addEventListener("click", () => changeMonth(1));
   }
 
-  // Handle Initial Hash
-  handleRouting();
-
-  // Listen for Hash Changes
-  window.addEventListener("hashchange", handleRouting);
+  // Handle Initial Hash - handled by router.js
+  // handleRouting(); // Removed
+  // window.addEventListener("hashchange", handleRouting); // Removed
 
   // Listen for Language Changes to re-render Profile & Menu Stats (Rank, etc.)
   window.addEventListener("languageChanged", () => {
@@ -54,28 +52,29 @@ export function initProfile() {
   }
 }
 
-// Router Handler
-function handleRouting() {
-  const hash = window.location.hash;
-
-  if (hash === "#profile") {
-    _showProfileUI();
-  } else {
-    _hideProfileUI();
-  }
-}
+// Routing handled by router.js
 
 // Public method now just sets the hash
 export function showProfile() {
   window.location.hash = "profile";
 }
 
-// Public method now just clears hash
-export function hideProfile() {
-  window.location.hash = "";
-}
-
 let verificationInterval = null;
+
+// Listen for Router Changes to trigger polling/updates
+window.addEventListener("routeChanged", ({ detail }) => {
+  if (detail.hash === "#profile") {
+    _showProfileUI(); // Trigger polling and UI updates
+  } else {
+    // Logic to stop polling if we leave profile?
+    // _showProfileUI handles starting.
+    // We need a _hideProfileUI or similar to stop polling?
+    // _hideProfileUI was called in handleRouting.
+    _hideProfileUI();
+  }
+});
+
+// Router Handler (Removed)
 
 // Internal UI Manipulation
 function _showProfileUI() {

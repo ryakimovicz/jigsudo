@@ -9,6 +9,8 @@
   margin: 0 auto;
   box-sizing: border-box;
   padding-bottom: 80px; /* Space for footer */
+  overflow-y: auto;
+  max-height: 100vh;
 }
 
 /* Info Cards */

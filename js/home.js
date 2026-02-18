@@ -1,7 +1,7 @@
 /* Main Menu Logic */
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
-import { showProfile, hideProfile } from "./profile.js";
+import { showProfile } from "./profile.js";
 import { getDailySeed } from "./utils/random.js";
 import { gameManager } from "./game-manager.js";
 import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js";
@@ -41,9 +41,8 @@ export function initHome() {
   // Enforce Home State Class for CSS overrides
   document.body.classList.add("home-active");
 
-  // Show Footer on Home
+  // Footer logic moved to showHome to prevent overlap
   const footer = document.querySelector(".main-footer");
-  if (footer) footer.classList.remove("hidden");
 
   // ... (existing constants) ...
 
@@ -551,12 +550,13 @@ export function initHome() {
     loadAndRenderAllRankings(true);
   });
 
-  // Show Home Logic (Internal)
+  // Show Home Logic (Internal - Exposed via Router Event or direct call if needed)
   const showHome = () => {
-    console.log("[Home] Showing Home View");
+    // GUARD REMOVED: Router handles this.
+    console.log("[Home] Preparing Home View");
 
-    // 1. UI Reset
-    hideProfile();
+    // 1. UI Reset helpers (Router handles main visibility, but these help strict cleanups)
+    // hideProfile(); // Managed by router events in profile.js
     document.getElementById("info-section")?.classList.add("hidden");
     document.getElementById("guide-section")?.classList.add("hidden");
     document.getElementById("game-section")?.classList.add("hidden");
@@ -593,21 +593,23 @@ export function initHome() {
     // 5. Logic
     updateHeaderInfo();
     refreshStartButton();
-    loadAndRenderAllRankings(true);
-  };
+    // Listen for Router Changes
+    window.addEventListener("routeChanged", ({ detail }) => {
+      if (
+        detail.hash === "" ||
+        detail.hash === "#" ||
+        detail.hash === "#home"
+      ) {
+        updateHeaderInfo();
+        refreshStartButton();
+        // Only load rankings if container is visible (it is, router ensures it)
+        loadAndRenderAllRankings();
 
-  // Centralized Routing Handler
-  const handleRouting = () => {
-    const hash = window.location.hash;
-    // Empty hash or # is Home
-    if (!hash || hash === "#") {
-      showHome();
-    }
+        const debugBtn = document.getElementById("debug-help-btn");
+        if (debugBtn) debugBtn.style.display = "none";
+      }
+    });
   };
-
-  window.addEventListener("hashchange", handleRouting);
-  // Check on initial load too!
-  handleRouting();
 }
 
 /**

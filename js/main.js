@@ -15,6 +15,7 @@ import {
 } from "./auth.js"; // Auth Import
 import { initProfile, showProfile } from "./profile.js"; // Profile Import
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
+import { router } from "./router.js"; // Router Import
 
 // Boot Sequence
 // Capture native logging before suppression
@@ -58,6 +59,10 @@ async function startApp() {
   initProfile(); // Profile Module
   initHistory(); // History Module
   initGuide(); // Guide Module
+
+  // Initialize Router LAST to handle initial hash
+  router.init();
+  router.handleRoute(); // Force initial route checking
 
   attachAuthListeners();
 
