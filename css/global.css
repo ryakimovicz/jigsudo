@@ -75,10 +75,11 @@ body {
   /* flex-direction: column; <-- REMOVED */
 }
 
-/* Enable scrolling only on Home and Profile */
+/* Enable scrolling only on Home, Profile, Guide and Info */
 body.home-active,
 body.profile-active,
-body.guide-active {
+body.guide-active,
+body.info-active {
   overflow-y: auto;
 }
 
@@ -163,6 +164,40 @@ body.guide-active {
 /* Utility: Hidden */
 .hidden {
   display: none !important;
+}
+
+/* --- Global Custom Scrollbar --- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
+
+/* Dark Mode Scrollbars */
+body.dark-mode ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
 }
 
 /* Button Reset */

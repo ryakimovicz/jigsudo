@@ -1521,36 +1521,11 @@ body.dark-mode .segmented-control {
   grid-area: auto !important; /* Force reset from glass-panel stack */
 }
 
-/* Custom Scrollbar for Home */
-.menu-container::-webkit-scrollbar {
-  width: 8px;
+  padding-bottom: 10px;
 }
 
-.menu-container::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 10px;
-}
+/* Custom Scrollbar for Home removed - now in global.css */
 
-.menu-container::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-.menu-container::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-color);
-}
-
-body.dark-mode .menu-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-body.dark-mode .menu-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.ranking-panel h4 {
   margin: 0;
   text-align: center;
   font-family: var(--font-paper);

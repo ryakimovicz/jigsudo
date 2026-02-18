@@ -10,34 +10,6 @@
   z-index: 10; /* Lowered z-index */
 }
 
-/* Custom Scrollbar */
-#profile-section::-webkit-scrollbar {
-  width: 10px;
-}
-
-#profile-section::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#profile-section::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 20px;
-  border: 3px solid transparent; /* Padding trick */
-  background-clip: content-box;
-}
-
-#profile-section::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.4);
-}
-
-body.dark-mode #profile-section::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-body.dark-mode #profile-section::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-}
-
 #profile-section .scrollable-content {
   padding-bottom: 160px; /* Specific padding for profile footer separation */
 }
