@@ -497,8 +497,9 @@ export function initHome() {
   const navHome = document.getElementById("nav-home");
   if (navHome) {
     navHome.addEventListener("click", () => {
-      // Just change hash, let handleRouting do the rest
-      window.location.hash = "";
+      // User requested "recargar el home" (reload home)
+      // Strip hash and reload the page to ensure fresh state
+      window.location.href = window.location.pathname;
     });
   }
 
@@ -506,9 +507,6 @@ export function initHome() {
   const appTitle = document.querySelector(".app-title text, .app-title");
   if (appTitle) {
     appTitle.style.cursor = "default";
-    // We don't remove existing listener explicitly if we can't get it,
-    // but we can replace it or just not add it.
-    // Since this is init code, I'll just change what it does.
   }
 
   // --- Ranking Logic ---
@@ -629,6 +627,10 @@ export async function startDailyGame() {
     document.body.classList.remove("history-active");
     if (CONFIG.betaMode) document.body.classList.add("beta-mode");
 
+    // 2. Sidebar Update
+    // Deselect "Inicio" (or clear all active states)
+    updateSidebarActiveState(null);
+
     // Clear hash to prevent accidental re-routing
     if (
       window.location.hash === "#history" ||
@@ -649,7 +651,7 @@ export async function startDailyGame() {
     const footer = document.querySelector(".main-footer");
     if (footer) footer.classList.add("hidden");
 
-    // 2. Load Memory/Stage logic
+    // 3. Load Memory/Stage logic
     const state = gameManager.getState();
     const currentStage = state.progress.currentStage || "memory";
     const module = await import("./memory.js");

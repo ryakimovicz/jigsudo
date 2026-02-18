@@ -794,14 +794,35 @@ export class GameManager {
     const points = SCORING.PARTIAL_RP[stage] || 0;
     if (points <= 0) return;
 
+    // GUARD 1: Replay Mode (Never award points for non-current games)
+    if (this.isReplay) {
+      console.log(`[RP] Replay mode active. No points for ${stage}.`);
+      return;
+    }
+
     // Ensure RP reset logic (daily/monthly) runs before awarding partial points
     await this._checkRankDecay();
 
-    if (
-      this.state.progress.stagesCompleted.includes(stage) &&
-      !this._processingWin
-    )
+    // GUARD 2: Already Completed (Prevent refresh farming)
+    if (this.state.progress.stagesCompleted.includes(stage)) {
+      console.log(`[RP] Stage ${stage} already completed. Skipping points.`);
       return;
+    }
+
+    // GUARD 3: Game Already Won (Prevent post-win farming)
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+    if (
+      this.stats &&
+      this.stats.history &&
+      this.stats.history[today] &&
+      this.stats.history[today].status === "won"
+    ) {
+      console.log(`[RP] Game already won today. No extra points for ${stage}.`);
+      return;
+    }
+
+    if (this._processingWin) return;
 
     let stats =
       this.stats ||
@@ -816,8 +837,11 @@ export class GameManager {
     stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + points;
 
     if (!this._processingWin) {
-      if (!this.state.progress.stagesCompleted.includes(stage))
+      if (!this.state.progress.stagesCompleted.includes(stage)) {
         this.state.progress.stagesCompleted.push(stage);
+        // CRITICAL: Persist stage completion immediately to local storage
+        this.save();
+      }
     }
     this.stats = stats;
     localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
@@ -826,8 +850,6 @@ export class GameManager {
     const { getCurrentUser } = await import("./auth.js");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
-      const seedStr = this.currentSeed.toString();
-      const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
       const currentMonth = today.substring(0, 7);
 
       const statsWithDates = {
@@ -1067,6 +1089,9 @@ export class GameManager {
   }
 
   async recordWin() {
+    if (this._processingWin) return null;
+    this._processingWin = true;
+
     try {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
       await this._checkRankDecay();
@@ -1209,7 +1234,6 @@ export class GameManager {
       const { stopTimer } = await import("./timer.js");
       stopTimer();
       const { getDailySeed } = await import("./utils/random.js");
-      const seedStr_daily = getDailySeed().toString(); // Renamed to avoid conflict with existing seedStr
       const user = await import("./auth.js").then((m) => m.getCurrentUser());
       if (user && !user.isAnonymous) {
         const seedStr = this.currentSeed.toString();
@@ -1231,6 +1255,8 @@ export class GameManager {
     } catch (err) {
       console.error("Error saving stats:", err);
       return null;
+    } finally {
+      this._processingWin = false;
     }
   }
 
