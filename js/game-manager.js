@@ -534,7 +534,7 @@ export class GameManager {
           return;
         }
 
-        let username = null;
+        let username = user.displayName || null; // Fix: Pass username to DB
 
         if (this.state) {
           const cloudState = this._serializeState(this.state);
@@ -706,7 +706,7 @@ export class GameManager {
         // We await both to ensure they are on the wire before reload
         await Promise.all([
           saveUserProgress(user.uid, this._serializeState(freshState)),
-          saveUserStats(user.uid, this.stats),
+          saveUserStats(user.uid, this.stats, user.displayName),
         ]);
         console.log("[GameManager] Cloud sync complete.");
       }
@@ -899,6 +899,7 @@ export class GameManager {
         this.save();
       }
     }
+    stats.lastLocalUpdate = Date.now(); // Timestamp for conflict resolution
     this.stats = stats;
     localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
@@ -1064,8 +1065,30 @@ export class GameManager {
       local: !!this.state,
     });
     if (remoteStats) {
-      this.stats = remoteStats;
-      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      // Conflict Resolution for Stats: Prevent "Cloud Echo" overwrites
+      // If local has a newer or equal update timestamp, ignore the echo.
+      const localTS = this.stats ? this.stats.lastLocalUpdate || 0 : 0;
+      const remoteTS = remoteStats.lastLocalUpdate || 0;
+
+      // Acceptance Criteria:
+      // 1. No local stats exist.
+      // 2. Remote is newer than local.
+      // 3. Remote has significantly higher totalPlayed (merged from another device)
+      if (
+        !this.stats ||
+        remoteTS > localTS ||
+        (remoteStats.totalPlayed || 0) > (this.stats.totalPlayed || 0)
+      ) {
+        console.log(
+          `[Sync] Accepting remote stats. (Local: ${localTS}, Remote: ${remoteTS})`,
+        );
+        this.stats = remoteStats;
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      } else {
+        console.log(
+          `[Sync] Ignoring stale remote stats (Echo). (Local: ${localTS} >= Remote: ${remoteTS})`,
+        );
+      }
     }
     if (remoteProgress) {
       let hydratedProgress = this._deserializeState(remoteProgress);
@@ -1191,6 +1214,56 @@ export class GameManager {
 
         if (stats.currentStreak > (stats.maxStreak || 0))
           stats.maxStreak = stats.currentStreak;
+      } else if (!this.isReplay && isAlreadyWon) {
+        // SELF-HEALING: Check if we have a discrepancy (Local stats missed the win update)
+        // If dailyRP is significantly less than the calculated score, forcefully apply the difference.
+        // This handles race conditions where 'status: won' was saved but RP failed.
+        const startMs = this.state.meta.startedAt
+          ? new Date(this.state.meta.startedAt).getTime()
+          : Date.now();
+        const totalTimeMs = Date.now() - startMs;
+        const peaksErrors = this.state.stats?.peaksErrors || 0;
+        const { calculateTimeBonus } = await import("./ranks.js");
+        const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
+        let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
+        if (4.0 + netChange < 0) netChange = -4.0;
+        const potentialDailyScore = Math.max(0, 4.0 + netChange);
+
+        const currentDaily = stats.dailyRP || 0;
+        // Tolerance of 0.1 rp
+        if (currentDaily < potentialDailyScore - 0.1) {
+          console.warn(
+            `[RP] Discrepancy detected! Stored: ${currentDaily}, Actual: ${potentialDailyScore}. Healing...`,
+          );
+          const diff = potentialDailyScore - currentDaily;
+          stats.dailyRP = (stats.dailyRP || 0) + diff;
+          stats.currentRP = (stats.currentRP || 0) + diff;
+          stats.monthlyRP = (stats.monthlyRP || 0) + diff;
+          stats.totalScoreAccumulated =
+            (stats.totalScoreAccumulated || 0) + diff;
+
+          // Force update lastPlayedDate to ensure streaks work tomorrow
+          stats.lastPlayedDate = today;
+
+          // Also heal Weekday Stats if missing count
+          const dayIdx = new Date(today + "T12:00:00").getDay();
+          if (!stats.weekdayStatsAccumulated[dayIdx])
+            stats.weekdayStatsAccumulated[dayIdx] = {
+              sumTime: 0,
+              sumErrors: 0,
+              sumScore: 0,
+              count: 0,
+            };
+          const w = stats.weekdayStatsAccumulated[dayIdx];
+          // If count is 0 but we won, add stats
+          if (w.count === 0) {
+            w.sumTime += totalTimeMs;
+            w.sumErrors += peaksErrors;
+            w.sumScore += potentialDailyScore;
+            w.count++;
+          }
+          stats.lastLocalUpdate = Date.now(); // Ensure healing is treated as new
+        }
       }
 
       const startMs = this.state.meta.startedAt
@@ -1283,6 +1356,7 @@ export class GameManager {
         stageTimes: st,
       };
 
+      stats.lastLocalUpdate = Date.now(); // Timestamp for conflict resolution
       this.stats = stats;
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
@@ -1301,7 +1375,7 @@ export class GameManager {
         this.stats.lastMonthlyUpdate = currentMonth;
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
-        await saveUserStats(user.uid, this.stats);
+        await saveUserStats(user.uid, this.stats, user.displayName);
       }
       await this.forceCloudSave();
 
