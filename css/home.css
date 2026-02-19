@@ -88,10 +88,6 @@ body.header-condensed .header-center {
   position: relative;
 }
 
-body.header-condensed .header-text-block {
-  /* No layout change to prevent JUMP */
-}
-
 .header-logo {
   height: 64px; /* Grande! */
   width: auto;
@@ -813,8 +809,6 @@ body.dark-mode .btn-primary.btn-won:active {
   letter-spacing: 1px;
   border-bottom: 2px solid var(--accent-color);
   padding-bottom: 5px;
-  border-bottom: 2px solid var(--accent-color);
-  padding-bottom: 5px;
   width: 100%;
 }
 
@@ -1520,12 +1514,7 @@ body.dark-mode .segmented-control {
   min-height: 400px;
   grid-area: auto !important; /* Force reset from glass-panel stack */
 }
-
-  padding-bottom: 10px;
-}
-
-/* Custom Scrollbar for Home removed - now in global.css */
-
+.ranking-panel h4 {
   margin: 0;
   text-align: center;
   font-family: var(--font-paper);
