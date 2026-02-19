@@ -264,18 +264,26 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
             ? "🥉"
             : "";
 
-    tr.className = `ranking-row ${isTop3 ? "top-player" : ""} ${isCurrentUser ? "current-user-row" : ""} ${isPersonalRow ? "personal-rank-row" : ""}`;
+    const newClass = `ranking-row ${isTop3 ? "top-player" : ""} ${isCurrentUser ? "current-user-row" : ""} ${isPersonalRow ? "personal-rank-row" : ""}`;
+    if (tr.className !== newClass) {
+      tr.className = newClass;
+    }
 
     // Safety check for entry values
     const safeUsername = entry.username || "Anónimo";
     const safeScore = scoreFormat.format(entry.score || 0);
     const safeRank = isPersonal ? `#${entry.rank}` : medal || index + 1;
 
-    tr.innerHTML = `
+    const newHtml = `
       <td class="rank-col">${safeRank}</td>
       <td class="user-col">${safeUsername} ${isCurrentUser ? t.ranking_you || "(Tú)" : ""}</td>
       <td class="score-col">${safeScore}</td>
     `;
+
+    // Only update DOM if content changed (prevents blinking on re-renders)
+    if (tr.innerHTML !== newHtml) {
+      tr.innerHTML = newHtml;
+    }
   };
 
   // Rebuild the list
@@ -363,61 +371,64 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   // Visual: Old #1 collapses. New #1 slides UP to fill gap.
   // This works! The "jump" to bottom is handled by FLIP.
 
-  // 5. FLIP: Invert & Play
-  requestAnimationFrame(() => {
-    const validRows = newRowNodes.filter(
-      (n) => n.nodeType === 1 && !n.classList.contains("ranking-separator"),
-    );
+  // 5. FLIP: Invert (Synchronous) & Play (Async)
+  // We MUST calculate new positions and apply transforms IMMEDIATELY after DOM change
+  // to prevent a frame where rows jump to their new positions without offset.
 
-    validRows.forEach((row) => {
-      // If it's a separator, skip
-      if (!row.dataset.uid) return;
+  const validRows = newRowNodes.filter(
+    (n) => n.nodeType === 1 && !n.classList.contains("ranking-separator"),
+  );
 
-      const uid = row.dataset.uid;
+  validRows.forEach((row) => {
+    // If it's a separator, skip
+    if (!row.dataset.uid) return;
 
-      // 1. New Position
-      const newRect = row.getBoundingClientRect();
+    const uid = row.dataset.uid;
 
-      // 2. Old Position?
-      if (oldPositions.has(uid)) {
-        const oldTop = oldPositions.get(uid);
-        const deltaY = oldTop - newRect.top;
+    // 1. New Position (Force Layout)
+    const newRect = row.getBoundingClientRect();
 
-        if (Math.abs(deltaY) > 0) {
-          // INVERT
-          row.style.transform = `translateY(${deltaY}px)`;
-          row.style.transition = "none";
+    // 2. Old Position?
+    if (oldPositions.has(uid)) {
+      const oldTop = oldPositions.get(uid);
+      const deltaY = oldTop - newRect.top;
 
-          // PLAY
+      if (Math.abs(deltaY) > 0) {
+        // INVERT (Immediately apply transform)
+        row.style.transform = `translateY(${deltaY}px)`;
+        row.style.transition = "none";
+
+        // PLAY (Next Frame)
+        requestAnimationFrame(() => {
+          // Force reflow to ensure the 'none' transition is applied
+          // void row.offsetHeight;
+          // actually rAF is enough usually, but nested rAF is safer for some browsers
           requestAnimationFrame(() => {
             row.style.transform = ""; // Release to natural 0
             row.style.transition =
-              "transform 0.6s cubic-bezier(0.2, 1, 0.3, 1)"; // "Diabolic" fluid easing
+              "transform 0.6s cubic-bezier(0.2, 1, 0.3, 1)";
           });
-        }
-      } else {
-        // ENTERING (Already check via class, but ensure smooth entry)
-        // It's handled by CSS animation .ranking-row.entering?
-        // Better to do JS entry to match the physics?
-        // Let's stick to CSS for entering for simplicity as per existing logic.
+        });
       }
-    });
-
-    // Clean up exiting rows
-    exitingRows.forEach((row) => {
-      // Trigger CSS collapse
-      // They are currently at the "top" (visually) because valid rows moved after them?
-      // Wait, if `exiting` is at index 0, and `valid` moved to index 1...
-      // Exiting collapses, Valid slides up. Perfect.
-      // Just ensure they are removed later.
-      setTimeout(() => row.remove(), 600);
-    });
-
-    // Clean up entering class
-    setTimeout(() => {
-      validRows.forEach((r) => r.classList.remove("entering"));
-    }, 600);
+    }
   });
+
+  // Clean up exiting rows
+  exitingRows.forEach((row) => {
+    // Trigger CSS collapse
+    // They are currently at the "top" (visually) because valid rows moved after them?
+    // Wait, if `exiting` is at index 0, and `valid` moved to index 1...
+    // Exiting collapses, Valid slides up. Perfect.
+    // Just ensure they are removed later.
+    setTimeout(() => row.remove(), 600);
+  });
+
+  // Clean up entering class
+  // Wait slightly longer than animation to be safe?
+  // Or match the transition time.
+  setTimeout(() => {
+    validRows.forEach((r) => r.classList.remove("entering"));
+  }, 600);
 }
 
 function generateTableHtml(data, user, t, scoreFormat, personal) {

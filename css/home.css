@@ -1776,8 +1776,14 @@ body.dark-mode .current-user-row {
   opacity: 0.7;
 }
 
-/* Row Animation - Slide Up */
+/* Row Animation - Base State */
 .ranking-row {
+  /* No default animation to avoid conflicts with FLIP */
+  position: relative; /* Ensure transform works contextually */
+}
+
+/* Only animate entry for NEW rows */
+.ranking-row.entering {
   animation: slideUpRow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
   opacity: 0;
   transform: translateY(15px);
