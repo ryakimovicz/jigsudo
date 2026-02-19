@@ -496,9 +496,19 @@ export function initHome() {
   const navHome = document.getElementById("nav-home");
   if (navHome) {
     navHome.addEventListener("click", async () => {
-      // Use Router instead of reload to preserve cache
-      const { router } = await import("./router.js");
-      router.navigateTo("#");
+      // Check if user is in-game (by hash or by checking section visibility)
+      if (
+        window.location.hash === "#game" ||
+        !document.getElementById("game-section").classList.contains("hidden")
+      ) {
+        // Force reload to "quit" to home
+        window.location.href =
+          window.location.origin + window.location.pathname;
+      } else {
+        // Use Router instead of reload to preserve cache
+        const { router } = await import("./router.js");
+        router.navigateTo("#");
+      }
     });
   }
 
