@@ -68,8 +68,9 @@ export function initCode() {
   }
 
   // 4. Start Game Loop
-  currentLevel = 3;
-  maxUnlockedLevel = 3; // Reset max
+  // Respect hydrated state if available
+  if (!currentLevel || currentLevel < 3) currentLevel = 3;
+  if (!maxUnlockedLevel || maxUnlockedLevel < 3) maxUnlockedLevel = 3;
   updateStatusDisplay();
 
   setTimeout(() => {

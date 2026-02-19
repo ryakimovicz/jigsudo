@@ -137,7 +137,9 @@ export function showVictorySummary(stats, isHome = false) {
           console.warn("Failed to clear ranking cache:", err);
         }
 
-        window.location.reload(); // Simplest way to go back to Home state
+        // Use Router for smooth transition instead of reload
+        const { router } = await import("./router.js");
+        router.navigateTo("#");
       }
     };
   }

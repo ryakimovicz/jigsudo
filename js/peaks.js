@@ -17,13 +17,11 @@ let currentHintRow = 0;
 export function initPeaks() {
   console.log("Initializing Peaks Stage...");
 
-  // 1. Reset State
-  peaksErrors = 0;
+  // 1. Load State
+  peaksErrors = gameManager.getState().stats?.peaksErrors || 0;
   // foundTargets = 0; // REMOVED: Breaks hydration via resumePeaksState
   currentHintRow = 0; // Reset hint progress
   updateErrorCounter();
-  // Sync Reset
-  gameManager.updateProgress("stats", { peaksErrors: 0 });
   updateRemainingCounter();
 
   // 2. Show Stats
@@ -245,6 +243,10 @@ export function resumePeaksState() {
   // IMPORTANT: Reset foundTargets before hydration to avoid duplication
   foundTargets = 0;
   prepareGameLogic(); // Ensure targetMap is ready
+
+  // Hydrate local error count from state
+  peaksErrors = state.stats?.peaksErrors || 0;
+  updateErrorCounter();
 
   foundCoords.forEach((key) => {
     const [r, c] = key.split(",").map(Number);

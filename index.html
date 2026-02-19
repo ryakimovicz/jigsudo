@@ -76,9 +76,45 @@
         ) {
           document.body.classList.add("dark-mode");
         }
-      })();
     </script>
-    <!-- Main Application Container -->
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7081495763188158"
+    crossorigin="anonymous"></script>
+
+    <!-- AdSense: Vertical Right (Desktop) -->
+    <aside id="ad-desktop-right" class="ad-container-vertical">
+        <div class="ad-placeholder-vertical">
+            <span class="ad-label">Publicidad</span>
+            <!-- Ad Unit: Vertical Skyscraper -->
+            <ins class="adsbygoogle"
+                 style="display:block" 
+                 data-ad-client="ca-pub-7081495763188158"
+                 data-ad-slot="9242546996"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </aside>
+
+    <!-- AdSense: Bottom Sticky (Mobile) -->
+    <div id="ad-mobile-footer" class="ad-container-bottom">
+         <div class="ad-placeholder-horizontal">
+            <span class="ad-label">Publicidad</span>
+            <!-- Ad Unit: Mobile Banner -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-7081495763188158"
+                 data-ad-slot="6536492601"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+         </div>
+    </div>
     <div id="app">
       <!-- Header -->
       <header class="main-header">
@@ -113,19 +149,19 @@
           <nav class="sidebar-nav">
             <p class="sidebar-section-label" data-i18n="sidebar_menu">Menú</p>
             <ul class="sidebar-nav-list">
-              <li class="nav-item" id="nav-home" title="Inicio">
+              <li class="nav-item" id="nav-home" title="Inicio" data-i18n-title="sidebar_home">
                 <span class="nav-icon">🏠</span>
                 <span class="nav-label" data-i18n="sidebar_home">Inicio</span>
               </li>
-              <li class="nav-item" id="nav-history" title="Historial">
+              <li class="nav-item" id="nav-history" title="Historial" data-i18n-title="sidebar_history">
                 <span class="nav-icon">📅</span>
                 <span class="nav-label" data-i18n="sidebar_history">Historial</span>
               </li>
-              <li class="nav-item" id="nav-how-to" title="Guía">
+              <li class="nav-item" id="nav-how-to" title="Guía" data-i18n-title="sidebar_how_to">
                 <span class="nav-icon">📖</span>
                 <span class="nav-label" data-i18n="sidebar_how_to">Guía</span>
               </li>
-              <li class="nav-item" id="nav-info" title="Información">
+              <li class="nav-item" id="nav-info" title="Información" data-i18n-title="sidebar_info">
                 <span class="nav-icon">ℹ️</span>
                 <span class="nav-label" data-i18n="sidebar_info">Información</span>
               </li>
@@ -138,7 +174,7 @@
 
           <!-- Perfil Button Section -->
           <div class="auth-wrapper sidebar-item-wrapper">
-            <button id="btn-auth" class="nav-item" title="Cuenta">
+            <button id="btn-auth" class="nav-item" title="Cuenta" data-i18n-title="menu_account">
               <span class="nav-icon">👤</span>
               <span class="nav-label" data-i18n="menu_account">Cuenta</span>
             </button>
@@ -205,7 +241,7 @@
 
           <!-- Ajustes Button Section -->
           <div class="settings-wrapper sidebar-item-wrapper">
-            <button id="btn-profile" class="nav-item" title="Ajustes">
+            <button id="btn-profile" class="nav-item" title="Ajustes" data-i18n-title="settings_title">
               <span class="nav-icon">⚙️</span>
               <span class="nav-label" data-i18n="settings_title">Ajustes</span>
             </button>
@@ -391,6 +427,21 @@
         </button>
 
         <!-- Ranking Section -->
+        <div class="ad-banner-menu">
+            <div class="ad-placeholder-horizontal-large">
+                <span class="ad-label">Publicidad</span>
+                 <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-7081495763188158"
+                 data-ad-slot="6616383650"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+                 <script>
+                      (adsbygoogle = window.adsbygoogle || []).push({});
+                 </script>
+            </div>
+        </div>
+
         <section id="ranking-container" class="ranking-container-multi">
           <div class="ranking-header-main">
             <h3 data-i18n="ranking_title">Clasificación</h3>
@@ -1318,6 +1369,21 @@
           <div id="victory-stage-times" class="stage-times-grid">
             <!-- Dynamically populated -->
           </div>
+        </div>
+
+        <div class="ad-container-victory">
+             <div class="ad-placeholder-rectangle">
+                <span class="ad-label">Publicidad</span>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-7081495763188158"
+                     data-ad-slot="4237632321"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+             </div>
         </div>
 
         <div class="modal-actions" style="display: flex; gap: 10px;">

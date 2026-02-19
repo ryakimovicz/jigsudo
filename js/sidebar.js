@@ -19,6 +19,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const isExpanded = sidebar.classList.toggle("expanded");
       document.body.classList.toggle("sidebar-expanded", isExpanded);
 
+      // manage tooltips
+      const navItems = sidebar.querySelectorAll(".nav-item");
+      if (isExpanded) {
+        // Hide tooltips (remove title attribute)
+        navItems.forEach((item) => {
+          if (item.hasAttribute("title")) {
+            item.setAttribute("data-temp-title", item.getAttribute("title"));
+            item.removeAttribute("title");
+          }
+        });
+      } else {
+        // Restore tooltips
+        navItems.forEach((item) => {
+          if (item.hasAttribute("data-temp-title")) {
+            item.setAttribute("title", item.getAttribute("data-temp-title"));
+            item.removeAttribute("data-temp-title");
+          }
+        });
+      }
+
       if (overlay) {
         overlay.classList.toggle("hidden", !isExpanded);
       }

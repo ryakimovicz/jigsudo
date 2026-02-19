@@ -88,10 +88,6 @@ body.header-condensed .header-center {
   position: relative;
 }
 
-body.header-condensed .header-text-block {
-  /* No layout change to prevent JUMP */
-}
-
 .header-logo {
   height: 64px; /* Grande! */
   width: auto;
@@ -813,8 +809,6 @@ body.dark-mode .btn-primary.btn-won:active {
   letter-spacing: 1px;
   border-bottom: 2px solid var(--accent-color);
   padding-bottom: 5px;
-  border-bottom: 2px solid var(--accent-color);
-  padding-bottom: 5px;
   width: 100%;
 }
 
@@ -1520,12 +1514,7 @@ body.dark-mode .segmented-control {
   min-height: 400px;
   grid-area: auto !important; /* Force reset from glass-panel stack */
 }
-
-  padding-bottom: 10px;
-}
-
-/* Custom Scrollbar for Home removed - now in global.css */
-
+.ranking-panel h4 {
   margin: 0;
   text-align: center;
   font-family: var(--font-paper);
@@ -1752,4 +1741,253 @@ body.dark-mode .current-user-row {
   .stage-times-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Leaderboard Loading Enhancements */
+.ranking-panel h4 {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Spinner for Headers */
+.ranking-loading::after {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-color);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Refresh Button Spin */
+.btn-refresh.spinning {
+  animation: spinner-rotate 0.8s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Row Animation - Base State */
+.ranking-row {
+  /* No default animation to avoid conflicts with FLIP */
+  position: relative; /* Ensure transform works contextually */
+}
+
+/* Only animate entry for NEW rows */
+.ranking-row.entering {
+  animation: slideUpRow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  opacity: 0;
+  transform: translateY(15px);
+}
+
+/* Stagger delay for rows 1-10 */
+.ranking-row:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.ranking-row:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.ranking-row:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.ranking-row:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.ranking-row:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.ranking-row:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.ranking-row:nth-child(7) {
+  animation-delay: 0.35s;
+}
+.ranking-row:nth-child(8) {
+  animation-delay: 0.4s;
+}
+.ranking-row:nth-child(9) {
+  animation-delay: 0.45s;
+}
+.ranking-row:nth-child(10) {
+  animation-delay: 0.5s;
+}
+
+@keyframes slideUpRow {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* FLIP Animation States */
+.ranking-row.exiting td {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 0 !important;
+  height: 0 !important;
+  opacity: 0;
+  border-bottom: none !important;
+  transition: all 0.5s ease-out;
+}
+
+.ranking-row.entering {
+  animation: slideUpEntry 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes slideUpEntry {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   ADSENSE CONTAINERS
+   ========================================================================== */
+
+/* 1. Desktop Vertical Right (Skyscraper) */
+aside.ad-container-vertical {
+  position: fixed;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 160px;
+  height: 600px;
+  z-index: 90; /* Below modals (1000+) but above content */
+  display: block; /* Default to block, hidden by media query */
+}
+
+/* Hide on SMALL screens (< 1200px) */
+@media (max-width: 1199px) {
+  aside.ad-container-vertical {
+    display: none;
+  }
+}
+
+.ad-placeholder-vertical {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05); /* Placeholder bg */
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 2. Mobile Sticky Footer */
+.ad-container-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px; /* Standard mobile banner height + padding */
+  background: var(--bg-color); /* Opaque background to read content */
+  border-top: 1px solid var(--glass-border);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: env(
+    safe-area-inset-bottom,
+    0
+  ); /* iPhone Home Bar safe area */
+}
+
+/* Hide mobile footer on LARGE screens */
+@media (min-width: 1200px) {
+  .ad-container-bottom {
+    display: none;
+  }
+}
+
+.ad-placeholder-horizontal {
+  width: 320px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+  position: relative;
+}
+
+/* Adjust main content padding so footer ad doesn't cover game on mobile */
+@media (max-width: 1199px) {
+  body {
+    padding-bottom: 70px;
+  }
+}
+
+/* 3. Menu Inline Banner */
+.ad-banner-menu {
+  width: 100%;
+  max-width: 728px;
+  margin: 20px auto;
+  display: flex;
+  justify-content: center;
+  min-height: 90px;
+}
+
+.ad-placeholder-horizontal-large {
+  width: 100%;
+  height: 90px; /* Leaderboard height */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+  position: relative;
+}
+
+/* 4. Victory Modal Rectangle */
+.ad-container-victory {
+  margin: 20px auto;
+  display: flex;
+  justify-content: center;
+}
+
+.ad-placeholder-rectangle {
+  width: 300px; /* Medium Rectangle */
+  height: 250px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  position: relative;
+}
+
+.ad-label {
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  opacity: 0.5;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1px 4px;
+  border-radius: 3px;
 }
