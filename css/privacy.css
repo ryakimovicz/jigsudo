@@ -2,16 +2,20 @@
 #privacy-section {
   display: flex;
   flex-direction: column;
+  align-items: center; /* Center horizontally */
+  justify-content: flex-start;
   width: 100%;
-  padding-bottom: 0;
-  /* Glassmorphism Logic usually handled by 'glass-panel' or similar utility classes */
-  position: absolute; /* Needed for router stacking */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  height: 90vh; /* Consistent with other modals */
+  min-height: 100vh;
+  padding-top: var(--header-height);
+  padding-bottom: 50px;
+}
+
+/* Ensure the cards aren't too wide on large screens */
+.privacy-card {
+  width: 100%;
   max-width: 800px;
-  /* z-index handled by .active class in router/css */
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Reusing Info Card style for Privacy for consistency */

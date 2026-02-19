@@ -65,53 +65,56 @@ export const router = {
   },
 
   updateView(activeId) {
+    console.log(`[Router] updateView -> Target: ${activeId}`);
+
     // 1. Hide ALL registered sections
     const allSectionIds = Object.values(this.routes);
     const uniqueIds = [...new Set(allSectionIds)]; // dedup
 
     uniqueIds.forEach((id) => {
       const el = document.getElementById(id);
-      if (el && id !== activeId) {
-        el.classList.add("hidden");
-        // console.log(`[Router] Hiding ${id}`); // Debug
-      } else if (!el) {
-        console.warn(`[Router] Element not found: ${id}`);
+      if (el) {
+        if (id !== activeId) {
+          el.classList.add("hidden");
+          console.log(`[Router] Hiding ${id}. Classes: ${el.className}`);
+        } else {
+          el.classList.remove("hidden");
+          console.log(`[Router] Showing ${id}. Classes: ${el.className}`);
+        }
+      } else if (id) {
+        console.warn(`[Router] Section element not found: ${id}`);
       }
     });
 
-    // Explicitly hide menu-content if not active (Safety check)
+    // Explicitly hide menu-content & game-section if not active (Safety check)
     if (activeId !== "menu-content") {
       const menu = document.getElementById("menu-content");
-      if (menu) menu.classList.add("hidden");
+      if (menu) {
+        menu.classList.add("hidden");
+        console.log(
+          `[Router] FORCE HIDING menu-content. Classes: ${menu.className}`,
+        );
+      }
+    }
+    if (activeId !== "game-section") {
+      const game = document.getElementById("game-section");
+      if (game) {
+        game.classList.add("hidden");
+        console.log(
+          `[Router] FORCE HIDING game-section. Classes: ${game.className}`,
+        );
+      }
     }
 
-    // 2. Show the Target Section
-    const targetEl = document.getElementById(activeId);
-    if (targetEl) {
-      targetEl.classList.remove("hidden");
-
-      // Footer Handling
-      const footer = document.querySelector(".main-footer");
-      if (footer) {
-        // Rule: Hide footer ONLY on Game Section. Show on everything else.
-        if (activeId === "game-section") {
-          footer.classList.add("hidden");
-        } else {
-          footer.classList.remove("hidden");
-        }
-      }
-
-      // Specific Section Logic (Restoring sub-elements if needed)
-      if (activeId === "menu-content") {
-        // Ensure sidebar state
-        // home.js updates sidebar? Router shouldn't know about sidebar internals ideally.
-        // But home.js listens to "home-active" class? No.
-        // Let's leave sidebar logic to specific modules listening to class changes or observing visibility?
-        // better: simple dispatch event?
-        // For now, just ensuring visibility is enough.
-        document
-          .getElementById("ranking-container")
-          ?.classList.remove("hidden");
+    // 2. Footer Handling
+    const footer = document.querySelector(".main-footer");
+    if (footer) {
+      if (activeId === "game-section") {
+        footer.classList.add("hidden");
+        console.log("[Router] Footer hidden");
+      } else {
+        footer.classList.remove("hidden");
+        console.log("[Router] Footer shown");
       }
     }
 
@@ -122,12 +125,10 @@ export const router = {
     const activeClass = this.routeClasses[activeId];
     if (activeClass) {
       document.body.classList.add(activeClass);
+      console.log(`[Router] Body class added: ${activeClass}`);
     }
 
-    // 4. Update Sidebar
-    // ... (sidebar logic matches existing) ...
-
-    // Dispatch Event for modules to update content
+    // 4. Dispatch Event for modules to update content
     const event = new CustomEvent("routeChanged", {
       detail: { route: activeId, hash: window.location.hash },
     });

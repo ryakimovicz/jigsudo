@@ -183,7 +183,9 @@ function _hideProfileUI() {
     hash === "#history" ||
     hash === "#guide" ||
     hash === "#game" ||
-    hash === "#info";
+    hash === "#info" ||
+    hash === "#privacy" ||
+    hash === "#terms";
 
   // ONLY restore home and class if we are actually going "home" (no hash)
   if (!isInternalRouting) {

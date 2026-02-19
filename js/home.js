@@ -42,9 +42,6 @@ export function initHome() {
   // Enforce Home State Class for CSS overrides
   document.body.classList.add("home-active");
 
-  // Initialize Router to handle Hash Navigation (Privacy, etc.)
-  router.init();
-
   // Footer logic moved to showHome to prevent overlap
   const footer = document.querySelector(".main-footer");
 
@@ -718,4 +715,5 @@ export async function startDailyGame() {
 }
 
 // Auto-init Home Logic
-initHome();
+// Auto-init removed. main.js handles this.
+// initHome();

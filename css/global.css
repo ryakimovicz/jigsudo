@@ -79,7 +79,8 @@ body {
 body.home-active,
 body.profile-active,
 body.guide-active,
-body.info-active {
+body.info-active,
+body.privacy-active {
   overflow-y: auto;
 }
 
@@ -126,6 +127,7 @@ body.info-active {
   #guide-section,
   #info-section,
   #game-section,
+  #privacy-section,
   .main-footer {
     margin-left: var(--sidebar-width);
     transition:
@@ -141,6 +143,7 @@ body.info-active {
   body.sidebar-expanded #guide-section,
   body.sidebar-expanded #info-section,
   body.sidebar-expanded #game-section,
+  body.sidebar-expanded #privacy-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
     width: calc(100% - var(--sidebar-expanded-width));
@@ -158,6 +161,7 @@ body.info-active {
   #guide-section,
   #info-section,
   #game-section,
+  #privacy-section,
   .main-footer {
     margin-left: 0;
     width: 100%;

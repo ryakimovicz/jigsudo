@@ -4,9 +4,10 @@ import { getCurrentLang } from "./i18n.js";
 import { RANKS } from "./ranks.js";
 import { CONFIG } from "./config.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  initGuide();
-});
+// DOMContentLoaded removed. main.js handles this.
+// document.addEventListener("DOMContentLoaded", () => {
+//   initGuide();
+// });
 
 let currentTutorialStage = 1;
 let tutorialState = null;

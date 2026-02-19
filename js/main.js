@@ -62,7 +62,6 @@ async function startApp() {
 
   // Initialize Router LAST to handle initial hash
   router.init();
-  router.handleRoute(); // Force initial route checking
 
   attachAuthListeners();
 

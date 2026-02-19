@@ -160,10 +160,27 @@ export function initAuth() {
           window.location.hash === "#history" ||
           document.body.classList.contains("history-active");
 
+        const isOnPrivacy =
+          window.location.hash === "#privacy" ||
+          document.body.classList.contains("privacy-active");
+        const isOnGuide =
+          window.location.hash === "#guide" ||
+          document.body.classList.contains("guide-active");
+        const isOnInfo =
+          window.location.hash === "#info" ||
+          document.body.classList.contains("info-active");
+        const isOnTerms =
+          window.location.hash === "#terms" ||
+          document.body.classList.contains("terms-active");
+
         if (
           (wasPlaying || isNowPlaying) &&
           !isOnProfile &&
           !isOnHistory &&
+          !isOnPrivacy &&
+          !isOnGuide &&
+          !isOnInfo &&
+          !isOnTerms &&
           !gameManager.isReplaying
         ) {
           const state = gameManager.getState();
