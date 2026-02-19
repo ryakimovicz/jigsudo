@@ -909,6 +909,37 @@ export class GameManager {
       };
       saveUserStats(user.uid, statsWithDates);
     }
+
+    // Check if current partial score beats the record
+    this._updateBestScore();
+  }
+
+  /**
+   * Updates bestScore immediately if current partial progress exceeds it.
+   * Does NOT include Time Bonus (only applied on Win).
+   */
+  _updateBestScore() {
+    // 1. Sum Points from Completed Stages
+    let currentScore = 0;
+    this.state.progress.stagesCompleted.forEach((stage) => {
+      currentScore += SCORING.PARTIAL_RP[stage] || 0;
+    });
+
+    // 2. Subtract Penalties (Peaks Errors)
+    const peaksErrors = this.state.stats?.peaksErrors || 0;
+    currentScore -= peaksErrors * SCORING.ERROR_PENALTY_RP;
+
+    // 3. Update Best Score if exceeded
+    currentScore = Math.max(0, currentScore); // No negative scores
+
+    if (!this.stats) this._ensureStats();
+
+    if (currentScore > (this.stats.bestScore || 0)) {
+      console.log(`[Score] New Best Score (Partial): ${currentScore}`);
+      this.stats.bestScore = currentScore;
+      this.save();
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    }
   }
 
   showCriticalError(message) {
