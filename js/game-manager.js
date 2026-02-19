@@ -115,13 +115,6 @@ export class GameManager {
       return false;
     }
 
-    if (CONFIG.betaMode && this.state) {
-      if (this.state.search && this.state.search.found.length > 0) {
-        this.state.search.found = [];
-        this.save();
-      }
-    }
-
     if (CONFIG.debugMode) {
       console.log("Game Initialized:", this.state);
     }
