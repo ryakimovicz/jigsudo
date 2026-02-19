@@ -712,52 +712,6 @@ export class GameManager {
     window.location.reload();
   }
 
-  showConflictModal() {
-    this.conflictBlocked = true;
-    const overlay = document.createElement("div");
-    overlay.style.position = "fixed";
-    overlay.style.top = "0";
-    overlay.style.left = "0";
-    overlay.style.width = "100%";
-    overlay.style.height = "100%";
-    overlay.style.background = "rgba(0,0,0,0.95)";
-    overlay.style.color = "white";
-    overlay.style.display = "flex";
-    overlay.style.flexDirection = "column";
-    overlay.style.alignItems = "center";
-    overlay.style.justifyContent = "center";
-    overlay.style.zIndex = "99999";
-    overlay.style.fontFamily = "outfit, sans-serif";
-    overlay.style.textAlign = "center";
-    overlay.style.padding = "20px";
-
-    overlay.innerHTML = `
-        <h1 style="color: #ff5555; margin-bottom: 20px; font-size: 3rem;">!!</h1>
-        <h2 style="margin-bottom: 10px;">Partida activa en otro dispositivo</h2>
-        <p style="font-size: 1.1rem; margin-bottom: 30px; max-width: 400px; color: #ccc;">
-            Se ha detectado progreso mas reciente desde otra ubicacion.
-            Por seguridad, esta sesion se ha detenido.
-        </p>
-        <button id="btn-conflict-reload" style="
-            background: #ff5555;
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        ">
-            Recargar Datos
-        </button>
-    `;
-    document.body.appendChild(overlay);
-    document.getElementById("btn-conflict-reload").onclick = () => {
-      window.location.reload();
-    };
-  }
-
   _serializeState(state) {
     const clone = JSON.parse(JSON.stringify(state));
     if (clone.data) {
@@ -1082,12 +1036,29 @@ export class GameManager {
     this.save();
   }
 
-  async handleCloudSync(remoteProgress, remoteStats) {
+  async handleCloudSync(remoteProgress, remoteStats, forceSaveRequest) {
     console.log("[Sync] handleCloudSync triggered", {
       hasProgress: !!remoteProgress,
       hasStats: !!remoteStats,
+      hasRequest: !!forceSaveRequest,
       local: !!this.state,
     });
+
+    // 0. Handle Remote Save Request (Signal from another device)
+    if (forceSaveRequest) {
+      const reqTime = forceSaveRequest.toMillis();
+      // Simple dedupe: if request is older than 5 seconds, ignore it
+      if (Date.now() - reqTime < 5000) {
+        if (!this.conflictBlocked && this.state) {
+          console.log(
+            "[Sync] Remote device requested a forced save. Saving now...",
+          );
+          this.forceCloudSave();
+          return; // Save triggered, nothing else to do for this signal
+        }
+      }
+    }
+
     if (remoteStats) {
       // Conflict Resolution for Stats: Prevent "Cloud Echo" overwrites
       // If local has a newer or equal update timestamp, ignore the echo.
@@ -1166,16 +1137,23 @@ export class GameManager {
           return;
         } else {
           // Normal sync logic: check for significant remote update or local priority
-          if (remoteTime > localTime + 10000) {
+
+          // CRITICAL FIX: If local state is fresh (Epoch 1970 / time ~0), effectively "no local save",
+          // we MUST accept the remote state to avoid the Reload Loop.
+          if (localTime < 100000) {
+            console.log(
+              "[Sync] Local state is fresh/stale. Adopting remote state automatically.",
+            );
+            // Fall through to update logic...
+          } else if (remoteTime > localTime + 10000) {
             console.warn(
               "[Sync] Conflict detected! Remote is significantly newer.",
             );
-            this.showConflictModal();
+            this.showConflictResolution(hydratedProgress);
             return;
           }
-          // If localTime is 0 (1970), we are in a fresh/stale state and MUST adopt remote.
           // If local >= remote, we already have this data or newer.
-          if (localTime > 0 && localTime >= remoteTime) {
+          if (localTime > 100000 && localTime >= remoteTime) {
             console.log(
               "[Sync] Local is newer or equal to remote. Skipping sync.",
             );
@@ -1188,7 +1166,276 @@ export class GameManager {
       console.log(`[Sync] Applying Cloud Progress. Stage: ${remoteStage}`);
       this.state = hydratedProgress;
       this.save(false); // Silent save: update localStorage but don't re-push to cloud
+
+      // If we are currently "wiping" (login process) or just loaded fresh, we might need to reload
+      // to reflect state if the UI was already built?
+      // Usually init() handles this, but for real-time sync we might want to trigger a refresh
+      // if the stage changed significantly?
+      // For now, let's assume the silent update is enough or the user reloads if needed.
+      // But if we are stuck in the "Conflict Loop" context (which we just fixed),
+      // we usually want to ensure the UI reflects the new state.
+      if (window.location.hash === "#" || window.location.hash === "") {
+        // If on home/game, maybe dispatch event?
+        // window.location.reload(); // Too aggressive?
+      }
     }
+  }
+
+  showConflictResolution(remoteState) {
+    // 1. Remove any existing overlays to prevent stacking/ID conflicts
+    const existingOverlay = document.getElementById("conflict-overlay");
+    if (existingOverlay) {
+      document.body.removeChild(existingOverlay);
+    }
+
+    this.conflictBlocked = true;
+
+    // Format Dates
+    const localTime = new Date(this.state.meta.lastPlayed);
+    const remoteTime = new Date(remoteState.meta.lastPlayed);
+
+    const timeFormat = {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    };
+    const localTimeStr = localTime.toLocaleTimeString([], timeFormat);
+    const remoteTimeStr = remoteTime.toLocaleTimeString([], timeFormat);
+
+    // Calculate "Ago"
+    const now = Date.now();
+    const localAgo = Math.floor((now - localTime.getTime()) / 1000);
+    const remoteAgo = Math.floor((now - remoteTime.getTime()) / 1000);
+
+    // Calculate Progress
+    const localProg = this._calculateProgress(this.state);
+    const remoteProg = this._calculateProgress(remoteState);
+
+    const overlay = document.createElement("div");
+    overlay.id = "conflict-overlay"; // Give it an ID for cleanup
+    Object.assign(overlay.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100%",
+      height: "100%",
+      background: "rgba(15, 23, 42, 0.95)", // Slate-900 with opacity
+      color: "white",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: "99999",
+      fontFamily: "'Outfit', sans-serif",
+      backdropFilter: "blur(5px)",
+    });
+
+    overlay.innerHTML = `
+        <h2 style="margin-bottom: 20px; font-size: 1.8rem;">⚠️ Conflicto de Sincronización</h2>
+        <p style="margin-bottom: 30px; opacity: 0.8;">Se ha detectado una versión más reciente en la nube.</p>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px;">
+            
+            <!-- LOCAL CARD -->
+            <div style="
+                background: rgba(255,255,255,0.05); 
+                border: 1px solid rgba(255,255,255,0.1); 
+                padding: 20px; border-radius: 16px; 
+                flex: 1; min-width: 280px; text-align: center;
+                display: flex; flex-direction: column; gap: 10px;
+            ">
+                <h3 style="color: #94a3b8; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Este Dispositivo</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${this.state.progress.currentStage.toUpperCase()}</div>
+                <div style="color: ${localProg >= remoteProg ? "#4ade80" : "#cbd5e1"}; font-weight: bold; font-size: 1.2rem;">
+                    Progreso: ${localProg}%
+                </div>
+                <div style="color: #cbd5e1;">Hace ${localAgo} seg</div>
+                <div style="font-size: 0.9rem; opacity: 0.6;">(${localTimeStr})</div>
+                
+                <button class="btn-keep-local" style="
+                    margin-top: 15px; padding: 12px; border-radius: 8px; border: none;
+                    background: #3b82f6; color: white; font-weight: bold; cursor: pointer;
+                    transition: all 0.2s;
+                ">Mantener Mío 🏠</button>
+            </div>
+
+            <!-- CLOUD CARD -->
+            <div style="
+                background: rgba(16, 185, 129, 0.1); 
+                border: 1px solid rgba(16, 185, 129, 0.3); 
+                padding: 20px; border-radius: 16px; 
+                flex: 1; min-width: 280px; text-align: center;
+                display: flex; flex-direction: column; gap: 10px;
+            ">
+                <h3 style="color: #6ee7b7; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Nube (Reciente)</h3>
+                <div style="font-size: 2rem; font-weight: bold; color: #6ee7b7;">${remoteState.progress.currentStage.toUpperCase()}</div>
+                 <div style="color: ${remoteProg > localProg ? "#4ade80" : "#d1fae5"}; font-weight: bold; font-size: 1.2rem;">
+                    Progreso: ${remoteProg}%
+                </div>
+                <div style="color: #d1fae5;">Hace ${remoteAgo} seg</div>
+                <div style="font-size: 0.9rem; opacity: 0.6; color: #6ee7b7;">(${remoteTimeStr})</div>
+
+                <button class="btn-use-cloud" style="
+                    margin-top: 15px; padding: 12px; border-radius: 8px; border: none;
+                    background: #10b981; color: white; font-weight: bold; cursor: pointer;
+                    transition: all 0.2s;
+                ">Usar Nube ☁️</button>
+            </div>
+
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Use querySelector on the OVERLAY to ensure we attach to the created elements
+    // Also use clean class selectors (removed IDs to avoid potential caching issues)
+    const btnKeep = overlay.querySelector(".btn-keep-local");
+    const btnCloud = overlay.querySelector(".btn-use-cloud");
+
+    // ACTION: KEEP LOCAL
+    if (btnKeep) {
+      btnKeep.onclick = async () => {
+        console.log("[Conflict] Keeping Local...");
+        // 1. Force Local Update to "Now" so it beats cloud
+        this.state.meta.lastPlayed = new Date().toISOString();
+        // 2. Unblock UI
+        if (document.body.contains(overlay)) {
+          document.body.removeChild(overlay);
+        }
+        this.conflictBlocked = false;
+        // 3. Force Push to Cloud
+        await this.forceCloudSave();
+        // 4. (Optional) Toast
+        const { showToast } = await import("./ui.js");
+        showToast("Versión local conservada y subida.");
+      };
+    }
+
+    // ACTION: USE CLOUD
+    if (btnCloud) {
+      btnCloud.onclick = async () => {
+        console.log("[Conflict] Using Cloud... Triggering remote save.");
+
+        const icon = btnCloud.innerText;
+        btnCloud.innerText = "⏳ Solicitando...";
+        btnCloud.disabled = true;
+
+        try {
+          const { fetchLatestUserData, triggerRemoteSave } =
+            await import("./db.js");
+          const { getCurrentUser } = await import("./auth.js");
+          const user = getCurrentUser();
+
+          if (user) {
+            // 1. SIGNAL: Tell other devices to save NOW
+            await triggerRemoteSave(user.uid);
+
+            // 2. WAIT: Give the other device time to process the signal and save
+            btnCloud.innerText = "⏳ Sincronizando...";
+            await new Promise((resolve) => setTimeout(resolve, 2500));
+          }
+
+          // 3. FETCH: Get the fresh data (which should now include the forced save)
+          btnCloud.innerText = "⏳ Descargando...";
+
+          let finalState = remoteState; // Fallback
+
+          if (user) {
+            const latestData = await fetchLatestUserData(user.uid);
+            if (latestData && latestData.progress) {
+              console.log("[Conflict] Fresh cloud data received.");
+              finalState = this._deserializeState(latestData.progress);
+
+              if (latestData.stats) {
+                this.stats = latestData.stats;
+                localStorage.setItem(
+                  "jigsudo_user_stats",
+                  JSON.stringify(this.stats),
+                );
+              }
+            }
+          }
+
+          this.conflictBlocked = false;
+          this.state = finalState;
+          this.save(false);
+          window.location.reload();
+        } catch (e) {
+          console.error("Error applying cloud data:", e);
+          btnCloud.innerText = icon;
+          btnCloud.disabled = false;
+          alert("Error al descargar. Intenta de nuevo.");
+        }
+      };
+    }
+  }
+
+  _calculateProgress(state) {
+    if (!state || !state.progress) return 0;
+
+    // Base: 15 points per completed stage (Max 90 for 6 stages)
+    let points = (state.progress.stagesCompleted || []).length * 15;
+
+    // Partial for CURRENT stage
+    try {
+      const current = state.progress.currentStage;
+      let partial = 0;
+
+      switch (current) {
+        case "memory":
+          if (
+            state.memory &&
+            state.memory.cards &&
+            state.memory.cards.length > 0
+          ) {
+            partial =
+              (state.memory.pairsFound || 0) / (state.memory.cards.length / 2);
+          }
+          break;
+        case "jigsaw":
+          if (state.data && state.data.chunks) {
+            const totalChunks = state.data.chunks.length;
+            const placed = state.jigsaw
+              ? (state.jigsaw.placedChunks || []).length
+              : 0;
+            if (totalChunks > 0) partial = placed / totalChunks;
+          }
+          break;
+        case "sudoku":
+          if (state.sudoku && state.sudoku.currentBoard) {
+            let filled = 0;
+            state.sudoku.currentBoard.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell !== 0) filled++;
+              });
+            });
+            // Simple heuristic: filled / 81
+            partial = filled / 81;
+          }
+          break;
+        case "peaks":
+          // 81 cells max (roughly)
+          if (state.peaks && state.peaks.foundCoords) {
+            partial = state.peaks.foundCoords.length / 81;
+          }
+          break;
+        case "search":
+          if (state.search && state.search.targets) {
+            const total = state.search.targets.length;
+            const found = (state.search.found || []).length;
+            if (total > 0) partial = found / total;
+          }
+          break;
+      }
+
+      if (partial > 1) partial = 1;
+      points += partial * 15;
+    } catch (err) {
+      console.warn("Error calculating partial progress", err);
+    }
+
+    // Cap at 100
+    return Math.min(100, Math.round(points));
   }
 
   async recordWin() {

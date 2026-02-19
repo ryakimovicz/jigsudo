@@ -495,10 +495,10 @@ export function initHome() {
   // Home Navigation (Inicio Button)
   const navHome = document.getElementById("nav-home");
   if (navHome) {
-    navHome.addEventListener("click", () => {
-      // User requested "recargar el home" (reload home)
-      // Strip hash and reload the page to ensure fresh state
-      window.location.href = window.location.pathname;
+    navHome.addEventListener("click", async () => {
+      // Use Router instead of reload to preserve cache
+      const { router } = await import("./router.js");
+      router.navigateTo("#");
     });
   }
 
@@ -516,23 +516,51 @@ export function initHome() {
 
   let currentRankings = null;
 
+  // Helper to toggle spinner on headers
+  const toggleHeaderSpinner = (wrapper, isLoading) => {
+    if (!wrapper) return;
+    const header = wrapper.previousElementSibling; // The <h4>
+    if (header && header.tagName === "H4") {
+      if (isLoading) header.classList.add("ranking-loading");
+      else header.classList.remove("ranking-loading");
+    }
+  };
+
   async function loadAndRenderAllRankings(force = false) {
-    if (containerDaily)
+    // Only clear if empty (first load)
+    if (containerDaily && !containerDaily.hasChildNodes())
       containerDaily.innerHTML = '<div class="loader-small"></div>';
-    if (containerMonthly)
+    else toggleHeaderSpinner(containerDaily, true);
+
+    if (containerMonthly && !containerMonthly.hasChildNodes())
       containerMonthly.innerHTML = '<div class="loader-small"></div>';
-    if (containerAllTime)
+    else toggleHeaderSpinner(containerMonthly, true);
+
+    if (containerAllTime && !containerAllTime.hasChildNodes())
       containerAllTime.innerHTML = '<div class="loader-small"></div>';
+    else toggleHeaderSpinner(containerAllTime, true);
 
-    currentRankings = await fetchRankings(force);
+    // Also spin the main refresh button
+    if (refreshBtn) refreshBtn.classList.add("spinning");
 
-    renderRankings(containerDaily, currentRankings, "daily");
-    renderRankings(containerMonthly, currentRankings, "monthly");
-    renderRankings(containerAllTime, currentRankings, "allTime");
+    try {
+      currentRankings = await fetchRankings(force);
+
+      renderRankings(containerDaily, currentRankings, "daily");
+      renderRankings(containerMonthly, currentRankings, "monthly");
+      renderRankings(containerAllTime, currentRankings, "allTime");
+    } finally {
+      // Create artificial delay if it was too fast, just to show the spinner?
+      // No, fast is good. Just cleanup.
+      toggleHeaderSpinner(containerDaily, false);
+      toggleHeaderSpinner(containerMonthly, false);
+      toggleHeaderSpinner(containerAllTime, false);
+      if (refreshBtn) refreshBtn.classList.remove("spinning");
+    }
   }
 
-  // Initial Load (Force fresh rankings on startup)
-  loadAndRenderAllRankings(true);
+  // Initial Load (Try to use cache first)
+  loadAndRenderAllRankings(false);
 
   // Refresh Listener
   if (refreshBtn) {
@@ -543,11 +571,13 @@ export function initHome() {
 
   // Listen for auth state initialization to re-render rankings with user highlighting
   // This ensures the current user's row is highlighted from the first load
+  // Listen for auth state initialization to re-render rankings with user highlighting
+  // Cache is smart enough to invalidate if user changed, so we don't need to force true blindly.
   window.addEventListener("authReady", () => {
     console.log(
-      "[Home] Auth ready, re-rendering rankings to show user highlight",
+      "[Home] Auth ready, re-rendering rankings (checking cache user match)",
     );
-    loadAndRenderAllRankings(true);
+    loadAndRenderAllRankings(false);
   });
 
   // Show Home Logic (Internal - Exposed via Router Event or direct call if needed)

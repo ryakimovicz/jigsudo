@@ -38,9 +38,28 @@ export function listenToUserProgress(userId) {
     if (docSnap.exists()) {
       const data = docSnap.data();
       // Pass data to GameManager for conflict checking
-      gameManager.handleCloudSync(data.progress, data.stats);
+      gameManager.handleCloudSync(
+        data.progress,
+        data.stats,
+        data.forceSaveRequest,
+      );
     }
   });
+}
+
+export async function triggerRemoteSave(userId) {
+  if (!userId) return;
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(
+      userRef,
+      { forceSaveRequest: serverTimestamp() },
+      { merge: true },
+    );
+    console.log("[DB] Remote save requested.");
+  } catch (e) {
+    console.error("Error triggering remote save:", e);
+  }
 }
 
 export function stopListeningAndCleanup() {
@@ -223,6 +242,21 @@ export async function loadUserProgress(userId) {
     }
   } catch (error) {
     console.error("Error loading progress:", error);
+  }
+}
+
+export async function fetchLatestUserData(userId) {
+  if (!userId) return null;
+  try {
+    const userRef = doc(db, "users", userId);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching latest user data:", error);
+    return null;
   }
 }
 
