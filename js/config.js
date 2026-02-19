@@ -7,4 +7,7 @@ export const CONFIG = {
   // AdSense Configuration
   ENABLE_ADS: true, // Toggle during dev
   ADSENSE_CLIENT_ID: "ca-pub-7081495763188158", // Real Publisher ID
+
+  // Feature Flags
+  ENABLE_SOUND: false, // Toggle to show sound settings
 };

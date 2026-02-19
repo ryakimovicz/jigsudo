@@ -61,6 +61,14 @@ export function initHome() {
   const btnAuth = document.getElementById("btn-auth");
   const authDropdown = document.getElementById("auth-dropdown");
 
+  // Init Dropdown Visibility for Sound
+  const soundModalRow = document.getElementById(
+    "setting-sound-container-modal",
+  );
+  if (soundModalRow && !CONFIG.ENABLE_SOUND) {
+    soundModalRow.style.display = "none";
+  }
+
   if (btnProfile && profileDropdown) {
     btnProfile.addEventListener("click", (e) => {
       e.stopPropagation();
