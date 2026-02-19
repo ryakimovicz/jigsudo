@@ -20,9 +20,9 @@ export const router = {
     // Game is special. It usually has no hash or a specific hash if we want deep linking.
     // For now, let's map #game to game-section to allow explicit navigation.
     "#game": "game-section",
+    "#privacy": "privacy-section",
 
     // Future Routes
-    "#privacy": "privacy-section",
     "#terms": "terms-section",
   },
 
@@ -34,6 +34,7 @@ export const router = {
     "history-section": "history-active",
     "profile-section": "profile-active",
     "game-section": "game-active",
+    "privacy-section": "privacy-active",
   },
 
   init() {

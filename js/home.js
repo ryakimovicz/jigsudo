@@ -8,6 +8,7 @@ import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js";
 import { getCurrentUser } from "./auth.js";
 import { CONFIG } from "./config.js";
 import { updateSidebarActiveState } from "./sidebar.js";
+import { router } from "./router.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -40,6 +41,9 @@ export function initHome() {
 
   // Enforce Home State Class for CSS overrides
   document.body.classList.add("home-active");
+
+  // Initialize Router to handle Hash Navigation (Privacy, etc.)
+  router.init();
 
   // Footer logic moved to showHome to prevent overlap
   const footer = document.querySelector(".main-footer");
@@ -712,3 +716,6 @@ export async function startDailyGame() {
     console.error("[Home] Failed to start Daily Game:", err);
   }
 }
+
+// Auto-init Home Logic
+initHome();

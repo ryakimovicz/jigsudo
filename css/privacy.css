@@ -1,0 +1,78 @@
+/* Privacy Section Styles */
+#privacy-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-bottom: 0;
+  /* Glassmorphism Logic usually handled by 'glass-panel' or similar utility classes */
+  position: absolute; /* Needed for router stacking */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 90vh; /* Consistent with other modals */
+  max-width: 800px;
+  /* z-index handled by .active class in router/css */
+}
+
+/* Reusing Info Card style for Privacy for consistency */
+.privacy-card {
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.05); /* Slight bg */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.privacy-card h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+  color: var(--accent-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 10px;
+}
+
+.privacy-card h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.privacy-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+  text-align: justify;
+}
+
+.privacy-card ul {
+  padding-left: 20px;
+  margin-bottom: 15px;
+  color: var(--text-secondary);
+}
+
+.privacy-card li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.privacy-card strong {
+  color: var(--text-primary);
+}
+
+/* Footer Wrapper */
+.privacy-footer {
+  text-align: center;
+  margin-top: 30px;
+  margin-bottom: 50px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  #privacy-section {
+    padding: 15px;
+    width: 95%; /* More width on mobile */
+  }
+}
