@@ -86,6 +86,24 @@ export function updateTexts() {
     if (t[key]) el.setAttribute("placeholder", t[key]);
   });
 
+  // 5. Title Attributes (for tooltips)
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title");
+    if (t[key]) {
+      // If we are handling sidebar items and it's expanded,
+      // we might want to defer this?
+      // Actually, let sidebar.js handle the hiding.
+      // Just update the attribute here.
+      // If sidebar is expanded, sidebar.js should have removed the title attribute
+      // and stored it in data-temp-title.
+      if (el.hasAttribute("data-temp-title")) {
+        el.setAttribute("data-temp-title", t[key]);
+      } else {
+        el.setAttribute("title", t[key]);
+      }
+    }
+  });
+
   // Jigsaw/Sudoku Tooltip Special Case (Manual Override if in mode)
   if (jigsawMode) {
     const titleEl = document.querySelector(".header-title-container h2");
