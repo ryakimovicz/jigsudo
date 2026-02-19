@@ -35,6 +35,7 @@ export const router = {
     "profile-section": "profile-active",
     "game-section": "game-active",
     "privacy-section": "privacy-active",
+    "terms-section": "terms-active",
   },
 
   init() {

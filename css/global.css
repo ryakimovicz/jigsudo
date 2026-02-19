@@ -80,7 +80,8 @@ body.home-active,
 body.profile-active,
 body.guide-active,
 body.info-active,
-body.privacy-active {
+body.privacy-active,
+body.terms-active {
   overflow-y: auto;
 }
 

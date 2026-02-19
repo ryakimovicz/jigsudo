@@ -1,5 +1,5 @@
-/* Privacy Section Styles */
-#privacy-section {
+/* Terms Section Styles */
+#terms-section {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,15 +12,15 @@
 }
 
 /* Ensure the cards aren't too wide on large screens */
-.privacy-card {
+.terms-card {
   width: 100%;
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Reusing Info Card style for Privacy for consistency */
-.privacy-card {
+/* Legal Card Style (Consistent with Privacy) */
+.terms-card {
   padding: 20px;
   border-radius: 16px;
   margin-bottom: 25px;
@@ -28,7 +28,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.privacy-card h2 {
+.terms-card h2 {
   margin-top: 0;
   margin-bottom: 15px;
   font-size: 1.4rem;
@@ -37,14 +37,14 @@
   padding-bottom: 10px;
 }
 
-.privacy-card h3 {
+.terms-card h3 {
   margin-top: 20px;
   margin-bottom: 10px;
   font-size: 1.1rem;
   color: var(--text-primary);
 }
 
-.privacy-card p {
+.terms-card p {
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 15px;
@@ -52,23 +52,23 @@
   text-align: justify;
 }
 
-.privacy-card ul {
+.terms-card ul {
   padding-left: 20px;
   margin-bottom: 15px;
   color: var(--text-secondary);
 }
 
-.privacy-card li {
+.terms-card li {
   margin-bottom: 8px;
   line-height: 1.5;
 }
 
-.privacy-card strong {
+.terms-card strong {
   color: var(--text-primary);
 }
 
 /* Footer Wrapper */
-.privacy-footer {
+.terms-footer {
   text-align: center;
   margin-top: 30px;
   margin-bottom: 50px;
@@ -76,7 +76,7 @@
 
 /* Responsive */
 @media (max-width: 600px) {
-  #privacy-section {
+  #terms-section {
     padding: 15px;
     width: 95%; /* More width on mobile */
   }
