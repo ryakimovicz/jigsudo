@@ -98,8 +98,12 @@ async function getTopRankings(
       };
     } else {
       // 2. Fetch actual rank using aggregation query (1 read)
-      // Only count verified users for the rank
-      const actualRank = await getUserRankFn(fieldName, userScore, true);
+      // Only verify rank for VERIFIED users to avoid index errors on unverified accounts
+      let actualRank = "-";
+      if (user.emailVerified) {
+        actualRank = await getUserRankFn(fieldName, userScore, true);
+      }
+
       result.personal = {
         rank: actualRank,
         score: userScore,
