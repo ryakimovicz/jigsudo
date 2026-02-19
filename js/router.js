@@ -13,7 +13,7 @@ export const router = {
 
     // Main Sections
     "#guide": "guide-section",
-    "#info": "info-section",
+
     "#history": "history-section",
     "#profile": "profile-section",
 
@@ -30,7 +30,7 @@ export const router = {
   routeClasses: {
     "menu-content": "home-active",
     "guide-section": "guide-active",
-    "info-section": "info-active",
+
     "history-section": "history-active",
     "profile-section": "profile-active",
     "game-section": "game-active",
@@ -138,7 +138,7 @@ export const router = {
     const sidebarMap = {
       "menu-content": "nav-home",
       "guide-section": "nav-how-to",
-      "info-section": "nav-info",
+
       "history-section": "nav-history",
       "profile-section": "btn-auth", // Map profile to auth button
     };

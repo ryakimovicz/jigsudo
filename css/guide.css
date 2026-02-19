@@ -806,3 +806,83 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
   height: 100% !important;
   border: none !important;
 }
+
+/* --- INFO / RANKS STYLES (Merged) --- */
+.ranks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px; /* Space for scrollbar */
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 50px 1fr auto; /* Icon | Name+Lvl | RP */
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+
+.rank-row:hover {
+  transform: translateX(5px);
+  background: rgba(255, 255, 255, 1);
+  /* In light mode, hover becomes white */
+}
+
+body.dark-mode .rank-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rank-icon {
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.rank-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-name {
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.rank-level {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.rank-req {
+  font-weight: bold;
+  color: var(--accent-color);
+  font-size: 0.95rem;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* App Version Footer */
+.app-version-container {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .rank-row {
+    padding: 10px;
+    grid-template-columns: 40px 1fr auto;
+  }
+}

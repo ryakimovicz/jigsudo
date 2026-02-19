@@ -20,7 +20,6 @@
     <link rel="stylesheet" href="css/profile.css?v=40" />
     <link rel="stylesheet" href="css/history.css" />
     <link rel="stylesheet" href="css/guide.css" />
-    <link rel="stylesheet" href="css/info.css" />
     <link rel="stylesheet" href="css/privacy.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
 
@@ -162,10 +161,7 @@
                 <span class="nav-icon">📖</span>
                 <span class="nav-label" data-i18n="sidebar_how_to">Guía</span>
               </li>
-              <li class="nav-item" id="nav-info" title="Información" data-i18n-title="sidebar_info">
-                <span class="nav-icon">ℹ️</span>
-                <span class="nav-label" data-i18n="sidebar_info">Información</span>
-              </li>
+
             </ul>
           </nav>
         </div>
@@ -797,59 +793,56 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Info Content (Merged) -->
+              <div id="guide-info-content" class="guide-tab-content" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                  <h3 class="section-title" style="margin-bottom: 20px; text-align: center;">Información del Juego</h3>
+                  
+                  <!-- Scoring Rules -->
+                  <div class="info-card glass-panel">
+                      <h3>📊 Sistema de Puntuación (RP)</h3>
+                      <p>Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.</p>
+                      <ul>
+                          <li><strong>Base RP:</strong> 4.0 puntos garantizados por terminar.
+                              <ul class="sub-list" style="margin-top: 5px; margin-bottom: 10px; font-size: 0.9em; opacity: 0.9;">
+                                  <li>Juego de Memoria: 0.5</li>
+                                  <li>Rompecabezas: 1.0</li>
+                                  <li>Sudoku: 1.0</li>
+                                  <li>Picos y Valles: 0.5</li>
+                                  <li>Sopa de Números: 0.5</li>
+                                  <li>El Código: 0.5</li>
+                              </ul>
+                          </li>
+                          <li><strong>Velocidad:</strong> Tienes un bono de hasta 6 Puntos que decae durante las primeras 3 horas. ¡Sé rápido!</li>
+                          <li><strong>Penalización:</strong> En Picos y Valles, -0.25 RP por cada error.</li>
+                          <li><strong>Racha Diaria:</strong> Juega todos los días para demostrar tu constancia.</li>
+                          <li><strong>Ausencia:</strong> -3.0 RP por cada día sin jugar.</li>
+                      </ul>
+                  </div>
+
+                  <!-- Ranks System -->
+                  <div class="info-card glass-panel">
+                      <h3>🏆 Sistema de Rangos</h3>
+                      <p>Acumula RP para subir de nivel y desbloquear nuevos rangos. Cada rango representa tu maestría en Jigsudo.</p>
+                      <div id="ranks-table-container">
+                          <!-- Populated by JS -->
+                      </div>
+                  </div>
+
+                  <!-- Community/More -->
+                  <div class="info-card glass-panel">
+                      <h3>🌐 Comunidad</h3>
+                      <p>Jigsudo es un proyecto independiente. ¡Gracias por jugar!</p>
+                      <p>Versión: <span id="app-version">1.0.0</span></p>
+                      <p><a href="https://github.com/ryakimovicz/jigsudo" target="_blank" style="color: var(--accent-color);">Ver en GitHub</a></p>
+                  </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Info Section -->
-      <section id="info-section" class="hidden">
-        <div class="scrollable-content">
-          <!-- Header -->
-          <header class="info-header">
-              <h2 class="section-title">Información</h2>
-          </header>
 
-          <!-- Scoring Rules -->
-          <div class="info-card glass-panel">
-              <h3>📊 Sistema de Puntuación (RP)</h3>
-              <p>Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.</p>
-              <ul>
-                  <li><strong>Base RP:</strong> 4.0 puntos garantizados por terminar.
-                      <ul class="sub-list" style="margin-top: 5px; margin-bottom: 10px; font-size: 0.9em; opacity: 0.9;">
-                          <li>Juego de Memoria: 0.5</li>
-                          <li>Rompecabezas: 1.0</li>
-                          <li>Sudoku: 1.0</li>
-                          <li>Picos y Valles: 0.5</li>
-                          <li>Sopa de Números: 0.5</li>
-                          <li>El Código: 0.5</li>
-                      </ul>
-                  </li>
-                  <li><strong>Velocidad:</strong> Tienes un bono de hasta 6 Puntos que decae durante las primeras 3 horas. ¡Sé rápido!</li>
-                  <li><strong>Penalización:</strong> En Picos y Valles, -0.25 RP por cada error.</li>
-                  <li><strong>Racha Diaria:</strong> Juega todos los días para demostrar tu constancia.</li>
-                  <li><strong>Ausencia:</strong> -3.0 RP por cada día sin jugar.</li>
-              </ul>
-          </div>
-
-          <!-- Ranks System -->
-          <div class="info-card glass-panel">
-              <h3>🏆 Sistema de Rangos</h3>
-              <p>Acumula RP para subir de nivel y desbloquear nuevos rangos. Cada rango representa tu maestría en Jigsudo.</p>
-              <div id="ranks-table-container">
-                  <!-- Populated by JS -->
-              </div>
-          </div>
-
-          <!-- Community/More -->
-          <div class="info-card glass-panel">
-              <h3>🌐 Comunidad</h3>
-              <p>Jigsudo es un proyecto independiente. ¡Gracias por jugar!</p>
-              <p>Versión: <span id="app-version">1.0.0</span></p>
-              <p><a href="https://github.com/ryakimovicz/jigsudo" target="_blank" style="color: var(--accent-color);">Ver en GitHub</a></p>
-          </div>
-        </div>
-      </section>
   
       <!-- Game Section (Sudoku/Jigsaw) -->
       <section id="game-section" class="hidden">
@@ -1603,7 +1596,7 @@
     <script type="module" src="js/home.js"></script>
     <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/guide.js"></script>
-    <script type="module" src="js/info.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script type="module" src="js/sidebar.js"></script>
     <script src="js/header.js" defer></script>

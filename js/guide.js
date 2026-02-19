@@ -1,6 +1,8 @@
 import { updateSidebarActiveState } from "./sidebar.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
+import { RANKS } from "./ranks.js";
+import { CONFIG } from "./config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initGuide();
@@ -38,6 +40,15 @@ export function initGuide() {
   // Re-init slider logic
   updateGuideSidebarStatus();
   startTutorial();
+
+  // Initialize Ranks/Info Section
+  const ranksContainer = document.getElementById("ranks-table-container");
+  if (ranksContainer) renderRanksTable(ranksContainer);
+
+  const versionEl = document.getElementById("app-version");
+  if (versionEl && CONFIG.version) {
+    versionEl.textContent = CONFIG.version;
+  }
 }
 
 function setupSidebarConnection() {
@@ -2155,4 +2166,28 @@ function validateTutorialBoard() {
   if (errorCount === 0) {
     setTimeout(() => nextTutorialStage(), 1000);
   }
+}
+
+// --- INFO / RANKS SECTION ---
+function renderRanksTable(container) {
+  container.innerHTML = "";
+  const grid = document.createElement("div");
+  grid.className = "ranks-grid";
+
+  RANKS.forEach((rank) => {
+    const row = document.createElement("div");
+    row.className = "rank-row glass-panel";
+
+    row.innerHTML = `
+            <div class="rank-icon">${rank.icon}</div>
+            <div class="rank-details">
+                <span class="rank-name" data-i18n="${rank.nameKey}">${rank.nameKey}</span>
+                <span class="rank-level">Nivel ${rank.id}</span>
+            </div>
+            <div class="rank-req">${rank.minRP} RP</div>
+        `;
+    grid.appendChild(row);
+  });
+
+  container.appendChild(grid);
 }
