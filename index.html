@@ -43,14 +43,19 @@
       media="(prefers-color-scheme: dark)"
     />
 
+    <meta name="description" content="Jigsudo - El desafío diario definitivo. Resuelve el juego de memoria, arma el rompecabezas, completa el sudoku y descifra el código en esta combinación única de lógica." />
+    <meta name="keywords" content="jigsudo, puzzle diario, sudoku, rompecabezas, juego de memoria, lógica, desafío mental" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://jigsudo.com" />
+
     <!-- Social Media / Open Graph -->
     <meta property="og:title" content="Jigsudo - Desafía tu mente" />
     <meta
       property="og:description"
       content="Resuelve el puzzle diario. Una combinación única de lógica y rompecabezas. ¿Podrás completarlo?"
     />
-    <meta property="og:image" content="https://jigsudo.web.app/assets/images/social-preview.png" />
-    <meta property="og:url" content="https://jigsudo.web.app" />
+    <meta property="og:image" content="https://jigsudo.com/assets/images/social-preview.png" />
+    <meta property="og:url" content="https://jigsudo.com" />
     <meta property="og:type" content="website" />
 
     <!-- Twitter Card -->
@@ -60,7 +65,26 @@
       name="twitter:description"
       content="Juega Jigsudo gratis. El desafío diario que entrena tu cerebro."
     />
-    <meta name="twitter:image" content="https://jigsudo.web.app/assets/images/social-preview.png" />
+    <meta name="twitter:image" content="https://jigsudo.com/assets/images/social-preview.png" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Jigsudo",
+      "operatingSystem": "Web",
+      "applicationCategory": "GameApplication",
+      "genre": "Puzzle",
+      "url": "https://jigsudo.com",
+      "description": "Una combinación única de memoria, rompecabezas, sudoku y lógica en un desafío diario.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
   </head>
   <body>
     <script>
@@ -138,8 +162,8 @@
         </div>
 
         <div class="header-center">
-          <img src="assets/images/logo_lightmode.svg" alt="Logo" class="header-logo light-only">
-          <img src="assets/images/logo_darkmode.svg" alt="Logo" class="header-logo dark-only">
+          <img src="assets/images/logo_lightmode.svg" alt="Jigsudo Logo" class="header-logo light-only">
+          <img src="assets/images/logo_darkmode.svg" alt="Jigsudo Logo" class="header-logo dark-only">
           <div class="header-text-block">
             <h1 class="app-title">Jigsudo</h1>
             <div class="header-meta">
