@@ -1188,5 +1188,8 @@ body.dark-mode .dark-only-inline {
   margin: 0;
 }
 
+.sc-tagline {
+  font-weight: 800;
+  color: var(--accent-color);
   font-size: 1.6rem;
 }
