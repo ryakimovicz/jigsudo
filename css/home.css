@@ -49,7 +49,7 @@ body.header-condensed .main-header {
 .header-right {
   position: absolute;
   top: 0;
-  bottom: 0;
+  height: var(--header-height-condensed);
   display: flex;
   align-items: center;
   z-index: 30002;
