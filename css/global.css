@@ -67,6 +67,7 @@ body.dark-mode .glass-panel {
 html,
 body {
   max-width: 100%;
+  overflow-anchor: none;
 }
 
 body {
@@ -164,6 +165,7 @@ body {
 }
 
 @media (min-width: 769px) {
+  .main-header,
   #menu-content,
   #profile-section,
   #history-section,
@@ -177,9 +179,11 @@ body {
       margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
       width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: calc(100% - var(--sidebar-width));
+    box-sizing: border-box; /* Crucial to prevent horizontal scroll from padding */
     will-change: margin-left, width;
   }
 
+  body.sidebar-expanded .main-header,
   body.sidebar-expanded #menu-content,
   body.sidebar-expanded #profile-section,
   body.sidebar-expanded #history-section,
@@ -198,6 +202,7 @@ body {
 }
 
 @media (max-width: 768px) {
+  .main-header,
   #menu-content,
   #profile-section,
   #history-section,
@@ -208,11 +213,13 @@ body {
   .main-footer {
     margin-left: 0;
     width: 100%;
+    box-sizing: border-box;
   }
 }
 
 /* Account for right ad space */
 @media (min-width: 1200px) {
+  .main-header,
   #menu-content,
   #profile-section,
   #history-section,

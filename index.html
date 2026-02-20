@@ -162,16 +162,17 @@
          </div>
     </div>
     <div id="app">
+      <!-- Mobile Header Toggle (Moved outside header for z-index stacking context over sidebar) -->
+      <div class="header-left mobile-toggle-container">
+        <button class="sidebar-toggle" aria-label="Toggle Sidebar">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
       <!-- Header -->
       <header class="main-header">
-        <div class="header-left">
-          <button id="sidebar-toggle" aria-label="Toggle Sidebar">
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-        </div>
-
         <div class="header-center">
           <img src="assets/images/logo_lightmode.svg" alt="Jigsudo Logo" class="header-logo light-only">
           <img src="assets/images/logo_darkmode.svg" alt="Jigsudo Logo" class="header-logo dark-only">
@@ -193,6 +194,13 @@
       <aside id="side-sidebar">
         <div class="sidebar-content">
           <nav class="sidebar-nav">
+            <div class="desktop-toggle-container">
+              <button class="sidebar-toggle" aria-label="Toggle Sidebar">
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+            </div>
             <p class="sidebar-section-label" data-i18n="sidebar_menu">Menú</p>
             <ul class="sidebar-nav-list">
               <li class="nav-item" id="nav-home" title="Inicio" data-i18n-title="sidebar_home">

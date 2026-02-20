@@ -11,10 +11,10 @@ export function updateSidebarActiveState(activeId) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("side-sidebar");
-  const toggleBtn = document.getElementById("sidebar-toggle");
+  const toggleBtns = document.querySelectorAll(".sidebar-toggle");
   const overlay = document.getElementById("sidebar-overlay");
 
-  if (toggleBtn && sidebar) {
+  if (toggleBtns.length > 0 && sidebar) {
     function toggleSidebar() {
       const isExpanded = sidebar.classList.toggle("expanded");
       document.body.classList.toggle("sidebar-expanded", isExpanded);
@@ -44,9 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    toggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleSidebar();
+    toggleBtns.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleSidebar();
+      });
     });
 
     // Close when clicking overlay or outside
@@ -64,10 +66,14 @@ document.addEventListener("DOMContentLoaded", () => {
       // Only close on click-outside if we are on mobile (collapsed overlay state)
       if (window.innerWidth > 768) return;
 
+      const clickedOnToggle = Array.from(toggleBtns).some((btn) =>
+        btn.contains(e.target),
+      );
+
       if (
         sidebar.classList.contains("expanded") &&
         !sidebar.contains(e.target) &&
-        !toggleBtn.contains(e.target)
+        !clickedOnToggle
       ) {
         closeSidebar();
       }

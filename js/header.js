@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const body = document.body;
-  const shrinkThreshold = 100;
-  const expandThreshold = 50;
+  const shrinkThreshold = 120;
+  const expandThreshold = 5;
 
   const handleScroll = () => {
     const currentScrollY = window.scrollY;
