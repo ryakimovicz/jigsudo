@@ -212,6 +212,20 @@ body {
   }
 }
 
+/* Account for right ad space */
+@media (min-width: 1200px) {
+  #menu-content,
+  #profile-section,
+  #history-section,
+  #guide-section,
+  #info-section,
+  #game-section,
+  #privacy-section,
+  .main-footer {
+    padding-right: 170px; /* 160px ad + 10px spacing */
+  }
+}
+
 /* Utility: Hidden */
 .hidden {
   display: none !important;

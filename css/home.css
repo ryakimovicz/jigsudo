@@ -34,6 +34,13 @@ body.header-condensed {
   }
 }
 
+/* Account for right ad space */
+@media (min-width: 1200px) {
+  .main-header {
+    padding-right: 170px;
+  }
+}
+
 body.header-condensed .main-header {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
@@ -1868,13 +1875,13 @@ aside.ad-container-vertical {
   width: 160px;
   height: 600px;
   z-index: 90; /* Below modals (1000+) but above content */
-  display: block; /* Default to block, hidden by media query */
+  display: none; /* Mobile-first: hidden by default */
 }
 
-/* Hide on SMALL screens (< 1200px) */
-@media (max-width: 1199px) {
+/* Show only on LARGE screens (>= 1200px) */
+@media (min-width: 1200px) {
   aside.ad-container-vertical {
-    display: none;
+    display: block;
   }
 }
 
@@ -1932,9 +1939,13 @@ aside.ad-container-vertical {
 }
 
 /* Adjust main content padding so footer ad doesn't cover game on mobile */
-@media (max-width: 1199px) {
+body {
+  padding-bottom: 70px; /* Base assumption mobile padding. */
+}
+
+@media (min-width: 1200px) {
   body {
-    padding-bottom: 70px;
+    padding-bottom: 0px; /* Remove mobile padding when desktop ad is active */
   }
 }
 
