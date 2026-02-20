@@ -108,37 +108,76 @@ function renderTargets(data) {
   }
 }
 
+// Named Handlers for Cleanup
+let touchStartHandler = null;
+let touchMoveHandler = null;
+let touchEndHandler = null;
+
 function attachSearchListeners() {
   const board = document.getElementById("memory-board");
   if (!board) return;
 
-  // Mouse / Touch Interaction
+  // Mouse
   board.addEventListener("mousedown", startSelection);
-  document.addEventListener("mousemove", updateSelection); // Document to track drags smoothly
+  document.addEventListener("mousemove", updateSelection);
   document.addEventListener("mouseup", endSelection);
 
-  // Mobile Touch equivalents
-  board.addEventListener(
-    "touchstart",
-    (e) => {
-      e.preventDefault(); // Prevent scroll
-      startSelection(e.changedTouches[0]);
-    },
-    { passive: false },
-  );
+  // Touch - Create unique wrappers to preserve 'this' if needed (not needed here but good practice)
+  // We store them to remove them later.
+  touchStartHandler = (e) => {
+    e.preventDefault();
+    startSelection(e.changedTouches[0]);
+  };
 
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      e.preventDefault();
-      updateSelection(e.changedTouches[0]);
-    },
-    { passive: false },
-  );
+  touchMoveHandler = (e) => {
+    e.preventDefault();
+    updateSelection(e.changedTouches[0]);
+  };
 
-  document.addEventListener("touchend", (e) => {
+  touchEndHandler = (e) => {
     endSelection(e.changedTouches[0]);
-  });
+  };
+
+  board.addEventListener("touchstart", touchStartHandler, { passive: false });
+  document.addEventListener("touchmove", touchMoveHandler, { passive: false });
+  document.addEventListener("touchend", touchEndHandler);
+
+  // Safety: Detach on route change or stage switch
+  window.addEventListener("routeChanged", handleRouteChangeCleanup);
+}
+
+function handleRouteChangeCleanup(e) {
+  if (e.detail.route !== "game-section") {
+    detachSearchListeners();
+  }
+}
+
+export function detachSearchListeners() {
+  const board = document.getElementById("memory-board");
+
+  document.removeEventListener("mousemove", updateSelection);
+  document.removeEventListener("mouseup", endSelection);
+
+  if (touchMoveHandler) {
+    document.removeEventListener("touchmove", touchMoveHandler);
+  }
+  if (touchEndHandler) {
+    document.removeEventListener("touchend", touchEndHandler);
+  }
+
+  if (board) {
+    board.removeEventListener("mousedown", startSelection);
+    if (touchStartHandler) {
+      board.removeEventListener("touchstart", touchStartHandler);
+    }
+  }
+
+  // Clear handlers
+  touchStartHandler = null;
+  touchMoveHandler = null;
+  touchEndHandler = null;
+
+  window.removeEventListener("routeChanged", handleRouteChangeCleanup);
 }
 
 function startSelection(e) {
@@ -488,6 +527,7 @@ export function provideSearchHint() {
 
 export async function transitionToCode() {
   console.log("Transitioning to The Code...");
+  detachSearchListeners(); // Cleanup listeners
   window.isGameTransitioning = true;
 
   const gameSection = document.getElementById("game-section");

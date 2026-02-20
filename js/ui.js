@@ -129,7 +129,7 @@ export function showVictorySummary(stats, isHome = false) {
       modal.classList.add("hidden");
 
       if (!isHome) {
-        // Clear ranking cache to ensure fresh data on reload
+        // 1. Refresh Rankings immediately if possible (via home logic listener)
         try {
           const { clearRankingCache } = await import("./ranking.js");
           clearRankingCache();
@@ -137,9 +137,13 @@ export function showVictorySummary(stats, isHome = false) {
           console.warn("Failed to clear ranking cache:", err);
         }
 
-        // Use Router for smooth transition instead of reload
+        // 2. Clear current game session if needed (optional, state usually persists but we want fresh Home)
+        // 3. Navigate Home
         const { router } = await import("./router.js");
         router.navigateTo("#");
+
+        // 4. Force global events to let Home.js know it should refresh UI
+        window.dispatchEvent(new CustomEvent("gameCompleted"));
       }
     };
   }

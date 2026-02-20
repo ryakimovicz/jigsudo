@@ -26,17 +26,8 @@ export const router = {
     "#terms": "terms-section",
   },
 
-  // Map Section ID -> Body Class
-  routeClasses: {
-    "menu-content": "home-active",
-    "guide-section": "guide-active",
-
-    "history-section": "history-active",
-    "profile-section": "profile-active",
-    "game-section": "game-active",
-    "privacy-section": "privacy-active",
-    "terms-section": "terms-active",
-  },
+  // Map Section ID -> Body Class (REMOVED: Global scroll is now default)
+  // routeClasses: { ... },
 
   init() {
     window.addEventListener("hashchange", () => this.handleRoute());
@@ -119,15 +110,9 @@ export const router = {
       }
     }
 
-    // 3. Update Body Classes
-    const allBodyClasses = Object.values(this.routeClasses);
-    document.body.classList.remove(...allBodyClasses);
-
-    const activeClass = this.routeClasses[activeId];
-    if (activeClass) {
-      document.body.classList.add(activeClass);
-      console.log(`[Router] Body class added: ${activeClass}`);
-    }
+    // 3. Update Body Classes (REMOVED)
+    // const allBodyClasses = Object.values(this.routeClasses || {});
+    // document.body.classList.remove(...allBodyClasses);
 
     // 4. Dispatch Event for modules to update content
     const event = new CustomEvent("routeChanged", {

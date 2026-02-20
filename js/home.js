@@ -440,8 +440,16 @@ export function initHome() {
       const realTodaySeed = getDailySeed();
       const seedStr = realTodaySeed.toString();
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-      return stats.history?.[today]?.status === "won";
+
+      const isWon = stats.history?.[today]?.status === "won";
+      console.log(`[Home Debug] Checking Daily Win for ${today}:`, {
+        isWon,
+        historyEntry: stats.history?.[today],
+        seed: realTodaySeed,
+      });
+      return isWon;
     } catch (e) {
+      console.error("[Home Debug] Error checking daily win", e);
       return false;
     }
   };
@@ -449,6 +457,9 @@ export function initHome() {
   const refreshStartButton = () => {
     if (!startBtn) return;
     const isWon = checkDailyWin();
+    console.log(
+      `[Home Debug] refreshStartButton called. isWon=${isWon}, mode=${currentMode}`,
+    );
     const lang = getCurrentLang();
 
     if (isWon && currentMode === "daily") {
@@ -599,106 +610,61 @@ export function initHome() {
     loadAndRenderAllRankings(false);
   });
 
-  // Show Home Logic (Internal - Exposed via Router Event or direct call if needed)
-  const showHome = () => {
-    // GUARD REMOVED: Router handles this.
-    console.log("[Home] Preparing Home View");
+  // --- Router & Game Events (Moved out of showHome) ---
 
-    // 1. UI Reset helpers (Router handles main visibility, but these help strict cleanups)
-    // hideProfile(); // Managed by router events in profile.js
-    document.getElementById("info-section")?.classList.add("hidden");
-    document.getElementById("guide-section")?.classList.add("hidden");
-    document.getElementById("game-section")?.classList.add("hidden");
-    document.getElementById("profile-section")?.classList.add("hidden");
-    document.getElementById("history-section")?.classList.add("hidden");
+  // Listen for Router Changes
+  window.addEventListener("routeChanged", ({ detail }) => {
+    if (detail.hash === "" || detail.hash === "#" || detail.hash === "#home") {
+      updateHeaderInfo();
+      refreshStartButton();
+      // Only load rankings if container is visible
+      loadAndRenderAllRankings();
 
-    // 2. Show Menu
-    const menu = document.getElementById("menu-content");
-    if (menu) {
-      menu.classList.remove("hidden");
-      // Fix: Unhide children components that might have been hidden by Info page
-      document.getElementById("ranking-container")?.classList.remove("hidden");
-      // Remove hidden from panels (display is controlled by .active)
-      document.getElementById("panel-daily")?.classList.remove("hidden");
-      document.getElementById("panel-custom")?.classList.remove("hidden");
+      const debugBtn = document.getElementById("debug-help-btn");
+      if (debugBtn) debugBtn.style.display = "none";
     }
 
-    // 3. Sidebar State
-    updateSidebarActiveState("nav-home");
+    // Explicitly handle #game route to initialize game logic if needed
+    if (detail.hash === "#game") {
+      startDailyGame();
+    }
+  });
 
-    // 4. Header & Footer
-    const footer = document.querySelector(".main-footer");
-    if (footer) footer.classList.remove("hidden");
-    document.body.classList.add("home-active");
-    document.body.classList.remove(
-      "profile-active",
-      "history-active",
-      "guide-active",
-    );
-
-    const debugBtn = document.getElementById("debug-help-btn");
-    if (debugBtn) debugBtn.style.display = "none";
-
-    // 5. Logic
-    updateHeaderInfo();
-    refreshStartButton();
-    // Listen for Router Changes
-    window.addEventListener("routeChanged", ({ detail }) => {
-      if (
-        detail.hash === "" ||
-        detail.hash === "#" ||
-        detail.hash === "#home"
-      ) {
-        updateHeaderInfo();
-        refreshStartButton();
-        // Only load rankings if container is visible (it is, router ensures it)
-        loadAndRenderAllRankings();
-
-        const debugBtn = document.getElementById("debug-help-btn");
-        if (debugBtn) debugBtn.style.display = "none";
-      }
-    });
-  };
+  // Listen for Game Completion to force refresh ranking even if cache is fresh
+  window.addEventListener("gameCompleted", () => {
+    console.log("[Home] Game completed. Refreshing rankings & button state.");
+    loadAndRenderAllRankings(true);
+    refreshStartButton(); // Force button update immediately
+  });
 }
+
+let isStarting = false;
 
 /**
  * Universal function to start/resume a daily game
  * (Can be called from Home or History)
  */
 export async function startDailyGame() {
+  if (isStarting) return;
+  isStarting = true;
+
   try {
     if (gameManager.isWiping) {
       console.warn("[Home] Sync in progress. Blocking start.");
       return;
     }
 
-    // 1. UI Transitions
-    document.body.classList.remove("home-active");
-    document.body.classList.remove("profile-active");
-    document.body.classList.remove("history-active");
     if (CONFIG.betaMode) document.body.classList.add("beta-mode");
 
-    // 2. Sidebar Update
-    // Deselect "Inicio" (or clear all active states)
-    updateSidebarActiveState(null);
-
-    // Clear hash to prevent accidental re-routing
-    if (
-      window.location.hash === "#history" ||
-      window.location.hash === "#profile"
-    ) {
-      history.replaceState(null, null, " ");
+    // 2. Set Hash for robust routing (let Router toggle visibility)
+    if (window.location.hash !== "#game") {
+      window.location.hash = "#game";
     }
 
-    // Hide Sections
-    document.getElementById("menu-content")?.classList.add("hidden");
-    document.getElementById("profile-section")?.classList.add("hidden");
-    document.getElementById("history-section")?.classList.add("hidden");
-    document.getElementById("info-section")?.classList.add("hidden");
-    // Show game section
-    document.getElementById("game-section")?.classList.remove("hidden");
+    // 3. Optional: Reset Sidebar active state
+    updateSidebarActiveState(null);
 
-    // Hide Footer in game
+    // 4. Hide Footer in game
     const footer = document.querySelector(".main-footer");
     if (footer) footer.classList.add("hidden");
 
@@ -719,6 +685,8 @@ export async function startDailyGame() {
     }
   } catch (err) {
     console.error("[Home] Failed to start Daily Game:", err);
+  } finally {
+    isStarting = false;
   }
 }
 
