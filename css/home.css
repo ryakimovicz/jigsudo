@@ -26,7 +26,6 @@ body.header-condensed {
     margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 0;
-  will-change: height, margin-left, width;
 }
 
 /* Account for right ad space */

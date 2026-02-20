@@ -88,6 +88,9 @@ body {
   position: relative;
   width: 100%;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* ... (Glass Panel styles remain) ... */
@@ -166,19 +169,21 @@ body {
   border-right: 3px solid var(--accent-color);
 }
 
+/* Pushes footer to bottom on short pages (Global) */
+#menu-content,
+#profile-section,
+#history-section,
+#guide-section,
+#info-section,
+#game-section,
+#privacy-section {
+  flex: 1;
+}
+
 @media (min-width: 769px) {
+  /* Structural Box Sizing & Transitions */
   .main-header,
   #menu-content,
-  #profile-section,
-  #history-section,
-  #guide-section,
-  #info-section,
-  #game-section,
-  #privacy-section {
-    flex: 1; /* Pushes footer to bottom on short pages */
-  }
-
-  /* Structural Box Sizing & Transitions */
   #profile-section,
   #history-section,
   #guide-section,
@@ -192,7 +197,6 @@ body {
       width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: calc(100% - var(--sidebar-width));
     box-sizing: border-box; /* Crucial to prevent horizontal scroll from padding */
-    will-change: margin-left, width;
   }
 
   body.sidebar-expanded .main-header,

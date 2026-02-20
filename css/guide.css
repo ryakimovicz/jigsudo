@@ -74,16 +74,13 @@ body.dark-mode {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.05); /* Light Mode Overlay */
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
   pointer-events: none;
   z-index: 10;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
 }
 
 body.dark-mode .jigsaw-slot.locked::after {
   background: rgba(0, 0, 0, 0.3); /* Dark Mode Overlay */
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
 body.dark-mode .guide-selector {
@@ -353,10 +350,14 @@ body.dark-mode .guide-selector {
 
 /* Tutorial specific layout adjustments */
 .tutorial-board-container .memory-grid {
+  display: grid;
   grid-template-columns: repeat(
     4,
     1fr
   ) !important; /* Forces 8 cards in 4x2 for tutorial */
+  gap: 15px; /* Explicit gap instead of relying on fractions stretching */
+  width: max-content; /* Only take as much space as the 4 cards need */
+  margin: 0 auto; /* Center the compact grid block within the container */
   perspective: 1000px; /* Perspective belongs on the container for uniform 3D feel */
 }
 
@@ -648,16 +649,20 @@ body.dark-mode .jigsaw-piece {
 
 /* Slots and filled pieces should be flush */
 .jigsaw-slot.filled {
-  background: transparent;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .jigsaw-slot.filled .mini-sudoku-grid {
   border: 1px solid #1e293b;
   border-radius: 10px;
+  background: white; /* Hides fractional rendering gaps */
 }
 
 body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
   border-color: var(--primary-color, #fbbf24);
+  background: #2a2a2a; /* Matches dark cell color perfectly */
 }
 
 /* Error feedback */
