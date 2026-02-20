@@ -76,7 +76,9 @@ body {
   background-color: var(--bg-paper);
   /* Optional: Subtle paper texture pattern could happen here */
   min-height: 100vh;
-  /* overflow: hidden;  <-- REMOVED to enable global scroll */
+  /* Flexbox Sticky Footer Setup */
+  display: flex;
+  flex-direction: column;
 }
 
 /* REMOVED specific scroll enabling classes */
@@ -167,6 +169,16 @@ body {
 @media (min-width: 769px) {
   .main-header,
   #menu-content,
+  #profile-section,
+  #history-section,
+  #guide-section,
+  #info-section,
+  #game-section,
+  #privacy-section {
+    flex: 1; /* Pushes footer to bottom on short pages */
+  }
+
+  /* Structural Box Sizing & Transitions */
   #profile-section,
   #history-section,
   #guide-section,
