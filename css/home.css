@@ -11,7 +11,7 @@ body.header-condensed {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 20px 0 0;
   position: sticky;
   top: 0;
   left: 0;
@@ -93,6 +93,11 @@ body.header-condensed .header-center {
   position: relative;
 }
 
+body.header-condensed .header-text-block {
+  /* Expand the true boundary by exactly the width the #034 transform bleeds rightward */
+  margin-right: 52px;
+}
+
 .header-logo {
   height: 64px; /* Grande! */
   width: auto;
@@ -118,7 +123,7 @@ body.header-condensed .header-logo {
 
 body.header-condensed .app-title {
   font-size: 1.25rem;
-  transform: translateY(11px); /* Center title in the 45px header */
+  transform: translateY(11px); /* Restored for smooth glide down */
 }
 
 .header-meta {
@@ -149,8 +154,8 @@ body.header-condensed .app-title {
 }
 
 body.header-condensed .header-meta {
-  /* Move UP and RIGHT to sit next to the title */
-  transform: translate(90px, -11px);
+  /* Visually honed to perfectly align baselines and tight half-character spacing */
+  transform: translate(98px, -11px);
   font-size: 0.9rem;
   gap: 8px;
 }
@@ -691,7 +696,8 @@ body.dark-mode .btn-primary.btn-won:active {
 /* Footer */
 .main-footer {
   text-align: center;
-  padding: 20px 4px;
+  padding-top: 20px;
+  padding-bottom: 20px;
   font-size: 0.8rem;
   color: var(--text-muted);
   border-top: 1px solid var(--glass-border);
