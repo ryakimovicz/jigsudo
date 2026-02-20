@@ -16,11 +16,13 @@
   margin: 0 auto !important;
   padding-top: 1rem !important;
 
-  --sudoku-grid-line: #999; /* Softer gray (was #333, then #bbb) */
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 .dark-mode .code-mode .memory-grid-layout {
-  --sudoku-grid-line: #444; /* Softer dark theme line (was #eee) */
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 /* Board Styling - Ensure it stays exactly like Search/Sudoku */

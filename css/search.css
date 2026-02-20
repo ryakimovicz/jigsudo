@@ -33,11 +33,13 @@
   padding-top: 1rem !important;
 
   /* Use same grid line colors */
-  --sudoku-grid-line: #333;
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 .dark-mode .search-mode .memory-grid-layout {
-  --sudoku-grid-line: #eee;
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 /* Board Styling */

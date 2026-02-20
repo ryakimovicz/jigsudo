@@ -416,13 +416,13 @@ body.dark-mode .memory-card-back {
   font-size: 18cqw;
   font-weight: 700;
   font-family: "Outfit", sans-serif;
-  color: #333;
+  color: var(--text-main);
   user-select: none;
   -webkit-user-select: none;
   line-height: 1; /* Tight line height */
   /* Selective borders for internal grid lines only */
-  border-right: 1px solid var(--sudoku-grid-line);
-  border-bottom: 1px solid var(--sudoku-grid-line);
+  border-right: 1px solid var(--sudoku-inner-line);
+  border-bottom: 1px solid var(--sudoku-inner-line);
   box-sizing: border-box; /* Ensure border doesn't grow the cell */
 }
 

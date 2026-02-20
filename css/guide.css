@@ -8,14 +8,16 @@
   --card-grad-1: #cdd9e5;
   --card-grad-2: #adbac7;
   --card-text: #1e293b;
-  --sudoku-grid-line: #333;
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 body.dark-mode {
   --card-grad-1: #64748b;
   --card-grad-2: #475569;
   --card-text: #ffffff;
-  --sudoku-grid-line: #eee;
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 .guide-card {
@@ -395,12 +397,7 @@ body.dark-mode .guide-selector {
 }
 
 /* Tutorial Mini-Games Styles */
-:root {
-  --sudoku-grid-line: #333;
-}
-body.dark-mode {
-  --sudoku-grid-line: #eee;
-}
+/* Variables now handled at root/global */
 
 .mini-sudoku-grid {
   display: grid;
@@ -425,8 +422,8 @@ body.dark-mode {
   font-family: "Outfit", sans-serif;
   color: #333;
   line-height: 1;
-  border-right: 1px solid var(--sudoku-grid-line);
-  border-bottom: 1px solid var(--sudoku-grid-line);
+  border-right: 1px solid var(--sudoku-inner-line);
+  border-bottom: 1px solid var(--sudoku-inner-line);
   box-sizing: border-box;
 }
 

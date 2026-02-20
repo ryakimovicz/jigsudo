@@ -12,14 +12,16 @@
   padding-top: 1rem !important; /* Maintain desktop breathing room */
 
   /* Swapped Contrast Logic: Light mode gets DARK lines */
-  --sudoku-grid-line: #333;
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 /* Correct selector: space between body class and game class */
 .dark-mode .sudoku-mode .memory-grid-layout,
 .dark-mode .peaks-mode .memory-grid-layout {
   /* Swapped Contrast Logic: Dark mode gets LIGHT lines */
-  --sudoku-grid-line: #eee;
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 /* Also swap the board background which forms the "thick" lines (gap) 
