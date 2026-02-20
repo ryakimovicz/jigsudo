@@ -696,7 +696,6 @@ body.dark-mode .btn-primary.btn-won:active {
   padding: 20px 4px;
   font-size: 0.8rem;
   color: var(--text-muted);
-  width: 100%;
   border-top: 1px solid var(--glass-border);
   background: var(--bg-paper);
   position: relative;
