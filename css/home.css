@@ -22,9 +22,11 @@ body.header-condensed {
   backdrop-filter: blur(10px);
   transition:
     height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.3s;
+    background 0.3s,
+    margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 0;
-  will-change: height;
+  will-change: height, margin-left, width;
 }
 
 /* Account for right ad space */
