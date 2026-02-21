@@ -540,7 +540,7 @@ body.dark-mode .memory-card-back {
     padding: 0;
     padding-top: 0; /* Sticky header already takes space in flow */
     padding-bottom: var(--footer-height);
-    justify-content: center; /* Center content vertically in the available gap */
+    justify-content: flex-start; /* Force top alignment for board consistency */
     overflow: hidden !important;
     display: flex;
     flex-direction: column;
@@ -550,10 +550,14 @@ body.dark-mode .memory-card-back {
 
   /* Compact header to fit board in red zone */
   .game-header {
-    margin: 0; /* Zero margins */
-    padding: 5px 0; /* Minimal padding */
+    height: 45px !important; /* Fixed height to anchor the board consistently */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     z-index: 20002;
-    flex: 0 0 auto; /* Don't grow */
+    flex: 0 0 auto;
   }
 
   /* TIMER POSITIONING FIX - Hidden for mobile to save space */
@@ -565,7 +569,7 @@ body.dark-mode .memory-card-back {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Center content horizontally/vertically */
+    justify-content: flex-start; /* Top alignment to keep board position constant */
     gap: 0; /* Remove gap to tighten layout */
     padding-top: 0; /* consistent with existing padding-bottom: 0 logic */
     padding-bottom: 0; /* Remove padding to use full green zone */
@@ -589,9 +593,8 @@ body.dark-mode .memory-card-back {
     /* Tight layout: wrapper only takes what board needs */
     height: auto;
     display: flex;
-    align-items: flex-start; /* Start below title */
     justify-content: center;
-    padding-top: 0;
+    padding-top: 10px; /* Consistent gap after title */
     margin-top: 0; /* Align tight to title */
   }
 
