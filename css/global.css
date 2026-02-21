@@ -583,16 +583,8 @@ body.dark-mode .toast-success {
 }
 
 /* Beta Mode Visibility Control */
-body:not(.beta-mode) #debug-help-btn {
-  display: none !important;
-}
-
-/* 
-   ROBUST VISIBILITY: 
-   Hide the wand if the game section is hidden (Home, Profile, History menus).
-   This avoids relying on complex body-class state tracking.
-*/
-#game-section.hidden ~ #debug-help-btn {
+body:not(.beta-mode) #debug-help-btn,
+body:not(.in-game) #debug-help-btn {
   display: none !important;
 }
 

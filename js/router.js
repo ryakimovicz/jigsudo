@@ -98,10 +98,14 @@ export const router = {
       }
     }
 
-    // 2. Footer Handling
+    // 2. Footer & In-Game Body Class Handling
     const footer = document.querySelector(".main-footer");
+    const isGame = activeId === "game-section";
+
+    document.body.classList.toggle("in-game", isGame);
+
     if (footer) {
-      if (activeId === "game-section") {
+      if (isGame) {
         footer.classList.add("hidden");
         console.log("[Router] Footer hidden");
       } else {
