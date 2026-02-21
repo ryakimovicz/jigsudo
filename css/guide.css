@@ -802,11 +802,13 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
   padding: 0 !important;
 }
 
-/* Ensure mini-grids fill the slot completely */
+/* Ensure mini-grids fill the slot completely and have no rounding to avoid clipping internal colored cells */
+.tutorial-sudoku-board .sudoku-chunk-slot,
 .tutorial-sudoku-board .mini-sudoku-grid {
   width: 100% !important;
   height: 100% !important;
   border: none !important;
+  border-radius: 0 !important;
 }
 
 .tutorial-sudoku-board.sudoku-mode .mini-cell.user-filled,
