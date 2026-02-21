@@ -1,8 +1,8 @@
 export const CONFIG = {
-  version: "v0.9.1", // Major.Minor.Patch
+  version: "v0.9.2", // Major.Minor.Patch
   fechaUpdate: "2026-02-21",
   autor: "Román Yakimovicz",
-  debugMode: true, // Toggle to true to see logs and debug panels
+  debugMode: false, // Toggle to true to see logs and debug panels
   betaMode: true, // Toggle to true to enable "Ayuda" button
   // AdSense Configuration
   ENABLE_ADS: true, // Toggle during dev
