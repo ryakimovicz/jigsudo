@@ -7,6 +7,12 @@
 }
 
 .search-mode .mini-cell.user-filled {
+  color: var(--accent-color);
+  transition: color 0.4s ease;
+}
+
+/* Return to theme color during win animation */
+.search-mode .search-win .mini-cell.user-filled {
   color: var(--text-main);
 }
 

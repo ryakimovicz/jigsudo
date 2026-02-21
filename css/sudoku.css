@@ -407,9 +407,28 @@
   z-index: 5;
 }
 
+/* Default user-filled numbers are theme-colored (Memory/Jigsaw) */
+/* Default user-filled numbers are theme-colored (Memory/Jigsaw) */
 .mini-cell.user-filled {
-  color: var(--accent-color);
+  color: var(--text-main);
   font-weight: 900;
+}
+
+/* Orange user numbers ONLY during Sudoku modes */
+.sudoku-mode .mini-cell.user-filled {
+  color: var(--accent-color);
+}
+
+/* Orange notes ONLY during Sudoku modes - heightened specificity to beat theme defaults */
+.sudoku-mode .mini-sudoku-grid .note-slot {
+  color: var(--accent-color);
+}
+
+/* Return to theme color during win animation (Smoothly) */
+.sudoku-mode .memory-board.board-complete .mini-cell.user-filled,
+.sudoku-mode .memory-board.board-complete .note-slot {
+  color: var(--text-main);
+  transition: color 0.6s ease-out;
 }
 
 /* Matching Numbers Highlight */
@@ -466,6 +485,8 @@
 .dark-mode .note-slot {
   color: #aaa;
 }
+
+/* Base transition removed to prevent entry delay */
 
 .mini-cell {
   position: relative; /* For notes-grid positioning */

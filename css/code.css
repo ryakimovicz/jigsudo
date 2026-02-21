@@ -140,6 +140,12 @@
   border: 2px solid #000000 !important; /* Black border instead of orange */
   z-index: 5;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+  transition: color 0.4s ease;
+}
+
+/* Return to theme color during win animation */
+.code-mode .victory-final .code-cell {
+  color: var(--text-main) !important;
 }
 
 .dark-mode .code-mode .mini-cell.code-cell {

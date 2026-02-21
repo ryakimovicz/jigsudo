@@ -809,6 +809,11 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
   border: none !important;
 }
 
+.tutorial-sudoku-board.sudoku-mode .mini-cell.user-filled,
+.tutorial-sudoku-board.sudoku-mode .mini-sudoku-grid .note-slot {
+  color: var(--accent-color) !important;
+}
+
 /* --- INFO / RANKS STYLES (Merged) --- */
 .ranks-grid {
   display: flex;
