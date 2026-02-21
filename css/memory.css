@@ -582,26 +582,6 @@ body.dark-mode .memory-card-back {
     height: calc(43.5dvh - var(--header-height));
     flex: none;
   }
-  .test-panel.yellow {
-    background: transparent;
-    height: 13dvh;
-    flex: none;
-  }
-  .test-panel.green {
-    background: transparent;
-    flex: 1;
-  }
-
-  /* Debug Mode Visibility */
-  body.debug-mode .test-panel.red {
-    background: rgba(255, 0, 0, 0.3);
-  }
-  body.debug-mode .test-panel.yellow {
-    background: rgba(255, 255, 0, 0.3);
-  }
-  body.debug-mode .test-panel.green {
-    background: rgba(0, 128, 0, 0.3);
-  }
 
   .memory-grid-layout {
     display: flex;

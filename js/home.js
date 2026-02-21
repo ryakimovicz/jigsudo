@@ -626,6 +626,16 @@ export function initHome() {
 
     // Explicitly handle #game route to initialize game logic if needed
     if (detail.hash === "#game") {
+      // Auto-condense header on mobile to maximize game space.
+      // Double rAF ensures the browser paints the expanded state first,
+      // so the CSS transition (height 0.3s) plays visibly.
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.body.classList.add("header-condensed");
+          });
+        });
+      }
       startDailyGame();
     }
   });
