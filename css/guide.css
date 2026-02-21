@@ -3,8 +3,6 @@
 }
 
 :root {
-  --header-height: 120px;
-  --footer-height: 80px;
   --card-grad-1: #cdd9e5;
   --card-grad-2: #adbac7;
   --card-text: #1e293b;

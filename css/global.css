@@ -15,7 +15,7 @@
   --header-height-expanded: 90px;
   --header-height-condensed: 45px;
   --header-height: var(--header-height-expanded); /* Default */
-  --footer-height: 30px; /* Slim footer estimated height */
+  --footer-height: 60px; /* Standard mobile ad height */
   --sidebar-width: 50px;
   --sidebar-expanded-width: 200px;
   --sidebar-current-width: var(--sidebar-width);
@@ -68,6 +68,10 @@ html,
 body {
   max-width: 100%;
   overflow-anchor: none;
+}
+
+body.no-scroll {
+  overflow: hidden !important;
 }
 
 body {

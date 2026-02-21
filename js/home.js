@@ -630,6 +630,8 @@ export function initHome() {
       // Double rAF ensures the browser paints the expanded state first,
       // so the CSS transition (height 0.3s) plays visibly.
       if (window.matchMedia("(max-width: 768px)").matches) {
+        window.scrollTo(0, 0);
+        document.body.classList.add("no-scroll");
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             document.body.classList.add("header-condensed");
@@ -637,6 +639,9 @@ export function initHome() {
         });
       }
       startDailyGame();
+    } else {
+      // Cleanup game-specific mobile classes
+      document.body.classList.remove("no-scroll");
     }
   });
 

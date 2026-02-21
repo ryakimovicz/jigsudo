@@ -108,12 +108,12 @@
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important;
+    justify-content: center !important;
     align-items: center !important;
     gap: 8px !important;
     padding-bottom: 2px !important;
     max-height: calc(
-      100dvh - var(--header-height) - var(--footer-height) - 4px
+      100dvh - var(--header-height) - var(--footer-height)
     ) !important;
     overflow: hidden !important;
   }
@@ -129,8 +129,11 @@
 
   /* Board Sizing on Mobile */
   .search-mode .memory-board {
-    width: min(95vw, max(200px, calc(60dvh - var(--header-height) - 30px)));
-    max-height: 100%;
+    --v-budget: calc(
+      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.8
+    );
+    width: min(95vw, var(--v-budget));
+    max-height: var(--v-budget);
   }
 }
 

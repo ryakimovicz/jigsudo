@@ -174,12 +174,12 @@
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important;
+    justify-content: center !important;
     align-items: center !important;
     gap: 8px !important;
     padding-bottom: 2px !important; /* Tightest gap */
     max-height: calc(
-      100dvh - var(--header-height) - var(--footer-height) - 4px
+      100dvh - var(--header-height) - var(--footer-height)
     ) !important;
     overflow: hidden !important;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -194,10 +194,9 @@
       justify-content: space-between !important;
     }
     .sudoku-controls {
-      max-height: 38dvh !important;
-      gap: 4px !important;
-      margin-bottom: 2px !important;
-      margin-bottom: 2px !important;
+      max-height: 32dvh !important;
+      gap: 2px !important;
+      margin-bottom: 0 !important;
     }
   }
 
@@ -205,7 +204,7 @@
   .sudoku-controls {
     flex: 1;
     min-height: 0;
-    max-height: 28dvh;
+    max-height: 25dvh;
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(4, 1fr) !important;

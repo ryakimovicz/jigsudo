@@ -538,12 +538,14 @@ body.dark-mode .memory-card-back {
   /* Override global container padding to regain vertical space */
   #game-section {
     padding: 0;
-    padding-top: var(--header-height); /* Only pad for the fixed header */
-    padding-bottom: var(--footer-height); /* Zero safety, sit flush */
-    justify-content: flex-start; /* Force content to top */
-    overflow: hidden !important; /* Strictly contain content */
+    padding-top: 0; /* Sticky header already takes space in flow */
+    padding-bottom: var(--footer-height);
+    justify-content: center; /* Center content vertically in the available gap */
+    overflow: hidden !important;
     display: flex;
     flex-direction: column;
+    height: calc(100dvh - var(--header-height));
+    box-sizing: border-box;
   }
 
   /* Compact header to fit board in red zone */
@@ -559,35 +561,11 @@ body.dark-mode .memory-card-back {
     display: none;
   }
 
-  .test-mobile-panels {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: var(--header-height); /* Start below header */
-    left: 0;
-    width: 100%;
-    /* Stop before footer - adjusted to close gap */
-    height: calc(100dvh - var(--header-height) - var(--footer-height) + 7px);
-    z-index: 9999;
-    pointer-events: none;
-    opacity: 0.8;
-  }
-
-  /* ... test-panel styles ... */
-  .test-panel {
-    width: 100%;
-  }
-  .test-panel.red {
-    background: transparent;
-    height: calc(43.5dvh - var(--header-height));
-    flex: none;
-  }
-
   .memory-grid-layout {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Force top alignment */
+    justify-content: center; /* Center content horizontally/vertically */
     gap: 0; /* Remove gap to tighten layout */
     padding-top: 0; /* consistent with existing padding-bottom: 0 logic */
     padding-bottom: 0; /* Remove padding to use full green zone */
@@ -618,23 +596,45 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-board {
-    /* Maximize Size Strategy: Fit the smaller of (95% width) or (Vertical budget) */
-    width: min(95vw, calc(43.5dvh - var(--header-height) - 50px));
+    /* Stage 1 (Memory) specific ratio: Board takes ~38% of vertical budget to leave room for cards */
+    --v-budget: calc(
+      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.38
+    );
+    width: min(95vw, var(--v-budget));
     height: auto;
     max-width: 100%;
-    /* VERTICAL BUDGET: Exact bottom of red panel (43.5dvh) minus title area (~50px) */
-    max-height: calc(43.5dvh - var(--header-height) - 50px);
-    aspect-ratio: 1/1; /* Ensure squareness */
-    object-fit: contain; /* Prevent distortion */
+    max-height: var(--v-budget);
+    aspect-ratio: 1/1;
+    object-fit: contain;
   }
 
   /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
   /* Added max(260px, ...) to ensure it doesn't shrink too much on small screens */
-  .jigsaw-mode .memory-board,
-  .sudoku-mode .memory-board,
+  .jigsaw-mode .memory-board {
+    /* Stage 2 (Jigsaw) ratio: Board takes ~50% to leave room for piece tray */
+    --v-budget: calc(
+      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.5
+    );
+    width: min(95vw, var(--v-budget));
+    max-height: var(--v-budget);
+  }
+
+  .sudoku-mode .memory-board {
+    /* Stage 3 (Sudoku): Board takes ~50% to leave room for keypad */
+    --v-budget: calc(
+      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.5
+    );
+    width: min(95vw, var(--v-budget));
+    max-height: var(--v-budget);
+  }
+
   .peaks-mode .memory-board {
-    width: min(95vw, max(200px, calc(60dvh - var(--header-height) - 30px)));
-    max-height: 100%; /* Relaxed to allow the 200px minimum */
+    /* Peaks/Search/Code: maximize board (~80%) since other UI is minimal */
+    --v-budget: calc(
+      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.8
+    );
+    width: min(95vw, var(--v-budget));
+    max-height: var(--v-budget);
   }
 
   /* Wrapper for Collected Zones */
