@@ -12,6 +12,46 @@ import { CONFIG } from "./config.js";
 let currentTutorialStage = 1;
 let tutorialState = null;
 
+function getDeviceCapabilities() {
+  const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const isMouse = window.matchMedia("(pointer: fine)").matches;
+  // Heuristic for keyboard: not a mobile UA or has hover (usually laptops/desktops)
+  const isKeyboard =
+    !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    ) || window.matchMedia("(any-hover: hover)").matches;
+
+  return { isTouch, isMouse, isKeyboard };
+}
+
+function getTutorialStageDescription(stage, t) {
+  const caps = getDeviceCapabilities();
+  let desc = t[`tutorial_stage_${stage}_desc`] || "Descripción";
+
+  if (stage === 2) {
+    desc = desc.replace("{objective}", t.tutorial_stage_2_obj);
+    desc = desc.replace("{action}", t.label_place);
+    desc = desc.replace("{stylus}", caps.isTouch ? t.label_stylus : "");
+  } else if (stage === 3) {
+    desc = desc.replace("{rules}", t.tutorial_stage_3_rules);
+    desc = desc.replace("{buttons}", t.tutorial_stage_3_btns);
+    desc = desc.replace(
+      "{keyboard}",
+      caps.isKeyboard ? t.tutorial_stage_3_kb : "",
+    );
+  } else if (stage === 4 || stage === 6) {
+    let action = t.label_click;
+    if (caps.isTouch && caps.isMouse) {
+      action = t.label_click_touch;
+    } else if (caps.isTouch) {
+      action = t.label_touch;
+    }
+    desc = desc.replace("{action}", action);
+  }
+
+  return desc;
+}
+
 // Drag & Drop State
 let selectedPieceElement = null;
 let dragClone = null;
@@ -349,7 +389,7 @@ function loadStage(stage) {
   const t = translations[lang];
 
   const title = t[`tutorial_stage_${stage}_title`] || `Etapa ${stage}`;
-  const desc = t[`tutorial_stage_${stage}_desc`] || `Descripción`;
+  const desc = getTutorialStageDescription(stage, t);
 
   if (titleEl) titleEl.innerHTML = title;
   if (descEl) descEl.innerHTML = desc;
@@ -942,26 +982,34 @@ function updateTutorialPeaksCounters() {
 }
 
 function handleTutorialPeakClick(cell, r, c) {
-  // Check if it's a pending target
-  const pIdx = tutorialState.peaksRemaining.findIndex(
-    (p) => p.r === r && p.c === c,
-  );
-  const vIdx = tutorialState.valleysRemaining.findIndex(
-    (v) => v.r === r && v.c === c,
-  );
+  // Check if it's a peak or valley
+  const isPeak = tutorialState.allPeaks.some((p) => p.r === r && p.c === c);
+  const isValley = tutorialState.allValleys.some((v) => v.r === r && v.c === c);
 
-  let found = false;
+  let updated = false;
 
-  if (pIdx !== -1) {
-    cell.classList.add("peak-found");
-    tutorialState.peaksRemaining.splice(pIdx, 1);
-    found = true;
-  } else if (vIdx !== -1) {
-    cell.classList.add("valley-found");
-    tutorialState.valleysRemaining.splice(vIdx, 1);
-    found = true;
+  if (isPeak) {
+    if (!cell.classList.contains("peak-found")) {
+      cell.classList.add("peak-found");
+      // If it's a target, remove from target list
+      const pIdx = tutorialState.peaksRemaining.findIndex(
+        (p) => p.r === r && p.c === c,
+      );
+      if (pIdx !== -1) tutorialState.peaksRemaining.splice(pIdx, 1);
+      updated = true;
+    }
+  } else if (isValley) {
+    if (!cell.classList.contains("valley-found")) {
+      cell.classList.add("valley-found");
+      // If it's a target, remove from target list
+      const vIdx = tutorialState.valleysRemaining.findIndex(
+        (v) => v.r === r && v.c === c,
+      );
+      if (vIdx !== -1) tutorialState.valleysRemaining.splice(vIdx, 1);
+      updated = true;
+    }
   } else {
-    // Error shake if clicking a non-target or already found one
+    // Error shake if clicking a non-target
     if (
       !cell.classList.contains("peak-found") &&
       !cell.classList.contains("valley-found")
@@ -978,7 +1026,7 @@ function handleTutorialPeakClick(cell, r, c) {
     }
   }
 
-  if (found) {
+  if (updated) {
     updateTutorialPeaksCounters();
     if (
       tutorialState.peaksRemaining.length === 0 &&

@@ -2,6 +2,25 @@ export const translations = {
   es: {
     app_title: "JIGSUDO",
     // Guide & Tutorial
+    // Logic Labels
+    label_click: "haz clic",
+    label_touch: "toca",
+    label_click_touch: "haz clic o toca",
+    label_stylus: "(usa lápiz óptico si usas táctil)",
+    label_drag: "arrastra",
+    label_place:
+      "Haz clic en la pieza y luego en el tablero o arrástrala a su lugar",
+
+    // Tutorial Stages Detailed
+    tutorial_stage_2_obj:
+      "<strong>Objetivo:</strong> Coloca las piezas obtenidas para armar el tablero de Sudoku sin conflictos en filas ni columnas.",
+    tutorial_stage_3_rules:
+      "<strong>Reglas del Sudoku:</strong> No puede haber números repetidos en la misma fila, columna o bloque de 3x3.",
+    tutorial_stage_3_btns:
+      "<strong>Botones de ayuda:</strong> ↩️ Deshace el último cambio, ✏️ Activa el modo notas, 🗑️ Borra la celda (mantén presionado para limpiar todo).",
+    tutorial_stage_3_kb:
+      "<strong>Atajos de teclado:</strong> 1-9 (Ingresar), Q (Deshacer), W/P/N (Notas), E/Borrar (Limpiar), Esc (Deseleccionar).",
+
     guide_title: "Guía de Juego",
     guide_tab_general: "General",
     guide_tab_tutorial: "Tutorial",
@@ -15,11 +34,18 @@ export const translations = {
       "Juega puzzles de días anteriores y consulta tus rachas.",
     guide_page_profile:
       "Gestiona tu perfil, sincronización en la nube y estadísticas personales.",
-    guide_control_mouse: "Selecciona casillas, piezas o cartas.",
-    guide_control_nums: "Ingresa números en el Sudoku.",
-    guide_control_delete: "Limpia una casilla o nota.",
-    guide_control_notes: "Activa el modo lápiz (notas).",
-    guide_control_esc: "Cancela selección o cierra menús.",
+    guide_label_mouse: "Mouse / Táctil:",
+    guide_control_mouse_desc: "Selecciona casillas, piezas o cartas.",
+    guide_label_nums: "Teclas 1-9:",
+    guide_control_nums_desc: "Ingresa números (1-9) en el Sudoku.",
+    guide_label_undo: "Tecla Q:",
+    guide_control_undo_desc: "Deshacer el último movimiento.",
+    guide_label_notes: "Tecla W:",
+    guide_control_notes_desc: "Activar/Desactivar modo notas.",
+    guide_label_delete: "Tecla E / Borrar:",
+    guide_control_delete_desc: "Limpiar la casilla seleccionada.",
+    guide_label_esc: "Tecla Esc:",
+    guide_control_esc_desc: "Cancelar selección o cerrar menús (Esc).",
     guide_mem_desc:
       "Encuentra los pares de bloques. Cada bloque es una sección 3x3 del Sudoku final.",
     guide_jig_desc:
@@ -41,19 +67,19 @@ export const translations = {
       "<strong>Objetivo:</strong> Encuentra los pares de bloques 3x3. Cada bloque es una sección del Sudoku final.<br><strong>Controles:</strong> Haz clic en dos cartas para revelarlas. Usa el botón 'Memorizar' para echar un vistazo rápido.",
     tutorial_stage_2_title: "Etapa 2: Rompecabezas",
     tutorial_stage_2_desc:
-      "<strong>Objetivo:</strong> Coloca las piezas obtenidas en su lugar correcto en el tablero 9x9.<br><strong>Controles:</strong> Selecciona una pieza del panel lateral y luego haz clic en el espacio vacío del tablero.",
+      "{objective}<br><strong>Controles:</strong> {action} {stylus}.",
     tutorial_stage_3_title: "Etapa 3: Sudoku",
     tutorial_stage_3_desc:
-      "<strong>Objetivo:</strong> Completa las 18 celdas vacías siguiendo las reglas del Sudoku.<br><strong>Controles:</strong> Selecciona una celda y usa el teclado numérico o las teclas 1-9. Usa 'E' o 'Borrar' para limpiar.",
+      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números con el pad en pantalla o el teclado.",
     tutorial_stage_4_title: "Etapa 4: Picos y Valles",
     tutorial_stage_4_desc:
-      "<strong>Objetivo:</strong> Identifica los números más altos y más bajos comparados con sus vecinos.<br><strong>Controles:</strong> Selecciona ▲ (Pico) o ▼ (Valle) y haz clic en la celda correspondiente.",
+      "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparados con sus vecinos.<br><strong>Controles:</strong> {action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
     tutorial_stage_5_title: "Etapa 5: Sopa de Números",
     tutorial_stage_5_desc:
-      "<strong>Objetivo:</strong> Localiza las 3 secuencias ocultas en el tablero.<br><strong>Controles:</strong> Haz clic y arrastra sobre las celdas que forman la secuencia completa.",
+      "<strong>Objetivo:</strong> Localiza las secuencias ocultas en el tablero. Pueden doblar en vertical u horizontal, pero no en diagonal.<br><strong>Controles:</strong> Haz clic y arrastra sobre las celdas que forman la secuencia completa.",
     tutorial_stage_6_title: "Etapa 6: El Código",
     tutorial_stage_6_desc:
-      "<strong>Objetivo:</strong> Se revelará un código de seguridad. Debes repetirlo exactamente.<br><strong>Controles:</strong> Utiliza el teclado en pantalla o las teclas numéricas para ingresar la secuencia.",
+      "<strong>Objetivo:</strong> Se revelará un patrón de seguridad. Memorízalo y repítelo exactamente en el tablero.<br><strong>Controles:</strong> {action} las celdas en el orden correcto.",
     tutorial_finish_title: "¡Tutorial Completado!",
     tutorial_finish_desc:
       "Felicidades, has dominado todas las mecánicas de Jigsudo. ¡Ya puedes enfrentarte al desafío de hoy!",
@@ -394,6 +420,25 @@ export const translations = {
   en: {
     app_title: "JIGSUDO",
     // Guide & Tutorial
+    // Logic Labels
+    label_click: "click",
+    label_touch: "tap",
+    label_click_touch: "click or tap",
+    label_stylus: "(use stylus if using touch)",
+    label_drag: "drag",
+    label_place:
+      "click the piece and then the board position, or drag it to its spot",
+
+    // Tutorial Stages Detailed
+    tutorial_stage_2_obj:
+      "<strong>Objective:</strong> Place the collected pieces to build the Sudoku board without conflicts in rows or columns.",
+    tutorial_stage_3_rules:
+      "<strong>Sudoku Rules:</strong> No numbers can be duplicated in the same row, column, or 3x3 block.",
+    tutorial_stage_3_btns:
+      "<strong>Action buttons:</strong> ↩️ Undoes the last change, ✏️ Toggles pencil (notes) mode, 🗑️ Clears the cell (long press to clear board).",
+    tutorial_stage_3_kb:
+      "<strong>Keyboard Shortcuts:</strong> 1-9 (Input), Q (Undo), W/P/N (Notes), E/Backspace (Clear), Esc (Deselect).",
+
     guide_title: "Game Guide",
     guide_tab_general: "General",
     guide_tab_tutorial: "Tutorial",
@@ -406,11 +451,18 @@ export const translations = {
     guide_page_history:
       "Play puzzles from previous days and check your streaks.",
     guide_page_profile: "Manage your profile, cloud sync, and personal stats.",
-    guide_control_mouse: "Select cells, pieces, or cards.",
-    guide_control_nums: "Input numbers in the Sudoku.",
-    guide_control_delete: "Clear a cell or note.",
-    guide_control_notes: "Toggle pencil mode (notes).",
-    guide_control_esc: "Cancel selection or close menus.",
+    guide_label_mouse: "Mouse / Touch:",
+    guide_control_mouse_desc: "Select cells, pieces, or cards.",
+    guide_label_nums: "Keys 1-9:",
+    guide_control_nums_desc: "Input numbers (1-9) in the Sudoku.",
+    guide_label_undo: "Key Q:",
+    guide_control_undo_desc: "Undo the last movement.",
+    guide_label_notes: "Key W:",
+    guide_control_notes_desc: "Toggle pencil mode (Notes).",
+    guide_label_delete: "Key E / Clear:",
+    guide_control_delete_desc: "Clear the selected cell.",
+    guide_label_esc: "Key Esc:",
+    guide_control_esc_desc: "Cancel selection or close menus (Esc).",
     guide_mem_desc:
       "Find the pairs of blocks. Each block is a 3x3 section of the final Sudoku.",
     guide_jig_desc:
@@ -431,19 +483,19 @@ export const translations = {
       "<strong>Goal:</strong> Find the 3x3 block pairs. Each block is a section of the final Sudoku.<br><strong>Controls:</strong> Click two cards to reveal them. Use 'Memorize' for a quick peek.",
     tutorial_stage_2_title: "Stage 2: Jigsaw",
     tutorial_stage_2_desc:
-      "<strong>Goal:</strong> Place the collected pieces in their correct position on the 9x9 board.<br><strong>Controls:</strong> Select a piece from the panel and click on an empty board slot.",
+      "{objective}<br><strong>Controls:</strong> {action} {stylus}.",
     tutorial_stage_3_title: "Stage 3: Sudoku",
     tutorial_stage_3_desc:
-      "<strong>Goal:</strong> Fill the 18 empty cells following Sudoku rules.<br><strong>Controls:</strong> Select a cell and use the keypad or 1-9 keys. Use 'E' or 'Clear' to wipe.",
+      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers with the on-screen pad or keyboard.",
     tutorial_stage_4_title: "Stage 4: Peaks and Valleys",
     tutorial_stage_4_desc:
-      "<strong>Goal:</strong> Identify the highest and lowest numbers compared to their neighbors.<br><strong>Controls:</strong> Select ▲ (Peak) or ▼ (Valley) and click on the corresponding cell.",
+      "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to their neighbors.<br><strong>Controls:</strong> {action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",
     tutorial_stage_5_title: "Stage 5: Number Search",
     tutorial_stage_5_desc:
-      "<strong>Goal:</strong> Locate the 3 sequences hidden on the board.<br><strong>Controls:</strong> Click and drag over the cells that form the sequence.",
+      "<strong>Goal:</strong> Locate the hidden sequences on the board. They can turn vertically or horizontally, but not diagonally.<br><strong>Controls:</strong> Click and drag over the cells that form the sequence.",
     tutorial_stage_6_title: "Stage 6: The Code",
     tutorial_stage_6_desc:
-      "<strong>Goal:</strong> A security code will be revealed. You must repeat it exactly.<br><strong>Controls:</strong> Use the onscreen keypad or number keys to enter the sequence.",
+      "<strong>Goal:</strong> A security pattern will be revealed. Memorize and repeat it exactly on the board.<br><strong>Controls:</strong> {action} the cells in the correct order.",
     tutorial_finish_title: "Tutorial Completed!",
     tutorial_finish_desc:
       "Congratulations, you've mastered Jigsudo! You're ready for today's challenge.",
