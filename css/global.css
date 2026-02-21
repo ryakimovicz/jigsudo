@@ -64,13 +64,21 @@ body.dark-mode .glass-panel {
   -webkit-tap-highlight-color: transparent; /* Remove default mobile highlight */
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-anchor: none;
+}
+
 body {
   font-family: var(--font-main);
   color: var(--text-main);
   background-color: var(--bg-paper);
   /* Optional: Subtle paper texture pattern could happen here */
   min-height: 100vh;
-  /* overflow: hidden;  <-- REMOVED to enable global scroll */
+  /* Flexbox Sticky Footer Setup */
+  display: flex;
+  flex-direction: column;
 }
 
 /* REMOVED specific scroll enabling classes */
@@ -79,7 +87,10 @@ body {
 #app {
   position: relative;
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* ... (Glass Panel styles remain) ... */
@@ -158,7 +169,20 @@ body {
   border-right: 3px solid var(--accent-color);
 }
 
+/* Pushes footer to bottom on short pages (Global) */
+#menu-content,
+#profile-section,
+#history-section,
+#guide-section,
+#info-section,
+#game-section,
+#privacy-section {
+  flex: 1;
+}
+
 @media (min-width: 769px) {
+  /* Structural Box Sizing & Transitions */
+  .main-header,
   #menu-content,
   #profile-section,
   #history-section,
@@ -172,9 +196,10 @@ body {
       margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
       width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: calc(100% - var(--sidebar-width));
-    will-change: margin-left, width;
+    box-sizing: border-box; /* Crucial to prevent horizontal scroll from padding */
   }
 
+  body.sidebar-expanded .main-header,
   body.sidebar-expanded #menu-content,
   body.sidebar-expanded #profile-section,
   body.sidebar-expanded #history-section,
@@ -193,6 +218,7 @@ body {
 }
 
 @media (max-width: 768px) {
+  .main-header,
   #menu-content,
   #profile-section,
   #history-section,
@@ -203,6 +229,22 @@ body {
   .main-footer {
     margin-left: 0;
     width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Account for right ad space */
+@media (min-width: 1200px) {
+  .main-header,
+  #menu-content,
+  #profile-section,
+  #history-section,
+  #guide-section,
+  #info-section,
+  #game-section,
+  #privacy-section,
+  .main-footer {
+    padding-right: 170px; /* 160px ad + 10px spacing */
   }
 }
 

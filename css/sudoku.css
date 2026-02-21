@@ -12,14 +12,16 @@
   padding-top: 1rem !important; /* Maintain desktop breathing room */
 
   /* Swapped Contrast Logic: Light mode gets DARK lines */
-  --sudoku-grid-line: #333;
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 /* Correct selector: space between body class and game class */
 .dark-mode .sudoku-mode .memory-grid-layout,
 .dark-mode .peaks-mode .memory-grid-layout {
   /* Swapped Contrast Logic: Dark mode gets LIGHT lines */
-  --sudoku-grid-line: #eee;
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 /* Also swap the board background which forms the "thick" lines (gap) 
@@ -405,9 +407,28 @@
   z-index: 5;
 }
 
+/* Default user-filled numbers are theme-colored (Memory/Jigsaw) */
+/* Default user-filled numbers are theme-colored (Memory/Jigsaw) */
 .mini-cell.user-filled {
-  color: var(--accent-color);
+  color: var(--text-main);
   font-weight: 900;
+}
+
+/* Orange user numbers ONLY during Sudoku modes */
+.sudoku-mode .mini-cell.user-filled {
+  color: var(--accent-color);
+}
+
+/* Orange notes ONLY during Sudoku modes - heightened specificity to beat theme defaults */
+.sudoku-mode .mini-sudoku-grid .note-slot {
+  color: var(--accent-color);
+}
+
+/* Return to theme color during win animation (Smoothly) */
+.sudoku-mode .memory-board.board-complete .mini-cell.user-filled,
+.sudoku-mode .memory-board.board-complete .note-slot {
+  color: var(--text-main);
+  transition: color 0.6s ease-out;
 }
 
 /* Matching Numbers Highlight */
@@ -464,6 +485,8 @@
 .dark-mode .note-slot {
   color: #aaa;
 }
+
+/* Base transition removed to prevent entry delay */
 
 .mini-cell {
   position: relative; /* For notes-grid positioning */

@@ -7,6 +7,12 @@
 }
 
 .search-mode .mini-cell.user-filled {
+  color: var(--accent-color);
+  transition: color 0.4s ease;
+}
+
+/* Return to theme color during win animation */
+.search-mode .search-win .mini-cell.user-filled {
   color: var(--text-main);
 }
 
@@ -33,11 +39,13 @@
   padding-top: 1rem !important;
 
   /* Use same grid line colors */
-  --sudoku-grid-line: #333;
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 .dark-mode .search-mode .memory-grid-layout {
-  --sudoku-grid-line: #eee;
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 /* Board Styling */

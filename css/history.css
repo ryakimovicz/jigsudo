@@ -1,8 +1,9 @@
 /* History (Historial) - Final Layout Fix v2 */
 
 #history-section {
-  padding: 20px;
-  /* margin and width handled by global.css sidebar rules */
+  padding-top: 20px;
+  padding-bottom: 20px;
+  /* margin, width, and ad padding handled by global.css */
 }
 
 #history-section.hidden {

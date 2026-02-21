@@ -16,12 +16,12 @@ body.dark-mode {
 }
 
 #game-section {
-  width: 100%;
   flex: 1; /* Take remaining space */
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-bottom: 1rem;
   padding-top: calc(var(--header-height) + 0.5rem);
   box-sizing: border-box;
   animation: fadeIn 0.5s ease-in-out;
@@ -416,13 +416,13 @@ body.dark-mode .memory-card-back {
   font-size: 18cqw;
   font-weight: 700;
   font-family: "Outfit", sans-serif;
-  color: #333;
+  color: var(--text-main);
   user-select: none;
   -webkit-user-select: none;
   line-height: 1; /* Tight line height */
   /* Selective borders for internal grid lines only */
-  border-right: 1px solid var(--sudoku-grid-line);
-  border-bottom: 1px solid var(--sudoku-grid-line);
+  border-right: 1px solid var(--sudoku-inner-line);
+  border-bottom: 1px solid var(--sudoku-inner-line);
   box-sizing: border-box; /* Ensure border doesn't grow the cell */
 }
 

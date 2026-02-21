@@ -8,14 +8,16 @@
   --card-grad-1: #cdd9e5;
   --card-grad-2: #adbac7;
   --card-text: #1e293b;
-  --sudoku-grid-line: #333;
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
 }
 
 body.dark-mode {
   --card-grad-1: #64748b;
   --card-grad-2: #475569;
   --card-text: #ffffff;
-  --sudoku-grid-line: #eee;
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
 }
 
 .guide-card {
@@ -74,16 +76,13 @@ body.dark-mode {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.05); /* Light Mode Overlay */
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
   pointer-events: none;
   z-index: 10;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
 }
 
 body.dark-mode .jigsaw-slot.locked::after {
   background: rgba(0, 0, 0, 0.3); /* Dark Mode Overlay */
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
 body.dark-mode .guide-selector {
@@ -353,10 +352,14 @@ body.dark-mode .guide-selector {
 
 /* Tutorial specific layout adjustments */
 .tutorial-board-container .memory-grid {
+  display: grid;
   grid-template-columns: repeat(
     4,
     1fr
   ) !important; /* Forces 8 cards in 4x2 for tutorial */
+  gap: 15px; /* Explicit gap instead of relying on fractions stretching */
+  width: max-content; /* Only take as much space as the 4 cards need */
+  margin: 0 auto; /* Center the compact grid block within the container */
   perspective: 1000px; /* Perspective belongs on the container for uniform 3D feel */
 }
 
@@ -394,12 +397,7 @@ body.dark-mode .guide-selector {
 }
 
 /* Tutorial Mini-Games Styles */
-:root {
-  --sudoku-grid-line: #333;
-}
-body.dark-mode {
-  --sudoku-grid-line: #eee;
-}
+/* Variables now handled at root/global */
 
 .mini-sudoku-grid {
   display: grid;
@@ -424,8 +422,8 @@ body.dark-mode {
   font-family: "Outfit", sans-serif;
   color: #333;
   line-height: 1;
-  border-right: 1px solid var(--sudoku-grid-line);
-  border-bottom: 1px solid var(--sudoku-grid-line);
+  border-right: 1px solid var(--sudoku-inner-line);
+  border-bottom: 1px solid var(--sudoku-inner-line);
   box-sizing: border-box;
 }
 
@@ -648,16 +646,20 @@ body.dark-mode .jigsaw-piece {
 
 /* Slots and filled pieces should be flush */
 .jigsaw-slot.filled {
-  background: transparent;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .jigsaw-slot.filled .mini-sudoku-grid {
   border: 1px solid #1e293b;
   border-radius: 10px;
+  background: white; /* Hides fractional rendering gaps */
 }
 
 body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
   border-color: var(--primary-color, #fbbf24);
+  background: #2a2a2a; /* Matches dark cell color perfectly */
 }
 
 /* Error feedback */
@@ -800,11 +802,18 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
   padding: 0 !important;
 }
 
-/* Ensure mini-grids fill the slot completely */
+/* Ensure mini-grids fill the slot completely and have no rounding to avoid clipping internal colored cells */
+.tutorial-sudoku-board .sudoku-chunk-slot,
 .tutorial-sudoku-board .mini-sudoku-grid {
   width: 100% !important;
   height: 100% !important;
   border: none !important;
+  border-radius: 0 !important;
+}
+
+.tutorial-sudoku-board.sudoku-mode .mini-cell.user-filled,
+.tutorial-sudoku-board.sudoku-mode .mini-sudoku-grid .note-slot {
+  color: var(--accent-color) !important;
 }
 
 /* --- INFO / RANKS STYLES (Merged) --- */
