@@ -7,7 +7,7 @@
 }
 
 .search-mode .mini-cell.user-filled {
-  color: var(--accent-color);
+  color: var(--text-main);
   transition: color 0.4s ease;
 }
 
