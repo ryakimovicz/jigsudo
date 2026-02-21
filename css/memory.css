@@ -430,6 +430,12 @@ body.dark-mode .memory-card-back {
 .mini-cell:nth-child(3n) {
   border-right: none;
 }
+/* Sopa de Números (Search) Board Refinements */
+.search-mode .memory-board,
+.search-mode .mini-cell {
+  touch-action: none;
+}
+
 .mini-cell:nth-child(n + 7) {
   border-bottom: none;
 }

@@ -135,6 +135,7 @@ function attachSearchListeners() {
   };
 
   touchEndHandler = (e) => {
+    if (isSelecting) e.preventDefault();
     endSelection(e.changedTouches[0]);
   };
 
@@ -314,6 +315,14 @@ function validateSequence() {
   // EASTER EGG CHECK: "6,9"
   if (currentNumString === "6,9") {
     triggerEasterEgg("😏");
+  }
+
+  if (currentCells.length <= 1) {
+    // IGNORE single taps/clicks as per user request
+    currentCells.forEach((c) => c.classList.remove("search-selected"));
+    currentPath = [];
+    currentCells = [];
+    return;
   }
 
   const match = targets.find((t) => {

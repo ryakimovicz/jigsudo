@@ -1314,8 +1314,12 @@ function initTutorialDragAndDrop() {
 }
 
 function handlePointerDown(e) {
-  // Only Mouse or Pen
-  if (e.pointerType === "touch") return;
+  // Only Mouse or Pen (Except for Search stage which allows touch)
+  if (e.pointerType === "touch" && currentTutorialStage !== 5) return;
+
+  if (e.pointerType === "touch" && currentTutorialStage === 5) {
+    e.preventDefault();
+  }
 
   // Interaction based on Stage
   if (currentTutorialStage === 2) {
@@ -1506,6 +1510,14 @@ function handlePointerUp(e) {
 }
 
 function validateSearchSelection() {
+  if (currentSearchCells.length <= 1) {
+    // IGNORE single taps/clicks as per user request
+    currentSearchCells.forEach((c) => c.classList.remove("search-selected"));
+    currentSearchCells = [];
+    currentSearchPath = [];
+    return;
+  }
+
   const currentNumString = currentSearchCells
     .map((c) => c.textContent.trim())
     .join(",");
