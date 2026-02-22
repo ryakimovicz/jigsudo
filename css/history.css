@@ -50,18 +50,19 @@
   font-size: 0.95rem;
 }
 
-/* THE GRID - Fixed sizes to avoid monster expansion */
+/* THE GRID - Fixed sizes but variables for scaling */
 #history-grid-container {
+  --cell-size: 60px;
   display: grid !important;
-  grid-template-columns: repeat(7, 60px) !important; /* Fixed width */
+  grid-template-columns: repeat(7, var(--cell-size)) !important;
   gap: 8px;
   justify-content: center;
   margin: 0 auto;
 }
 
 #history-grid-container .calendar-day {
-  width: 60px;
-  height: 60px;
+  width: var(--cell-size);
+  height: var(--cell-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,13 +120,12 @@ body.dark-mode #history-grid-container .calendar-day:hover {
 /* Markers */
 #history-grid-container .completed-dot {
   position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 6px;
-  height: 6px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  bottom: calc(var(--cell-size) * 0.05);
+  right: calc(var(--cell-size) * 0.03);
+  font-size: calc(var(--cell-size) * 0.3);
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
 }
 
 /* Nav Buttons */
@@ -152,12 +152,10 @@ body.dark-mode #history-grid-container .calendar-day:hover {
 /* Responsive */
 @media (max-width: 500px) {
   #history-grid-container {
-    grid-template-columns: repeat(7, 45px) !important;
+    --cell-size: 45px;
     gap: 5px;
   }
   #history-grid-container .calendar-day {
-    width: 45px;
-    height: 45px;
     font-size: 0.9rem;
     border-radius: 6px;
   }

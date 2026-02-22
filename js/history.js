@@ -223,6 +223,7 @@ function renderHistoryCalendar(history = {}) {
         if (dayData.status === "won") {
           const dot = document.createElement("span");
           dot.className = "completed-dot";
+          dot.textContent = "👑"; // Use crown emoji instead of dot
           dayEl.appendChild(dot);
         }
       }

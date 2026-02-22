@@ -865,9 +865,10 @@ function renderCalendar(history = {}) {
         if (history[dateStr].status === "won") {
           dayEl.classList.add("win");
 
-          // Add dot marker for consistency with history view
+          // Add crown marker for consistency with history view
           const dot = document.createElement("span");
           dot.className = "completed-dot";
+          dot.textContent = "👑";
           dayEl.appendChild(dot);
         } else {
           dayEl.classList.add("loss");
