@@ -851,6 +851,7 @@ body.dark-mode .light-only {
 
 /* SOCIAL CARD TEMPLATE (INSTAGRAM STORY FORMAT 9:16) */
 .social-card-template {
+  display: none !important; /* Prevent from affecting layout/overflow */
   position: absolute;
   left: -9999px;
   top: 0;

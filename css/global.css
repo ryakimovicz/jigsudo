@@ -10,6 +10,7 @@
 
   --bg-secondary: #f1f5f9; /* Light Slate - Secondary Background */
   --bg-tertiary: #e2e8f0; /* Lighter Slate - Tertiary Background */
+  --brand-color: var(--accent-color);
 
   /* UI Utilities */
   --header-height-expanded: 90px;
@@ -52,6 +53,7 @@ body.dark-mode {
 
   --bg-secondary: #0d1117; /* Darker background for components */
   --bg-tertiary: #30363d; /* Lighter background for slots */
+  --brand-color: var(--accent-color);
 
   --glass-border: #444c56; /* Medium Grey Border */
   --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */
@@ -246,6 +248,14 @@ body {
     margin-left: 0;
     width: 100%;
     box-sizing: border-box;
+  }
+}
+
+/* Reduced padding for very narrow mobile screens */
+@media (max-width: 360px) {
+  .scrollable-content {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 

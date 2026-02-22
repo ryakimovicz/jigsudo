@@ -11,7 +11,7 @@ body.header-condensed {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px 0 0;
+  padding: 0 15px; /* Symmetrical padding for better mobile feel */
   position: sticky;
   top: 0;
   left: 0;
@@ -193,23 +193,31 @@ body.dark-mode .light-only {
   border-radius: 4px;
 }
 
+@media (max-width: 768px) {
+  .main-header {
+    padding-left: 50px;
+    padding-right: 50px; /* Symmetrical padding to ensure true center for logo/title */
+  }
+}
+
 /* Mobile: Adjust size but keep line if possible */
 @media (max-width: 600px) {
   .app-title {
     font-size: 1.2rem;
   }
-  .header-info {
+  .header-meta {
     font-size: 0.8rem;
     gap: 5px;
   }
 }
 
-/* Very Small Screens: Hide Date */
-@media (max-width: 425px) {
+/* Very Small Screens: Hide Date <--- REMOVED 
+to allow expanded header to show it */
+/* @media (max-width: 425px) {
   #current-date {
     display: none;
   }
-}
+} */
 
 .btn-icon {
   font-size: 1.2rem;
@@ -301,6 +309,7 @@ body.dark-mode .dark-mode-logo {
   max-width: 600px; /* Keep consistent with panel/tabs */
   margin-left: auto;
   margin-right: auto;
+  padding: 0 10px; /* Match #ranking-container-multi padding */
   /* No gap here, so we control overlap precisely */
 }
 
@@ -309,7 +318,7 @@ body.dark-mode .dark-mode-logo {
   display: flex;
   width: 100%;
   max-width: 600px;
-  padding-left: 20px;
+  padding-left: 20px; /* Restore indentation to clear the glass-panel's 20px border-radius */
   margin-bottom: -1px; /* Minimal overlap to cover border */
   /* z-index: 10; REMOVED to allow interleaving with panels */
   position: relative;
@@ -590,9 +599,25 @@ body.dark-mode .switch-row {
 .tagline {
   font-style: italic;
   font-size: 1.1rem;
-  margin-top: 20px;
-  color: var(--text-muted) !important;
-  font-family: var(--font-paper); /* Using Lora */
+  color: var(--text-muted);
+}
+
+/* Mobile: Adjust Description Panels to prevent overflow */
+@media (max-width: 480px) {
+  .game-description {
+    padding: 20px 15px; /* Tighter horizontal padding */
+    min-width: 0; /* Allow shrinking below content width */
+  }
+  .game-description h2 {
+    font-size: 1.3rem; /* Further reduced from 1.5rem */
+    margin-bottom: 12px;
+    word-wrap: break-word; /* Ensure title wraps */
+  }
+  .game-description p {
+    font-size: 0.95rem; /* Further reduced */
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
 }
 
 /* Start Button */
@@ -1512,7 +1537,10 @@ body.dark-mode .segmented-control {
 /* Tablet: 2 columns if needed, but keep 3 if space allows */
 @media (max-width: 900px) {
   .ranking-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(280px, 100%), 1fr)
+    ); /* Prevent panels from forcing overflow */
   }
 }
 
@@ -1952,7 +1980,8 @@ aside.ad-container-vertical {
 }
 
 .ad-placeholder-horizontal {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   height: 50px;
   background: var(--ad-placeholder-bg);
   border: 1px dashed var(--ad-placeholder-border);
@@ -1987,6 +2016,7 @@ body {
 
 .ad-placeholder-horizontal-large {
   width: 100%;
+  max-width: 728px;
   height: 90px; /* Leaderboard height */
   background: var(--ad-placeholder-bg);
   border: 1px dashed var(--ad-placeholder-border);
@@ -2006,7 +2036,8 @@ body {
 }
 
 .ad-placeholder-rectangle {
-  width: 300px; /* Medium Rectangle */
+  width: 100%;
+  max-width: 300px; /* Medium Rectangle */
   height: 250px;
   background: var(--ad-placeholder-bg);
   border: 1px dashed var(--ad-placeholder-border);
