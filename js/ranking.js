@@ -194,6 +194,14 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   }
 
   // Smart Update (FLIP Animation)
+  // 0. Update Headers (to ensure they translate if language changed)
+  const userColHeader = container.querySelector("thead .user-col");
+  const scoreColHeader = container.querySelector("thead .score-col");
+  if (userColHeader)
+    userColHeader.textContent = t.ranking_col_user || "Usuario";
+  if (scoreColHeader)
+    scoreColHeader.textContent = t.ranking_col_points || "Puntos";
+
   const tbody = container.querySelector("tbody");
   const oldRows = Array.from(tbody.querySelectorAll("tr[data-uid]"));
   const oldPositions = new Map();
