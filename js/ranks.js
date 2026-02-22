@@ -88,10 +88,9 @@ export function getRankData(currentRP) {
     progress = 100; // Max Rank
   }
 
-  // 3. "Level" (Vanity Metric: Total RP / 1000 or just raw wins?)
-  // Let's use RP / 1000 as "Level" for cleaner display
-  // "Level 42" means 42,000 RP
-  const level = Math.floor(currentRP / 1000);
+  // 3. "Level" (Matches Rank ID for consistent progression)
+  // "Level 1" means student is at "Principiante" rank, etc.
+  const level = current.id;
 
   return {
     rank: current,
