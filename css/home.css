@@ -1585,6 +1585,28 @@ body.dark-mode .ranking-table td {
   font-weight: 500;
 }
 
+.user-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.username-text {
+  display: block;
+}
+
+.user-rank-subtext {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+body.dark-mode .user-rank-subtext {
+  color: var(--text-secondary);
+}
+
 .top-player {
   background: rgba(245, 158, 11, 0.05);
 }

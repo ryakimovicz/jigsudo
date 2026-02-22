@@ -11,6 +11,7 @@ import {
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { getCurrentUser } from "./auth.js";
+import { getRankData } from "./ranks.js";
 
 const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -153,6 +154,7 @@ async function getTop10(
       id: doc.id,
       username: doc.data().username || "Anonymous",
       score: doc.data()[fieldName] || 0,
+      totalRP: doc.data().totalRP || 0, // Fetch totalRP for rank calculation
     }));
   } catch (error) {
     console.error(`[Ranking] Error fetching ${fieldName}:`, error);
@@ -274,9 +276,19 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     const safeScore = scoreFormat.format(entry.score || 0);
     const safeRank = isPersonal ? `#${entry.rank}` : medal || index + 1;
 
+    // Rank details for each user
+    const rankData = getRankData(entry.totalRP || 0);
+    const rankName = t[rankData.rank.nameKey] || rankData.rank.nameKey;
+    const rankLevel = `${t.rank_level_prefix || "Nvl."} ${rankData.level}`;
+
     const newHtml = `
       <td class="rank-col">${safeRank}</td>
-      <td class="user-col">${safeUsername} ${isCurrentUser ? t.ranking_you || "(Tú)" : ""}</td>
+      <td class="user-col">
+        <div class="user-info-group">
+          <span class="username-text">${safeUsername} ${isCurrentUser ? t.ranking_you || "(Tú)" : ""}</span>
+          <span class="user-rank-subtext">${rankLevel} • ${rankName}</span>
+        </div>
+      </td>
       <td class="score-col">${safeScore}</td>
     `;
 
@@ -453,24 +465,42 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
       const medal =
         index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "";
 
+      const rankData = getRankData(entry.totalRP || 0);
+      const rankName = t[rankData.rank.nameKey] || rankData.rank.nameKey;
+      const rankLevel = `${t.rank_level_prefix || "Nvl."} ${rankData.level}`;
+
       // ADD data-uid
       html += `
         <tr class="ranking-row ${isTop3 ? "top-player" : ""} ${isCurrentUser ? "current-user-row" : ""}" data-uid="${entry.id}">
           <td class="rank-col">${medal || index + 1}</td>
-          <td class="user-col">${entry.username} ${isCurrentUser ? t.ranking_you || "(Tú)" : ""}</td>
+          <td class="user-col">
+            <div class="user-info-group">
+              <span class="username-text">${entry.username} ${isCurrentUser ? t.ranking_you || "(Tú)" : ""}</span>
+              <span class="user-rank-subtext">${rankLevel} • ${rankName}</span>
+            </div>
+          </td>
           <td class="score-col">${scoreFormat.format(entry.score)}</td>
         </tr>
       `;
     });
 
     if (personal && !personal.inTop && personal.rank > 10) {
+      const pRankData = getRankData(personal.totalRP || personal.score || 0); // fallback if personal doesn't have totalRP yet in this call
+      const pRankName = t[pRankData.rank.nameKey] || pRankData.rank.nameKey;
+      const pRankLevel = `${t.rank_level_prefix || "Nvl."} ${pRankData.level}`;
+
       html += `
         <tr class="ranking-separator">
           <td colspan="3">...</td>
         </tr>
         <tr class="ranking-row current-user-row personal-rank-row" data-uid="${personal.username}_p">
           <td class="rank-col">#${personal.rank}</td>
-          <td class="user-col">${personal.username} ${t.ranking_you || "(Tú)"}</td>
+          <td class="user-col">
+            <div class="user-info-group">
+              <span class="username-text">${personal.username} ${t.ranking_you || "(Tú)"}</span>
+              <span class="user-rank-subtext">${pRankLevel} • ${pRankName}</span>
+            </div>
+          </td>
           <td class="score-col">${scoreFormat.format(personal.score)}</td>
         </tr>
       `;
