@@ -557,6 +557,18 @@ export function initHome() {
   };
 
   async function loadAndRenderAllRankings(force = false) {
+    // Update Monthly Rank Label dynamically (at the start to avoid "Mes/Month" flash)
+    const monthHeader = document.getElementById("ranking-month-header");
+    if (monthHeader) {
+      const lang = getCurrentLang() || "es";
+      const monthName = new Date().toLocaleDateString(lang, {
+        month: "long",
+      });
+      const capitalized =
+        monthName.charAt(0).toUpperCase() + monthName.slice(1);
+      monthHeader.textContent = capitalized;
+    }
+
     // Only clear if empty (first load)
     if (containerDaily && !containerDaily.hasChildNodes())
       containerDaily.innerHTML = '<div class="loader-small"></div>';
