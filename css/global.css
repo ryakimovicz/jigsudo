@@ -32,6 +32,12 @@
     inset -2px -2px 4px rgba(255, 255, 255, 0.8);
   --glass-bg: rgba(255, 255, 255, 0.8); /* Frosted glass becoming Paper-like */
   --glass-border: rgba(0, 0, 0, 0.05);
+
+  /* Ad Placeholders */
+  --ad-placeholder-bg: rgba(0, 0, 0, 0.05);
+  --ad-placeholder-border: rgba(0, 0, 0, 0.1);
+  --ad-placeholder-text: rgba(0, 0, 0, 0.3);
+  --ad-label-bg: rgba(0, 0, 0, 0.1);
 }
 
 /* Midnight Paper Theme (Dark Mode) */
@@ -49,6 +55,12 @@ body.dark-mode {
 
   --glass-border: #444c56; /* Medium Grey Border */
   --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */
+
+  /* Ad Placeholders - Dark Mode */
+  --ad-placeholder-bg: rgba(255, 255, 255, 0.05);
+  --ad-placeholder-border: rgba(255, 255, 255, 0.2);
+  --ad-placeholder-text: rgba(255, 255, 255, 0.3);
+  --ad-label-bg: rgba(0, 0, 0, 0.5);
 }
 
 /* Ensure glass panel adapts to dark mode */
