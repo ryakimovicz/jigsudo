@@ -1920,7 +1920,7 @@ aside.ad-container-vertical {
   transform: translateY(-50%);
   width: 160px;
   height: 600px;
-  z-index: 90; /* Below modals (1000+) but above content */
+  z-index: 99999; /* Above everything (header, footer, modals) */
   display: none; /* Mobile-first: hidden by default */
 }
 
@@ -1954,7 +1954,7 @@ aside.ad-container-vertical {
   height: 60px; /* Standard mobile banner height + padding */
   background: var(--bg-color); /* Opaque background to read content */
   border-top: 1px solid var(--glass-border);
-  z-index: 100;
+  z-index: 99999;
   display: flex;
   justify-content: center;
   align-items: center;

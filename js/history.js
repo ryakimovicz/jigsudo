@@ -131,10 +131,38 @@ export async function updateHistoryUI() {
   }
   await Promise.all(probes);
 
+  updateNavButtonsState();
   renderHistoryCalendar(stats.history);
 }
 
+function updateNavButtonsState() {
+  const prevBtn = document.getElementById("hist-prev-btn");
+  const nextBtn = document.getElementById("hist-next-btn");
+  if (!prevBtn || !nextBtn) return;
+
+  const year = histViewDate.getFullYear();
+  const month = histViewDate.getMonth();
+
+  // Min limit: Feb 2026
+  const isMinMonth = year === 2026 && month === 1;
+  prevBtn.classList.toggle("disabled", isMinMonth);
+
+  // Max limit: Current real month
+  const now = new Date();
+  const isMaxMonth = year === now.getFullYear() && month === now.getMonth();
+  nextBtn.classList.toggle("disabled", isMaxMonth);
+}
+
 function changeHistMonth(delta) {
+  // Guard against navigating past limits if clicked despite CSS disabled
+  const year = histViewDate.getFullYear();
+  const month = histViewDate.getMonth();
+  const now = new Date();
+
+  if (delta === -1 && year === 2026 && month === 1) return;
+  if (delta === 1 && year === now.getFullYear() && month === now.getMonth())
+    return;
+
   histViewDate.setMonth(histViewDate.getMonth() + delta);
   updateHistoryUI();
 }

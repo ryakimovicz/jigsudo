@@ -14,18 +14,27 @@
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center children like .history-card */
 }
 
 .history-card {
+  margin: 0 auto; /* Ensure centering as a block */
   background: var(--bg-card);
   border-radius: 16px;
-  padding: 24px;
+  /* Fluid padding: scales from 12px to 24px */
+  padding: clamp(12px, 4vw, 24px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--glass-border);
   display: flex !important;
   flex-direction: column !important;
   align-items: center;
   min-height: auto;
+  /* Sync with home panels margins */
+  width: 95%;
+  max-width: 600px;
+  box-sizing: border-box;
 }
 
 .history-header {
@@ -39,7 +48,8 @@
 
 .history-header h2 {
   margin: 0;
-  font-size: 1.5rem; /* Smaller than before */
+  /* Fluid title: scales from 1.15rem to 1.5rem */
+  font-size: clamp(1.15rem, 5vw, 1.5rem);
   color: var(--text-main);
   text-transform: capitalize;
 }
@@ -50,14 +60,17 @@
   font-size: 0.95rem;
 }
 
-/* THE GRID - Fixed sizes but variables for scaling */
+/* THE GRID - Fluid sizes using clamp */
 #history-grid-container {
-  --cell-size: 60px;
+  /* Fits 7 columns + gaps in ~300px at minimum scaling */
+  --cell-size: clamp(34px, 12vw, 60px);
+  --gap-size: clamp(4px, 1.5vw, 8px);
   display: grid !important;
   grid-template-columns: repeat(7, var(--cell-size)) !important;
-  gap: 8px;
+  gap: var(--gap-size);
   justify-content: center;
   margin: 0 auto;
+  max-width: 100%; /* Safety */
 }
 
 #history-grid-container .calendar-day {
@@ -149,17 +162,16 @@ body.dark-mode #history-grid-container .calendar-day:hover {
   border-color: var(--brand-color);
 }
 
-/* Responsive */
-@media (max-width: 500px) {
-  #history-grid-container {
-    --cell-size: 45px;
-    gap: 5px;
-  }
-  #history-grid-container .calendar-day {
-    font-size: 0.9rem;
-    border-radius: 6px;
-  }
-  #history-grid-container .calendar-day.header-day {
-    height: 25px;
+.icon-btn-medium.disabled {
+  opacity: 0.4;
+  filter: grayscale(1);
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Responsive refinements handled by fluid layouts above */
+@media (max-width: 360px) {
+  .history-header h2 {
+    font-size: 1.1rem; /* Extra safety for ultra small */
   }
 }
