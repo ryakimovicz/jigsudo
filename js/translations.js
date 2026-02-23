@@ -113,11 +113,11 @@ export const translations = {
 
     // Custom Tab Titles
     custom_difficulty: "Dificultad",
-    custom_modes: "Modos de Juego",
+    custom_modes: "Niveles",
 
     // Game Names
     game_memory: "Juego de Memoria",
-    game_jigsaw: "Rompecabezas",
+    game_jigsaw: "Rompe<wbr>cabezas",
     game_sudoku: "Sudoku",
     game_peaks: "Picos y Valles",
     game_search: "Sopa de Números",
@@ -127,7 +127,7 @@ export const translations = {
     menu_title: "Seis desafíos, un solo tablero",
     // innerHTML for description to preserve strong tags
     menu_description_html: `Todo empieza con el <strong>Juego de Memoria</strong>: encuentra los
-            pares, consigue las piezas y arma el <strong>Rompecabezas</strong>.
+            pares, consigue las piezas y arma el <strong>Rompe<wbr>cabezas</strong>.
             Solo así podrás enfrentar al <strong>Sudoku</strong>, superar los
             <strong>Picos y Valles</strong>, buscar en la <strong>Sopa de Números</strong> 
             y descifrar <strong>El Código</strong> final.`,
@@ -402,7 +402,7 @@ export const translations = {
 
     // Minigame Names for Profile (Spanish)
     p_game_memory: "Juego de Memoria",
-    p_game_jigsaw: "Rompecabezas",
+    p_game_jigsaw: "Rompe<wbr>cabezas",
     p_game_sudoku: "Sudoku",
     p_game_peaks: "Picos y Valles",
     p_game_search: "Sopa de Números",
@@ -529,7 +529,7 @@ export const translations = {
 
     // Custom Tab Titles
     custom_difficulty: "Difficulty",
-    custom_modes: "Game Modes",
+    custom_modes: "Levels",
 
     // Game Names
     game_memory: "Memory Game",

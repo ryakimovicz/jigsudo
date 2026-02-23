@@ -443,6 +443,13 @@ body.dark-mode .glass-panel {
   padding: 10px 20px !important; /* Significantly reduce top padding */
 }
 
+@media (max-width: 480px) {
+  .custom-panel {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
+
 .custom-content {
   width: 100%;
   max-width: 100%;
@@ -503,15 +510,15 @@ body.dark-mode .seg-btn.active {
 }
 
 /* Switch List - Grid Layout */
-.game-switches-list {
-  width: 100%;
-  max-width: 100%; /* Allow full width of panel */
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Two columns */
-  gap: 15px;
-  max-height: 400px; /* Prevent overflow of panel if list is long */
-  overflow-y: auto; /* Scroll if needed, though 5 items should fit */
-  padding: 4px; /* Space for focus rings/shadows */
+#game-modes-grid.game-switches-list {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 15px !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  padding: 4px !important;
 }
 
 .switch-row {
@@ -519,6 +526,8 @@ body.dark-mode .seg-btn.active {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px; /* Slightly plumper rows */
+  width: 100%;
+  box-sizing: border-box;
   background: rgba(
     0,
     0,
@@ -543,51 +552,69 @@ body.dark-mode .switch-row {
   justify-self: center; /* Center in container */
 }
 
-.switch-row span {
-  font-weight: 600;
-  color: var(--text-main);
-  white-space: nowrap; /* Prevent wrapping */
-  font-size: 0.95rem; /* Slightly larger text */
+.switch-row > span {
+  flex: 1 !important;
+  min-width: 0 !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: var(--text-main) !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  font-size: 0.95rem !important;
+  line-height: 1.2 !important;
+  margin-right: 12px !important;
 }
 
-/* Mobile: Single Column */
+/* Base Responsive Rules moved into unified @media if possible, but keeping structure for safety */
 @media (max-width: 600px) {
-  .game-switches-list {
-    grid-template-columns: 1fr;
-  }
-
-  .switch-row:last-child:nth-child(odd) {
-    grid-column: auto; /* Reset span */
-    width: 100%; /* Full width on mobile to match others */
-    max-width: 100%;
-  }
-
-  .panel-section-title {
-    font-size: 1rem;
-    margin: 15px 0 8px;
-  }
+  /* This rule will be overridden by the 480px one if applicable */
 }
 
 /* Description Card */
 .game-description {
   text-align: center;
-  padding: 40px;
+  /* Fluid padding: scales horizontal from 10px to 40px, vertical from 20px to 40px */
+  padding: clamp(20px, 5vh, 40px) clamp(10px, 5vw, 40px);
   width: 100%;
-  max-width: 600px;
+  max-width: 100%; /* Strict constraint within .home-panels (95%) */
+  min-width: 0; /* Allow shrinking in CSS Grid/Flex */
   background: white; /* Clean card on cream bg */
-  /* Border/Shadow handled by global .glass-panel class now acting as paper-panel */
+  box-sizing: border-box;
+
+  /* Vertical Space Optimization */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  /* Fluid Gap: scales from 15px to 32px based on height */
+  gap: clamp(15px, 4vh, 32px);
+  /* Fluid Min-Height: ensure presence on tall screens while fitting small ones */
+  min-height: clamp(320px, 45dvh, 500px);
+}
+
+.game-description h2,
+.game-description p,
+.tagline {
+  width: 100%; /* Force children to respect parent width */
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .game-description h2 {
-  font-size: 2rem;
-  margin-bottom: 20px;
+  /* Fluid Title: 1.15rem to 2.2rem */
+  font-size: clamp(1.15rem, 5vw, 2.2rem);
+  margin-bottom: 0; /* Handled by flex gap */
   color: var(--primary-color);
 }
 
 .game-description p {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  margin-bottom: 20px;
+  /* Fluid Body: 1rem to 1.25rem */
+  font-size: clamp(1rem, 3.5vw, 1.25rem);
+  line-height: 1.5;
+  margin-bottom: 0; /* Handled by flex gap */
   color: var(--text-main);
 }
 
@@ -598,25 +625,28 @@ body.dark-mode .switch-row {
 
 .tagline {
   font-style: italic;
-  font-size: 1.1rem;
+  /* Fluid Tagline: 0.9rem to 1.15rem */
+  font-size: clamp(0.9rem, 2.8vw, 1.15rem);
   color: var(--text-muted);
 }
 
 /* Mobile: Adjust Description Panels to prevent overflow */
 @media (max-width: 480px) {
-  .game-description {
-    padding: 20px 15px; /* Tighter horizontal padding */
-    min-width: 0; /* Allow shrinking below content width */
+  #game-modes-grid.game-switches-list {
+    /* minmax 150px ensures it switches to 1 column on 320px screens to avoid overlap */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 8px 15px !important;
+    max-width: 100% !important;
   }
-  .game-description h2 {
-    font-size: 1.3rem; /* Further reduced from 1.5rem */
-    margin-bottom: 12px;
-    word-wrap: break-word; /* Ensure title wraps */
+
+  .switch-row {
+    padding: 12px 8px;
+    align-items: center; /* Vertical center even if text wraps */
   }
-  .game-description p {
-    font-size: 0.95rem; /* Further reduced */
-    line-height: 1.4;
-    margin-bottom: 10px;
+
+  .panel-section-title {
+    font-size: 1rem;
+    margin: 15px 0 8px;
   }
 }
 
@@ -789,14 +819,6 @@ body.dark-mode .btn-primary.btn-won:active {
 
   .app-title {
     font-size: 1.4rem;
-  }
-
-  .game-description {
-    padding: 20px;
-  }
-
-  .game-description h2 {
-    font-size: 1.5rem;
   }
 
   .btn-primary {
@@ -1042,46 +1064,16 @@ input:checked + .slider-small:before {
   border-color: var(--accent-color);
 }
 
-.game-description p {
-  font-size: clamp(0.9rem, 3vh, 1.1rem) !important;
-  margin-bottom: 5px !important;
+/* Game Mode Switch Row Refinement */
+.switch-row > span {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
 }
 
-.panel-section-title {
-  margin: 5px 0 3px !important;
-  font-size: 0.85rem !important;
-}
-
-.difficulty-wrapper {
-  margin-bottom: 5px !important;
-}
-
-.game-switches-list {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  justify-content: center !important;
-  grid-template-columns: none !important; /* Disable grid */
-  gap: 6px !important;
-  max-height: none !important;
-}
-
-.switch-row {
-  flex: 0 1 calc(33% - 6px) !important; /* 3 per row approx */
-  min-width: 140px !important; /* Minimum width to avoid text clashing with switch */
-  margin: 0 !important;
-}
-
-.switch-row {
-  padding: 6px 12px !important;
-}
-
-.switch-row span {
-  font-size: 0.8rem !important;
-}
-
-.btn-primary {
-  padding: 10px 30px !important;
-  font-size: 1.1rem !important;
+.switch-small {
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 /* --- Player Quick Stats (Account Menu) --- */
