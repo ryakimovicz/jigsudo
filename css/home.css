@@ -57,7 +57,7 @@ body.header-condensed .main-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 40000; /* Must be drastically higher than #side-sidebar (30006) to clear entirely on mobile */
+  z-index: 200001; /* Above sidebar (200000) */
 }
 
 .header-right {
@@ -1962,6 +1962,18 @@ aside.ad-container-vertical {
     safe-area-inset-bottom,
     0
   ); /* iPhone Home Bar safe area */
+}
+
+/* Sync with sidebar expansion on desktop */
+@media (min-width: 769px) {
+  .ad-container-bottom {
+    left: var(--sidebar-current-width, 0);
+    width: calc(100% - var(--sidebar-current-width, 0));
+    transition:
+      left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
 /* Hide mobile footer on LARGE screens */

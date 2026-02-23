@@ -11,7 +11,7 @@
     width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 30006; /* Above header (30000) */
+  z-index: 200000; /* High priority (Ads are 99999) */
   display: flex;
   flex-direction: column;
   overflow: visible; /* Allow dropdowns to pop out */
@@ -187,7 +187,7 @@ body.dark-mode #side-sidebar {
     height: 100vh;
     background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(2px);
-    z-index: 30005; /* Just below sidebar but above header */
+    z-index: 199999; /* Below sidebar but above ads (99999) */
     transition:
       opacity 0.3s,
       visibility 0.3s;
