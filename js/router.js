@@ -4,30 +4,24 @@
  * Replaces scattered `hashchange` listeners in home.js, guide.js, etc.
  */
 export const router = {
-  // Map Hash -> Section ID
+  // Map Base Hash -> Section ID
   routes: {
-    // Empty/Root defaults to home (menu-content)
-    "": "menu-content",
-    "#": "menu-content",
     "#home": "menu-content",
-
-    // Main Sections
     "#guide": "guide-section",
-
     "#history": "history-section",
     "#profile": "profile-section",
-
-    // Game is special. It usually has no hash or a specific hash if we want deep linking.
-    // For now, let's map #game to game-section to allow explicit navigation.
     "#game": "game-section",
     "#privacy": "privacy-section",
-
-    // Future Routes
     "#terms": "terms-section",
   },
 
-  // Map Section ID -> Body Class (REMOVED: Global scroll is now default)
-  // routeClasses: { ... },
+  // Map Section ID -> Body Class
+  routeClasses: {
+    "menu-content": "home-active",
+    "history-section": "history-active",
+    "guide-section": "guide-active",
+    "profile-section": "profile-active",
+  },
 
   init() {
     window.addEventListener("hashchange", () => this.handleRoute());
@@ -38,25 +32,33 @@ export const router = {
 
   handleRoute() {
     let hash = window.location.hash || "";
-    // Normalize
-    if (hash === "#") hash = "";
 
-    // Default to empty string key if hash is empty
-    let sectionId = this.routes[hash];
+    // Normalize empty or root to canonical #home
+    if (hash === "" || hash === "#") {
+      history.replaceState(null, null, "#home");
+      hash = "#home";
+    }
+
+    // Parse base route and parameters
+    const parts = hash.split("/");
+    const baseRoute = parts[0];
+    const params = parts.slice(1);
+
+    let sectionId = this.routes[baseRoute];
 
     if (!sectionId) {
-      console.warn(`[Router] Unknown route: ${hash}. Defaulting to Home.`);
-      // If unknown, clear hash and show home?
-      // Or just show home without clearing?
-      // Let's go safe: Show Home.
+      console.warn(`[Router] Unknown route: ${baseRoute}. Defaulting to Home.`);
+      history.replaceState(null, null, "#home");
       sectionId = "menu-content";
     }
 
-    console.log(`[Router] Routing to: ${hash || "Home"} -> ${sectionId}`);
-    this.updateView(sectionId);
+    console.log(
+      `[Router] Routing tracking: ${hash} -> Base: ${baseRoute}, Params: [${params.join(",")}] -> Section: ${sectionId}`,
+    );
+    this.updateView(sectionId, baseRoute, params);
   },
 
-  updateView(activeId) {
+  updateView(activeId, baseRoute, params) {
     console.log(`[Router] updateView -> Target: ${activeId}`);
 
     // 1. Hide ALL registered sections
@@ -114,13 +116,22 @@ export const router = {
       }
     }
 
-    // 3. Update Body Classes (REMOVED)
-    // const allBodyClasses = Object.values(this.routeClasses || {});
-    // document.body.classList.remove(...allBodyClasses);
+    // 3. Update Body Classes
+    const allBodyClasses = Object.values(this.routeClasses || {});
+    document.body.classList.remove(...allBodyClasses);
+    const activeClass = this.routeClasses[activeId];
+    if (activeClass) {
+      document.body.classList.add(activeClass);
+    }
 
     // 4. Dispatch Event for modules to update content
     const event = new CustomEvent("routeChanged", {
-      detail: { route: activeId, hash: window.location.hash },
+      detail: {
+        route: activeId,
+        hash: window.location.hash,
+        baseRoute,
+        params,
+      },
     });
     window.dispatchEvent(event);
 
@@ -168,6 +179,6 @@ export const router = {
   // Helper for Auth to know if it should redirect to Home or stay put
   isNavigating() {
     const hash = window.location.hash;
-    return hash && hash !== "#";
+    return hash && hash !== "#" && hash !== "#home";
   },
 };

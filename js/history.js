@@ -52,7 +52,32 @@ export function initHistory() {
   // Handle Initial Hash - handled by router.js
   // Listen for Router Changes
   window.addEventListener("routeChanged", ({ detail }) => {
-    if (detail.hash === "#history") {
+    if (detail.baseRoute === "#history") {
+      const [yearStr, monthStr] = detail.params || [];
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1; // 0-indexed internally
+
+      const now = new Date();
+      let isValidDate = false;
+
+      if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
+        const minDate = new Date(2026, 1, 1); // Feb 2026
+        const reqDate = new Date(year, month, 1);
+        const maxDate = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        if (reqDate >= minDate && reqDate <= maxDate) {
+          histViewDate = reqDate;
+          isValidDate = true;
+        }
+      }
+
+      if (!isValidDate) {
+        histViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentY = histViewDate.getFullYear();
+        const currentM = String(histViewDate.getMonth() + 1).padStart(2, "0");
+        history.replaceState(null, null, `/#history/${currentY}/${currentM}`);
+      }
+
       updateHistoryUI(); // Refresh list
     }
   });
@@ -163,8 +188,14 @@ function changeHistMonth(delta) {
   if (delta === 1 && year === now.getFullYear() && month === now.getMonth())
     return;
 
-  histViewDate.setMonth(histViewDate.getMonth() + delta);
-  updateHistoryUI();
+  const targetDate = new Date(histViewDate);
+  targetDate.setMonth(targetDate.getMonth() + delta);
+
+  const targetY = targetDate.getFullYear();
+  const targetM = String(targetDate.getMonth() + 1).padStart(2, "0");
+
+  // Update URL to trigger routeChange
+  window.location.hash = `#history/${targetY}/${targetM}`;
 }
 
 function renderHistoryCalendar(history = {}) {

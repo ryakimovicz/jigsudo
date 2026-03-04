@@ -80,8 +80,6 @@ export function initGuide() {
   initTutorialDragAndDrop();
   // Re-init slider logic
   updateGuideSidebarStatus();
-  startTutorial();
-
   // Initialize Ranks/Info Section
   const ranksContainer = document.getElementById("ranks-table-container");
   if (ranksContainer) renderRanksTable(ranksContainer);
@@ -90,6 +88,38 @@ export function initGuide() {
   if (versionEl && CONFIG.version) {
     versionEl.textContent = CONFIG.version;
   }
+
+  // Listen for Router Changes
+  window.addEventListener("routeChanged", ({ detail }) => {
+    if (detail.baseRoute === "#guide") {
+      const stageKey = detail.params?.[0];
+      const stageMap = {
+        memory: 1,
+        jigsaw: 2,
+        sudoku: 3,
+        peaks: 4,
+        search: 5,
+        code: 6,
+      };
+
+      let targetStage = stageMap[stageKey];
+
+      if (!targetStage) {
+        // Default to memory if unknown or missing
+        history.replaceState(null, null, "#guide/memory");
+        targetStage = 1;
+      }
+
+      if (!tutorialState) {
+        document
+          .getElementById("tutorial-game-area")
+          .classList.remove("hidden");
+        initTutorialState();
+      }
+
+      loadStage(targetStage);
+    }
+  });
 }
 
 function setupSidebarConnection() {
@@ -199,14 +229,20 @@ function setupTutorialListeners() {
   const btnPrev = document.getElementById("btn-tutorial-prev");
   if (btnPrev) {
     btnPrev.onclick = () => {
-      if (currentTutorialStage > 1) loadStage(currentTutorialStage - 1);
+      if (currentTutorialStage > 1) {
+        window.location.hash =
+          "#guide/" + getStageKey(currentTutorialStage - 1);
+      }
     };
   }
 
   const btnNext = document.getElementById("btn-tutorial-next");
   if (btnNext) {
     btnNext.onclick = () => {
-      if (currentTutorialStage < 6) loadStage(currentTutorialStage + 1);
+      if (currentTutorialStage < 6) {
+        window.location.hash =
+          "#guide/" + getStageKey(currentTutorialStage + 1);
+      }
     };
   }
 }
@@ -216,7 +252,7 @@ function startTutorial() {
 
   currentTutorialStage = 1;
   initTutorialState();
-  loadStage(1);
+  window.location.hash = "#guide/memory";
 }
 
 function initTutorialState() {

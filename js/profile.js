@@ -62,14 +62,20 @@ export function showProfile() {
 let verificationInterval = null;
 
 // Listen for Router Changes to trigger polling/updates
-window.addEventListener("routeChanged", ({ detail }) => {
-  if (detail.hash === "#profile") {
-    _showProfileUI(); // Trigger polling and UI updates
+window.addEventListener("routeChanged", async ({ detail }) => {
+  if (detail.baseRoute === "#profile") {
+    const { getCurrentUser } = await import("./auth.js");
+    const user = getCurrentUser();
+    const requestedUsername = detail.params?.[0];
+
+    if (!requestedUsername && user && !user.isAnonymous && user.displayName) {
+      // Auto-redirect to their own profile URL
+      const encodedName = encodeURIComponent(user.displayName);
+      history.replaceState(null, null, `/#profile/${encodedName}`);
+    }
+
+    _showProfileUI(requestedUsername); // Trigger polling and UI updates
   } else {
-    // Logic to stop polling if we leave profile?
-    // _showProfileUI handles starting.
-    // We need a _hideProfileUI or similar to stop polling?
-    // _hideProfileUI was called in handleRouting.
     _hideProfileUI();
   }
 });
@@ -77,7 +83,7 @@ window.addEventListener("routeChanged", ({ detail }) => {
 // Router Handler (Removed)
 
 // Internal UI Manipulation
-function _showProfileUI() {
+function _showProfileUI(requestedUsername) {
   const section = document.getElementById("profile-section");
   const menu = document.getElementById("menu-content"); // Main Home Content
   // We might need to hide specific sections depending on what's active (home vs game)
@@ -145,7 +151,7 @@ function _showProfileUI() {
     }
   });
 
-  updateProfileData();
+  updateProfileData(requestedUsername);
 
   // Update Header Button to Close Icon
   const btnStats = document.getElementById("btn-stats");
@@ -164,20 +170,9 @@ function _hideProfileUI() {
   if (section) section.classList.add("hidden");
   document.body.classList.remove("profile-active");
 
-  const hash = window.location.hash;
-  const isInternalRouting =
-    hash === "#history" ||
-    hash === "#guide" ||
-    hash === "#game" ||
-    hash === "#info" ||
-    hash === "#privacy" ||
-    hash === "#terms";
-
   // ONLY restore home and class if we are actually going "home" (no hash)
-  if (!isInternalRouting) {
-    document.body.classList.add("home-active");
-    if (menu) menu.classList.remove("hidden");
-  }
+  // REMOVED: Router handles this exclusively now.
+  // if (!isInternalRouting) { ... }
 
   // Show Footer when returning from Profile (to Home)
   const footer = document.querySelector(".main-footer");
@@ -188,8 +183,13 @@ function _hideProfileUI() {
   if (btnStats) btnStats.textContent = "📊";
 }
 
-export function updateProfileData() {
+export function updateProfileData(targetUsername = null) {
   const user = getCurrentUser();
+  const decodedTarget = targetUsername
+    ? decodeURIComponent(targetUsername)
+    : null;
+  const isOwnProfile =
+    !decodedTarget || (user && user.displayName === decodedTarget);
 
   // If sync is in progress, show it on the share button if exists
   const shareBtn = document.getElementById("btn-share-stats");
@@ -206,16 +206,27 @@ export function updateProfileData() {
       const lang = getCurrentLang() || "es";
       shareBtn.textContent =
         translations[lang]?.btn_share_stats || "Compartir Estadísticas";
-      shareBtn.disabled = false;
+      shareBtn.disabled = !isOwnProfile; // Disable share for foreign profiles
     }
   }
 
-  // If no user, maybe redirect? For now, show "Guest"
   const avatarEl = document.getElementById("profile-avatar");
   const nameEl = document.getElementById("profile-username");
   const emailEl = document.getElementById("profile-email");
 
-  if (user && !user.isAnonymous) {
+  if (!isOwnProfile) {
+    // FOREIGN PUBLIC PROFILE
+    if (nameEl) nameEl.textContent = decodedTarget;
+    if (emailEl) emailEl.textContent = "Perfil Público"; // Placeholder for public profile tag
+    if (avatarEl) {
+      avatarEl.textContent = decodedTarget.charAt(0).toUpperCase();
+      avatarEl.style.backgroundColor = "";
+    }
+
+    // TODO: In the future, fetch public stats from DB here using decodedTarget
+    // For now, we just update the header
+  } else if (user && !user.isAnonymous) {
+    // OWN LOGGED-IN PROFILE
     const lang = getCurrentLang() || "es";
     const t = translations[lang] || translations["es"];
     const displayName = user.displayName || t.user_default || "Usuario";
@@ -228,7 +239,7 @@ export function updateProfileData() {
       avatarEl.style.backgroundColor = ""; // Reset
     }
   } else {
-    // Guest (Anonymous)
+    // GUEST (Anonymous)
     const lang = getCurrentLang() || "es";
     const t = translations[lang] || translations["es"];
 
@@ -247,7 +258,12 @@ export function updateProfileData() {
   const guestActions = document.querySelector(".guest-actions");
 
   // Debug Log
-  console.log("UpdateProfileData User:", user ? user.uid : "Guest");
+  console.log(
+    "UpdateProfileData User:",
+    user ? user.uid : "Guest",
+    "Target:",
+    decodedTarget,
+  );
 
   if (profileActions) {
     if (user && !user.isAnonymous) {
