@@ -173,6 +173,9 @@ function _hideProfileUI() {
 export async function updateProfileData(targetUsername = null) {
   const { getCurrentUser } = await import("./auth.js");
   const user = getCurrentUser();
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+
   const decodedTarget = targetUsername
     ? decodeURIComponent(targetUsername).toLowerCase()
     : null;
@@ -226,20 +229,31 @@ export async function updateProfileData(targetUsername = null) {
       const publicData = await getPublicUserByUsername(decodedTarget);
 
       if (publicData) {
-        // Proceed to render with publicData.stats
-        renderProfileStats(publicData.stats);
+        if (publicData.isPrivate) {
+          // PRIVATE PROFILE
+          if (emailEl) {
+            emailEl.textContent =
+              t.profile_private_msg || "Este perfil es privado";
+            emailEl.style.color = "var(--text-muted)";
+          }
+          renderProfileStats(null); // Hide/Clear stats
+        } else {
+          // PUBLIC PROFILE - Proceed to render
+          renderProfileStats(publicData.stats);
 
-        // Fix Email missing label visually
-        if (emailEl) {
-          emailEl.textContent = publicData.isVerified
-            ? "Usuario Verificado"
-            : "Perfil Público";
-          emailEl.style.color = publicData.isVerified
-            ? "var(--accent-color)"
-            : "var(--text-muted)";
+          // Fix Email missing label visually
+          if (emailEl) {
+            emailEl.textContent = publicData.isVerified
+              ? "Usuario Verificado"
+              : "Perfil Público";
+            emailEl.style.color = publicData.isVerified
+              ? "var(--accent-color)"
+              : "var(--text-muted)";
+          }
         }
       } else {
-        if (nameEl) nameEl.textContent = "Usuario no encontrado";
+        if (nameEl)
+          nameEl.textContent = t.user_not_found || "Usuario no encontrado";
         if (emailEl) emailEl.textContent = "";
         renderProfileStats(null); // Clear stats
       }
@@ -250,8 +264,6 @@ export async function updateProfileData(targetUsername = null) {
     }
   } else if (user && !user.isAnonymous) {
     // OWN LOGGED-IN PROFILE
-    const lang = getCurrentLang() || "es";
-    const t = translations[lang] || translations["es"];
     const displayName = user.displayName || t.user_default || "Usuario";
     const initial = displayName.charAt(0).toUpperCase();
 
@@ -416,15 +428,18 @@ export async function updateProfileData(targetUsername = null) {
 }
 
 function renderProfileStats(stats) {
+  const statsContainers = document.querySelectorAll(
+    "#profile-section .section-title, #profile-section .stats-grid, #profile-section .calendar-heatmap, #profile-section .daily-time-report, #profile-section .profile-share-actions, #profile-section .rank-display",
+  );
+
   if (!stats) {
-    stats = {
-      totalPlayed: 0,
-      wins: 0,
-      currentStreak: 0,
-      maxStreak: 0,
-      currentRP: 0,
-    };
+    // HIDE ALL STATS UI
+    statsContainers.forEach((el) => el.classList.add("hidden"));
+    return;
   }
+
+  // SHOW ALL STATS UI
+  statsContainers.forEach((el) => el.classList.remove("hidden"));
 
   // 1. Basic Stats
   if (document.getElementById("stat-played"))

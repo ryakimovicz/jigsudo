@@ -148,6 +148,9 @@ export const translations = {
     profile_settings: "Ajustes",
     profile_quick_clear: "Borrado Rápido",
     profile_language: "Idioma",
+    profile_public: "Perfil Público",
+    profile_private_msg: "Este perfil es privado",
+    user_not_found: "Usuario no encontrado",
     settings_account: "Cuenta",
     settings_title: "Ajustes",
     menu_account: "Cuenta",
@@ -563,6 +566,9 @@ export const translations = {
     profile_settings: "Settings",
     profile_quick_clear: "Quick Clear",
     profile_language: "Language",
+    profile_public: "Public Profile",
+    profile_private_msg: "This profile is private",
+    user_not_found: "User not found",
 
     // Footer
     footer_rights_html:

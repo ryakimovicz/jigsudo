@@ -277,6 +277,15 @@ export async function getPublicUserByUsername(username) {
     // There should only be one match due to availability checks, but we take the first
     const publicProfileData = snap.docs[0].data();
 
+    const isPublic = publicProfileData.isPublic !== false;
+
+    if (!isPublic) {
+      return {
+        username: publicProfileData.username,
+        isPrivate: true,
+      };
+    }
+
     // Return a sanitized version of the user document (do NOT return email, progress, etc.)
     return {
       username: publicProfileData.username,
@@ -291,6 +300,17 @@ export async function getPublicUserByUsername(username) {
   } catch (error) {
     console.error("[DB] Error fetching public profile:", error);
     return null;
+  }
+}
+
+export async function updateProfilePrivacy(userId, isPublic) {
+  if (!userId) return;
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, { isPublic }, { merge: true });
+    showSaveIndicatorWithMessage("Ajuste guardado");
+  } catch (error) {
+    console.error("[DB] Error updating profile privacy:", error);
   }
 }
 

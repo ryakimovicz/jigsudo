@@ -637,6 +637,20 @@ function updateUIForLogin(user) {
   // Force a cloud save to ensure username is synced to Firestore rankings
   gameManager.forceCloudSave(user.uid);
 
+  // Initialize Privacy Toggle
+  const privacyToggle = document.getElementById("profile-public-toggle");
+  if (privacyToggle) {
+    import("./db.js").then(async (dbMod) => {
+      const userData = await dbMod.fetchLatestUserData(user.uid);
+      if (userData) {
+        privacyToggle.checked = userData.isPublic !== false;
+      }
+      privacyToggle.onchange = (e) => {
+        dbMod.updateProfilePrivacy(user.uid, e.target.checked);
+      };
+    });
+  }
+
   const btnLogout = document.getElementById("btn-profile-logout");
   if (btnLogout) {
     btnLogout.onclick = () => {
