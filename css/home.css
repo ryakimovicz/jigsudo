@@ -2032,24 +2032,33 @@ body {
   position: relative;
 }
 
-/* 4. Victory Modal Rectangle */
+/* 4. Victory Modal Rectangle (Landscape Banner) */
 .ad-container-victory {
-  margin: 20px auto;
-  display: flex;
-  justify-content: center;
+  margin: 20px 0;
+  width: 100%;
 }
 
 .ad-placeholder-rectangle {
   width: 100%;
-  max-width: 300px; /* Medium Rectangle */
-  height: 250px;
+  height: 200px; /* Landscape banner — min recommended for AdSense responsive auto */
   background: var(--ad-placeholder-bg);
   border: 1px dashed var(--ad-placeholder-border);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ad-placeholder-text);
+  font-size: 0.75rem;
   position: relative;
+  overflow: hidden;
+}
+
+/* ins sits on top of the placeholder; when AdSense fails (localhost), the container background shows */
+.ad-placeholder-rectangle ins.adsbygoogle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .ad-label {
