@@ -55,6 +55,61 @@ export function formatTime(ms) {
   }
 }
 
+/**
+ * Toggles a modal's visibility and manages body scroll locking.
+ * @param {string|HTMLElement} elementOrId - The modal element or its ID.
+ * @param {boolean} show - Whether to show (true) or hide (false).
+ */
+export function toggleModal(elementOrId, show) {
+  const modal =
+    typeof elementOrId === "string"
+      ? document.getElementById(elementOrId)
+      : elementOrId;
+  if (!modal) return;
+
+  if (show) {
+    modal.classList.remove("hidden");
+    document.body.classList.add("no-scroll");
+    document.documentElement.classList.add("no-scroll");
+  } else {
+    modal.classList.add("hidden");
+    // Only remove no-scroll if no other modals are visible
+    const otherModals = document.querySelectorAll(
+      ".modal-overlay:not(.hidden)",
+    );
+    if (otherModals.length === 0) {
+      document.body.classList.remove("no-scroll");
+      document.documentElement.classList.remove("no-scroll");
+    }
+  }
+}
+
+// Mobile Scrollbar Logic: Show thumb only when scrolling
+let scrollTimeout;
+function handleScroll() {
+  document.body.classList.add("is-scrolling");
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    document.body.classList.remove("is-scrolling");
+  }, 1000);
+}
+
+// Listen for global and modal-specific scrolling
+window.addEventListener("scroll", handleScroll, { passive: true });
+document.addEventListener(
+  "scroll",
+  (e) => {
+    if (
+      e.target &&
+      e.target.classList &&
+      e.target.classList.contains("modal-overlay")
+    ) {
+      handleScroll();
+    }
+  },
+  { passive: true, capture: true },
+);
+
 export function showVictorySummary(stats, isHome = false) {
   if (!stats) return;
 
@@ -126,7 +181,7 @@ export function showVictorySummary(stats, isHome = false) {
   // Home Button Logic
   if (btnHome) {
     btnHome.onclick = async () => {
-      modal.classList.add("hidden");
+      toggleModal(modal, false);
 
       if (!isHome) {
         // 1. Refresh Rankings immediately if possible (via home logic listener)
@@ -149,7 +204,7 @@ export function showVictorySummary(stats, isHome = false) {
   }
 
   // Show Modal
-  modal.classList.remove("hidden");
+  toggleModal(modal, true);
 }
 
 async function handleShareVictory(stats) {

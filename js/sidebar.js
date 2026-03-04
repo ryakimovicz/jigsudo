@@ -9,6 +9,15 @@ export function updateSidebarActiveState(activeId) {
   });
 }
 
+export const closeSidebar = () => {
+  const sidebar = document.getElementById("side-sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  if (!sidebar) return;
+  sidebar.classList.remove("expanded");
+  document.body.classList.remove("sidebar-expanded");
+  if (overlay) overlay.classList.add("hidden");
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("side-sidebar");
   const toggleBtns = document.querySelectorAll(".sidebar-toggle");
@@ -52,12 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Close when clicking overlay or outside
-    const closeSidebar = () => {
-      sidebar.classList.remove("expanded");
-      document.body.classList.remove("sidebar-expanded");
-      if (overlay) overlay.classList.add("hidden");
-    };
-
     if (overlay) {
       overlay.addEventListener("click", closeSidebar);
     }
@@ -77,6 +80,18 @@ document.addEventListener("DOMContentLoaded", () => {
       ) {
         closeSidebar();
       }
+    });
+
+    // Auto-close on Navigation click (Mobile)
+    const navItems = sidebar.querySelectorAll(
+      ".nav-item:not(#btn-auth):not(#btn-profile)",
+    );
+    navItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        if (window.innerWidth <= 768) {
+          closeSidebar();
+        }
+      });
     });
   }
 });

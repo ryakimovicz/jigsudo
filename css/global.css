@@ -78,14 +78,20 @@ body.dark-mode .glass-panel {
   -webkit-tap-highlight-color: transparent; /* Remove default mobile highlight */
 }
 
-html,
+html {
+  overflow-y: overlay; /* Floating scrollbar on html only */
+}
+
 body {
   max-width: 100%;
   overflow-anchor: none;
 }
 
+html.no-scroll,
 body.no-scroll {
   overflow: hidden !important;
+  height: 100% !important; /* Use 100% instead of 100vh for iOS/mobile stability */
+  touch-action: none; /* Prevent touch-based scrolling */
 }
 
 body {
@@ -116,22 +122,30 @@ body {
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: var(--header-height);
+  left: var(--sidebar-current-width, 0);
+  width: calc(100% - var(--sidebar-current-width, 0));
+  height: calc(100% - var(--header-height));
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Move from center to top */
-  padding-top: 2rem; /* Reduced padding to allow more space */
-  padding-bottom: 2rem;
+  align-items: center; /* PERFECT CENTERING */
   z-index: 30000;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
-  overflow-y: auto; /* Enable scrolling for the overlay */
+  transition:
+    all 0.3s ease,
+    left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: overlay;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1200px) {
+  .modal-overlay {
+    padding-right: 170px;
+  }
 }
 
 .modal-overlay:not(.hidden) {
@@ -140,7 +154,7 @@ body {
 }
 
 .modal-content {
-  width: 90%;
+  width: 95%; /* More space on narrow */
   max-width: 320px;
   padding: 20px;
   text-align: center;
@@ -148,8 +162,7 @@ body {
   opacity: 1 !important;
   pointer-events: auto !important;
   z-index: 100 !important;
-  /* transform: translateY(20px); <-- Removed to rely on natural flow/margin */
-  margin: auto; /* Center vertically if space allows, otherwise flows with scroll */
+  margin: auto; /* Helper for some flex behaviors */
 
   transition: transform 0.3s ease;
   display: flex;
@@ -244,8 +257,10 @@ body {
   #info-section,
   #game-section,
   #privacy-section,
-  .main-footer {
+  .main-footer,
+  .modal-overlay {
     margin-left: 0;
+    left: 0;
     width: 100%;
     box-sizing: border-box;
   }
@@ -309,6 +324,28 @@ body.dark-mode ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Mobile Scrollbar Refinement: Transparent track to avoid shifting content */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: none !important; /* Floating pill look */
+    background: transparent !important; /* Hidden by default */
+  }
+
+  /* Show only during active scrolling */
+  .is-scrolling::-webkit-scrollbar-thumb,
+  .is-scrolling ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15) !important;
+  }
+
+  body.dark-mode .is-scrolling::-webkit-scrollbar-thumb,
+  body.dark-mode .is-scrolling ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15) !important;
+  }
+}
+
 body.dark-mode ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-color);
 }
@@ -355,50 +392,7 @@ body.dark-mode .debug-btn {
   color: #1e293b; /* Match btn-primary text color in dark mode */
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start; /* Move from center to top */
-  padding-top: 15vh; /* Optical center / "Lower" than top edge */
-  z-index: 30000;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.modal-overlay:not(.hidden) {
-  opacity: 1;
-  visibility: visible;
-}
-
-.modal-content {
-  width: 90%;
-  max-width: 320px;
-  padding: 20px;
-  text-align: center;
-  /* Reset glass-panel default hidden state from home.css */
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  z-index: 100 !important;
-  transform: translateY(20px); /* Start slightly down for animation */
-
-  transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.modal-overlay:not(.hidden) .modal-content {
-  transform: translateY(0);
-}
+/* REMOVED: Redundant modal definitions */
 
 .modal-title {
   font-family: var(--font-paper);

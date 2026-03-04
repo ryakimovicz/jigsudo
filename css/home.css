@@ -16,8 +16,8 @@ body.header-condensed {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 30000;
-  background: rgba(253, 251, 247, 0.95);
+  z-index: 40001;
+  background: var(--bg-paper);
   border-bottom: 1px solid var(--glass-border);
   backdrop-filter: blur(10px);
   transition:
@@ -517,7 +517,7 @@ body.dark-mode .seg-btn.active {
   grid-template-columns: 1fr 1fr !important;
   gap: 15px !important;
   max-height: 400px !important;
-  overflow-y: auto !important;
+  overflow-y: overlay !important;
   padding: 4px !important;
 }
 

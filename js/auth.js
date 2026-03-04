@@ -23,6 +23,7 @@ import { gameManager } from "./game-manager.js";
 import { router } from "./router.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
+import { toggleModal, showToast } from "./ui.js";
 
 export async function updateUsername(newUsername) {
   const user = auth.currentUser;
@@ -250,7 +251,7 @@ export async function registerUser(email, password, username) {
       console.log(
         "[Auth] Showing registration success modal (Pre-migration)...",
       );
-      regModal.classList.remove("hidden");
+      toggleModal(regModal, true);
 
       // SMART REDIRECT: Detect email provider
       const emailBtn = document.getElementById("btn-go-to-email");
@@ -286,7 +287,7 @@ export async function registerUser(email, password, username) {
 
       const btnClose = document.getElementById("btn-close-reg-success");
       if (btnClose) {
-        btnClose.onclick = () => regModal.classList.add("hidden");
+        btnClose.onclick = () => toggleModal(regModal, false);
       }
     }
 
@@ -556,7 +557,7 @@ function updateUIForLogin(user) {
   if (authBtn) authBtn.classList.add("authenticated");
 
   const loginModal = document.getElementById("login-modal");
-  if (loginModal) loginModal.classList.add("hidden");
+  if (loginModal) toggleModal(loginModal, false);
 
   const profileActions = document.querySelector(".profile-actions");
   if (profileActions) profileActions.classList.remove("hidden");
@@ -633,7 +634,7 @@ function updateUIForLogin(user) {
   if (btnLogout) {
     btnLogout.onclick = () => {
       const modal = document.getElementById("logout-confirm-modal");
-      if (modal) modal.classList.remove("hidden");
+      if (modal) toggleModal(modal, true);
     };
   }
 
@@ -643,7 +644,7 @@ function updateUIForLogin(user) {
 
   if (btnCancelLogout && logoutModal) {
     btnCancelLogout.onclick = () => {
-      logoutModal.classList.add("hidden");
+      toggleModal(logoutModal, false);
     };
   }
 
@@ -655,7 +656,7 @@ function updateUIForLogin(user) {
       const result = await logoutUser();
       btnConfirmLogout.textContent = "Cerrar Sesión";
       btnConfirmLogout.disabled = false;
-      logoutModal.classList.add("hidden");
+      toggleModal(logoutModal, false);
       if (result.success) showToast("Sesión cerrada correctamente.");
       else showToast("Error al cerrar sesión: " + result.error);
     };
@@ -706,7 +707,7 @@ function updateUIForLogout() {
   if (btnGuestLogin) {
     btnGuestLogin.onclick = () => {
       const loginModal = document.getElementById("login-modal");
-      if (loginModal) loginModal.classList.remove("hidden");
+      if (loginModal) toggleModal(loginModal, true);
     };
   }
 }
@@ -787,7 +788,7 @@ function showPasswordModal(actionType) {
   confirmInput.value = "";
   newPassInput.value = "";
   if (verifyPassInput) verifyPassInput.value = "";
-  modal.classList.remove("hidden");
+  toggleModal(modal, true);
 
   if (!modal.dataset.toggleListenerAttached) {
     modal.addEventListener("click", (e) => {
@@ -854,7 +855,7 @@ function showPasswordModal(actionType) {
       newBtnConfirm.textContent = t.btn_confirm;
       if (result.success) {
         showToast(t.toast_name_success, 3000, "success");
-        modal.classList.add("hidden");
+        toggleModal(modal, false);
         const nameSpan = document.getElementById("user-display-name");
         if (nameSpan) nameSpan.textContent = newName;
         const profileNameLarge = document.getElementById("profile-name-large");
@@ -907,7 +908,7 @@ function showPasswordModal(actionType) {
       newBtnConfirm.textContent = t.btn_confirm;
       if (result.success) {
         showToast(t.toast_pw_success, 3000, "success");
-        modal.classList.add("hidden");
+        toggleModal(modal, false);
       } else {
         showToast("Error: " + result.error, 3000, "error");
       }
@@ -952,10 +953,10 @@ function showPasswordModal(actionType) {
         "btn-confirm-delete-modal",
       );
       if (deleteModal) {
-        deleteModal.classList.remove("hidden");
+        toggleModal(deleteModal, true);
         if (btnCancelDelete)
           btnCancelDelete.onclick = () => {
-            deleteModal.classList.add("hidden");
+            toggleModal(deleteModal, false);
           };
         if (btnConfirmDelete) {
           btnConfirmDelete.onclick = async () => {
@@ -969,7 +970,7 @@ function showPasswordModal(actionType) {
               btnConfirmDelete.disabled = false;
               btnConfirmDelete.textContent = t.btn_delete_all;
               showToast("Error: " + result.error, 3000, "error");
-              deleteModal.classList.add("hidden");
+              toggleModal(deleteModal, false);
             }
           };
         }
@@ -1026,14 +1027,14 @@ function showPasswordModal(actionType) {
 
       if (result.success) {
         showToast(t.toast_email_change_sent, 5000, "success");
-        modal.classList.add("hidden");
+        toggleModal(modal, false);
       } else {
         showToast("Error: " + result.error, 4000, "error");
       }
     };
   }
   btnCancel.onclick = () => {
-    modal.classList.add("hidden");
+    toggleModal(modal, false);
     title.style.color = "";
   };
 }
@@ -1085,9 +1086,9 @@ function initForgotPasswordUI() {
       console.log("[Auth] Forgot password link clicked");
       // Hide auth modal if open
       const authModal = document.getElementById("auth-modal");
-      if (authModal) authModal.classList.add("hidden");
+      if (authModal) toggleModal(authModal, false);
 
-      modalReset.classList.remove("hidden");
+      toggleModal(modalReset, true);
       if (inputResetEmail) {
         // Pre-fill if user typed something in login-email
         const loginEmail = document.getElementById("login-email");
@@ -1107,10 +1108,10 @@ function initForgotPasswordUI() {
   if (btnCancelReset && modalReset) {
     btnCancelReset.addEventListener("click", () => {
       console.log("[Auth] Cancel reset clicked");
-      modalReset.classList.add("hidden");
+      toggleModal(modalReset, false);
       // Optionally show login modal back
       const authModal = document.getElementById("auth-modal");
-      if (authModal) authModal.classList.remove("hidden");
+      if (authModal) toggleModal(authModal, true);
     });
   }
 
@@ -1141,7 +1142,7 @@ function initForgotPasswordUI() {
 
       if (result.success) {
         showToast(t.toast_reset_sent, 4000, "success");
-        modalReset.classList.add("hidden");
+        toggleModal(modalReset, false);
       } else {
         showToast("Error: " + result.error, 4000, "error");
       }

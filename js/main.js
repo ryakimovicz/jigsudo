@@ -16,6 +16,8 @@ import {
 import { initProfile, showProfile } from "./profile.js"; // Profile Import
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
 import { router } from "./router.js"; // Router Import
+import { closeSidebar } from "./sidebar.js";
+import { toggleModal } from "./ui.js";
 
 // Boot Sequence
 // Capture native logging before suppression
@@ -111,16 +113,21 @@ function attachAuthListeners() {
   // Open Modal
   if (btnLoginTrigger) {
     btnLoginTrigger.addEventListener("click", () => {
-      loginModal.classList.remove("hidden");
-      // Hide Profile Dropdown
+      toggleModal(loginModal, true);
+      // Hide Profile/Account Dropdowns
       document.getElementById("profile-dropdown")?.classList.add("hidden");
+      document.getElementById("auth-dropdown")?.classList.add("hidden");
+      if (window.innerWidth <= 768) {
+        document.body.classList.add("header-condensed");
+        closeSidebar();
+      }
     });
   }
 
   // Close Modal
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
-      loginModal.classList.add("hidden");
+      toggleModal(loginModal, false);
     });
   }
 
@@ -130,6 +137,11 @@ function attachAuthListeners() {
     btnViewProfile.addEventListener("click", () => {
       showProfile();
       document.getElementById("profile-dropdown")?.classList.add("hidden");
+      const authDropdown = document.getElementById("auth-dropdown");
+      if (authDropdown) authDropdown.classList.add("hidden");
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      }
     });
   }
 
@@ -139,6 +151,11 @@ function attachAuthListeners() {
     btnGuestProfile.addEventListener("click", () => {
       showProfile();
       document.getElementById("profile-dropdown")?.classList.add("hidden");
+      const authDropdown = document.getElementById("auth-dropdown");
+      if (authDropdown) authDropdown.classList.add("hidden");
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      }
     });
   }
 
