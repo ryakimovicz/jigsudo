@@ -93,5 +93,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     });
+
+    // Auto-close on global route change (for footer links, etc.)
+    window.addEventListener("routeChanged", () => {
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      }
+    });
   }
 });

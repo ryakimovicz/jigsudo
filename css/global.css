@@ -207,10 +207,26 @@ body {
 #guide-section,
 #info-section,
 #game-section,
-#privacy-section {
+#privacy-section,
+#terms-section {
   flex: 1;
+  max-width: none !important;
+  padding-left: 0 !important;
 }
 
+.section-header {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+.section-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 @media (min-width: 769px) {
   /* Structural Box Sizing & Transitions */
   .main-header,
@@ -221,6 +237,7 @@ body {
   #info-section,
   #game-section,
   #privacy-section,
+  #terms-section,
   .main-footer {
     margin-left: var(--sidebar-width);
     transition:
@@ -238,6 +255,7 @@ body {
   body.sidebar-expanded #info-section,
   body.sidebar-expanded #game-section,
   body.sidebar-expanded #privacy-section,
+  body.sidebar-expanded #terms-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
     width: calc(100% - var(--sidebar-expanded-width));
@@ -257,6 +275,7 @@ body {
   #info-section,
   #game-section,
   #privacy-section,
+  #terms-section,
   .main-footer,
   .modal-overlay {
     margin-left: 0;
@@ -284,6 +303,7 @@ body {
   #info-section,
   #game-section,
   #privacy-section,
+  #terms-section,
   .main-footer {
     padding-right: 170px; /* 160px ad + 10px spacing */
   }

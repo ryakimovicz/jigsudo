@@ -39,6 +39,15 @@ export const router = {
       hash = "#home";
     }
 
+    // Always normalize base hash to lowercase for consistency
+    if (hash.toLowerCase() !== hash) {
+      const parts = hash.split("/");
+      parts[0] = parts[0].toLowerCase();
+      const normalizedHash = parts.join("/");
+      history.replaceState(null, null, normalizedHash);
+      hash = normalizedHash;
+    }
+
     // Parse base route and parameters
     const parts = hash.split("/");
     const baseRoute = parts[0];

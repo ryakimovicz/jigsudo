@@ -151,6 +151,8 @@ export const translations = {
     profile_public: "Perfil Público",
     profile_private_msg: "Este perfil es privado",
     user_not_found: "Usuario no encontrado",
+    privacy_title: "Política de Privacidad",
+    terms_title: "Términos y Condiciones",
     settings_account: "Cuenta",
     settings_title: "Ajustes",
     menu_account: "Cuenta",
@@ -569,7 +571,8 @@ export const translations = {
     profile_public: "Public Profile",
     profile_private_msg: "This profile is private",
     user_not_found: "User not found",
-
+    privacy_title: "Privacy Policy",
+    terms_title: "Terms and Conditions",
     // Footer
     footer_rights_html:
       '© 2026 <a href="https://github.com/ryakimovicz/jigsudo" target="_blank">Román Yakimovicz</a>',

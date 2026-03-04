@@ -1,11 +1,5 @@
-/* Terms Section Styles */
 #terms-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  min-height: 100vh; /* Minimum full height */
+  min-height: 100vh;
   padding-top: var(--header-height);
   padding-bottom: 50px;
   box-sizing: border-box;
@@ -78,6 +72,6 @@
 @media (max-width: 600px) {
   #terms-section {
     padding: 15px;
-    width: 95%; /* More width on mobile */
+    /* width override removed */
   }
 }
