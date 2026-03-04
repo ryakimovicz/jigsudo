@@ -44,6 +44,18 @@ export const router = {
     const baseRoute = parts[0];
     const params = parts.slice(1);
 
+    // Canonicalize Profile URLs to Lowercase
+    if (baseRoute.toLowerCase() === "#profile" && params.length > 0) {
+      const lowerParams = params.map((p) =>
+        decodeURIComponent(p).toLowerCase(),
+      );
+      const canonicalHash = `${baseRoute}/${lowerParams.join("/")}`;
+      if (hash !== canonicalHash) {
+        history.replaceState(null, null, canonicalHash);
+        hash = canonicalHash;
+      }
+    }
+
     let sectionId = this.routes[baseRoute];
 
     if (!sectionId) {

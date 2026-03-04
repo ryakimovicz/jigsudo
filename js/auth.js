@@ -592,8 +592,15 @@ function updateUIForLogin(user) {
   const isGameActive = gameSection && !gameSection.classList.contains("hidden");
 
   if (!isNavigating && !isGameActive) {
-    // If not navigating and not playing, show Home
-    router.navigateTo("#");
+    if (window.location.hash.startsWith("#profile")) {
+      // If we are already on the profile page, just refresh the data to handle the login
+      import("./profile.js").then((mod) => {
+        if (mod.updateProfileData) mod.updateProfileData();
+      });
+    } else {
+      // If not navigating and not playing, show Home
+      router.navigateTo("#");
+    }
   }
 
   const profileEmail = document.getElementById("profile-email-display");

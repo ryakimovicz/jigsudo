@@ -260,6 +260,40 @@ export async function fetchLatestUserData(userId) {
   }
 }
 
+export async function getPublicUserByUsername(username) {
+  if (!username) return null;
+  try {
+    const usersRef = collection(db, "users");
+    const lookName = username.toLowerCase();
+
+    // Check case-insensitive index
+    const q = query(usersRef, where("username_lc", "==", lookName));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      return null;
+    }
+
+    // There should only be one match due to availability checks, but we take the first
+    const publicProfileData = snap.docs[0].data();
+
+    // Return a sanitized version of the user document (do NOT return email, progress, etc.)
+    return {
+      username: publicProfileData.username,
+      username_lc: publicProfileData.username_lc,
+      stats: publicProfileData.stats || {},
+      isVerified: publicProfileData.isVerified || false,
+      totalRP: publicProfileData.totalRP || 0,
+      monthlyRP: publicProfileData.monthlyRP || 0,
+      dailyRP: publicProfileData.dailyRP || 0,
+      lastUpdated: publicProfileData.lastUpdated,
+    };
+  } catch (error) {
+    console.error("[DB] Error fetching public profile:", error);
+    return null;
+  }
+}
+
 function showSaveIndicatorWithMessage(msg) {
   // Reuse existing save indicator logic or create one
   const indicator = document.getElementById("save-indicator");

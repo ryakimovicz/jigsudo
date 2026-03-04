@@ -95,40 +95,27 @@ function _showProfileUI(requestedUsername) {
   document.body.classList.remove("home-active"); // Ensure mutually exclusive if needed
 
   // Try to refresh verification status if needed (Efficiently: only if not verified)
-  const startPolling = () => {
+  const startPolling = async () => {
     if (verificationInterval) return;
     verificationInterval = setInterval(async () => {
       const { refreshUserStatus } = await import("./auth.js");
       const result = await refreshUserStatus();
-      if (result.success && !result.skipped) {
-        console.log("[Profile] Polling: Verification status refreshed.");
-        updateProfileData();
-        // If now verified, stop polling
-        if (result.user && result.user.emailVerified) {
-          stopPolling();
-        }
+      if (result.success && result.user && result.user.emailVerified) {
+        clearInterval(verificationInterval);
+        verificationInterval = null;
+        updateProfileData(requestedUsername); // refresh to hide banner
       }
-    }, 10000); // 10 seconds
+    }, 5000); // Check every 5s while profile is open
   };
 
-  const stopPolling = () => {
-    if (verificationInterval) {
-      clearInterval(verificationInterval);
-      verificationInterval = null;
-    }
-  };
-
-  import("./auth.js").then(async (module) => {
-    const result = await module.refreshUserStatus();
-    if (result.success && !result.skipped) {
-      console.log("[Profile] Verification status refreshed on entry.");
-      updateProfileData(); // Re-render if state changed
-    }
-
-    // Start polling if still NOT verified
-    const user = module.getCurrentUser();
+  import("./auth.js").then((mod) => {
+    const user = mod.getCurrentUser();
     if (user && !user.isAnonymous && !user.emailVerified) {
       startPolling();
+    }
+    // ensure sidebar syncs safely
+    if (typeof mod.updateSidebarActiveState === "function") {
+      mod.updateSidebarActiveState("btn-auth");
     }
   });
 
@@ -183,13 +170,17 @@ function _hideProfileUI() {
   if (btnStats) btnStats.textContent = "📊";
 }
 
-export function updateProfileData(targetUsername = null) {
+export async function updateProfileData(targetUsername = null) {
+  const { getCurrentUser } = await import("./auth.js");
   const user = getCurrentUser();
   const decodedTarget = targetUsername
-    ? decodeURIComponent(targetUsername)
+    ? decodeURIComponent(targetUsername).toLowerCase()
     : null;
   const isOwnProfile =
-    !decodedTarget || (user && user.displayName === decodedTarget);
+    !decodedTarget ||
+    (user &&
+      user.displayName &&
+      user.displayName.toLowerCase() === decodedTarget);
 
   // If sync is in progress, show it on the share button if exists
   const shareBtn = document.getElementById("btn-share-stats");
@@ -206,7 +197,14 @@ export function updateProfileData(targetUsername = null) {
       const lang = getCurrentLang() || "es";
       shareBtn.textContent =
         translations[lang]?.btn_share_stats || "Compartir Estadísticas";
-      shareBtn.disabled = !isOwnProfile; // Disable share for foreign profiles
+      shareBtn.disabled = false;
+    }
+
+    // Completely hide share button for foreign profiles as requested
+    if (!isOwnProfile) {
+      shareBtn.style.display = "none";
+    } else {
+      shareBtn.style.display = "";
     }
   }
 
@@ -217,14 +215,39 @@ export function updateProfileData(targetUsername = null) {
   if (!isOwnProfile) {
     // FOREIGN PUBLIC PROFILE
     if (nameEl) nameEl.textContent = decodedTarget;
-    if (emailEl) emailEl.textContent = "Perfil Público"; // Placeholder for public profile tag
     if (avatarEl) {
       avatarEl.textContent = decodedTarget.charAt(0).toUpperCase();
       avatarEl.style.backgroundColor = "";
     }
 
-    // TODO: In the future, fetch public stats from DB here using decodedTarget
-    // For now, we just update the header
+    // Fetch public stats from DB
+    try {
+      const { getPublicUserByUsername } = await import("./db.js");
+      const publicData = await getPublicUserByUsername(decodedTarget);
+
+      if (publicData) {
+        // Proceed to render with publicData.stats
+        renderProfileStats(publicData.stats);
+
+        // Fix Email missing label visually
+        if (emailEl) {
+          emailEl.textContent = publicData.isVerified
+            ? "Usuario Verificado"
+            : "Perfil Público";
+          emailEl.style.color = publicData.isVerified
+            ? "var(--accent-color)"
+            : "var(--text-muted)";
+        }
+      } else {
+        if (nameEl) nameEl.textContent = "Usuario no encontrado";
+        if (emailEl) emailEl.textContent = "";
+        renderProfileStats(null); // Clear stats
+      }
+    } catch (e) {
+      console.error("Error loading public profile:", e);
+      if (emailEl) emailEl.textContent = "Error al cargar perfil";
+      renderProfileStats(null);
+    }
   } else if (user && !user.isAnonymous) {
     // OWN LOGGED-IN PROFILE
     const lang = getCurrentLang() || "es";
@@ -237,6 +260,16 @@ export function updateProfileData(targetUsername = null) {
     if (avatarEl) {
       avatarEl.textContent = initial;
       avatarEl.style.backgroundColor = ""; // Reset
+    }
+
+    // Dynamic URL Replacement: Force /#profile/username (lowercase)
+    const expectedHash = `#profile/${displayName.toLowerCase()}`;
+    if (window.location.hash !== expectedHash) {
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search + expectedHash,
+      );
     }
   } else {
     // GUEST (Anonymous)
@@ -279,8 +312,15 @@ export function updateProfileData(targetUsername = null) {
       profileActions.style.display = "none";
 
       if (guestActions) {
-        guestActions.classList.remove("hidden");
-        guestActions.style.display = "";
+        if (!isOwnProfile) {
+          // If a guest interacts with a public profile URL, don't show the login nag
+          guestActions.classList.add("hidden");
+          guestActions.style.display = "none";
+        } else {
+          // Normal guest own-profile view
+          guestActions.classList.remove("hidden");
+          guestActions.style.display = "";
+        }
       }
     }
   }
@@ -367,25 +407,34 @@ export function updateProfileData(targetUsername = null) {
     }
   }
 
-  // Stats from Global Storage
-  const statsStr = localStorage.getItem("jigsudo_user_stats");
-  const stats = statsStr
-    ? JSON.parse(statsStr)
-    : {
-        totalPlayed: 0,
-        wins: 0,
-        currentStreak: 0,
-        maxStreak: 0,
-        currentRP: 0,
-      };
+  // Stats logic delegated to renderProfileStats
+  if (isOwnProfile) {
+    const statsStr = localStorage.getItem("jigsudo_user_stats");
+    const localStats = statsStr ? JSON.parse(statsStr) : null;
+    renderProfileStats(localStats);
+  }
+}
+
+function renderProfileStats(stats) {
+  if (!stats) {
+    stats = {
+      totalPlayed: 0,
+      wins: 0,
+      currentStreak: 0,
+      maxStreak: 0,
+      currentRP: 0,
+    };
+  }
 
   // 1. Basic Stats
   if (document.getElementById("stat-played"))
     document.getElementById("stat-played").textContent = stats.totalPlayed;
   if (document.getElementById("stat-streak"))
-    document.getElementById("stat-streak").textContent = stats.currentStreak;
+    document.getElementById("stat-streak").textContent =
+      stats.currentStreak || 0;
   if (document.getElementById("stat-max-streak"))
-    document.getElementById("stat-max-streak").textContent = stats.maxStreak;
+    document.getElementById("stat-max-streak").textContent =
+      stats.maxStreak || 0;
 
   // 2. Aggregate History Stats
   let maxScore = 0;
