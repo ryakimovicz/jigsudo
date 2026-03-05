@@ -372,38 +372,129 @@ function initTutorialState() {
     },
     {
       id: "s3", // 4 digits
-      numbers: [5, 7, 8, 4],
+      numbers: [5, 3, 2, 6],
       path: [
-        { r: 3, c: 5 },
-        { r: 3, c: 6 },
-        { r: 3, c: 7 },
-        { r: 3, c: 8 },
+        { r: 0, c: 2 },
+        { r: 1, c: 2 },
+        { r: 2, c: 2 },
+        { r: 3, c: 2 },
       ],
       isRequired: true,
     },
     {
       id: "s4", // 3 digits
-      numbers: [3, 6, 9],
+      numbers: [2, 4, 7],
       path: [
-        { r: 3, c: 1 },
-        { r: 3, c: 2 },
-        { r: 3, c: 3 },
+        { r: 0, c: 6 },
+        { r: 0, c: 7 },
+        { r: 0, c: 8 },
       ],
       isRequired: true,
     },
   ];
 
-  // Clear any pre-found (all non-targets are visually handled by render logic)
+  // SEARCH STAGE: Valid explicitly pre-found sequences
+  tutorialState.searchPrefound = [
+    {
+      path: [
+        { r: 0, c: 4 },
+        { r: 1, c: 4 },
+        { r: 1, c: 5 },
+      ],
+    },
+    {
+      path: [
+        { r: 1, c: 1 },
+        { r: 2, c: 1 },
+        { r: 3, c: 1 },
+        { r: 4, c: 1 },
+        { r: 4, c: 0 },
+      ],
+    },
+    {
+      path: [
+        { r: 6, c: 0 },
+        { r: 7, c: 0 },
+        { r: 8, c: 0 },
+        { r: 8, c: 1 },
+      ],
+    },
+    {
+      path: [
+        { r: 3, c: 3 },
+        { r: 4, c: 3 },
+        { r: 4, c: 4 },
+      ],
+    },
+    {
+      path: [
+        { r: 2, c: 8 },
+        { r: 3, c: 8 },
+        { r: 4, c: 8 },
+        { r: 5, c: 8 },
+      ],
+    },
+    {
+      path: [
+        { r: 6, c: 1 },
+        { r: 6, c: 2 },
+        { r: 7, c: 2 },
+      ],
+    },
+    {
+      path: [
+        { r: 8, c: 3 },
+        { r: 7, c: 3 },
+        { r: 7, c: 4 },
+        { r: 8, c: 4 },
+      ],
+    },
+    {
+      path: [
+        { r: 3, c: 7 },
+        { r: 3, c: 6 },
+        { r: 4, c: 6 },
+      ],
+    },
+    {
+      path: [
+        { r: 5, c: 7 },
+        { r: 6, c: 7 },
+        { r: 7, c: 7 },
+        { r: 7, c: 8 },
+      ],
+    },
+    {
+      path: [
+        { r: 6, c: 6 },
+        { r: 6, c: 5 },
+        { r: 6, c: 4 },
+      ],
+    },
+    {
+      path: [
+        { r: 7, c: 6 },
+        { r: 8, c: 6 },
+        { r: 8, c: 7 },
+      ],
+    },
+  ];
+
   tutorialState.searchFound = [];
 
   // CODE STAGE: 3-digit sequence -> 5-digit sequence
-  // Base: [2, 8, 5] (Locations: (2,2), (4,4), (2,8))
-  // Extended: [2, 8, 5, 2, 8]
-  tutorialState.codeTarget = [2, 8, 5, 2, 8];
+  // Code cells: (0,0)=8, (1,7)=6, (3,5)=5. Completely separated.
+  tutorialState.codeTarget = [
+    tutorialState.solution[0][0], // 8
+    tutorialState.solution[1][7], // 6
+    tutorialState.solution[3][5], // 5
+    tutorialState.solution[0][0], // 8
+    tutorialState.solution[1][7], // 6
+  ];
   tutorialState.codePath = [
-    { r: 2, c: 2 },
-    { r: 4, c: 4 },
-    { r: 2, c: 8 },
+    { r: 0, c: 0 },
+    { r: 1, c: 7 },
+    { r: 3, c: 5 },
   ];
 }
 
@@ -1115,9 +1206,10 @@ function renderTutorialSearch() {
         seq.path.some((p) => p.r === r && p.c === c),
       );
 
-      // Check if ALREADY FOUND (could be target or pre-found filler)
-      // Actually, we are not using explicit filler objects anymore.
-      // Logic: If it is NOT a Peak, NOT a Valley, NOT a User Target, and NOT Code -> It is a filled "Found" cell.
+      // Check if ALREADY FOUND targets or EXPLICIT PRE-FOUND fillers
+      const isPrefound = tutorialState.searchPrefound.some((seq) =>
+        seq.path.some((p) => p.r === r && p.c === c),
+      );
 
       const isCode = tutorialState.codePath.some((p) => p.r === r && p.c === c);
 
@@ -1130,8 +1222,7 @@ function renderTutorialSearch() {
         cellClass += " valley-found";
         cell.title = "Valle";
       } else if (isCode) {
-        // Leave clean for next stage (or maybe mark as 'potential'?)
-        // For now, normal cell.
+        // Leave clean for next stage
       } else if (isTarget) {
         // If this specific target is found, mark it
         const owningSeq = tutorialState.searchTargets.find((s) =>
@@ -1140,8 +1231,8 @@ function renderTutorialSearch() {
         if (owningSeq && tutorialState.searchFound.includes(owningSeq.id)) {
           cellClass += " search-found-cell";
         }
-      } else {
-        // It's a filler cell (pre-found)
+      } else if (isPrefound) {
+        // Explicit pre-found valid background sequence
         cellClass += " search-found-cell";
       }
 
@@ -1190,6 +1281,19 @@ let codeStep = 0;
 let isCodeInputBlocked = true;
 let codeSequence = [];
 let tutorialIdleTimer = null;
+let tutorialCodeTimeouts = [];
+
+function cancelTutorialCodePlayback() {
+  if (tutorialCodeTimeouts.length > 0) {
+    tutorialCodeTimeouts.forEach((t) => clearTimeout(t));
+    tutorialCodeTimeouts = [];
+  }
+  // Force cleanup visual states
+  document.querySelectorAll("#tutorial-code-grid .code-cell").forEach((c) => {
+    c.classList.remove("simon-active");
+  });
+  isCodeInputBlocked = false;
+}
 
 function renderTutorialCode() {
   const container = document.getElementById("tutorial-board-container");
@@ -1280,6 +1384,7 @@ function clearTutorialIdleTimer() {
 }
 
 function playTutorialCodeSequence() {
+  cancelTutorialCodePlayback();
   isCodeInputBlocked = true;
   codeStep = 0;
   clearTutorialIdleTimer();
@@ -1291,16 +1396,19 @@ function playTutorialCodeSequence() {
   let delay = 500;
 
   codeSequence.forEach((val) => {
-    setTimeout(() => {
+    const t = setTimeout(() => {
       highlightTutorialCodeCell(val);
     }, delay);
+    tutorialCodeTimeouts.push(t);
     delay += 800;
   });
 
-  setTimeout(() => {
+  const finalT = setTimeout(() => {
     isCodeInputBlocked = false;
+    tutorialCodeTimeouts = [];
     startTutorialIdleTimer(); // Start waiting for user
   }, delay);
+  tutorialCodeTimeouts.push(finalT);
 }
 
 function highlightTutorialCodeCell(val) {
@@ -1314,7 +1422,9 @@ function highlightTutorialCodeCell(val) {
 }
 
 function handleTutorialCodeClick(cell, val) {
-  if (isCodeInputBlocked) return;
+  if (isCodeInputBlocked) {
+    cancelTutorialCodePlayback();
+  }
 
   clearTutorialIdleTimer(); // Interaction detected
 
@@ -1376,12 +1486,8 @@ function finishTutorial() {
         <div class="tutorial-finish glass-panel">
             <h2>🏆 ${t.tutorial_finish_title}</h2>
             <p>${t.tutorial_finish_desc}</p>
-            <button id="btn-tutorial-home" class="btn-primary">${t.btn_finish_tutorial}</button>
         </div>
     `;
-  document.getElementById("btn-tutorial-home").onclick = () => {
-    window.location.href = "/";
-  };
 }
 // --- DRAG & DROP ENGINE ---
 function initTutorialDragAndDrop() {
