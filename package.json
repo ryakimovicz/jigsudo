@@ -5,5 +5,8 @@
   "type": "module",
   "scripts": {
     "generate": "node scripts/generate-daily.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.7.0"
   }
 }

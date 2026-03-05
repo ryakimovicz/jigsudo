@@ -4,7 +4,9 @@ import { gameManager } from "./game-manager.js";
 import { startDailyGame } from "./home.js";
 import { updateSidebarActiveState } from "./sidebar.js";
 
-export let histViewDate = new Date();
+import { getJigsudoDate } from "./utils/time.js";
+
+export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
 
 async function checkPuzzleExists(dateStr) {
@@ -39,7 +41,7 @@ export function initHistory() {
   }
   if (nextBtn) {
     nextBtn.addEventListener("click", () => {
-      const now = new Date();
+      const now = getJigsudoDate();
       const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const nextDate = new Date(histViewDate);
       nextDate.setMonth(nextDate.getMonth() + 1);
@@ -57,7 +59,7 @@ export function initHistory() {
       const year = parseInt(yearStr, 10);
       const month = parseInt(monthStr, 10) - 1; // 0-indexed internally
 
-      const now = new Date();
+      const now = getJigsudoDate();
       let isValidDate = false;
 
       if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
@@ -140,7 +142,7 @@ export async function updateHistoryUI() {
   const year = histViewDate.getFullYear();
   const month = histViewDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const now = new Date();
+  const now = getJigsudoDate();
 
   // First puzzle was generated on Feb 5, 2026 - skip earlier dates
   const FIRST_PUZZLE_DATE = new Date(2026, 1, 5); // Month is 0-indexed
@@ -173,7 +175,7 @@ function updateNavButtonsState() {
   prevBtn.classList.toggle("disabled", isMinMonth);
 
   // Max limit: Current real month
-  const now = new Date();
+  const now = getJigsudoDate();
   const isMaxMonth = year === now.getFullYear() && month === now.getMonth();
   nextBtn.classList.toggle("disabled", isMaxMonth);
 }
@@ -182,7 +184,7 @@ function changeHistMonth(delta) {
   // Guard against navigating past limits if clicked despite CSS disabled
   const year = histViewDate.getFullYear();
   const month = histViewDate.getMonth();
-  const now = new Date();
+  const now = getJigsudoDate();
 
   if (delta === -1 && year === 2026 && month === 1) return;
   if (delta === 1 && year === now.getFullYear() && month === now.getMonth())
@@ -246,7 +248,7 @@ function renderHistoryCalendar(history = {}) {
   }
 
   // Today for limit
-  const now = new Date();
+  const now = getJigsudoDate();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   for (let d = 1; d <= daysInMonth; d++) {

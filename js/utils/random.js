@@ -1,3 +1,5 @@
+import { getJigsudoSeedInt } from "./time.js";
+
 /**
  * Mulberry32 - Seeded Pseudo-Random Number Generator
  * @param {number} seed - Integer seed
@@ -13,13 +15,9 @@ export function createGenerator(seed) {
 }
 
 /**
- * Generates a unique seed based on the user's local date (YYYYMMDD)
+ * Generates a unique seed based on the Global Jigsudo Date (06:00 UTC cutoff)
  * @returns {number} - The daily seed (e.g., 20260118)
  */
 export function getDailySeed() {
-  const today = new Date();
-  // Format: YYYYMMDD
-  return (
-    today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()
-  );
+  return getJigsudoSeedInt();
 }

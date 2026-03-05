@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 // Import Logic Modules
 import { generateDailyGame } from "../js/sudoku-logic.js";
 import { getAllTargets } from "../js/peaks-logic.js";
+import { getJigsudoDate } from "../js/utils/time.js";
 
 // Setup Paths
 const __filename = fileURLToPath(import.meta.url);
@@ -29,12 +30,11 @@ async function generateDailyPuzzle() {
 
   // Fecha y Semilla
   if (!seed) {
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const yyyy = tomorrow.getFullYear();
-    const mm = String(tomorrow.getMonth() + 1).padStart(2, "0");
-    const dd = String(tomorrow.getDate()).padStart(2, "0");
+    const tomorrow = getJigsudoDate();
+    tomorrow.setDate(tomorrow.getUTCDate() + 1);
+    const yyyy = tomorrow.getUTCFullYear();
+    const mm = String(tomorrow.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(tomorrow.getUTCDate()).padStart(2, "0");
     dateStr = `${yyyy}-${mm}-${dd}`;
     seedInt = parseInt(`${yyyy}${mm}${dd}`, 10);
     seed = seedInt.toString();
@@ -298,21 +298,33 @@ async function generateDailyPuzzle() {
       }
     }
 
+    const sensitiveData = {
+      solution: finalGameData.solution,
+      puzzle: finalGameData.puzzle,
+      simonValues: finalSimonValues,
+      codeSequence: finalCodeSequence,
+      searchTargets: finalSearchTargets,
+    };
+
+    const strObj = JSON.stringify(sensitiveData);
+    const key = String(seedInt);
+    let obfuscatedResult = "";
+    for (let i = 0; i < strObj.length; i++) {
+      obfuscatedResult += String.fromCharCode(
+        strObj.charCodeAt(i) ^ key.charCodeAt(i % key.length),
+      );
+    }
+    const payloadBuffer = Buffer.from(obfuscatedResult).toString("base64");
+
     // --- SAVE ---
     const dailyPuzzle = {
       meta: {
-        version: "5.9-seed-info",
+        version: "6.0-obfuscated",
         date: dateStr,
         seed: seedInt,
         generationSeed: finalGenerationSeed,
       },
-      data: {
-        solution: finalGameData.solution,
-        puzzle: finalGameData.puzzle,
-        simonValues: finalSimonValues,
-        codeSequence: finalCodeSequence,
-        searchTargets: finalSearchTargets,
-      },
+      payload: payloadBuffer,
       chunks: finalGameData.chunks,
     };
 

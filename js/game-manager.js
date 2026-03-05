@@ -213,7 +213,29 @@ export class GameManager {
   }
 
   createStateFromJSON(json) {
-    const { data, meta } = json;
+    const { meta } = json;
+    let data;
+
+    // Decrypt Payload if present, otherwise fallback to legacy plaintext data
+    if (json.payload) {
+      try {
+        const payloadStr = atob(json.payload);
+        const key = String(meta.seed || this.currentSeed);
+        let decrypted = "";
+        for (let i = 0; i < payloadStr.length; i++) {
+          decrypted += String.fromCharCode(
+            payloadStr.charCodeAt(i) ^ key.charCodeAt(i % key.length),
+          );
+        }
+        data = JSON.parse(decrypted);
+      } catch (err) {
+        console.error("Failed to decrypt puzzle payload:", err);
+        data = {}; // Fallback empty state
+      }
+    } else {
+      data = json.data || {};
+    }
+
     return {
       meta: {
         seed: meta.seed || this.currentSeed,
@@ -610,8 +632,8 @@ export class GameManager {
       if (stats.history && stats.history[today]) {
         const h = stats.history[today];
         if (h.status === "won") {
-          // netChange = score - 4.0 (bonus added to currentRP etc.)
-          const netChange = (h.score || 0) - 4.0;
+          // netChange = score - 6.0 (bonus added to currentRP etc.)
+          const netChange = (h.score || 0) - 6.0;
           stats.currentRP = Math.max(0, (stats.currentRP || 0) - netChange);
           stats.dailyRP = Math.max(0, (stats.dailyRP || 0) - netChange);
           stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - netChange);
@@ -852,9 +874,12 @@ export class GameManager {
 
     const { saveUserStats } = await import("./db.js");
     const { getCurrentUser } = await import("./auth.js");
+    const { getJigsudoDateString, getJigsudoYearMonth } =
+      await import("./utils/time.js");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
-      const currentMonth = today.substring(0, 7);
+      const today = getJigsudoDateString();
+      const currentMonth = getJigsudoYearMonth();
 
       const statsWithDates = {
         ...stats,
@@ -1497,8 +1522,8 @@ export class GameManager {
         const { calculateTimeBonus } = await import("./ranks.js");
         const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
         let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
-        if (4.0 + netChange < 0) netChange = -4.0;
-        const potentialDailyScore = Math.max(0, 4.0 + netChange);
+        if (6.0 + netChange < 0) netChange = -6.0;
+        const potentialDailyScore = Math.max(0, 6.0 + netChange);
 
         const currentDaily = stats.dailyRP || 0;
         // Tolerance of 0.1 rp
@@ -1545,9 +1570,9 @@ export class GameManager {
       const { calculateTimeBonus } = await import("./ranks.js");
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
       let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
-      if (4.0 + netChange < 0) netChange = -4.0;
+      if (6.0 + netChange < 0) netChange = -6.0;
 
-      const dailyScore = Math.max(0, 4.0 + netChange);
+      const dailyScore = Math.max(0, 6.0 + netChange);
 
       if (!this.isReplay && !isAlreadyWon) {
         stats.currentRP = (stats.currentRP || 0) + netChange;
@@ -1637,9 +1662,10 @@ export class GameManager {
       const { getDailySeed } = await import("./utils/random.js");
       const user = await import("./auth.js").then((m) => m.getCurrentUser());
       if (user && !user.isAnonymous) {
-        const seedStr = this.currentSeed.toString();
-        const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-        const currentMonth = today.substring(0, 7);
+        const { getJigsudoDateString, getJigsudoYearMonth } =
+          await import("./utils/time.js");
+        const today = getJigsudoDateString();
+        const currentMonth = getJigsudoYearMonth();
 
         // Update permanent stats with these dates so future saves (like forceCloudSave) don't overwrite them with null
         this.stats.lastDailyUpdate = today;
