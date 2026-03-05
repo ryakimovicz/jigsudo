@@ -1,0 +1,46 @@
+name: Jigsudo Daily Lifecycle
+on:
+  schedule:
+    - cron: "0 6 * * *" # Exactly 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Seed/Date to generate manually (e.g., 20261231)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: 🧩 Generate and Obfuscate Puzzle
+        run: node scripts/generate-daily.js ${{ github.event.inputs.seed }}
+
+      - name: 📉 Apply Score Decay
+        if: github.event_name == 'schedule'
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/apply-decay.js
+
+      - name: 🚀 Commit and Push
+        run: |
+          git config --global user.name 'Jigsudo Bot'
+          git config --global user.email 'bot@jigsudo.com'
+          git add public/puzzles/*.json
+          git commit -m "📅 Maintenance & New Daily Puzzle [${{ github.event_name }}]" || exit 0
+          git pull --rebase origin main
+          git push

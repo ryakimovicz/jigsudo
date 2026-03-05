@@ -2,6 +2,7 @@ import { translations } from "./translations.js";
 import { getCurrentLang, updateTexts } from "./i18n.js";
 import { getCurrentUser } from "./auth.js";
 import { getRankData } from "./ranks.js";
+import { formatJigsudoDate } from "./utils/time.js";
 
 export function showToast(message, duration = 3000, type = "info") {
   let container = document.getElementById("toast-container");
@@ -249,12 +250,7 @@ async function handleShareVictory(stats) {
     }
 
     if (dateEl) {
-      const locale = t.date_locale || "es-ES";
-      dateEl.textContent = new Date().toLocaleDateString(locale, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      dateEl.textContent = formatJigsudoDate(t.date_locale || "es-ES");
     }
 
     // 2. Populate Session Stats
