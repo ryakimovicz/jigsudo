@@ -220,9 +220,6 @@ function updateGuideSidebarStatus() {
 }
 
 function setupTutorialListeners() {
-  const btnClose = document.getElementById("btn-guide-close");
-  if (btnClose) btnClose.addEventListener("click", hideGuide);
-
   const btnStart = document.getElementById("btn-start-tutorial");
   if (btnStart) btnStart.addEventListener("click", startTutorial);
 
