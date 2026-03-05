@@ -301,6 +301,7 @@ async function generateDailyPuzzle() {
     const sensitiveData = {
       solution: finalGameData.solution,
       puzzle: finalGameData.puzzle,
+      chunks: finalGameData.chunks,
       simonValues: finalSimonValues,
       codeSequence: finalCodeSequence,
       searchTargets: finalSearchTargets,
@@ -325,7 +326,6 @@ async function generateDailyPuzzle() {
         generationSeed: finalGenerationSeed,
       },
       payload: payloadBuffer,
-      chunks: finalGameData.chunks,
     };
 
     const filename = `daily-${dateStr}.json`;
