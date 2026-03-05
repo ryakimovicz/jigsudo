@@ -135,6 +135,36 @@ body.dark-mode .guide-selector {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* Info Cards */
+.info-card {
+  padding: 24px;
+  margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.info-card h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+  color: var(--primary-color, #fbbf24);
+}
+
+.info-card ul {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.info-card li {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.info-card p {
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
 .mechanic-item h4 {
   margin: 0 0 10px 0;
   color: var(--primary-color, #fbbf24);
