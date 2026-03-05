@@ -138,7 +138,7 @@ function setupSidebarConnection() {
 
 // Physical Keyboard Support for Tutorial
 document.addEventListener("keydown", (e) => {
-  if (window.location.hash !== "#guide") return;
+  if (!window.location.hash.startsWith("#guide")) return;
   if (currentTutorialStage !== 3) return; // Only for Sudoku stage
 
   const key = e.key;
@@ -163,7 +163,7 @@ document.addEventListener("keydown", (e) => {
 
   // Shortcuts
   const lowerKey = key.toLowerCase();
-  if (lowerKey === "w" || lowerKey === "p" || lowerKey === "n") {
+  if (lowerKey === "w" || lowerKey === "n") {
     toggleTutorialPencilMode();
   } else if (lowerKey === "q") {
     handleTutorialUndo();
@@ -174,7 +174,7 @@ document.addEventListener("keydown", (e) => {
 
 // Global Click Listener for Tutorial Deselection (Parity)
 document.addEventListener("click", (e) => {
-  if (window.location.hash !== "#guide") return;
+  if (!window.location.hash.startsWith("#guide")) return;
   if (currentTutorialStage !== 3) return;
 
   const isControl = e.target.closest(".tutorial-sudoku-controls");

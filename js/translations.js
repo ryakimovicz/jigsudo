@@ -19,7 +19,7 @@ export const translations = {
     tutorial_stage_3_btns:
       "<strong>Botones de ayuda:</strong> ↩️ Deshace el último cambio, ✏️ Activa el modo notas, 🗑️ Borra la celda (mantén presionado para limpiar todo).",
     tutorial_stage_3_kb:
-      "<strong>Atajos de teclado:</strong> 1-9 (Ingresar), Q (Deshacer), W/P/N (Notas), E/Borrar (Limpiar), Esc (Deseleccionar).",
+      "<strong>Atajos de teclado:</strong> 1-9 (Ingresar), Q (Deshacer), W/N (Notas), E/Borrar (Limpiar), Esc (Deseleccionar).",
 
     guide_title: "Guía de Juego",
     guide_tab_general: "General",
@@ -442,7 +442,7 @@ export const translations = {
     tutorial_stage_3_btns:
       "<strong>Action buttons:</strong> ↩️ Undoes the last change, ✏️ Toggles pencil (notes) mode, 🗑️ Clears the cell (long press to clear board).",
     tutorial_stage_3_kb:
-      "<strong>Keyboard Shortcuts:</strong> 1-9 (Input), Q (Undo), W/P/N (Notes), E/Backspace (Clear), Esc (Deselect).",
+      "<strong>Keyboard Shortcuts:</strong> 1-9 (Input), Q (Undo), W/N (Notes), E/Backspace (Clear), Esc (Deselect).",
 
     guide_title: "Game Guide",
     guide_tab_general: "General",
