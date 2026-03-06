@@ -645,6 +645,12 @@ body.dark-mode .memory-card-back {
     transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Hide the collected/slot area ENTIRELY during Memory phase on mobile
+     to give 100% of the remaining vertical space to the cards. */
+  .memory-mode:not(.jigsaw-mode):not(.sudoku-mode):not(.peaks-mode):not(.search-mode):not(.code-mode) .collected-wrapper {
+    display: none !important;
+  }
+
   /* Reset children to simple flex items */
   #collected-left,
   #collected-right {
@@ -717,6 +723,12 @@ body.dark-mode .memory-card-back {
   body.perf-optimization-active .mini-cell {
     border: none !important; /* Strip grid lines temporarily */
     font-size: 14px !important; /* Fixed size to prevent layout thrashing */
+  }
+
+  /* Collected Piece Mobile size */
+  .collected-piece {
+    width: 60px;
+    height: 60px;
   }
 
   /* Force GPU Promotion */
