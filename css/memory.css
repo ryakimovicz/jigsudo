@@ -600,7 +600,7 @@ body.dark-mode .memory-card-back {
 
   .memory-board {
     /* Stage 1 (Memory): Let flexbox natural sizing dictate the ratio */
-    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 20px) * 0.40);
+    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 30px) * 0.35);
     width: min(95vw, var(--v-budget));
     height: auto;
     max-width: 100%;
@@ -655,7 +655,7 @@ body.dark-mode .memory-card-back {
     align-items: center;
     width: 100%;
     /* Height controlled by flex naturally */
-    min-height: 48px; /* Give it enough breathing room for the pieces without crushing */
+    min-height: 0;
     height: auto;
     overflow: visible; /* Changed from hidden to allow selection glow */
     padding: 0;
@@ -678,7 +678,7 @@ body.dark-mode .memory-card-back {
 
   .memory-card {
     /* CSS explicit boundaries: scale naturally between 45px and 85px max */
-    width: clamp(45px, 15vw, 85px);
+    width: clamp(40px, 14vw, 85px);
     height: auto;
     aspect-ratio: 1/1;
     .mini-cell {
