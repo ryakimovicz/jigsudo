@@ -2006,22 +2006,26 @@ body {
    We use 80px buffer + 60px ad = 140px fake footer.
    This forces internal game flexbox layouts to shrink the board just enough,
    fitting everything on screen without scrollbars. */
+html.in-game,
 body.in-game {
   --footer-height: 140px;
   padding-bottom: 0;
-  overflow: hidden;
-  height: 100dvh;
+  overflow: hidden !important;
+  height: 100dvh !important;
+  touch-action: none !important; /* Force prevent swipe-to-scroll */
 }
 
 @media (min-width: 1200px) {
   body {
     padding-bottom: 0px; /* Remove mobile padding when desktop ad is active */
   }
+  html.in-game,
   body.in-game {
     --footer-height: 0px;
     padding-bottom: 0px;
-    overflow: auto; /* Allow normal scrolling on desktop if needed */
-    height: auto;
+    overflow: auto !important; /* Allow normal scrolling on desktop if needed */
+    height: auto !important;
+    touch-action: auto !important;
   }
 }
 

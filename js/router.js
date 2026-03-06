@@ -130,6 +130,7 @@ export const router = {
     const isGame = activeId === "game-section";
 
     document.body.classList.toggle("in-game", isGame);
+    document.documentElement.classList.toggle("in-game", isGame);
 
     if (footer) {
       if (isGame) {

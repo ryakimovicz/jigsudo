@@ -569,9 +569,9 @@ body.dark-mode .memory-card-back {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Center the game block to distribute empty space evenly on very tall screens */
-    gap: 15px; /* Restored a natural, consistent gap between elements */
-    padding-top: 0; 
+    justify-content: flex-start; /* MUST be flex-start to keep elements grouped tight */
+    gap: 10px; /* Minimal gap */
+    padding-top: 5px; /* Minimal top padding */
     padding-bottom: 0; 
     position: relative;
     z-index: 10000;
