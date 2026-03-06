@@ -11,7 +11,10 @@ async function runDecay() {
   const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!serviceAccountRaw) {
     console.error(
-      "❌ Fatal: FIREBASE_SERVICE_ACCOUNT environment variable not set.",
+      "❌ Fatal: FIREBASE_SERVICE_ACCOUNT environment variable not set or empty.",
+    );
+    console.error(
+      "👉 Ensure you have added the 'FIREBASE_SERVICE_ACCOUNT' secret in your GitHub repository settings.",
     );
     process.exit(1);
   }
