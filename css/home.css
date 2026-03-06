@@ -2002,9 +2002,14 @@ body {
   padding-bottom: 70px; /* Base assumption mobile padding. */
 }
 
-/* Ensure safe distance (150px policy + 60px ad width) from game controls on mobile */
+/* Ensure safe distance (150px policy + 60px ad width) by faking a huge footer.
+   This forces internal game flexbox layouts (memory.css, sudoku.css) to shrink the board,
+   fitting everything on screen without scrollbars! */
 body.in-game {
-  padding-bottom: 220px;
+  --footer-height: 210px;
+  padding-bottom: 0;
+  overflow: hidden;
+  height: 100dvh;
 }
 
 @media (min-width: 1200px) {
@@ -2012,7 +2017,10 @@ body.in-game {
     padding-bottom: 0px; /* Remove mobile padding when desktop ad is active */
   }
   body.in-game {
-    padding-bottom: 0px; /* Desktop ad is on the right, no bottom padding needed */
+    --footer-height: 0px;
+    padding-bottom: 0px;
+    overflow: auto; /* Allow normal scrolling on desktop if needed */
+    height: auto;
   }
 }
 
