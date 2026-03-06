@@ -2008,6 +2008,12 @@ body {
   }
 }
 
+/* Hide global ads during gameplay to comply with AdSense 150px distance rule */
+body.in-game .ad-container-bottom,
+body.in-game .ad-container-vertical {
+  display: none !important;
+}
+
 /* 3. Menu Inline Banner */
 .ad-banner-menu {
   width: 100%;
