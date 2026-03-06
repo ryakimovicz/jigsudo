@@ -569,13 +569,13 @@ body.dark-mode .memory-card-back {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Top alignment to keep board position constant */
-    gap: 0; /* Remove gap to tighten layout */
-    padding-top: 0; /* consistent with existing padding-bottom: 0 logic */
-    padding-bottom: 0; /* Remove padding to use full green zone */
+    justify-content: center; /* Center the game block to distribute empty space evenly on very tall screens */
+    gap: 15px; /* Restored a natural, consistent gap between elements */
+    padding-top: 0; 
+    padding-bottom: 0; 
     position: relative;
     z-index: 10000;
-    flex: 1; /* Take all remaining vertical space */
+    flex: 1; 
     min-height: 0;
     width: 100%;
   }
@@ -599,10 +599,8 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-board {
-    /* Stage 1 (Memory) specific ratio: Board takes ~38% of vertical budget to leave room for cards */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.38
-    );
+    /* Stage 1 (Memory): Leave room for 2 rows of 22vw pieces + padding */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 55vw);
     width: min(95vw, var(--v-budget));
     height: auto;
     max-width: 100%;
@@ -612,30 +610,23 @@ body.dark-mode .memory-card-back {
   }
 
   /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
-  /* Added max(260px, ...) to ensure it doesn't shrink too much on small screens */
   .jigsaw-mode .memory-board {
-    /* Stage 2 (Jigsaw) ratio: Board takes ~50% to leave room for piece tray */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.5
-    );
+    /* Stage 2 (Jigsaw): Similar to memory pieces, slightly tighter container */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 50vw);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 
   .sudoku-mode .memory-board {
-    /* Stage 3 (Sudoku): Board takes ~50% to leave room for keypad */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.5
-    );
+    /* Stage 3 (Sudoku): Keypad takes max 25dvh securely */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 25dvh - 20px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 
   .peaks-mode .memory-board {
-    /* Peaks/Search/Code: maximize board (~80%) since other UI is minimal */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.8
-    );
+    /* Stage 4/5/6: Search/Code: Need space for target chips and sequences (approx 130px) */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 130px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
