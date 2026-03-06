@@ -13,6 +13,8 @@ export const router = {
     "#game": "game-section",
     "#privacy": "privacy-section",
     "#terms": "terms-section",
+    "#about": "about-section",
+    "#contact": "contact-section",
   },
 
   // Map Section ID -> Body Class
@@ -21,6 +23,8 @@ export const router = {
     "history-section": "history-active",
     "guide-section": "guide-active",
     "profile-section": "profile-active",
+    "about-section": "about-active",
+    "contact-section": "contact-active",
   },
 
   init() {
@@ -66,6 +70,11 @@ export const router = {
     }
 
     let sectionId = this.routes[baseRoute];
+
+    // Special Case: History Deep Links for Replay (/#history/YYYY/MM/DD)
+    if (baseRoute === "#history" && params.length === 3) {
+      sectionId = "game-section";
+    }
 
     if (!sectionId) {
       console.warn(`[Router] Unknown route: ${baseRoute}. Defaulting to Home.`);
@@ -126,6 +135,7 @@ export const router = {
     const isGame = activeId === "game-section";
 
     document.body.classList.toggle("in-game", isGame);
+    document.documentElement.classList.toggle("in-game", isGame);
 
     if (footer) {
       if (isGame) {
@@ -161,9 +171,10 @@ export const router = {
     const sidebarMap = {
       "menu-content": "nav-home",
       "guide-section": "nav-how-to",
-
       "history-section": "nav-history",
       "profile-section": "btn-auth", // Map profile to auth button
+      "about-section": "nav-about",
+      "contact-section": "nav-contact",
     };
 
     const sidebarId = sidebarMap[activeId];

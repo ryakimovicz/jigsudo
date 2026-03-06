@@ -431,112 +431,17 @@ function fitMemoryCards() {
   const cardsContainer = document.getElementById("memory-cards");
   if (!cardsContainer) return;
 
-  const vw = window.innerWidth;
-  const vh = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+  // We now rely strictly on pure CSS (memory.css) utilizing clamp() and explicitly calculated dvh budgets
+  // This JS function only cleans up inline styles that might have been accidentally left over from past logic.
 
-  // Desktop Cleanup / Guard (Let CSS Grid handle these cases)
-  if (vw > 768) {
-    cardsContainer.style = "";
-    const cards = document.querySelectorAll(".memory-card");
-    cards.forEach((card) => {
-      card.style.width = "";
-      card.style.height = "";
-      card.style.margin = "";
-    });
-    return;
-  }
-
-  // Sizing Strategy:
-  let availableHeight = 0;
-  let availableWidth = cardsContainer.clientWidth || vw;
-
-  if (vw <= 768) {
-    // --- Mobile Logic ---
-    const greenPanel = document.querySelector(".test-panel.green");
-    const h2 = greenPanel ? greenPanel.clientHeight : 0;
-    const h3 = vh * 0.4;
-    availableHeight = h2 > 0 ? h2 : h3;
-    availableHeight -= 15; // Increased safety buffer for tall screens
-  } else {
-    // --- Tablet/Laptop Short Logic ---
-    // Target space: From Board Bottom to Footer Top
-    const board = document.getElementById("memory-board");
-    const footer = document.querySelector("footer");
-
-    if (board && footer) {
-      const boardRect = board.getBoundingClientRect();
-      const footerRect = footer.getBoundingClientRect();
-      // Calculate gap between board and footer
-      // Using 20px buffer to avoid touching footer
-      availableHeight = footerRect.top - boardRect.bottom - 20;
-    } else {
-      // Fallback if elements not measured
-      availableHeight = vh * 0.35;
-    }
-  }
-
-  if (availableHeight < 50) availableHeight = 100; // Sanity check
-
-  // Padding/Gap settings - Minimal
-  const gap = 4;
-  const padding = 15; /* Increased to prevent touching screen edges */
-
-  const totalCards = 18;
-
-  let bestConfig = { size: 0, cols: 3 };
-
-  // Iterate to find best fit (Restrict to 4-6 columns per user request)
-  for (let cols = 4; cols <= 6; cols++) {
-    const rows = Math.ceil(totalCards / cols);
-    // Calc max width per card
-    const wSize = (availableWidth - padding * 2 - (cols - 1) * gap) / cols;
-    // Calc max height per card
-    const hSize = (availableHeight - padding * 2 - (rows - 1) * gap) / rows;
-
-    // The limiting factor is the smaller of the two dimensions
-    const size = Math.min(wSize, hSize);
-
-    if (size > bestConfig.size) {
-      bestConfig = { size, cols };
-    }
-  }
-
-  let finalSize = Math.floor(bestConfig.size);
-  if (finalSize < 30) finalSize = 30; // Min safe size
-
-  // Apply Styles
-  cardsContainer.style.display = "flex";
-  cardsContainer.style.flexWrap = "wrap";
-  cardsContainer.style.justifyContent = "center";
-  cardsContainer.style.alignContent = "center"; // Center the grid in the available space
-  cardsContainer.style.width = "100%";
-
-  // Force height to Match Green Panel EXACTLY
-  cardsContainer.style.height = `${availableHeight}px`;
-  cardsContainer.style.maxHeight = "none";
-
-  cardsContainer.style.gap = `${gap}px`;
-  cardsContainer.style.padding = `${padding}px`;
-  cardsContainer.style.boxSizing = "border-box";
-  cardsContainer.style.position = "relative";
-  cardsContainer.style.zIndex = "10002";
-
-  // Overflow handling
-  cardsContainer.style.overflow = "hidden";
-
-  // Force wrap at specific columns (4-6) to prevent long rows on wide screens
-  const containerMaxWidth =
-    finalSize * bestConfig.cols + gap * (bestConfig.cols - 1) + padding * 2;
-  cardsContainer.style.maxWidth = `${containerMaxWidth}px`;
-  cardsContainer.style.margin = "0 auto"; // Center the container if width is restricted
-
-  const cards = document.querySelectorAll(".memory-card");
-  cards.forEach((card) => {
-    card.style.width = `${finalSize}px`;
-    card.style.height = `${finalSize}px`;
-    card.style.margin = "0";
+  cardsContainer.style = "";
+  
+  const cardElements = document.querySelectorAll(".memory-card");
+  cardElements.forEach((card) => {
+    card.style.width = "";
+    card.style.height = "";
+    card.style.margin = "";
+    card.style.flexShrink = ""; 
   });
 }
 

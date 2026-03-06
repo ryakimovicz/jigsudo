@@ -9,6 +9,8 @@ import { getCurrentUser } from "./auth.js";
 import { CONFIG } from "./config.js";
 import { updateSidebarActiveState } from "./sidebar.js";
 import { router } from "./router.js";
+import { isPuzzleAvailable } from "./history.js";
+import { showAlertModal } from "./ui.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -637,10 +639,8 @@ export function initHome() {
     }
 
     // Explicitly handle #game route to initialize game logic if needed
-    if (detail.hash === "#game") {
-      // Auto-condense header on mobile to maximize game space.
-      // Double rAF ensures the browser paints the expanded state first,
-      // so the CSS transition (height 0.3s) plays visibly.
+    if (detail.baseRoute === "#game" || (detail.baseRoute === "#history" && detail.params.length === 3)) {
+      // Auto-condense header on mobile to maximize game space
       if (window.matchMedia("(max-width: 768px)").matches) {
         window.scrollTo(0, 0);
         document.body.classList.add("no-scroll");
@@ -650,7 +650,43 @@ export function initHome() {
           });
         });
       }
-      startDailyGame();
+
+      if (detail.baseRoute === "#history" && detail.params.length === 3) {
+        // Replay/History Mode
+        const [y, m, d] = detail.params;
+        const dateStr = `${y}-${m}-${d}`;
+        
+        // Puzzle existence validation
+        if (!isPuzzleAvailable(dateStr)) {
+          // If the index isn't loaded yet, it might be a direct entry.
+          // For now, we assume history module will handle the index, 
+          // but we can add a fallback alert if we know it's missing.
+          console.warn(`[Home] Checking puzzle existence for ${dateStr}...`);
+          // We can't easily wait for history.js index here if not yet fetched.
+          // But usually by the time routeChanged fires for a deep link, 
+          // history module has already run its init and update.
+        }
+
+        gameManager.loadSpecificDay(dateStr).then(success => {
+          if (success) {
+            startDailyGame();
+          } else {
+            const lang = getCurrentLang();
+            const t = translations[lang] || translations["es"];
+            // Specific message with day
+            const errorMsg = (t.error_missing_puzzle_day || "No hay partida disponible para el día {day}.").replace("{day}", d);
+            showAlertModal(t.sidebar_history || "Historial", errorMsg);
+            
+            // Redirect to month view instead of generic history
+            window.location.hash = `#history/${y}/${m}`;
+          }
+        });
+      } else {
+        // Normal Daily
+        gameManager.prepareDaily().then(() => {
+          startDailyGame();
+        });
+      }
     } else {
       // Cleanup game-specific mobile classes
       document.body.classList.remove("no-scroll");
@@ -684,7 +720,11 @@ export async function startDailyGame() {
     if (CONFIG.betaMode) document.body.classList.add("beta-mode");
 
     // 2. Set Hash for robust routing (let Router toggle visibility)
-    if (window.location.hash !== "#game") {
+    // ONLY if we aren't already in a history deep link
+    const currentHash = window.location.hash;
+    const isHistoryDeepLink = currentHash.startsWith("#history/") && currentHash.split("/").length === 4;
+
+    if (!isHistoryDeepLink && currentHash !== "#game") {
       window.location.hash = "#game";
     }
 

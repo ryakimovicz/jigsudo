@@ -2002,9 +2002,30 @@ body {
   padding-bottom: 70px; /* Base assumption mobile padding. */
 }
 
+/* Ensure safe distance (prevent accidental clicks on mobile sticky ad)
+   We use 50px buffer + 50px ad = 100px fake footer.
+   This forces internal game flexbox layouts to shrink the board just enough,
+   fitting everything on screen without scrollbars. */
+html.in-game,
+body.in-game {
+  --footer-height: 100px;
+  padding-bottom: 0;
+  overflow: hidden !important;
+  height: 100dvh !important;
+  touch-action: none !important; /* Force prevent swipe-to-scroll */
+}
+
 @media (min-width: 1200px) {
   body {
     padding-bottom: 0px; /* Remove mobile padding when desktop ad is active */
+  }
+  html.in-game,
+  body.in-game {
+    --footer-height: 0px;
+    padding-bottom: 0px;
+    overflow: auto !important; /* Allow normal scrolling on desktop if needed */
+    height: auto !important;
+    touch-action: auto !important;
   }
 }
 

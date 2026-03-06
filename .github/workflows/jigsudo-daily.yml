@@ -33,7 +33,7 @@ jobs:
       - name: 📉 Apply Score Decay
         if: github.event_name == 'schedule'
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_SERVICE_ACCOUNT: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
         run: node scripts/apply-decay.js
 
       - name: 🚀 Commit and Push

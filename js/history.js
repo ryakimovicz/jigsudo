@@ -12,15 +12,25 @@ let puzzleExistsCache = {};
 async function checkPuzzleExists(dateStr) {
   if (puzzleExistsCache[dateStr] !== undefined)
     return puzzleExistsCache[dateStr];
+  
+  // We now rely on the pre-fetched index in updateHistoryUI
+  // If it's not in the cache by now, it doesn't exist.
+  return false;
+}
+
+async function fetchPuzzleIndex() {
   try {
-    const url = `public/puzzles/daily-${dateStr}.json`;
-    const response = await fetch(url, { method: "HEAD" });
-    puzzleExistsCache[dateStr] = response.ok;
-    return response.ok;
+    const response = await fetch("public/puzzles/index.json");
+    if (!response.ok) return [];
+    return await response.json();
   } catch (e) {
-    puzzleExistsCache[dateStr] = false;
-    return false;
+    console.warn("[History] Could not fetch puzzle index, falling back to empty.");
+    return [];
   }
+}
+
+export function isPuzzleAvailable(dateStr) {
+  return !!puzzleExistsCache[dateStr];
 }
 
 export function initHistory() {
@@ -55,6 +65,9 @@ export function initHistory() {
   // Listen for Router Changes
   window.addEventListener("routeChanged", ({ detail }) => {
     if (detail.baseRoute === "#history") {
+      // If we have exactly 3 params (YYYY/MM/DD), skip calendar normalization as it's a deep-link to a game.
+      if (detail.params.length === 3) return;
+
       const [yearStr, monthStr] = detail.params || [];
       const year = parseInt(yearStr, 10);
       const month = parseInt(monthStr, 10) - 1; // 0-indexed internally
@@ -144,19 +157,12 @@ export async function updateHistoryUI() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const now = getJigsudoDate();
 
-  // First puzzle was generated on Feb 5, 2026 - skip earlier dates
-  const FIRST_PUZZLE_DATE = new Date(2026, 1, 5); // Month is 0-indexed
-
-  // Probe current month puzzles (only for dates where puzzles exist)
-  const probes = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateObj = new Date(year, month, d);
-    if (dateObj > now) continue; // Skip future dates
-    if (dateObj < FIRST_PUZZLE_DATE) continue; // Skip dates before first puzzle
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    probes.push(checkPuzzleExists(dateStr));
-  }
-  await Promise.all(probes);
+  // Pre-fetch the exact list of available puzzles to avoid 404 errors in console
+  const availableDates = await fetchPuzzleIndex();
+  puzzleExistsCache = {}; // Reset for current view
+  availableDates.forEach(date => {
+    puzzleExistsCache[date] = true;
+  });
 
   updateNavButtonsState();
   renderHistoryCalendar(stats.history);
@@ -289,9 +295,21 @@ function renderHistoryCalendar(history = {}) {
         }
       }
 
-      dayEl.addEventListener("click", async () => {
-        await gameManager.loadSpecificDay(dateStr);
-        await startDailyGame();
+      dayEl.addEventListener("click", () => {
+        const isToday = dateStr === todayStr;
+        const isCompleted = dayData && dayData.status === "won";
+
+        // Per user request:
+        // game should be #game only if it is today AND not completed.
+        // Otherwise, use deep-link with date.
+        if (isToday && !isCompleted) {
+          window.location.hash = "#game";
+        } else {
+          const y = dateObj.getFullYear();
+          const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const dStr = String(dateObj.getDate()).padStart(2, "0");
+          window.location.hash = `#history/${y}/${m}/${dStr}`;
+        }
       });
     }
 

@@ -1,4 +1,4 @@
-﻿import { getDailySeed } from "./utils/random.js";
+import { getDailySeed } from "./utils/random.js";
 // Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
@@ -39,7 +39,7 @@ export class GameManager {
     return await this.init();
   }
 
-  async init() {
+  async init(isSilent = false) {
     let dailyData = null;
     try {
       if (CONFIG.debugMode)
@@ -109,9 +109,11 @@ export class GameManager {
       this.save();
     } else {
       console.error("[GameManager] CRITICAL: No Save & No Network.");
-      this.showCriticalError(
-        "Error loading daily puzzle. Check connection & refresh.",
-      );
+      if (!isSilent) {
+        this.showCriticalError(
+          "Error loading daily puzzle. Check connection & refresh.",
+        );
+      }
       return false;
     }
 
@@ -185,11 +187,17 @@ export class GameManager {
       }
     }
 
-    this.ready = this.init(); // Re-initialize with new seed
+    this.ready = this.init(true); // Silent re-init for history/replay
     const success = await this.ready;
 
     if (success) {
-      window.location.hash = ""; // Return to home view (which will now show the loaded game)
+      // Return to home view ONLY if we are not already in a specific route (like history deep link)
+      const currentHash = window.location.hash;
+      const isHistoryDeepLink = currentHash.startsWith("#history/") && currentHash.split("/").length === 4;
+      
+      if (!isHistoryDeepLink) {
+        window.location.hash = ""; 
+      }
       window.scrollTo(0, 0);
     }
     return success;

@@ -129,9 +129,7 @@
 
   /* Board Sizing on Mobile */
   .search-mode .memory-board {
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.8
-    );
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 130px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
@@ -260,6 +258,24 @@
   color: var(--accent-color);
   text-decoration: line-through;
   opacity: 0.6;
+}
+
+/* Mobile compact view for sequences */
+@media (max-width: 768px) {
+  .search-targets-container {
+    margin-top: 5px;
+  }
+  .search-targets-container h3 {
+    display: none; /* Hide header to save vertical space on mobile */
+  }
+  .search-targets-list {
+    gap: 4px;
+  }
+  .search-target-chip {
+    padding: 3px 6px;
+    font-size: 0.70rem;
+    font-weight: 400;
+  }
 }
 
 .dark-mode .search-target-chip {

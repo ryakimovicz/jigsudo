@@ -569,13 +569,16 @@ body.dark-mode .memory-card-back {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Top alignment to keep board position constant */
-    gap: 0; /* Remove gap to tighten layout */
-    padding-top: 0; /* consistent with existing padding-bottom: 0 logic */
-    padding-bottom: 0; /* Remove padding to use full green zone */
+    justify-content: flex-start; /* MUST be flex-start to keep elements grouped tight */
+    gap: 10px; /* Minimal gap */
+    @media (max-height: 700px) {
+      gap: 5px;
+    }
+    padding-top: 5px; /* Minimal top padding */
+    padding-bottom: 0; 
     position: relative;
     z-index: 10000;
-    flex: 1; /* Take all remaining vertical space */
+    flex: 1; 
     min-height: 0;
     width: 100%;
   }
@@ -599,10 +602,14 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-board {
-    /* Stage 1 (Memory) specific ratio: Board takes ~38% of vertical budget to leave room for cards */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.38
-    );
+    /* Stage 1 (Memory): Let flexbox natural sizing dictate the ratio */
+    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 30px) * 0.35);
+    
+    /* Aggressive shrink for very short screens (like 667px height) to favor larger cards */
+    @media (max-height: 700px) {
+      --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 20px) * 0.28);
+    }
+
     width: min(95vw, var(--v-budget));
     height: auto;
     max-width: 100%;
@@ -612,30 +619,23 @@ body.dark-mode .memory-card-back {
   }
 
   /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
-  /* Added max(260px, ...) to ensure it doesn't shrink too much on small screens */
   .jigsaw-mode .memory-board {
-    /* Stage 2 (Jigsaw) ratio: Board takes ~50% to leave room for piece tray */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.5
-    );
+    /* Stage 2 (Jigsaw): Let flexbox natural sizing dictate the ratio but with more priority */
+    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.45);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 
   .sudoku-mode .memory-board {
-    /* Stage 3 (Sudoku): Board takes ~50% to leave room for keypad */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.5
-    );
+    /* Stage 3 (Sudoku): Keypad takes 25dvh securely + game header (50px) */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 25dvh - 30px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 
   .peaks-mode .memory-board {
-    /* Peaks/Search/Code: maximize board (~80%) since other UI is minimal */
-    --v-budget: calc(
-      (100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.8
-    );
+    /* Stage 4/5/6: Search/Code: Need space for target chips and sequences (approx 130px) */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 130px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
@@ -654,6 +654,12 @@ body.dark-mode .memory-card-back {
     transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Hide the collected/slot area ENTIRELY during Memory phase on mobile
+     to give 100% of the remaining vertical space to the cards. */
+  .memory-mode:not(.jigsaw-mode):not(.sudoku-mode):not(.peaks-mode):not(.search-mode):not(.code-mode) .collected-wrapper {
+    display: none !important;
+  }
+
   /* Reset children to simple flex items */
   #collected-left,
   #collected-right {
@@ -663,8 +669,9 @@ body.dark-mode .memory-card-back {
     justify-content: center;
     align-items: center;
     width: 100%;
-    /* Height controlled by JS */
+    /* Height controlled by flex naturally */
     min-height: 0;
+    height: auto;
     overflow: visible; /* Changed from hidden to allow selection glow */
     padding: 0;
     gap: 4px;
@@ -673,21 +680,35 @@ body.dark-mode .memory-card-back {
 
   .cards-area {
     order: 3;
-    display: flex !important; /* Switch to flex on mobile to allow JS column count */
+    display: flex !important;
     flex-wrap: wrap;
     justify-content: center;
-    align-content: center;
+    align-content: center; /* Center the grid block vertically */
     width: 100%;
+    flex: 1; /* PUSH: Take ALL remaining vertical space left over from board/header/footer */
+    min-height: 0;
     gap: 8px;
-    height: auto; /* Use natural flex height */
+    padding: 0 10px;
+    
+    /* Establish exact boundaries for the cards to query against */
+    container-type: size;
+    container-name: cardsArea;
   }
 
   .memory-card {
-    width: 22vw;
-    height: 22vw;
-    /* max-width/height removed to let JS scale up on taller screens if needed */
+    /* Fallback sizing for legacy browsers */
+    width: clamp(40px, 14vw, 85px);
+    height: clamp(40px, 14vw, 85px);
+    
+    /* Modern Exact Sizing: Size mathematically to fit 5 col x 4 row */
+    --max-w: calc((100cqw - 32px) / 5); /* 100% area - 4 gaps of 8px */
+    --max-h: calc((100cqh - 24px) / 4); /* 100% area - 3 gaps of 8px */
+    
+    width: min(var(--max-w), var(--max-h), 85px);
+    height: min(var(--max-w), var(--max-h), 85px);
+    aspect-ratio: 1/1;
     .mini-cell {
-      font-size: 12px;
+      font-size: 14px;
     }
   }
 
@@ -711,6 +732,12 @@ body.dark-mode .memory-card-back {
   body.perf-optimization-active .mini-cell {
     border: none !important; /* Strip grid lines temporarily */
     font-size: 14px !important; /* Fixed size to prevent layout thrashing */
+  }
+
+  /* Collected Piece Mobile size */
+  .collected-piece {
+    width: 60px;
+    height: 60px;
   }
 
   /* Force GPU Promotion */
