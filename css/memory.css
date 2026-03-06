@@ -674,12 +674,20 @@ body.dark-mode .memory-card-back {
     min-height: 0;
     gap: 8px;
     padding: 0 10px;
+    
+    /* Establish exact boundaries for the cards to query against */
+    container-type: size;
+    container-name: cardsArea;
   }
 
   .memory-card {
-    /* CSS Algebraic Maximation: Calculate the exact max size to fit 5 col x 4 row */
-    --max-w: calc((100vw - 52px) / 5);   /* 100vw - padding(20) - 4 gaps(32) */
-    --max-h: calc((65dvh - 144px) / 4);  /* Remainder height after board minus 3 gaps(24) */
+    /* Fallback sizing for legacy browsers */
+    width: clamp(40px, 14vw, 85px);
+    height: clamp(40px, 14vw, 85px);
+    
+    /* Modern Exact Sizing: Size mathematically to fit 5 col x 4 row */
+    --max-w: calc((100cqw - 32px) / 5); /* 100% area - 4 gaps of 8px */
+    --max-h: calc((100cqh - 24px) / 4); /* 100% area - 3 gaps of 8px */
     
     width: min(var(--max-w), var(--max-h), 85px);
     height: min(var(--max-w), var(--max-h), 85px);
