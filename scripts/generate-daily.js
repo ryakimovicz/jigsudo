@@ -329,11 +329,26 @@ async function generateDailyPuzzle() {
     };
 
     const filename = `daily-${dateStr}.json`;
-    fs.writeFileSync(
-      path.join(PUZZLES_DIR, filename),
-      JSON.stringify(dailyPuzzle, null, 2),
-    );
+    const fullPath = path.join(PUZZLES_DIR, filename);
+    fs.writeFileSync(fullPath, JSON.stringify(dailyPuzzle, null, 2));
     console.log(`✅ Puzzle saved: ${filename} (Seed: ${finalGenerationSeed})`);
+
+    // --- UPDATE INDEX ---
+    const indexPath = path.join(PUZZLES_DIR, "index.json");
+    let index = [];
+    if (fs.existsSync(indexPath)) {
+      try {
+        index = JSON.parse(fs.readFileSync(indexPath, "utf8"));
+      } catch (e) {
+        index = [];
+      }
+    }
+    if (!index.includes(dateStr)) {
+      index.push(dateStr);
+      index.sort(); // Keep sorted for history convenience
+      fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
+      console.log(`📑 Index updated with ${dateStr}`);
+    }
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     process.exit(1);

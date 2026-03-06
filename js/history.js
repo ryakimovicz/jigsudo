@@ -12,14 +12,20 @@ let puzzleExistsCache = {};
 async function checkPuzzleExists(dateStr) {
   if (puzzleExistsCache[dateStr] !== undefined)
     return puzzleExistsCache[dateStr];
+  
+  // We now rely on the pre-fetched index in updateHistoryUI
+  // If it's not in the cache by now, it doesn't exist.
+  return false;
+}
+
+async function fetchPuzzleIndex() {
   try {
-    const url = `public/puzzles/daily-${dateStr}.json`;
-    const response = await fetch(url, { method: "HEAD" });
-    puzzleExistsCache[dateStr] = response.ok;
-    return response.ok;
+    const response = await fetch("public/puzzles/index.json");
+    if (!response.ok) return [];
+    return await response.json();
   } catch (e) {
-    puzzleExistsCache[dateStr] = false;
-    return false;
+    console.warn("[History] Could not fetch puzzle index, falling back to empty.");
+    return [];
   }
 }
 
@@ -144,19 +150,12 @@ export async function updateHistoryUI() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const now = getJigsudoDate();
 
-  // First puzzle was generated on Feb 5, 2026 - skip earlier dates
-  const FIRST_PUZZLE_DATE = new Date(2026, 1, 5); // Month is 0-indexed
-
-  // Probe current month puzzles (only for dates where puzzles exist)
-  const probes = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateObj = new Date(year, month, d);
-    if (dateObj > now) continue; // Skip future dates
-    if (dateObj < FIRST_PUZZLE_DATE) continue; // Skip dates before first puzzle
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    probes.push(checkPuzzleExists(dateStr));
-  }
-  await Promise.all(probes);
+  // Pre-fetch the exact list of available puzzles to avoid 404 errors in console
+  const availableDates = await fetchPuzzleIndex();
+  puzzleExistsCache = {}; // Reset for current view
+  availableDates.forEach(date => {
+    puzzleExistsCache[date] = true;
+  });
 
   updateNavButtonsState();
   renderHistoryCalendar(stats.history);
