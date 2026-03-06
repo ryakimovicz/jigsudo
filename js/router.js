@@ -71,6 +71,11 @@ export const router = {
 
     let sectionId = this.routes[baseRoute];
 
+    // Special Case: History Deep Links for Replay (/#history/YYYY/MM/DD)
+    if (baseRoute === "#history" && params.length === 3) {
+      sectionId = "game-section";
+    }
+
     if (!sectionId) {
       console.warn(`[Router] Unknown route: ${baseRoute}. Defaulting to Home.`);
       history.replaceState(null, null, "#home");

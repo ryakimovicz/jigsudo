@@ -29,6 +29,10 @@ async function fetchPuzzleIndex() {
   }
 }
 
+export function isPuzzleAvailable(dateStr) {
+  return !!puzzleExistsCache[dateStr];
+}
+
 export function initHistory() {
   console.log("[History] Initializing...");
 
@@ -61,6 +65,9 @@ export function initHistory() {
   // Listen for Router Changes
   window.addEventListener("routeChanged", ({ detail }) => {
     if (detail.baseRoute === "#history") {
+      // If we have exactly 3 params (YYYY/MM/DD), skip calendar normalization as it's a deep-link to a game.
+      if (detail.params.length === 3) return;
+
       const [yearStr, monthStr] = detail.params || [];
       const year = parseInt(yearStr, 10);
       const month = parseInt(monthStr, 10) - 1; // 0-indexed internally
@@ -288,9 +295,21 @@ function renderHistoryCalendar(history = {}) {
         }
       }
 
-      dayEl.addEventListener("click", async () => {
-        await gameManager.loadSpecificDay(dateStr);
-        await startDailyGame();
+      dayEl.addEventListener("click", () => {
+        const isToday = dateStr === todayStr;
+        const isCompleted = dayData && dayData.status === "won";
+
+        // Per user request:
+        // game should be #game only if it is today AND not completed.
+        // Otherwise, use deep-link with date.
+        if (isToday && !isCompleted) {
+          window.location.hash = "#game";
+        } else {
+          const y = dateObj.getFullYear();
+          const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const dStr = String(dateObj.getDate()).padStart(2, "0");
+          window.location.hash = `#history/${y}/${m}/${dStr}`;
+        }
       });
     }
 

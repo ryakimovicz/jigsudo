@@ -85,6 +85,27 @@ export function toggleModal(elementOrId, show) {
   }
 }
 
+/**
+ * Shows a simple alert modal with a title and message.
+ * @param {string} title 
+ * @param {string} message 
+ */
+export function showAlertModal(title, message) {
+  const modal = document.getElementById("generic-alert-modal");
+  const titleEl = document.getElementById("generic-alert-title");
+  const msgEl = document.getElementById("generic-alert-msg");
+  const closeBtn = document.getElementById("btn-close-generic-alert");
+
+  if (!modal || !titleEl || !msgEl || !closeBtn) return;
+
+  titleEl.textContent = title;
+  msgEl.textContent = message;
+
+  closeBtn.onclick = () => toggleModal(modal, false);
+
+  toggleModal(modal, true);
+}
+
 // Mobile Scrollbar Logic: Show thumb only when scrolling
 let scrollTimeout;
 function handleScroll() {
