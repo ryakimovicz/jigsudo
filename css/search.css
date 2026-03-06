@@ -263,19 +263,18 @@
 /* Mobile compact view for sequences */
 @media (max-width: 768px) {
   .search-targets-container {
-    margin-top: 10px;
+    margin-top: 5px;
   }
   .search-targets-container h3 {
-    margin-bottom: 8px;
-    font-size: 1rem;
     display: none; /* Hide header to save vertical space on mobile */
   }
   .search-targets-list {
-    gap: 6px;
+    gap: 4px;
   }
   .search-target-chip {
-    padding: 5px 8px;
-    font-size: 0.8rem;
+    padding: 3px 6px;
+    font-size: 0.70rem;
+    font-weight: 400;
   }
 }
 

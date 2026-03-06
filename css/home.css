@@ -2003,12 +2003,12 @@ body {
 }
 
 /* Ensure safe distance (prevent accidental clicks on mobile sticky ad)
-   We use 80px buffer + 60px ad = 140px fake footer.
+   We use 50px buffer + 50px ad = 100px fake footer.
    This forces internal game flexbox layouts to shrink the board just enough,
    fitting everything on screen without scrollbars. */
 html.in-game,
 body.in-game {
-  --footer-height: 140px;
+  --footer-height: 100px;
   padding-bottom: 0;
   overflow: hidden !important;
   height: 100dvh !important;

@@ -599,8 +599,8 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-board {
-    /* Stage 1 (Memory): Leave room for 2 rows of 22vw pieces + padding */
-    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 55vw);
+    /* Stage 1 (Memory): Leave room for 2 rows of pieces (55vw) + game header (50px) */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 55vw - 50px);
     width: min(95vw, var(--v-budget));
     height: auto;
     max-width: 100%;
@@ -611,15 +611,15 @@ body.dark-mode .memory-card-back {
 
   /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
   .jigsaw-mode .memory-board {
-    /* Stage 2 (Jigsaw): Similar to memory pieces, slightly tighter container */
-    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 50vw);
+    /* Stage 2 (Jigsaw): Similar to memory pieces, slightly tighter container + game header */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 50vw - 50px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 
   .sudoku-mode .memory-board {
-    /* Stage 3 (Sudoku): Keypad takes max 25dvh securely */
-    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 25dvh - 20px);
+    /* Stage 3 (Sudoku): Keypad takes 25dvh securely + game header (50px) */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 25dvh - 70px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }

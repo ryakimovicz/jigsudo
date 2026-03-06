@@ -195,11 +195,14 @@ export function fitCollectedPieces() {
 
   // Apply Container Layout
   // Use the same height factor as getCollectedPieceSize for layout consistency
-  const hFactor = isJigsaw ? 0.45 : 0.13;
-  const zoneHeight =
-    (window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight) * hFactor;
+  // Apply Container Layout
+  // Use the exact same dimensioning as the CSS (--v-budget: 50vw) for stability
+  let zoneHeight;
+  if (isJigsaw) {
+    zoneHeight = window.innerWidth * 0.50; /* 50vw */
+  } else {
+    zoneHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.13;
+  }
   const rowWidth = (size + gap) * 4;
 
   if (isOneRow) {
@@ -248,12 +251,14 @@ function getCollectedPieceSize(isJigsaw = false) {
   if (window.innerWidth > 768) return null;
 
   // Increase height factor in Jigsaw mode to use card space
-  const hFactor = isJigsaw ? 0.45 : 0.13;
-  const zoneHeight =
-    (window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight) * hFactor;
+  // Increase height factor in Jigsaw mode to use card space matching CSS limits
   const containerWidth = window.innerWidth;
+  let zoneHeight;
+  if (isJigsaw) {
+    zoneHeight = containerWidth * 0.50; // Sync with CSS 50vw
+  } else {
+    zoneHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.13;
+  }
   const gap = isJigsaw ? 12 : 4;
   const padding = 10;
 
