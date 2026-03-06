@@ -675,9 +675,7 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-card {
-    width: clamp(50px, 14vw, 85px); /* Let grid size it naturally with constraints */
-    height: auto;
-    aspect-ratio: 1/1;
+    /* JS strictly handles the width/height to guarantee no overlap */
     .mini-cell {
       font-size: 14px;
     }
