@@ -668,7 +668,7 @@ body.dark-mode .memory-card-back {
     display: flex !important;
     flex-wrap: wrap;
     justify-content: center;
-    align-content: flex-start;
+    align-content: center; /* Center the grid block vertically */
     width: 100%;
     flex: 1; /* PUSH: Take ALL remaining vertical space left over from board/header/footer */
     min-height: 0;
@@ -677,9 +677,12 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-card {
-    /* CSS explicit boundaries: scale naturally between 45px and 85px max */
-    width: clamp(40px, 14vw, 85px);
-    height: auto;
+    /* CSS Algebraic Maximation: Calculate the exact max size to fit 5 col x 4 row */
+    --max-w: calc((100vw - 52px) / 5);   /* 100vw - padding(20) - 4 gaps(32) */
+    --max-h: calc((65dvh - 144px) / 4);  /* Remainder height after board minus 3 gaps(24) */
+    
+    width: min(var(--max-w), var(--max-h), 85px);
+    height: min(var(--max-w), var(--max-h), 85px);
     aspect-ratio: 1/1;
     .mini-cell {
       font-size: 14px;
