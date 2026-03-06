@@ -2002,16 +2002,18 @@ body {
   padding-bottom: 70px; /* Base assumption mobile padding. */
 }
 
+/* Ensure safe distance (150px policy + 60px ad width) from game controls on mobile */
+body.in-game {
+  padding-bottom: 220px;
+}
+
 @media (min-width: 1200px) {
   body {
     padding-bottom: 0px; /* Remove mobile padding when desktop ad is active */
   }
-}
-
-/* Hide global ads during gameplay to comply with AdSense 150px distance rule */
-body.in-game .ad-container-bottom,
-body.in-game .ad-container-vertical {
-  display: none !important;
+  body.in-game {
+    padding-bottom: 0px; /* Desktop ad is on the right, no bottom padding needed */
+  }
 }
 
 /* 3. Menu Inline Banner */
