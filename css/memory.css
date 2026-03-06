@@ -599,8 +599,8 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-board {
-    /* Stage 1 (Memory): Board shrinks (uses 35% of budget) to prioritize space for large memory cards */
-    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.35);
+    /* Stage 1 (Memory): Let flexbox natural sizing dictate the ratio */
+    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 20px) * 0.40);
     width: min(95vw, var(--v-budget));
     height: auto;
     max-width: 100%;
@@ -611,15 +611,15 @@ body.dark-mode .memory-card-back {
 
   /* Expand Board vertical budget when in Jigsaw or Sudoku Mode to allow growth */
   .jigsaw-mode .memory-board {
-    /* Stage 2 (Jigsaw): Similar to memory pieces, slightly tighter container + game header */
-    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 50vw - 50px);
+    /* Stage 2 (Jigsaw): Let flexbox natural sizing dictate the ratio but with more priority */
+    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.45);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 
   .sudoku-mode .memory-board {
     /* Stage 3 (Sudoku): Keypad takes 25dvh securely + game header (50px) */
-    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 25dvh - 70px);
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 25dvh - 30px);
     width: min(95vw, var(--v-budget));
     max-height: var(--v-budget);
   }
@@ -654,8 +654,9 @@ body.dark-mode .memory-card-back {
     justify-content: center;
     align-items: center;
     width: 100%;
-    /* Height controlled by JS */
-    min-height: 0;
+    /* Height controlled by flex naturally */
+    min-height: 48px; /* Give it enough breathing room for the pieces without crushing */
+    height: auto;
     overflow: visible; /* Changed from hidden to allow selection glow */
     padding: 0;
     gap: 4px;
@@ -664,18 +665,22 @@ body.dark-mode .memory-card-back {
 
   .cards-area {
     order: 3;
-    display: flex !important; /* Switch to flex on mobile to allow natural wrap */
+    display: flex !important;
     flex-wrap: wrap;
     justify-content: center;
     align-content: flex-start;
     width: 100%;
+    flex: 1; /* PUSH: Take ALL remaining vertical space left over from board/header/footer */
+    min-height: 0;
     gap: 8px;
     padding: 0 10px;
-    height: auto; /* Use natural flex height */
   }
 
   .memory-card {
-    /* JS strictly handles the width/height to guarantee no overlap */
+    /* CSS explicit boundaries: scale naturally between 45px and 85px max */
+    width: clamp(45px, 15vw, 85px);
+    height: auto;
+    aspect-ratio: 1/1;
     .mini-cell {
       font-size: 14px;
     }

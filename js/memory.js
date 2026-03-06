@@ -431,122 +431,17 @@ function fitMemoryCards() {
   const cardsContainer = document.getElementById("memory-cards");
   if (!cardsContainer) return;
 
-  const vw = window.innerWidth;
-  const vh = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+  // We now rely strictly on pure CSS (memory.css) utilizing clamp() and explicitly calculated dvh budgets
+  // This JS function only cleans up inline styles that might have been accidentally left over from past logic.
 
-  // Desktop Cleanup / Guard (Let CSS Grid handle these cases)
-  if (vw > 768) {
-    cardsContainer.style = "";
-    const cards = document.querySelectorAll(".memory-card");
-    cards.forEach((card) => {
-      card.style.width = "";
-      card.style.height = "";
-      card.style.margin = "";
-    });
-    return;
-  }
-
-  // Sizing Strategy:
-  let availableHeight = 0;
-  let availableWidth = cardsContainer.clientWidth || vw;
-
-  // Measure true remaining space by temporarily letting flexbox calculate it
-  const originalDisplay = cardsContainer.style.display;
-  cardsContainer.style.height = '';
-  cardsContainer.style.flex = '1';
-  cardsContainer.style.minHeight = '0';
+  cardsContainer.style = "";
   
-  // Hide cards momentarily to prevent them from stretching the container
-  const cardElementsList = document.querySelectorAll('.memory-card');
-  cardElementsList.forEach(c => c.style.display = 'none');
-  
-  // Force a microscopic reflow to read the natural flex height available
-  availableHeight = cardsContainer.clientHeight;
-  
-  // Restore cards
-  cardElementsList.forEach(c => c.style.display = '');
-
-  if (vw <= 768) {
-    // Safety buffer for mobile
-    availableHeight -= 15;
-  } else {
-    // Safety buffer for desktop
-    availableHeight -= 20; 
-  }
-
-  // Sanity check
-  if (availableHeight < 50) availableHeight = 100;
-
-  // Padding/Gap settings - Minimal
-  const gap = 6; /* Slightly wider gap for touch targets */
-  const padding = 15;
-
-  const totalCards = 18;
-  let bestConfig = { size: 0, cols: 4 };
-
-  // Iterate to find best fit (Restrict to 4-6 columns)
-  for (let cols = 4; cols <= 6; cols++) {
-    const rows = Math.ceil(totalCards / cols);
-    // Calc max width per card
-    const wSize = (availableWidth - padding * 2 - (cols - 1) * gap) / cols;
-    // Calc max height per card
-    const hSize = (availableHeight - padding * 2 - (rows - 1) * gap) / rows;
-
-    // The limiting factor is the smaller of the two dimensions
-    const size = Math.min(wSize, hSize);
-
-    if (size > bestConfig.size) {
-      bestConfig = { size, cols };
-    }
-  }
-
-  let finalSize = Math.floor(bestConfig.size);
-  
-  // Explicitly prevent horizontal overflow
-  // The absolute maximum width a card can have based on the chosen columns and screen width
-  const maxAllowedWidth = (vw - padding * 2 - (bestConfig.cols - 1) * gap) / bestConfig.cols;
-  finalSize = Math.min(finalSize, Math.floor(maxAllowedWidth));
-
-  // Enforce a hard minimum and maximum so it never breaks CSS bounds
-  if (finalSize < 40) finalSize = 40; 
-  if (finalSize > 85) finalSize = 85;
-
-  // Apply Styles
-  cardsContainer.style.display = "flex";
-  cardsContainer.style.flexWrap = "wrap";
-  cardsContainer.style.justifyContent = "center";
-  cardsContainer.style.alignContent = "center"; // Center the grid
-  cardsContainer.style.width = "100%";
-
-  // EXACT bounds to contain the cards
-  cardsContainer.style.height = `${availableHeight}px`;
-  cardsContainer.style.maxHeight = "none";
-  cardsContainer.style.minHeight = "auto";
-  cardsContainer.style.flex = "none";
-
-  cardsContainer.style.gap = `${gap}px`;
-  cardsContainer.style.padding = `${padding}px`;
-  cardsContainer.style.boxSizing = "border-box";
-  cardsContainer.style.position = "relative";
-  cardsContainer.style.zIndex = "10002";
-  cardsContainer.style.overflow = "hidden"; // Clip anything that tries to bleed out
-
-  // Force wrap container width mathematically
-  // Using explicit width rather than max-width to guarantee centering works properly
-  const containerMaxWidth = finalSize * bestConfig.cols + gap * (bestConfig.cols - 1) + padding * 2;
-  cardsContainer.style.width = `${containerMaxWidth}px`;
-  cardsContainer.style.maxWidth = `100%`; // Allow shrink if absolutely necessary
-  cardsContainer.style.margin = "0 auto";
-
   const cardElements = document.querySelectorAll(".memory-card");
   cardElements.forEach((card) => {
-    // FORCE exact pixel values avoiding % or vw scaling anomalies
-    card.style.width = `${finalSize}px`;
-    card.style.height = `${finalSize}px`;
-    card.style.margin = "0";
-    card.style.flexShrink = "0"; // DO NOT SHRINK OR SQUISH
+    card.style.width = "";
+    card.style.height = "";
+    card.style.margin = "";
+    card.style.flexShrink = ""; 
   });
 }
 
