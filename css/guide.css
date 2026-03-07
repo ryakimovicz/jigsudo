@@ -843,25 +843,21 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
 
 /* --- INFO / RANKS STYLES (Merged) --- */
 .ranks-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 5px; /* Space for scrollbar */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 5px 0;
 }
 
 .rank-row {
   display: grid;
-  grid-template-columns: 50px 1fr auto; /* Icon | Name+Lvl | RP */
+  grid-template-columns: 40px 1fr auto; /* Slightly narrower icon col */
   align-items: center;
-  padding: 12px;
+  padding: 10px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition:
-    transform 0.2s,
-    background 0.2s;
+  transition: transform 0.2s, background 0.2s;
 }
 
 .rank-row:hover {
@@ -914,9 +910,26 @@ body.dark-mode .rank-row:hover {
   color: var(--text-secondary);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .ranks-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
   .rank-row {
-    padding: 10px;
-    grid-template-columns: 40px 1fr auto;
+    padding: 8px;
+    grid-template-columns: 1fr auto; /* Removed icon column */
+  }
+  .rank-icon {
+    display: none; /* Hide icons on mobile */
+  }
+  .rank-name {
+    font-size: 0.9rem;
+  }
+  .rank-level {
+    font-size: 0.75rem;
+  }
+  .rank-req {
+    font-size: 0.85rem;
+    padding: 2px 6px;
   }
 }
