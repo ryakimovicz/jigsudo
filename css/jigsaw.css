@@ -16,19 +16,52 @@
 }
 
 /* Selected State - Must come AFTER placeholder or have higher specificity if we want selection to show on placeholders (usually we don't select placeholders but just in case) */
+/* Selected State - Updated to use ::after for glow to avoid overflow:hidden clipping */
 .collected-piece.selected,
 .sudoku-chunk-slot.selected {
+  /* border-color handled by parent border but we can re-force it */
   border-color: var(--accent-color) !important;
-  box-shadow: 0 0 15px var(--accent-color);
   transform: scale(1.1);
-  z-index: 1510; /* Slightly higher than hover z-index */
+  z-index: 1510;
   opacity: 1;
 }
 
-/* Base style for all jigsaw mode pieces to ensure they can glow outside */
+.collected-piece.selected::after,
+.sudoku-chunk-slot.selected::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 15px var(--accent-color);
+  pointer-events: none;
+  z-index: -1; /* Place behind content if possible, wait, piece is opaque */
+}
+
+/* If piece is opaque, shadow needs to be outside. 
+   To be outside WHILE being a child of overflow:hidden parent, it's impossible.
+   So we MUST use overflow:visible during selection OR use a different approach.
+*/
+.jigsaw-mode .collected-piece.selected,
+.jigsaw-mode .sudoku-chunk-slot.selected {
+  overflow: visible !important;
+}
+
+/* Jigsaw Mode Transitions */
 .jigsaw-mode .collected-piece,
 .jigsaw-mode .sudoku-chunk-slot {
-  overflow: visible !important;
+  /* overflow: hidden is critical for rounded corners to work correctly on the piece content.
+     The selection glow (box-shadow) is now handled by an ::after pseudo-element 
+     to avoid being clipped by this property. */
+  overflow: hidden !important;
+}
+
+/* Internal Grid Rounding Fix (Ensure it overrides Sudoku-mode's possible 0px) */
+.jigsaw-mode .mini-sudoku-grid {
+  border-radius: 8px !important;
+  overflow: hidden !important;
 }
 
 /* Jigsaw Mode Transitions */
@@ -166,6 +199,7 @@
   /* Use explicit container sizing for the inner grid */
   display: block;
   overflow: hidden;
+  border-radius: 10px; /* Round the piece while dragging */
   transition:
     width 0.4s ease,
     height 0.4s ease,
