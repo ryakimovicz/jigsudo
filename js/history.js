@@ -8,6 +8,8 @@ import { getJigsudoDate } from "./utils/time.js";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
+let minNavMonth = null; // Store as Date(Y, M, 1)
+let maxNavMonth = null; // Store as Date(Y, M, 1)
 
 async function checkPuzzleExists(dateStr) {
   if (puzzleExistsCache[dateStr] !== undefined)
@@ -41,22 +43,23 @@ export function initHistory() {
 
   if (prevBtn) {
     prevBtn.addEventListener("click", () => {
-      const minDate = new Date(2026, 1, 1); // Feb 2026
-      const prevDate = new Date(histViewDate);
-      prevDate.setMonth(prevDate.getMonth() - 1);
-      if (prevDate >= minDate) {
-        changeHistMonth(-1);
+      if (minNavMonth) {
+        const prevDate = new Date(histViewDate);
+        prevDate.setMonth(prevDate.getMonth() - 1);
+        if (prevDate >= minNavMonth) {
+          changeHistMonth(-1);
+        }
       }
     });
   }
   if (nextBtn) {
     nextBtn.addEventListener("click", () => {
-      const now = getJigsudoDate();
-      const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const nextDate = new Date(histViewDate);
-      nextDate.setMonth(nextDate.getMonth() + 1);
-      if (nextDate <= currentMonth) {
-        changeHistMonth(1);
+      if (maxNavMonth) {
+        const nextDate = new Date(histViewDate);
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        if (nextDate <= maxNavMonth) {
+          changeHistMonth(1);
+        }
       }
     });
   }
@@ -76,11 +79,11 @@ export function initHistory() {
       let isValidDate = false;
 
       if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
-        const minDate = new Date(2026, 1, 1); // Feb 2026
         const reqDate = new Date(year, month, 1);
-        const maxDate = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        if (reqDate >= minDate && reqDate <= maxDate) {
+        
+        // If limits aren't loaded yet, we can't fully validate. 
+        // But we'll let it slide and let updateHistoryUI normalize it later.
+        if (!minNavMonth || (reqDate >= minNavMonth && reqDate <= maxNavMonth)) {
           histViewDate = reqDate;
           isValidDate = true;
         }
@@ -160,9 +163,29 @@ export async function updateHistoryUI() {
   // Pre-fetch the exact list of available puzzles to avoid 404 errors in console
   const availableDates = await fetchPuzzleIndex();
   puzzleExistsCache = {}; // Reset for current view
-  availableDates.forEach(date => {
-    puzzleExistsCache[date] = true;
-  });
+  
+  if (availableDates.length > 0) {
+    // Determine Limits
+    const sorted = availableDates.map(d => new Date(d)).sort((a,b) => a - b);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    
+    minNavMonth = new Date(first.getFullYear(), first.getMonth(), 1);
+    maxNavMonth = new Date(last.getFullYear(), last.getMonth(), 1);
+    
+    availableDates.forEach(date => {
+      puzzleExistsCache[date] = true;
+    });
+
+    // Normalize current view if it's now out of bounds
+    if (histViewDate < minNavMonth) histViewDate = new Date(minNavMonth);
+    if (histViewDate > maxNavMonth) histViewDate = new Date(maxNavMonth);
+  } else {
+    // Full fallback
+    const n = getJigsudoDate();
+    minNavMonth = new Date(n.getFullYear(), n.getMonth(), 1);
+    maxNavMonth = new Date(n.getFullYear(), n.getMonth(), 1);
+  }
 
   updateNavButtonsState();
   renderHistoryCalendar(stats.history);
@@ -176,13 +199,12 @@ function updateNavButtonsState() {
   const year = histViewDate.getFullYear();
   const month = histViewDate.getMonth();
 
-  // Min limit: Feb 2026
-  const isMinMonth = year === 2026 && month === 1;
+  // Min limit: First month with puzzles
+  const isMinMonth = minNavMonth && (year === minNavMonth.getFullYear() && month === minNavMonth.getMonth());
   prevBtn.classList.toggle("disabled", isMinMonth);
 
-  // Max limit: Current real month
-  const now = getJigsudoDate();
-  const isMaxMonth = year === now.getFullYear() && month === now.getMonth();
+  // Max limit: Last month with puzzles
+  const isMaxMonth = maxNavMonth && (year === maxNavMonth.getFullYear() && month === maxNavMonth.getMonth());
   nextBtn.classList.toggle("disabled", isMaxMonth);
 }
 
@@ -190,11 +212,9 @@ function changeHistMonth(delta) {
   // Guard against navigating past limits if clicked despite CSS disabled
   const year = histViewDate.getFullYear();
   const month = histViewDate.getMonth();
-  const now = getJigsudoDate();
 
-  if (delta === -1 && year === 2026 && month === 1) return;
-  if (delta === 1 && year === now.getFullYear() && month === now.getMonth())
-    return;
+  if (delta === -1 && minNavMonth && (year === minNavMonth.getFullYear() && month === minNavMonth.getMonth())) return;
+  if (delta === 1 && maxNavMonth && (year === maxNavMonth.getFullYear() && month === maxNavMonth.getMonth())) return;
 
   const targetDate = new Date(histViewDate);
   targetDate.setMonth(targetDate.getMonth() + delta);
