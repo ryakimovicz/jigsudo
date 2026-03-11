@@ -277,7 +277,7 @@
                 id="nav-about"
                 title="Nosotros"
                 data-i18n-title="sidebar_about"
-                onclick="window.location.hash = '#about'"
+                onclick="window.location.href = 'about.html'"
               >
                 <span class="nav-icon">ℹ️</span>
                 <span class="nav-label" data-i18n="sidebar_about"
@@ -289,7 +289,7 @@
                 id="nav-contact"
                 title="Contacto"
                 data-i18n-title="sidebar_contact"
-                onclick="window.location.hash = '#contact'"
+                onclick="window.location.href = 'contact.html'"
               >
                 <span class="nav-icon">✉️</span>
                 <span class="nav-label" data-i18n="sidebar_contact"
@@ -1598,313 +1598,17 @@
         <div id="memory-timer" class="memory-timer">00:00</div>
       </section>
 
-      <!-- Privacy Section -->
-      <section id="privacy-section" class="hidden scrollable-content">
-        <header class="section-header">
-          <h2 data-i18n="privacy_title">Política de Privacidad</h2>
-        </header>
-
-        <div class="section-body">
-          <div class="privacy-card">
-            <p><strong>Última actualización:</strong> 4 de Marzo de 2026</p>
-            <p>
-              Bienvenido a <strong>Jigsudo</strong>. Tu privacidad es importante
-              para nosotros. Esta Política de Privacidad explica cómo
-              recopilamos, usamos y protegemos tu información cuando utilizas
-              nuestra aplicación web.
-            </p>
-          </div>
-
-          <div class="privacy-card">
-            <h2>1. Información que Recopilamos</h2>
-            <h3>1.1. Autenticación y Perfil</h3>
-            <p>
-              Si decides crear una cuenta, utilizamos
-              <strong>Google Firebase Authentication</strong> para gestionar tu
-              inicio de sesión. Recopilamos tu dirección de correo electrónico y
-              un ID de usuario único para guardar tu progreso en la nube. No
-              compartimos tu correo electrónico con terceros.
-            </p>
-            <p>
-              También almacenamos tu <strong>nombre de usuario</strong> y tu
-              <strong>preferencia de visibilidad del perfil</strong> (público o
-              privado) en <strong>Google Firestore</strong>.
-            </p>
-
-            <h3>1.2. Datos de Juego</h3>
-            <p>
-              Almacenamos tu progreso en las partidas (tiempos, puntuaciones,
-              estado del tablero) en <strong>Google Firestore</strong> para que
-              puedas continuar tu partida desde cualquier dispositivo y
-              participar en las clasificaciones (Ranking).
-            </p>
-
-            <h3>1.3. Datos Visibles Públicamente</h3>
-            <p>
-              Si mantienes tu perfil como <strong>público</strong> (opción
-              predeterminada), ciertos datos serán accesibles para cualquier
-              usuario que visite tu perfil:
-            </p>
-            <ul>
-              <li>Nombre de usuario y rango.</li>
-              <li>Estadísticas de juego (racha, partidas jugadas, puntos).</li>
-              <li>Historial de actividad (calendario de días jugados).</li>
-            </ul>
-            <p>
-              Si configuras tu perfil como <strong>privado</strong>, ninguno de
-              estos datos será visible para otros usuarios. Podrás cambiar esta
-              preferencia en cualquier momento desde el menú de Cuenta en la
-              barra lateral.
-            </p>
-          </div>
-
-          <div class="privacy-card">
-            <h2>2. Cookies y Almacenamiento Local</h2>
-            <p>
-              Utilizamos <strong>LocalStorage</strong> de tu navegador para
-              mejorar tu experiencia:
-            </p>
-            <ul>
-              <li>
-                Guardar tus preferencias (Tema oscuro/claro, Sonido, Vibración).
-              </li>
-              <li>Mantener tu sesión iniciada.</li>
-              <li>
-                Guardar el estado de tu partida actual localmente para que no
-                pierdas nada si se cierra la pestaña.
-              </li>
-            </ul>
-          </div>
-
-          <div class="privacy-card">
-            <h2>3. Publicidad (Google AdSense)</h2>
-            <p>
-              Jigsudo utiliza <strong>Google AdSense</strong> para mostrar
-              anuncios. Google y sus socios pueden utilizar cookies para mostrar
-              anuncios basados en tus visitas anteriores a este u otros sitios
-              web.
-            </p>
-            <ul>
-              <li>
-                Puedes optar por no recibir publicidad personalizada visitando
-                <a
-                  href="https://www.google.com/settings/ads"
-                  target="_blank"
-                  rel="noopener"
-                  >Configuración de Anuncios</a
-                >.
-              </li>
-              <li>
-                Si te encuentras en el Espacio Económico Europeo (EEE), se te
-                pedirá consentimiento para el uso de cookies y datos personales
-                para anuncios personalizados, conforme al GDPR.
-              </li>
-            </ul>
-          </div>
-
-          <div class="privacy-card">
-            <h2>4. Tus Derechos</h2>
-            <p>
-              Tienes derecho a acceder, corregir o eliminar tu información
-              personal. Dentro de la aplicación, en la sección de
-              <strong>Perfil</strong>, encontrarás la opción para
-              <strong>Eliminar Cuenta</strong> abajo de todo, lo cual borrará
-              permanentemente todos tus datos de nuestros servidores.
-            </p>
-          </div>
-
-          <div class="privacy-footer">
-            <!-- Buttons removed as per user request -->
-          </div>
-        </div>
-      </section>
-
-      <!-- Terms Section -->
-      <section id="terms-section" class="hidden scrollable-content">
-        <header class="section-header">
-          <h2 data-i18n="terms_title">Términos y Condiciones</h2>
-        </header>
-
-        <div class="section-body">
-          <div class="terms-card">
-            <p><strong>Última actualización:</strong> 4 de Marzo de 2026</p>
-            <p>
-              Bienvenido a <strong>Jigsudo</strong>. Al acceder o utilizar
-              nuestro sitio web, aceptas cumplir con estos Términos y
-              Condiciones. Si no estás de acuerdo con alguna parte de los
-              términos, no deberías utilizar nuestros servicios.
-            </p>
-          </div>
-
-          <div class="terms-card">
-            <h2>1. Descripción del Servicio</h2>
-            <p>
-              Jigsudo es una aplicación web de juegos de lógica y puzzles
-              diarios (Sudoku, Jigsaw, etc.). Ofrecemos funcionalidades de
-              registro de usuarios, almacenamiento de progreso en la nube y
-              tablas de clasificación (Ranking).
-            </p>
-            <p>
-              Nos reservamos el derecho de modificar, suspender o discontinuar
-              el servicio (o cualquier parte del mismo) en cualquier momento,
-              con o sin previo aviso.
-            </p>
-          </div>
-
-          <div class="terms-card">
-            <h2>2. Cuentas de Usuario</h2>
-            <p>
-              Para acceder a ciertas funciones (como guardar progreso en la nube
-              y aparecer en el ranking), debes iniciar sesión utilizando una
-              cuenta de Google.
-            </p>
-            <ul>
-              <li>
-                Eres responsable de mantener la confidencialidad de tu cuenta.
-              </li>
-              <li>
-                Nos reservamos el derecho de eliminar cuentas que violen estos
-                términos o que permanezcan inactivas por un periodo prolongado.
-              </li>
-              <li>
-                Puedes eliminar tu cuenta y todos tus datos en cualquier momento
-                desde la sección de Perfil.
-              </li>
-            </ul>
-            <h3>2.1. Visibilidad del Perfil</h3>
-            <p>
-              Los usuarios registrados pueden controlar la visibilidad de su
-              perfil. Un perfil <strong>público</strong> (opción predeterminada)
-              permite que cualquier persona acceda a las estadísticas, rango e
-              historial de actividad del usuario mediante un enlace directo
-              (<code>/#profile/usuario</code>). Un perfil
-              <strong>privado</strong> muestra únicamente el nombre de usuario y
-              oculta toda la información adicional.
-            </p>
-            <p>
-              El usuario puede cambiar esta configuración en cualquier momento
-              desde el menú de Cuenta en la barra lateral, sin afectar sus datos
-              almacenados.
-            </p>
-          </div>
-
-          <div class="terms-card">
-            <h2>3. Propiedad Intelectual</h2>
-            <p>
-              El código fuente, el diseño visual, los logotipos y todo el
-              contenido de Jigsudo son propiedad exclusiva de
-              <strong>Román Yakimovicz</strong>. Todos los derechos están
-              reservados.
-            </p>
-            <p>
-              No se concede ninguna licencia ni derecho sobre el código fuente o
-              los recursos de la aplicación, salvo autorización expresa y por
-              escrito. El uso de este sitio web se limita estrictamente a jugar
-              y acceder a las funcionalidades previstas a través de la interfaz
-              de usuario proporcionada.
-            </p>
-          </div>
-
-          <div class="terms-card">
-            <h2>4. Prohibiciones y Restricciones</h2>
-            <p>Queda estrictamente prohibido:</p>
-            <ul>
-              <li>
-                Copiar, modificar, distribuir, vender o realizar ingeniería
-                inversa de cualquier parte del código fuente o de la aplicación,
-                salvo autorización expresa y por escrito de
-                <strong>Román Yakimovicz</strong>.
-              </li>
-              <li>
-                Utilizar bots, scripts o herramientas automatizadas para
-                interactuar con el servicio.
-              </li>
-              <li>
-                Intentar acceder a áreas restringidas o extraer datos de la
-                aplicación.
-              </li>
-            </ul>
-          </div>
-
-          <div class="terms-card">
-            <h2>5. Limitación de Responsabilidad</h2>
-            <p>
-              El servicio se proporciona
-              <strong>en el estado en que se encuentra</strong> y
-              <strong>sujeto a disponibilidad</strong>. No garantizamos que el
-              servicio sea ininterrumpido, seguro o libre de errores. En ningún
-              caso seremos responsables por daños directos, indirectos o
-              consecuentes derivados del uso o la imposibilidad de uso del
-              servicio.
-            </p>
-          </div>
-
-          <div class="terms-footer">
-            <!-- Footer buttons placeholder if needed -->
-          </div>
-        </div>
-      </section>
-
-      <!-- About Us Section -->
-      <section id="about-section" class="hidden scrollable-content">
-        <header class="section-header">
-          <h2 data-i18n="about_title">Sobre Nosotros</h2>
-        </header>
-
-        <div class="section-body">
-          <div class="privacy-card">
-            <h2 data-i18n="about_mission_title">Nuestra Misión</h2>
-            <p data-i18n="about_mission_text">
-              Jigsudo nació con la idea de combinar los mejores juegos de lógica
-              (Sudoku, Memoria y Rompecabezas) en un único formato desafiante y
-              diario. Nuestra misión es ayudar a miles de personas a entrenar
-              sus mentes, fomentar la concentración y disfrutar de un pasatiempo
-              inteligente. Nuestro equipo de desarrolladores y amantes de los
-              acertijos trabaja arduamente para crear experiencias únicas y
-              gratuitas para el navegador.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Contact Section -->
-      <section id="contact-section" class="hidden scrollable-content">
-        <header class="section-header">
-          <h2 data-i18n="contact_title">Contacto</h2>
-        </header>
-
-        <div class="section-body">
-          <div class="privacy-card">
-            <h2 data-i18n="contact_talk_title">Hablemos</h2>
-            <p data-i18n="contact_talk_p1">
-              ¿Tienes sugerencias, encontraste un error, o simplemente quieres
-              dejarnos tus comentarios sobre Jigsudo? Estaremos encantados de
-              leerte.
-            </p>
-            <p data-i18n="contact_talk_p2">
-              Puedes ponerte en contacto directamente con nuestro equipo de
-              desarrollo enviando un correo a:
-              <br /><br />
-              <strong>hola@jigsudo.com</strong>
-            </p>
-            <p data-i18n="contact_talk_p3">
-              Intentaremos responder a todas las consultas en un plazo de 24 a
-              48 horas hábiles.
-            </p>
-          </div>
-        </div>
-      </section>
 
       <!-- Footer -->
       <footer class="main-footer">
         <div class="footer-links">
-          <a href="#about" data-i18n="footer_about">Nosotros</a>
+          <a href="about.html" data-i18n="footer_about">Nosotros</a>
           <span class="footer-sep">|</span>
-          <a href="#contact" data-i18n="footer_contact">Contacto</a>
+          <a href="contact.html" data-i18n="footer_contact">Contacto</a>
           <span class="footer-sep">|</span>
-          <a href="#privacy" data-i18n="footer_privacy">Privacidad</a>
+          <a href="privacy.html" data-i18n="footer_privacy">Privacidad</a>
           <span class="footer-sep">|</span>
-          <a href="#terms" data-i18n="footer_terms">Términos</a>
+          <a href="terms.html" data-i18n="footer_terms">Términos</a>
           <span class="footer-sep">|</span>
           <a
             href="https://github.com/ryakimovicz/jigsudo/issues"

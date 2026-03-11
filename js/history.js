@@ -141,9 +141,7 @@ export function hideHistoryUI() {
     hash === "#profile" ||
     hash === "#guide" ||
     hash === "#game" ||
-    hash === "#info" ||
-    hash === "#privacy" ||
-    hash === "#terms";
+    hash === "#info";
 
   if (!isInternalRouting) {
     document.body.classList.add("home-active");
