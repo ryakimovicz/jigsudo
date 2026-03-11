@@ -276,7 +276,7 @@ export async function updateProfileData(targetUsername = null) {
 
     // Dynamic URL Replacement: Force /#profile/username (lowercase)
     const expectedHash = `#profile/${displayName.toLowerCase()}`;
-    if (window.location.hash !== expectedHash) {
+    if (window.location.hash.startsWith("#profile") && window.location.hash !== expectedHash) {
       window.history.replaceState(
         null,
         "",
