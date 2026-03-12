@@ -1,5 +1,7 @@
-import { initLanguage } from "./i18n.js";
+import { initLanguage, getCurrentLang } from "./i18n.js";
 import { closeSidebar } from "./sidebar.js";
+import { translations } from "./translations.js";
+import { getDailySeed } from "./utils/random.js";
 
 /**
  * Lightweight script for static legal pages (/about, /contact, etc.)
@@ -8,6 +10,12 @@ import { closeSidebar } from "./sidebar.js";
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize language support
   initLanguage();
+
+  // Populate Header Data
+  updateHeaderInfo();
+
+  // Listen for language changes to update header
+  window.addEventListener("languageChanged", updateHeaderInfo);
 
   const sidebar = document.getElementById("side-sidebar");
   if (!sidebar) return;
@@ -67,8 +75,57 @@ document.addEventListener("DOMContentLoaded", () => {
       profileDropdown.classList.add("hidden");
     }
   });
-
-  // Re-enable sidebar toggle logic (it's in sidebar.js which is imported in legal.js if we decide to bundle or just run side-effects)
-  // Actually, sidebar.js exports functions and has its own DOMContentLoaded listener.
-  // We just need to make sure sidebar.js is loaded.
 });
+
+/**
+ * Ported from home.js to keep static pages in sync with main app header
+ */
+function updateHeaderInfo() {
+  const dateEl = document.getElementById("current-date");
+  const challengeEl = document.getElementById("challenge-num");
+
+  if (!dateEl || !challengeEl) return;
+
+  const now = new Date();
+  const lang = getCurrentLang();
+  const t = translations[lang];
+  const locale = t ? t.date_locale : "es-ES";
+
+  // Date
+  const dateStr = now.toLocaleDateString(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  let formattedDate = dateStr;
+
+  if (lang === "es") {
+    // Regex accepts accents (Latin-1 Supplement block \u00C0-\u00FF)
+    formattedDate = dateStr.replace(/[a-zA-Z\u00C0-\u00FF]+/g, (word) => {
+      return word === "de" || word === "en" || word === "del"
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+  } else {
+    // English / Generic Title Case
+    formattedDate = dateStr.replace(/[a-zA-Z\u00C0-\u00FF]+/g, (word) => {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+  }
+
+  dateEl.textContent = formattedDate;
+
+  // Challenge #: Days since Jan 18, 2026 (Launch Day = #001)
+  const todayZero = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startZero = new Date(2026, 0, 18); // Jan 18, 2026
+
+  const diffTime = todayZero - startZero;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+  challengeEl.textContent = `#${String(diffDays).padStart(3, "0")}`;
+}
