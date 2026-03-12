@@ -1084,7 +1084,7 @@ export async function sendResetPassword(email) {
 }
 
 // Logic to hook up forget password link
-function initForgotPasswordUI() {
+export function initForgotPasswordUI() {
   const linkForgot = document.getElementById("link-forgot-password");
   const modalReset = document.getElementById("password-reset-modal");
   const btnCancelReset = document.getElementById("btn-cancel-reset");

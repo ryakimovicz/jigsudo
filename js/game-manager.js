@@ -209,7 +209,16 @@ export class GameManager {
     const month = Math.floor((seed % 10000) / 100);
     const day = seed % 100;
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const url = `public/puzzles/daily-${dateStr}.json`;
+    
+    // Check if we are in a subfolder (like /about/)
+    let prefix = "";
+    const subpages = ["/about", "/contact", "/privacy", "/terms"];
+    const currentPath = window.location.pathname.toLowerCase();
+    if (subpages.some(p => currentPath.includes(p))) {
+      prefix = "../";
+    }
+    
+    const url = `${prefix}public/puzzles/daily-${dateStr}.json`;
 
     try {
       const response = await fetch(url);
