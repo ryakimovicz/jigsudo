@@ -214,22 +214,124 @@
 
           <!-- Perfil Button Section -->
           <div class="auth-wrapper sidebar-item-wrapper">
-            <button id="btn-auth" class="nav-item" title="Cuenta" data-i18n-title="menu_account">
+            <button
+              id="btn-auth"
+              class="nav-item"
+              title="Cuenta"
+              data-i18n-title="menu_account"
+            >
               <span class="nav-icon">👤</span>
               <span class="nav-label" data-i18n="menu_account">Cuenta</span>
             </button>
             <div id="auth-dropdown" class="dropdown-content glass-panel hidden">
-              <button class="dropdown-close-btn" onclick="this.parentElement.classList.add('hidden')" aria-label="Cerrar">×</button>
+              <button
+                class="dropdown-close-btn"
+                onclick="this.parentElement.classList.add('hidden')"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
               <h3 class="dropdown-header" data-i18n="menu_account">Cuenta</h3>
               <div class="settings-section account-section">
                 <div id="login-wrapper">
-                  <div class="user-info-row centered" style="margin-bottom: 12px">
-                    <button id="btn-guest-profile" class="btn-profile-link" title="Ver Perfil de Anónimo">
-                      <span class="user-avatar-placeholder" style="background: #e2e8f0; color: #64748b">👤</span>
+                  <div
+                    class="user-info-row centered"
+                    style="margin-bottom: 12px"
+                  >
+                    <button
+                      id="btn-guest-profile"
+                      class="btn-profile-link"
+                      title="Ver Perfil de Anónimo"
+                    >
+                      <span
+                        class="user-avatar-placeholder"
+                        style="background: #e2e8f0; color: #64748b"
+                        >👤</span
+                      >
                       <strong data-i18n="guest">Anónimo</strong>
                     </button>
                   </div>
-                  <button id="btn-login-trigger" class="btn-secondary full-width" data-i18n="btn_login_menu">Iniciar Sesión</button>
+                  <button
+                    id="btn-login-trigger"
+                    class="btn-secondary full-width"
+                    data-i18n="btn_login_menu"
+                  >
+                    Iniciar Sesión
+                  </button>
+                </div>
+                <div id="logged-in-view" class="hidden">
+                  <div class="user-info-row centered">
+                    <button
+                      id="btn-view-profile"
+                      class="btn-profile-link"
+                      title="Ver Perfil"
+                    >
+                      <span class="user-avatar-placeholder">👤</span>
+                      <strong id="user-display-name">Usuario</strong>
+                    </button>
+                  </div>
+                  <div class="setting-item privacy-setting">
+                    <span class="setting-label">
+                      <span class="icon-label">👁️</span>
+                      <span data-i18n="profile_public">Perfil Público</span>
+                    </span>
+                    <label class="switch-small">
+                      <input
+                        type="checkbox"
+                        id="profile-public-toggle"
+                        checked
+                      />
+                      <span class="slider-small round"></span>
+                    </label>
+                  </div>
+                </div>
+                <div class="dropdown-divider" style="margin: 12px 0"></div>
+                <div class="player-quick-stats">
+                  <div class="quick-stat-row rank-info">
+                    <span id="menu-rank-icon" class="stat-icon">🌱</span>
+                    <div class="stat-main">
+                      <span id="menu-rank-name" class="stat-label">Novato</span>
+                      <span id="menu-rank-level" class="stat-value"
+                        >Nvl. 0</span
+                      >
+                    </div>
+                  </div>
+                  <div class="rp-progress-container">
+                    <div class="rp-labels">
+                      <span id="menu-rp-current">0.000</span>
+                      <span class="rp-separator">/</span>
+                      <span id="menu-rp-next">20</span>
+                    </div>
+                    <div class="rp-bar-bg">
+                      <div
+                        id="menu-rp-progress"
+                        class="rp-bar-fill"
+                        style="width: 0%"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="quick-stats-grid">
+                    <div class="quick-stat-item">
+                      <span class="item-icon">🔥</span>
+                      <div class="item-data">
+                        <span id="menu-stat-streak" class="item-value">0</span>
+                        <span class="item-label" data-i18n="stat_streak_short"
+                          >Racha</span
+                        >
+                      </div>
+                    </div>
+                    <div class="quick-stat-item">
+                      <span class="item-icon">⭐</span>
+                      <div class="item-data">
+                        <span id="menu-stat-daily" class="item-value"
+                          >0.000</span
+                        >
+                        <span class="item-label" data-i18n="stat_daily"
+                          >Hoy</span
+                        >
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -237,30 +339,126 @@
 
           <!-- Ajustes Button Section -->
           <div class="settings-wrapper sidebar-item-wrapper">
-            <button id="btn-profile" class="nav-item" title="Ajustes" data-i18n-title="settings_title">
+            <button
+              id="btn-profile"
+              class="nav-item"
+              title="Ajustes"
+              data-i18n-title="settings_title"
+            >
               <span class="nav-icon">⚙️</span>
               <span class="nav-label" data-i18n="settings_title">Ajustes</span>
             </button>
-            <div id="profile-dropdown" class="dropdown-content glass-panel hidden">
-              <button class="dropdown-close-btn" onclick="this.parentElement.classList.add('hidden')" aria-label="Cerrar">×</button>
-              <h3 class="dropdown-header" data-i18n="settings_title">Configuración</h3>
+            <div
+              id="profile-dropdown"
+              class="dropdown-content glass-panel hidden"
+            >
+              <button
+                class="dropdown-close-btn"
+                onclick="this.parentElement.classList.add('hidden')"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+              <h3 class="dropdown-header" data-i18n="settings_title">
+                Configuración
+              </h3>
               <div class="settings-section appearance-section">
-                <h4 class="settings-subhead" data-i18n="settings_appearance">Apariencia</h4>
+                <h4 class="settings-subhead" data-i18n="settings_appearance">
+                  Apariencia
+                </h4>
                 <div class="segmented-control theme-switcher">
-                  <label class="segment-label"><input type="radio" name="theme" value="light" /><span class="segment-content"><span class="icon">☀️</span><span class="text" data-i18n="theme_light">Claro</span></span></label>
-                  <label class="segment-label"><input type="radio" name="theme" value="auto" /><span class="segment-content"><span class="icon">🌗</span><span class="text" data-i18n="theme_auto">Auto</span></span></label>
-                  <label class="segment-label"><input type="radio" name="theme" value="dark" /><span class="segment-content"><span class="icon">🌙</span><span class="text" data-i18n="theme_dark">Oscuro</span></span></label>
+                  <label class="segment-label"
+                    ><input type="radio" name="theme" value="light" /><span
+                      class="segment-content"
+                      ><span class="icon">☀️</span
+                      ><span class="text" data-i18n="theme_light"
+                        >Claro</span
+                      ></span
+                     ></label
+                  >
+                  <label class="segment-label"
+                    ><input type="radio" name="theme" value="auto" /><span
+                      class="segment-content"
+                      ><span class="icon">🌗</span
+                      ><span class="text" data-i18n="theme_auto"
+                        >Auto</span
+                      ></span
+                    ></label
+                  >
+                  <label class="segment-label"
+                    ><input type="radio" name="theme" value="dark" /><span
+                      class="segment-content"
+                      ><span class="icon">🌙</span
+                      ><span class="text" data-i18n="theme_dark"
+                        >Oscuro</span
+                      ></span
+                    ></label
+                  >
                 </div>
               </div>
               <div class="dropdown-divider"></div>
               <div class="settings-section gameplay-section">
+                <h4 class="settings-subhead" data-i18n="settings_gameplay">
+                  Jugabilidad
+                </h4>
+                <div class="setting-item" id="setting-sound-container-modal">
+                  <span class="setting-label"
+                    ><span class="icon-label">🔊</span
+                    ><span data-i18n="setting_sound">Sonido</span></span
+                  ><label class="switch-small"
+                    ><input type="checkbox" id="sound-toggle" checked /><span
+                      class="slider-small round"
+                    ></span
+                  ></label>
+                </div>
+                <div class="setting-item" id="setting-vibration-container">
+                  <span class="setting-label"
+                    ><span class="icon-label">📳</span
+                    ><span data-i18n="setting_vibration">Vibración</span></span
+                  ><label class="switch-small"
+                    ><input
+                      type="checkbox"
+                      id="vibration-toggle"
+                      checked /><span class="slider-small round"></span
+                  ></label>
+                </div>
                 <div class="setting-item">
-                  <span class="setting-label" data-i18n="profile_language">Idioma</span>
-                  <select id="language-select" class="lang-select">
+                  <div class="label-group">
+                    <span class="setting-label"
+                      ><span class="icon-label">🛡️</span
+                      ><span data-i18n="setting_confirm_clear"
+                        >Confirmar Borrado</span
+                      ></span
+                    >
+                  </div>
+                  <label class="switch-small"
+                    ><input
+                      type="checkbox"
+                      id="confirm-clear-toggle"
+                      checked /><span class="slider-small round"></span
+                  ></label>
+                </div>
+                <div class="setting-item">
+                  <span class="setting-label" data-i18n="profile_language"
+                    >Idioma</span
+                  ><select id="language-select" class="lang-select">
                     <option value="es">Español</option>
                     <option value="en">English</option>
                   </select>
                 </div>
+              </div>
+              <div
+                class="settings-section"
+                style="margin-top: 10px; text-align: center"
+              >
+                <button
+                  id="btn-share-app"
+                  class="btn-profile-action"
+                  data-i18n="btn_share_app"
+                  onclick="window.shareApp()"
+                >
+                  Compartir App 📢
+                </button>
               </div>
             </div>
           </div>
@@ -278,7 +476,7 @@
         <div class="section-body">
           <div class="privacy-card">
             <h2 data-i18n="about_intro_title">Sobre Jigsudo</h2>
-            <p data-i18n="about_intro_text">
+            <p data-i18n="about_intro_p">
               Jigsudo es un desafío mental diario que fusiona mecánicas de 
               lógica, memoria y rompecabezas en una experiencia única. 
               Cada día a las 06:00 UTC se genera un nuevo tablero, ofreciendo 
@@ -289,7 +487,7 @@
 
           <div class="privacy-card">
             <h2 data-i18n="about_independent_title">Un Proyecto Independiente</h2>
-            <p data-i18n="about_independent_text">
+            <p data-i18n-html="about_independent_text">
               Este sitio es el resultado de la pasión por los acertijos y el 
               desarrollo web. Fue creado íntegramente por <strong>Román Yakimovicz</strong> 
               con el objetivo de ofrecer un juego gratuito, limpio y sin la 
@@ -312,7 +510,7 @@
 
           <div class="privacy-card">
             <h2 data-i18n="about_github_title">Código Abierto</h2>
-            <p data-i18n="about_github_text">
+            <p data-i18n-html="about_github_text">
               Jigsudo es un proyecto transparente. Si eres desarrollador o 
               tienes curiosidad por cómo funciona por dentro, puedes revisar 
               todo el código fuente en 
