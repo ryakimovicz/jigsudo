@@ -69,18 +69,23 @@ export function toggleModal(elementOrId, show) {
   if (!modal) return;
 
   if (show) {
-    modal.classList.remove("hidden");
-    document.body.classList.add("no-scroll");
-    document.documentElement.classList.add("no-scroll");
+    if (modal.classList.contains("hidden")) {
+      modal.classList.remove("hidden");
+      document.body.classList.add("no-scroll");
+      document.documentElement.classList.add("no-scroll");
+    }
   } else {
-    modal.classList.add("hidden");
-    // Only remove no-scroll if no other modals are visible
-    const otherModals = document.querySelectorAll(
-      ".modal-overlay:not(.hidden)",
-    );
-    if (otherModals.length === 0) {
-      document.body.classList.remove("no-scroll");
-      document.documentElement.classList.remove("no-scroll");
+    if (!modal.classList.contains("hidden")) {
+      modal.classList.add("hidden");
+      
+      // Only remove no-scroll if no other modals are visible
+      const otherModals = document.querySelectorAll(
+        ".modal-overlay:not(.hidden)",
+      );
+      if (otherModals.length === 0) {
+        document.body.classList.remove("no-scroll");
+        document.documentElement.classList.remove("no-scroll");
+      }
     }
   }
 }

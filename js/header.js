@@ -4,6 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const expandThreshold = 5;
 
   const handleScroll = () => {
+    // If body is scroll-locked (modal open), don't update header state
+    if (body.classList.contains("no-scroll")) return;
+
     const currentScrollY = window.scrollY;
 
     if (currentScrollY > shrinkThreshold) {

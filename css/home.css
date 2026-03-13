@@ -95,8 +95,8 @@ body.header-condensed .header-center {
 }
 
 body.header-condensed .header-text-block {
-  /* Expand the true boundary by exactly the width the #034 transform bleeds rightward */
-  margin-right: 52px;
+  /* Removed asymmetrical margin-right which was causing horizontal shifts in centered flex containers */
+  margin-right: 0;
 }
 
 .header-logo {
