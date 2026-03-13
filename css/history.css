@@ -6,6 +6,12 @@
   /* margin, width, and ad padding handled by global.css */
 }
 
+@media (max-width: 768px) {
+  #history-section {
+    padding-top: var(--header-height-condensed); /* Clear sticky header */
+  }
+}
+
 #history-section.hidden {
   display: none !important;
 }

@@ -538,7 +538,7 @@ body.dark-mode .memory-card-back {
   /* Override global container padding to regain vertical space */
   #game-section {
     padding: 0;
-    padding-top: 0; /* Sticky header already takes space in flow */
+    padding-top: var(--header-height-condensed); /* Clear sticky header */
     padding-bottom: var(--footer-height);
     justify-content: flex-start; /* Force top alignment for board consistency */
     overflow: hidden !important;
@@ -570,16 +570,14 @@ body.dark-mode .memory-card-back {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start; /* MUST be flex-start to keep elements grouped tight */
-    gap: 10px; /* Minimal gap */
-    @media (max-height: 700px) {
-      gap: 5px;
-    }
+    gap: 4px; /* Reduced from 10px/5px */
     padding-top: 5px; /* Minimal top padding */
     padding-bottom: 0; 
     position: relative;
     z-index: 10000;
     flex: 1; 
     min-height: 0;
+    height: 100%; /* REQUIRED: Passes strict height down for container queries */
     width: 100%;
   }
 
@@ -602,12 +600,12 @@ body.dark-mode .memory-card-back {
   }
 
   .memory-board {
-    /* Stage 1 (Memory): Let flexbox natural sizing dictate the ratio */
-    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 30px) * 0.35);
+    /* Stage 1 (Memory): Reduced budget to favor larger cards on mobile */
+    --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 40px) * 0.20);
     
-    /* Aggressive shrink for very short screens (like 667px height) to favor larger cards */
+    /* Aggressive shrink for very short screens */
     @media (max-height: 700px) {
-      --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 20px) * 0.28);
+      --v-budget: calc((100dvh - var(--header-height) - var(--footer-height) - 20px) * 0.18);
     }
 
     width: min(95vw, var(--v-budget));
@@ -652,13 +650,17 @@ body.dark-mode .memory-card-back {
     z-index: 10000;
     /* Animate height expansion during jigsaw mode transition */
     transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: -5px; /* Pull tighter to board to save space */
+    margin-bottom: 5px;
   }
 
   /* Hide the collected/slot area ENTIRELY during Memory phase on mobile
-     to give 100% of the remaining vertical space to the cards. */
+     to give 100% of the remaining vertical space to the cards. 
+     REMOVED: Users want to see the matched pieces.
   .memory-mode:not(.jigsaw-mode):not(.sudoku-mode):not(.peaks-mode):not(.search-mode):not(.code-mode) .collected-wrapper {
     display: none !important;
   }
+  */
 
   /* Reset children to simple flex items */
   #collected-left,
@@ -677,36 +679,41 @@ body.dark-mode .memory-card-back {
     gap: 4px;
   }
   /* Maybe make them appear as one block visually? */
-
   .cards-area {
     order: 3;
     display: flex !important;
     flex-wrap: wrap;
     justify-content: center;
-    align-content: center; /* Center the grid block vertically */
+    align-content: flex-start; /* PUSH cards up towards prizes */
     width: 100%;
-    flex: 1; /* PUSH: Take ALL remaining vertical space left over from board/header/footer */
-    min-height: 0;
+    flex: 1 1 0px; 
     gap: 8px;
     padding: 0 10px;
-    
-    /* Establish exact boundaries for the cards to query against */
-    container-type: size;
-    container-name: cardsArea;
+    padding-bottom: 20px; /* Safe area above ads */
+    min-height: 0;
   }
 
   .memory-card {
-    /* Fallback sizing for legacy browsers */
-    width: clamp(40px, 14vw, 85px);
-    height: clamp(40px, 14vw, 85px);
+    /* 
+       Base width: exactly 25% of the row minus the gap.
+       For 4 items, there are 3 gaps of 8px (24px). 24 / 4 = 6px.
+    */
+    width: calc(25% - 6px);
     
-    /* Modern Exact Sizing: Size mathematically to fit 5 col x 4 row */
-    --max-w: calc((100cqw - 32px) / 5); /* 100% area - 4 gaps of 8px */
-    --max-h: calc((100cqh - 24px) / 4); /* 100% area - 3 gaps of 8px */
+    /* Absolute safety: Calculate Max Card Width based on Max Available Height.
+       ~350px is the safe sum of [ Header, Board, Gaps, Ad Banner, Footer padding ].
+       By forcing max-width to obey the height budget, aspect-ratio will 
+       never let the cards grow tall enough to overlap anything vertically. */
+    --h-budget: calc((100dvh - 350px) / 5);
+    max-width: min(110px, var(--h-budget));
     
-    width: min(var(--max-w), var(--max-h), 85px);
-    height: min(var(--max-w), var(--max-h), 85px);
+    height: auto;
     aspect-ratio: 1/1;
+    
+    /* Safeties */
+    min-width: 35px;
+    min-height: 35px;
+    
     .mini-cell {
       font-size: 14px;
     }
@@ -738,6 +745,14 @@ body.dark-mode .memory-card-back {
   .collected-piece {
     width: 60px;
     height: 60px;
+    border: 1px solid var(--ad-placeholder-border); /* Explicit border for mobile visibility */
+    background: rgba(var(--accent-rgb), 0.05); /* Subtle tint for empty slots */
+  }
+
+  /* Specific style for empty placeholders to make them visible */
+  .collected-piece.placeholder {
+    border: 1px dashed var(--text-muted);
+    background: transparent;
   }
 
   /* Force GPU Promotion */

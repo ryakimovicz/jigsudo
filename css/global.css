@@ -12,6 +12,10 @@
   --bg-tertiary: #e2e8f0; /* Lighter Slate - Tertiary Background */
   --brand-color: var(--accent-color);
 
+  /* Semantic Typography (Fallbacks) */
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
+
   /* UI Utilities */
   --header-height-expanded: 90px;
   --header-height-condensed: 45px;
@@ -48,6 +52,8 @@ body.dark-mode {
   --primary-dark: #adbac7;
   --text-main: #cdd9e5; /* Pearl Grey */
   --text-muted: #768390;
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
   --accent-color: #ffa726; /* Lighter/Golden Orange for better contrast on dark */
   --accent-rgb: 255, 167, 38;
 
