@@ -14,28 +14,33 @@ permissions:
 
 jobs:
   maintenance:
+    name: 📉 Apply Score Decay
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
-
       - name: Install Dependencies
         run: npm ci || npm install
-
-      - name: 🧩 Generate and Obfuscate Puzzle
-        run: node scripts/generate-daily.js ${{ github.event.inputs.seed }}
-
-      - name: 📉 Apply Score Decay
-        if: github.event_name == 'schedule'
+      - name: Run Decay Script
         env:
           FIREBASE_SERVICE_ACCOUNT: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
         run: node scripts/apply-decay.js
 
+  generation:
+    name: 🧩 Generate Daily Puzzles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm ci || npm install
+      - name: Generate Missing Puzzles (Smart Buffer)
+        run: node scripts/generate-daily.js ${{ github.event.inputs.seed }}
       - name: 🚀 Commit and Push
         run: |
           git config --global user.name 'Jigsudo Bot'

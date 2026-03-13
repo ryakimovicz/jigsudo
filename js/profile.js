@@ -50,6 +50,12 @@ export function initProfile() {
   if (shareBtn) {
     shareBtn.addEventListener("click", () => handleShareStats());
   }
+
+  // Real-time Cloud Sync Listener: Refresh UI when stats update in background
+  window.addEventListener("userStatsUpdated", () => {
+    console.log("[Profile] Stats updated from cloud. Refreshing UI...");
+    updateProfileData();
+  });
 }
 
 // Routing handled by router.js

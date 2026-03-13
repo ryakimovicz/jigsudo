@@ -15,10 +15,38 @@ export class GameManager {
     this.isWiping = false;
     this.isReplay = false;
 
-    // Listen for tab focus/visibility to force save
-    document.addEventListener("visibilitychange", () => {
+    // Listen for tab focus/visibility to force save or handle day transitions
+    document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "hidden") {
         this.forceCloudSave();
+      } else if (document.visibilityState === "visible") {
+        // Handle Day Transition: Check if the puzzle has expired while the tab was backgrounded
+        const newSeed = getDailySeed();
+        if (this.currentSeed !== newSeed && !this.isReplay) {
+          // Mid-game Safety: Don't auto-refresh if the user is currently in a game session
+          const isAtGame = window.location.hash.startsWith("#game");
+          const hasActiveProgress =
+            this.state &&
+            this.state.progress &&
+            this.state.progress.currentStage !== "complete";
+
+          if (isAtGame && hasActiveProgress) {
+            console.log(
+              "[GameManager] Day transition detected, but user is in a game. Delaying refresh.",
+            );
+            return;
+          }
+
+          console.log("[GameManager] Day transition detected. Refreshing puzzle...");
+          const success = await this.prepareDaily();
+          if (success) {
+            window.dispatchEvent(
+              new CustomEvent("jigsudoDayChanged", {
+                detail: { oldSeed: this.currentSeed, newSeed: newSeed },
+              }),
+            );
+          }
+        }
       }
     });
   }
@@ -79,7 +107,13 @@ export class GameManager {
       // Proactively load stats to ensure this.stats is populated before syncs
       this.stats =
         JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
-      this._ensureStats();
+      const decayOccurred = await this._ensureStats();
+      if (decayOccurred) {
+        console.log(
+          "[GameManager] Self-healing detected at startup. Syncing to cloud...",
+        );
+        this.forceCloudSave();
+      }
       const activeUid = localStorage.getItem("jigsudo_active_uid");
       if (activeUid && !this.state.meta.userId) {
         this.state.meta.userId = activeUid;
@@ -97,7 +131,11 @@ export class GameManager {
       // Record as played in history ONLY if it's the original day
       const seedStr = this.currentSeed.toString();
       const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-      this._ensureStats();
+      const decayOccurred = await this._ensureStats();
+      if (decayOccurred) {
+        console.log("[GameManager] Self-healing detected on fresh start. Syncing to cloud...");
+        this.forceCloudSave();
+      }
       if (!this.isReplay && !this.stats.history[dateStr]) {
         this.stats.history[dateStr] = {
           status: "played",
@@ -1003,58 +1041,75 @@ export class GameManager {
 
     if (this.state && !this.state.meta.stageTimes)
       this.state.meta.stageTimes = {};
-    this._checkRankDecay();
-    import("./db.js").then(({ cleanupLegacyStats }) => {
-      import("./auth.js").then(({ getCurrentUser }) => {
-        const u = getCurrentUser();
-        if (u) cleanupLegacyStats(u.uid);
-      });
-    });
+    
+    // Return the decay check promise so callers can await it if needed
+    return this._checkRankDecay();
   }
 
-  async _checkRankDecay() {
-    let stats =
-      this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
-    if (!stats) return;
+  async _checkRankDecay(targetStats = null) {
+    let stats = targetStats || this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+    if (!stats) return false;
 
     const seedStr = this.currentSeed.toString();
     const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
     const currentMonth = today.substring(0, 7); // "YYYY-MM"
 
-    const lastCheck = stats.lastDecayCheck || stats.lastPlayedDate;
+    // Use lastDailyUpdate if available (more reliable for daily sync)
+    const lastCheck = stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
+    let changed = false;
 
     if (lastCheck && lastCheck !== today) {
-      const lastDate = new Date(lastCheck);
-      const currDate = new Date(today);
-      lastDate.setHours(0, 0, 0, 0);
-      currDate.setHours(0, 0, 0, 0);
-      const diffTime = currDate - lastDate;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const lastDate = new Date(lastCheck + "T12:00:00Z");
+      const currDate = new Date(today + "T12:00:00Z");
+      const diffDays = Math.round((currDate - lastDate) / (1000 * 60 * 60 * 24));
 
-      // 1. Decay Penalty (Missed days)
-      if (diffDays > 1) {
-        const missed = diffDays - 1;
-        const penalty = missed * SCORING.MISSED_DAY_RP;
-        if (penalty > 0) {
-          stats.currentRP = Math.max(0, (stats.currentRP || 0) - penalty);
+      if (diffDays >= 1) {
+        // 1. Reset Daily RP
+        if (stats.dailyRP !== 0) {
+          stats.dailyRP = 0;
+          changed = true;
+        }
+
+        // 2. Reset Monthly RP
+        const lastMonth = lastCheck.substring(0, 7);
+        if (currentMonth !== lastMonth && stats.monthlyRP !== 0) {
+          stats.monthlyRP = 0;
+          changed = true;
+        }
+
+        // 3. Decay Penalty (Missed full Jigsudo days)
+        if (diffDays > 1) {
+          const missed = diffDays - 1;
+          const penalty = missed * SCORING.MISSED_DAY_RP;
+          if (penalty > 0) {
+            const oldRP = stats.currentRP || 0;
+            stats.currentRP = Math.max(0, oldRP - penalty);
+            stats.currentRP = Number(stats.currentRP.toFixed(3));
+            if (stats.currentRP !== oldRP) changed = true;
+          }
+          // Streak Reset: If more than one day passed, the streak is over
+          if (stats.currentStreak !== 0) {
+            stats.currentStreak = 0;
+            changed = true;
+          }
+        }
+
+        if (stats.lastDailyUpdate !== today) {
+          stats.lastDailyUpdate = today;
+          changed = true;
+        }
+
+        if (changed) {
+          stats.lastDecayCheck = today;
+          stats.lastLocalUpdate = Date.now();
+          if (!targetStats) {
+            this.stats = stats;
+            localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+          }
         }
       }
-
-      // 2. Reset Daily RP
-      if (diffDays >= 1) {
-        stats.dailyRP = 0;
-      }
-
-      // 3. Reset Monthly RP
-      const lastMonth = lastCheck.substring(0, 7);
-      if (currentMonth !== lastMonth) {
-        stats.monthlyRP = 0;
-      }
-
-      stats.lastDecayCheck = today;
-      this.stats = stats;
-      localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
     }
+    return changed;
   }
 
   startStageTimer(stage) {
@@ -1102,6 +1157,22 @@ export class GameManager {
     }
 
     if (remoteStats) {
+      // 0. SELF-HEALING: Protect against stale server data
+      // If the server hasn't run its maintenance yet (GH Actions delay),
+      // we apply the decay logic to the remote stats before comparing.
+      const decayApplied = await this._checkRankDecay(remoteStats);
+      if (decayApplied) {
+        console.log("[Sync] Remote stats were STALE. Applied local decay/reset before comparison.");
+        // OPTIMIZATION: Push healed stats back to cloud if user is authenticated.
+        // This marks maintenance as "done" for this user, so the GH Action skips them later.
+        const { getCurrentUser } = await import("./auth.js");
+        const user = getCurrentUser();
+        if (user && !user.isAnonymous) {
+          const { saveUserStats } = await import("./db.js");
+          saveUserStats(user.uid, remoteStats, user.displayName);
+        }
+      }
+
       // Conflict Resolution for Stats: Prevent "Cloud Echo" overwrites
       // If local has a newer or equal update timestamp, ignore the echo.
       const localTS = this.stats ? this.stats.lastLocalUpdate || 0 : 0;
@@ -1121,6 +1192,9 @@ export class GameManager {
         );
         this.stats = remoteStats;
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+        window.dispatchEvent(
+          new CustomEvent("userStatsUpdated", { detail: this.stats }),
+        );
       } else {
         console.log(
           `[Sync] Ignoring stale remote stats (Echo). (Local: ${localTS} >= Remote: ${remoteTS})`,
@@ -1486,8 +1560,7 @@ export class GameManager {
 
     try {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
-      await this._checkRankDecay();
-      this._ensureStats();
+      await this._ensureStats();
 
       let stats = this.stats;
       if (!stats.history) stats.history = {};
@@ -1497,7 +1570,6 @@ export class GameManager {
 
       const seedStr = this.currentSeed.toString();
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-      const currentMonth = today.substring(0, 7); // "YYYY-MM"
 
       const last = stats.lastPlayedDate;
       const isAlreadyWon = stats.history[today]?.status === "won";
@@ -1506,13 +1578,11 @@ export class GameManager {
         stats.totalPlayed = (stats.totalPlayed || 0) + 1;
         stats.wins = (stats.wins || 0) + 1;
 
-        // Handle Streak and RP Resets
+        // Handle Streak and RP Resets (Consistent UTC Logic)
         if (last) {
-          const lastDate = new Date(last);
-          const currDate = new Date(today);
-          lastDate.setHours(0, 0, 0, 0);
-          currDate.setHours(0, 0, 0, 0);
-          const diffDays = Math.ceil(
+          const lastDate = new Date(last + "T12:00:00Z");
+          const currDate = new Date(today + "T12:00:00Z");
+          const diffDays = Math.round(
             (currDate - lastDate) / (1000 * 60 * 60 * 24),
           );
 
@@ -1764,8 +1834,20 @@ export class GameManager {
     stats.bestScore = bestScore;
     stats.lastPlayedDate = dates[dates.length - 1];
 
-    // Final current streak is the one active on the last recorded date
-    stats.currentStreak = currentStreakCount;
+    // Final current streak validation: 
+    // Is the streak still active relative to the current puzzle date?
+    const seedStrForRecalc = this.currentSeed.toString();
+    const todayStr = `${seedStrForRecalc.substring(0, 4)}-${seedStrForRecalc.substring(4, 6)}-${seedStrForRecalc.substring(6, 8)}`;
+    const todayObj = new Date(todayStr + "T12:00:00");
+    const lastWinStr = dates[dates.length - 1];
+    const lastWinObj = new Date(lastWinStr + "T12:00:00");
+    const dayGap = Math.ceil((todayObj - lastWinObj) / (1000 * 60 * 60 * 24));
+
+    if (dayGap > 1) {
+      stats.currentStreak = 0;
+    } else {
+      stats.currentStreak = currentStreakCount;
+    }
   }
 }
 export const gameManager = new GameManager();

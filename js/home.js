@@ -488,31 +488,52 @@ export function initHome() {
   // Initial State
   refreshStartButton();
 
-  // Re-check when coming back to the tab (midnight transition)
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      refreshStartButton();
-    }
-  });
-
-  // REAL-TIME: If user stays on page, unlock exactly at midnight
-  const setupMidnightTimer = () => {
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-
-    const msUntilMidnight = tomorrow.getTime() - now.getTime();
-
-    // Schedule refresh at midnight
-    setTimeout(() => {
-      console.log("Midnight reached! Refreshing daily game state.");
-      refreshStartButton();
-      // Schedule the next one
-      setupMidnightTimer();
-    }, msUntilMidnight + 100); // 100ms buffer
+  // --- Day Transition Logic ---
+  const refreshAllDayData = () => {
+    console.log("[Home] Day transition detected. Refreshing UI elements...");
+    updateHeaderInfo();
+    refreshStartButton();
+    loadAndRenderAllRankings(true);
   };
-  setupMidnightTimer();
+
+  // 1. Listen for GameManager detection (Visibility change / Refocus)
+  window.addEventListener("jigsudoDayChanged", refreshAllDayData);
+
+  // 2. Real-time timer: Unlock exactly at 06:00 UTC if user stays on page
+  const setupJigsudoDayTimer = () => {
+    const now = new Date();
+    const nextReset = new Date(now);
+    // Find next 06:00 UTC
+    nextReset.setUTCHours(6, 0, 0, 0);
+    if (nextReset <= now) {
+      nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+    }
+
+    const msUntilReset = nextReset.getTime() - now.getTime();
+    console.log(`[Home] Next Jigsudo Day in ${Math.round(msUntilReset / 1000 / 60)} minutes.`);
+
+    setTimeout(async () => {
+      console.log("Jigsudo Day Cutoff reached! Refreshing state.");
+
+      // Mid-game Safety: Don't auto-refresh the manager if the user is in a game
+      const isAtGame = window.location.hash.startsWith("#game");
+      if (isAtGame) {
+        console.log(
+          "[Home] 06:00 UTC reached, but user is playing. Refreshing only after return to home.",
+        );
+        // We still schedule the next one, but we don't call prepareDaily yet
+        setupJigsudoDayTimer();
+        return;
+      }
+
+      // Trigger Manager to fetch new puzzle
+      await gameManager.prepareDaily();
+      refreshAllDayData();
+      // Schedule the next one
+      setupJigsudoDayTimer();
+    }, msUntilReset + 1000); // 1s buffer
+  };
+  setupJigsudoDayTimer();
 
   // Home Navigation (Inicio Button)
   const navHome = document.getElementById("nav-home");
@@ -621,8 +642,19 @@ export function initHome() {
     if (detail.hash === "" || detail.hash === "#" || detail.hash === "#home") {
       updateHeaderInfo();
       refreshStartButton();
-      // Only load rankings if container is visible
-      loadAndRenderAllRankings();
+
+      // Day Transition Safety: If the user returns from a game that crossed the cutoff boundary,
+      // refresh the manager now.
+      const actualSeed = getDailySeed();
+      if (gameManager.currentSeed !== actualSeed && !gameManager.isReplay) {
+        console.log("[Home] Day transition detected upon returning to menu.");
+        gameManager.prepareDaily().then(() => {
+          refreshAllDayData();
+        });
+      } else {
+        // Normal refresh
+        loadAndRenderAllRankings();
+      }
 
       const debugBtn = document.getElementById("debug-help-btn");
       if (debugBtn) debugBtn.style.display = "none";

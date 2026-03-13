@@ -39,12 +39,9 @@ async function runDecay() {
   try {
     const usersRef = db.collection("users");
 
-    // We only penalize users who:
-    // 1. Have not played today (lastDailyUpdate != todayStr)
-    // 2. Have actual RP to lose (totalRP > 0)
-    // 3. We exclude users who never even got verified and don't play.
-    //    Checking totalRP > 0 covers the inactive fresh accounts naturally.
-    const snapshot = await usersRef.where("totalRP", ">", 0).get();
+    // Optimization: Only fetch users whose last update was BEFORE today.
+    // If a user already self-healed via the client, they will be skipped here.
+    const snapshot = await usersRef.where("lastDailyUpdate", "<", todayStr).get();
 
     if (snapshot.empty) {
       console.log("✅ No eligible users found for decay.");
@@ -58,37 +55,69 @@ async function runDecay() {
       const data = doc.data();
       const lastUpdate = data.lastDailyUpdate;
 
-      if (lastUpdate !== todayStr) {
-        // User missed today!
-        const currentRP = data.totalRP || 0;
-        let newRP = currentRP - MISSED_DAY_PENALTY;
-        if (newRP < 0) newRP = 0;
+      if (!lastUpdate) return; // Never played, skip decay logic
 
-        newRP = Number(newRP.toFixed(3)); // Ensure precision matches client
+      // Strict day difference calculation using Jigsudo dates
+      const lastDate = new Date(lastUpdate + "T12:00:00Z");
+      const todayDate = new Date(todayStr + "T12:00:00Z");
+      const diffDays = Math.round(
+        (todayDate - lastDate) / (1000 * 60 * 60 * 24),
+      );
 
-        if (newRP !== currentRP) {
-          // Update the root totalRP because Ranking uses it
-          const updateObj = {
-            totalRP: newRP,
-            "stats.currentRP": newRP, // Update the nested stats too
-            "stats.lastDecayCheck": todayStr,
-            lastUpdated: FieldValue.serverTimestamp(),
-          };
+      if (diffDays >= 1) {
+        // Prepare update object with mandatory resets for a new day
+        const updateObj = {
+          dailyRP: 0,
+          "stats.dailyRP": 0,
+          "stats.lastDecayCheck": todayStr,
+          lastDailyUpdate: todayStr, // Mark maintenance as done for today
+          lastUpdated: FieldValue.serverTimestamp(),
+        };
 
-          batch.update(doc.ref, updateObj);
-          penalizedCount++;
+        // Monthly Reset
+        const lastMonth = lastUpdate.substring(0, 7);
+        const currentMonth = todayStr.substring(0, 7);
+        if (lastMonth !== currentMonth) {
+          updateObj.monthlyRP = 0;
+          updateObj["stats.monthlyRP"] = 0;
         }
+
+        // Penalty & Streak Reset (Only if user MISSED a full day)
+        // If diffDays is 1, it means they played yesterday and it's simply a new day.
+        // If diffDays > 1, it means they skipped at least one full Jigsudo day.
+        if (diffDays > 1) {
+          const missedCount = diffDays - 1;
+          const currentTotalRP = data.totalRP || 0;
+          let newRP = currentTotalRP - missedCount * MISSED_DAY_PENALTY;
+          if (newRP < 0) newRP = 0;
+          newRP = Number(newRP.toFixed(3)); // Ensure precision matches client
+
+          updateObj.totalRP = newRP;
+          updateObj["stats.currentRP"] = newRP;
+          updateObj["stats.currentStreak"] = 0; // Fix: streak resets to 0
+
+          console.log(
+            `📉 Penalty for ${data.username || doc.id}: -${missedCount * MISSED_DAY_PENALTY} RP, Streak Reset to 0`,
+          );
+        } else {
+          console.log(
+            `🌅 New day reset for ${data.username || doc.id} (Daily stats cleared)`,
+          );
+        }
+
+        batch.update(doc.ref, updateObj);
+        penalizedCount++;
       }
     });
 
     if (penalizedCount > 0) {
       console.log(
-        `⏳ Committing batch penalty for ${penalizedCount} inactive user(s)...`,
+        `⏳ Committing updates/penalties for ${penalizedCount} user(s)...`,
       );
       await batch.commit();
-      console.log("✅ Decay successfully applied.");
+      console.log("✅ Maintenance successfully applied.");
     } else {
-      console.log("✅ All active users played today. No penalties applied.");
+      console.log("✅ No users required maintenance updates today.");
     }
 
     process.exit(0);

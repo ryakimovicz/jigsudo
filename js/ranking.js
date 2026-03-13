@@ -11,7 +11,8 @@ import {
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { getCurrentUser } from "./auth.js";
-import { getRankData } from "./ranks.js";
+import { getRankData, SCORING } from "./ranks.js";
+import { gameManager } from "./game-manager.js";
 
 const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -88,7 +89,16 @@ async function getTopRankings(
   if (user) {
     // 1. Check if user is in top 10
     const inTop10 = top10.findIndex((u) => u.id === user.uid);
-    const userScore = user.stats ? user.stats[fieldName] || 0 : 0;
+    
+    // UI Robustness: Use gameManager.stats (Source of truth) and apply instant reset if the period doesn't match
+    const stats = gameManager.stats;
+    let userScore = stats[fieldName] || 0;
+
+    // If we have a filter (Daily/Monthly) and the local stats date doesn't match the target period,
+    // it means the maintenance script hasn't run or we haven't played yet -> Show 0.
+    if (filterField && stats[filterField] !== filterValue) {
+      userScore = 0;
+    }
 
     if (inTop10 !== -1) {
       result.personal = {

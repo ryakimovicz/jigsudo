@@ -24,33 +24,41 @@ async function generateDailyPuzzle() {
     "🧩 Starting Daily Puzzle Generation (Survivor Greedy + Cleanup)...",
   );
 
-  let seed = process.argv[2];
-  let dateStr = "";
-  let seedInt;
+  let requestedSeed = process.argv[2];
+  let seedsToProcess = [];
 
-  // Fecha y Semilla
-  if (!seed) {
-    const tomorrow = getJigsudoDate();
-    tomorrow.setDate(tomorrow.getUTCDate() + 1);
-    const yyyy = tomorrow.getUTCFullYear();
-    const mm = String(tomorrow.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(tomorrow.getUTCDate()).padStart(2, "0");
-    dateStr = `${yyyy}-${mm}-${dd}`;
-    seedInt = parseInt(`${yyyy}${mm}${dd}`, 10);
-    seed = seedInt.toString();
+  if (!requestedSeed) {
+    const target = getJigsudoDate();
+    target.setDate(target.getUTCDate() + 1);
+    const yyyy = target.getUTCFullYear();
+    const mm = String(target.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(target.getUTCDate()).padStart(2, "0");
+    seedsToProcess.push(`${yyyy}${mm}${dd}`);
   } else {
+    seedsToProcess.push(requestedSeed);
+  }
+
+  for (const seed of seedsToProcess) {
+    let dateStr = "";
+    let seedInt;
+
     if (/^\d{8}$/.test(seed)) {
       const y = seed.substring(0, 4);
       const m = seed.substring(4, 6);
       const d = seed.substring(6, 8);
       dateStr = `${y}-${m}-${d}`;
+      seedInt = parseInt(seed, 10);
     } else {
       dateStr = "custom-" + seed;
+      seedInt = parseInt(seed, 10) || 12345;
     }
-    seedInt = parseInt(seed, 10) || 12345;
+    
+    console.log(`\n🔧 Target Date: ${dateStr}, Seed: ${seedInt}`);
+    await generateSinglePuzzle(dateStr, seedInt);
   }
-  console.log(`🔧 Target Date: ${dateStr}, Seed: ${seed}`);
+}
 
+async function generateSinglePuzzle(dateStr, seedInt) {
   try {
     const baseSeed = seedInt;
     let attemptsGlobal = 0;
