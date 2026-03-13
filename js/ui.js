@@ -222,7 +222,7 @@ export function showVictorySummary(stats, isHome = false) {
         // 2. Clear current game session if needed (optional, state usually persists but we want fresh Home)
         // 3. Navigate Home
         const { router } = await import("./router.js");
-        router.navigateTo("#");
+        router.navigateTo("#home");
 
         // 4. Force global events to let Home.js know it should refresh UI
         window.dispatchEvent(new CustomEvent("gameCompleted"));
