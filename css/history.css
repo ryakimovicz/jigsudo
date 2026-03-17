@@ -25,6 +25,15 @@
   align-items: center; /* Center children like .history-card */
 }
 
+.history-page-title {
+  font-family: var(--font-header);
+  font-size: clamp(1.8rem, 6vw, 2.5rem);
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 24px;
+  text-align: center;
+}
+
 .history-card {
   margin: 0 auto; /* Ensure centering as a block */
   background: var(--bg-card);
