@@ -198,6 +198,8 @@ export const translations = {
     // Footer
     footer_rights_html:
       '© 2026 <a href="https://github.com/ryakimovicz/jigsudo" target="_blank">Román Yakimovicz</a>',
+    footer_about: "Nosotros",
+    footer_contact: "Contacto",
     footer_privacy: "Privacidad",
     footer_terms: "Términos",
     footer_support: "Soporte",
@@ -648,6 +650,8 @@ export const translations = {
     // Footer
     footer_rights_html:
       '© 2026 <a href="https://github.com/ryakimovicz/jigsudo" target="_blank">Román Yakimovicz</a>',
+    footer_about: "About Us",
+    footer_contact: "Contact",
     footer_privacy: "Privacy",
     footer_terms: "Terms",
     footer_support: "Support",
