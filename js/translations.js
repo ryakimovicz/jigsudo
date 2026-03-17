@@ -204,6 +204,16 @@ export const translations = {
     footer_terms: "Términos",
     footer_support: "Soporte",
 
+    // History (Historial)
+    history_title: "Historial de Puzzles",
+    history_select_date: "Selecciona una fecha para jugar",
+    hist_legend_title: "Referencias",
+    hist_legend_nav: "Usa las flechas para navegar entre los meses disponibles.",
+    hist_legend_gray: "Jigsudo no jugado en su día original.",
+    hist_legend_yellow: "Jigsudo iniciado pero no terminado en su día.",
+    hist_legend_green: "Jigsudo terminado en su día original.",
+    hist_legend_crown: "Jigsudo terminado (en su día o posteriormente).",
+
     // Memory Game Help
     memory_help_title: "Cómo jugar",
     memory_help_desc:
@@ -655,6 +665,16 @@ export const translations = {
     footer_privacy: "Privacy",
     footer_terms: "Terms",
     footer_support: "Support",
+
+    // History
+    history_title: "Puzzle History",
+    history_select_date: "Select a date to play",
+    hist_legend_title: "History Guide",
+    hist_legend_nav: "Use the arrows to navigate through available months.",
+    hist_legend_gray: "Jigsudo not played on its original day.",
+    hist_legend_yellow: "Jigsudo started but not finished on its day.",
+    hist_legend_green: "Jigsudo finished on its original day.",
+    hist_legend_crown: "Jigsudo finished (on its day or later).",
 
     // Memory Game Help
     memory_help_title: "How to play",
