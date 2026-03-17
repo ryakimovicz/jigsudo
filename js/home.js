@@ -383,6 +383,7 @@ export function initHome() {
         await gameManager.prepareDaily();
 
         // 2. Execute Start
+        await gameManager.recordStart();
         await startDailyGame();
 
         // Note: startDailyGame hides home, so button state reset isn't strictly needed immediately,

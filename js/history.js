@@ -298,9 +298,8 @@ function renderHistoryCalendar(history = {}) {
         if (dayData.originalWin) {
           dayEl.classList.add("win");
         } else if (dayData.status === "won") {
-          // If it's a win but NOT original, it stays neutral background (or we could add a light style)
-          // But per user: "color original"
-        } else {
+          // If it's a win but NOT original, it stays neutral background
+        } else if (dayData.status === "played") {
           dayEl.classList.add("loss");
         }
 

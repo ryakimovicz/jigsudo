@@ -122,6 +122,9 @@ export class GameManager {
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
         );
+      this.save();
+      // Purge invalid history once per load
+      this._healHistoryProgress();
     } else if (dailyData) {
       console.log("[GameManager] Starting Fresh Daily Puzzle!");
       this.state = this.createStateFromJSON(dailyData);
@@ -136,14 +139,6 @@ export class GameManager {
         console.log("[GameManager] Self-healing detected on fresh start. Syncing to cloud...");
         this.forceCloudSave();
       }
-      if (!this.isReplay && !this.stats.history[dateStr]) {
-        this.stats.history[dateStr] = {
-          status: "played",
-          timestamp: Date.now(),
-        };
-        localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
-      }
-
       this.save();
     } else {
       console.error("[GameManager] CRITICAL: No Save & No Network.");
@@ -182,6 +177,108 @@ export class GameManager {
     }
 
     return true;
+  }
+
+  /**
+   * Explicitly record that the user has started the current daily puzzle.
+   * This is called when the user clicks the "EMPEZAR" (START) button.
+   */
+  async recordStart() {
+    if (this.isReplay) return;
+
+    const seedStr = this.currentSeed.toString();
+    const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+
+    if (!this.stats.history[dateStr]) {
+      console.log(`[GameManager] Game started for ${dateStr} (Session active).`);
+      // We no longer create a history entry here. 
+      // It will be created by _ensureHistoryRecord when progress is detected.
+      
+      // Proactively sync to the cloud if logged in (for the saved state)
+      this.forceCloudSave();
+    }
+  }
+
+  /**
+   * Lazy history creation: Only create a "played" entry when actual progress is detected.
+   */
+  _ensureHistoryRecord() {
+    if (!this.state || !this.stats) return;
+
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+
+    if (!this.stats.history) this.stats.history = {};
+
+    // If it's already recorded (won or played), do nothing
+    if (this.stats.history[today]) return;
+
+    // Check for any actual progress
+    const stagesCount = this.state.progress?.stagesCompleted?.length || 0;
+    const memoryProgress = (this.state.memory?.pairsFound > 0);
+    const jigsawProgress = (this.state.jigsaw?.placedChunks?.length > 0);
+    const sudokuProgress = (this.state.sudoku?.movesCount > 0);
+
+    if (stagesCount > 0 || memoryProgress || jigsawProgress || sudokuProgress) {
+      console.log(`[GameManager] Progress detected. Creating history record for ${today}.`);
+      this.stats.history[today] = {
+        status: "played",
+        timestamp: Date.now(),
+      };
+      // We don't save immediately here to avoid redundant localStorage writes; 
+      // callers (like save() or awardStagePoints()) will handle the persistence.
+    }
+  }
+
+  /**
+   * Internal migration/cleanup: Distinguish between "fake" yellow days (bug)
+   * and real unfinished games. Permanently DELETE fake ones from the account.
+   */
+  _healHistoryProgress() {
+    if (!this.stats || !this.stats.history) return;
+
+    let changed = false;
+    for (const [dateStr, entry] of Object.entries(this.stats.history)) {
+      if (entry.status === "played") {
+        // Check if we have a saved state for this day
+        const parts = dateStr.split("-");
+        const seed = parseInt(parts[0] + parts[1] + parts[2]);
+        const stateStr = localStorage.getItem(`jigsudo_state_${seed}`);
+
+        let shouldPurge = false;
+        if (stateStr) {
+          try {
+            const state = JSON.parse(stateStr);
+            const stagesCount = state.progress?.stagesCompleted?.length || 0;
+            const moves = (state.memory?.pairsFound > 0) || 
+                          (state.jigsaw?.placedChunks?.length > 0) ||
+                          (state.sudoku?.movesCount > 0);
+
+            if (stagesCount === 0 && !moves) {
+              shouldPurge = true;
+            }
+          } catch (e) {
+            // If it's corrupted, we also purge it (unlikely to be a real game)
+            shouldPurge = true; 
+          }
+        }
+
+        // If it's confirmed empty (but exists!), PURGE it.
+        // If stateStr is null, we DON'T purge (it might be a new device or device B).
+        if (shouldPurge) {
+          console.log(`[GameManager] Purging invalid history entry: ${dateStr}`);
+          delete this.stats.history[dateStr];
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      console.log("[GameManager] Account History Purged (Invalid entries removed).");
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      // Sincronizar inmediatamente para limpiar otros dispositivos
+      this.forceCloudSave();
+    }
   }
 
   async loadSpecificDay(dateStr) {
@@ -552,8 +649,11 @@ export class GameManager {
   }
 
   async save(syncToCloud = true) {
-    if (this.conflictBlocked || !this.state || this.isWiping) return;
-    this.state.meta.lastPlayed = new Date().toISOString();
+    if (!this.state) return;
+
+    // Check for progress and update history entry if needed
+    this._ensureHistoryRecord();
+
     localStorage.setItem(this.storageKey, JSON.stringify(this.state));
     if (syncToCloud) this.saveCloudDebounced();
   }
@@ -739,8 +839,12 @@ export class GameManager {
           // Streak and Win Count
           stats.wins = Math.max(0, (stats.wins || 0) - 1);
           stats.totalPlayed = Math.max(0, (stats.totalPlayed || 0) - 1);
-          delete stats.history[today];
         }
+
+
+        // ALWAYS delete the history entry for today on reset,
+        // whether it was "won" or just "played".
+        delete stats.history[today];
       }
 
       // AGGRESSIVE: Always recalculate records to ensure consistency
@@ -919,6 +1023,10 @@ export class GameManager {
     if (!this._processingWin) {
       if (!this.state.progress.stagesCompleted.includes(stage)) {
         this.state.progress.stagesCompleted.push(stage);
+        
+        // Ensure history record exists now that we have progress
+        this._ensureHistoryRecord();
+
         // CRITICAL: Persist stage completion immediately to local storage
         this.save();
       }
