@@ -26,7 +26,7 @@ export const translations = {
     guide_tab_tutorial: "Tutorial",
     guide_intro_h: "¿Qué es Jigsudo?",
     guide_intro_p:
-      "Jigsudo es un puzzle diario que combina memoria, lógica y deducción. Tu objetivo es completar el tablero de Sudoku atravesando distintas etapas.",
+      "Jigsudo es un puzzle diario que combina memoria, lógica, rompecabezas y otros minijuegos. Tu objetivo es completar el tablero de Sudoku atravesando distintas etapas.",
     guide_controls_h: "Controles y Atajos",
     guide_pages_h: "Secciones",
     guide_page_home: "Acceso al puzzle diario y rankings.",
@@ -168,7 +168,7 @@ export const translations = {
     greeting_prefix: "Hola,",
     // Static Pages Content
     about_intro_title: "Sobre Jigsudo",
-    about_intro_p: "Jigsudo es un desafío mental diario que fusiona mecánicas de lógica, memoria y rompecabezas en una experiencia única. Cada día a las 06:00 UTC se genera un nuevo tablero, ofreciendo un momento de enfoque y entrenamiento inteligente directamente en tu navegador.",
+    about_intro_p: "Jigsudo es un desafío mental diario que fusiona mecánicas de lógica, memoria, rompecabezas y otros minijuegos en una experiencia única. Cada día a las 06:00 UTC cambia el tablero para un nuevo reto, ofreciendo un momento de enfoque y entrenamiento inteligente directamente en tu navegador.",
     about_independent_title: "Un Proyecto Independiente",
     about_independent_text: "Este sitio es el resultado de la pasión por los acertijos y el desarrollo web. Fue creado íntegramente por <strong>Román Yakimovicz</strong> con el objetivo de ofrecer un juego gratuito, limpio y sin la fricción de las aplicaciones móviles tradicionales.",
     about_vision_title: "Nuestra Filosofía",
@@ -451,6 +451,48 @@ export const translations = {
     // Stats Sharing
     btn_share_stats: "Compartir Estadísticas",
     share_stats_msg: "¡Mira mi progreso en Jigsudo! 🧩✨",
+
+    // SEO/Home Info
+    seo_title: "El Desafío Jigsudo: Entrena tu mente cada día",
+    seo_summary: "¿Qué es Jigsudo?",
+    seo_summary_text:
+      "Jigsudo es un desafío mental diario que fusiona mecánicas de Sudoku, Memoria y Rompecabezas y otros minijuegos en un único tablero inteligente. Cada día a las 06:00 UTC cambia el tablero para un nuevo reto. Desde encontrar pares en el Juego de Memoria hasta descifrar El Código, el juego te guía por seis etapas interconectadas que pondrán a prueba tu razonamiento.",
+    seo_benefits: "¿Por qué resolver puzzles de lógica?",
+    seo_benefits_text:
+      "Resolver acertijos y puzzles de lógica es una forma fantástica de ejercitar la mente mientras te diviertes. Jigsudo te ofrece un espacio para poner a prueba tu paciencia y razonamiento personal de una manera envolvente. Algunos de los motivos para aceptar el desafío son:",
+    seo_benefit_1:
+      "Entretenimiento con propósito: Cada etapa es un nuevo reto mental único.",
+    seo_benefit_2:
+      "Enfoque y paciencia: La lógica de todos los minijuegos exige concentración y calma.",
+    seo_benefit_3:
+      "Desconexión del estrés: Sumergirte en el juego actúa como una 'meditación activa' para tu día.",
+    seo_ranking: "Sube en el Ranking Global",
+    seo_ranking_text:
+      "Al crear una cuenta, puedes medir tu destreza contra jugadores de todo el mundo. Jigsudo cuenta con un sistema de puntos de rango (RP) que penaliza la inactividad y recompensa la velocidad y la precisión. ¡No faltes a tu cita diaria y alcanza el rango Galáctico!",
+    seo_faq: "Preguntas Frecuentes (FAQ)",
+    seo_faq_1_q: "¿Cuándo se actualiza el puzzle diario?",
+    seo_faq_1_a:
+      "El juego se actualiza y sincroniza para todo el mundo a las 06:00 UTC. Si no juegas en el día, perderás puntos de rango (RP) en el perfil y la tabla de clasificación debido a la inactividad.",
+    seo_faq_2_q: "¿Es gratis jugar a Jigsudo?",
+    seo_faq_2_a: "Sí, el puzzle diario es 100% gratuito.",
+    seo_faq_3_q: "¿Puedo jugar puzzles de días anteriores?",
+    seo_faq_3_a:
+      "¡Sí! En la sección de <strong>Historial</strong> puedes acceder a los tableros de días pasados. Ten en cuenta que solo el puzzle del día actual cuenta para tu racha y para el ranking global.",
+    seo_faq_4_q: "¿Qué ventajas tiene crear una cuenta?",
+    seo_faq_4_a:
+      "Al registrarte, tu progreso, estadísticas y racha se sincronizan automáticamente en la nube. Además, es necesario estar autenticado para aparecer en la tabla de clasificación y competir por los mejores rangos.",
+    seo_faq_5_q: "¿Cómo funcionan las rachas?",
+    seo_faq_5_a:
+      "Para mantener tu racha, debes completar el desafío antes del próximo reset (06:00 UTC). Si dejas pasar un día sin jugar, la racha volverá a cero.",
+    seo_faq_6_q: "¿Cómo se calculan los puntos de rango (RP)?",
+    seo_faq_6_a:
+      "El sistema premia la <strong>velocidad</strong> de resolución en todas las etapas y la <strong>precisión</strong> específicamente en el minijuego de Picos y Valles. Los puntos de rango (RP) se actualizan diariamente en el ranking global.",
+    seo_faq_7_q: "¿Puedo jugar Jigsudo en mi celular?",
+    seo_faq_7_a:
+      "¡Totalmente! Jigsudo está diseñado para ser 100% responsiva. Puedes usarlo desde el navegador de tu móvil e incluso añadirlo a tu pantalla de inicio para acceder rápidamente.",
+    seo_faq_8_q: "¿Jigsudo tiene anuncios o micro-pagos?",
+    seo_faq_8_a:
+      "Jigsudo no tiene micro-pagos y el acceso es gratuito. El juego incluye algunos anuncios no intrusivos (actualmente en proceso de implementación) en espacios dedicados para ayudar a mantener el proyecto de forma independiente.",
   },
   en: {
     app_title: "JIGSUDO",
@@ -479,7 +521,7 @@ export const translations = {
     guide_tab_tutorial: "Tutorial",
     guide_intro_h: "What is Jigsudo?",
     guide_intro_p:
-      "Jigsudo is a daily puzzle that combines memory, logic, and deduction. Your goal is to complete the Sudoku board through different stages.",
+      "Jigsudo is a daily puzzle that combines memory, logic, jigsaw, and other mini-games. Your goal is to complete the Sudoku board through different stages.",
     guide_controls_h: "Controls and Shortcuts",
     guide_pages_h: "Sections",
     guide_page_home: "Access the daily puzzle and rankings.",
@@ -653,7 +695,7 @@ export const translations = {
     greeting_prefix: "Hello,",
     // Static Pages Content
     about_intro_title: "About Jigsudo",
-    about_intro_p: "Jigsudo is a daily mental challenge that merges logic, memory, and puzzle mechanics into a unique experience. Every day at 06:00 UTC, a new board is generated, offering a moment of focus and smart training directly in your browser.",
+    about_intro_p: "Jigsudo is a daily mental challenge that merges mechanics from logic, memory, jigsaw, and other mini-games into a unique experience. Every day at 06:00 UTC, the board changes for a new challenge, offering a moment of focus and smart training directly in your browser.",
     about_independent_title: "An Independent Project",
     about_independent_text: "This site is the result of a passion for puzzles and web development. It was created entirely by <strong>Román Yakimovicz</strong> with the goal of offering a free, clean game without the friction of traditional mobile apps.",
     about_vision_title: "Our Philosophy",
@@ -902,5 +944,47 @@ export const translations = {
     // Stats Sharing
     btn_share_stats: "Share Stats",
     share_stats_msg: "Check out my progress in Jigsudo! 🧩✨",
+
+    // SEO/Home Info (English)
+    seo_title: "The Jigsudo Challenge: Train your mind every day",
+    seo_summary: "What is Jigsudo?",
+    seo_summary_text:
+      "Jigsudo is a daily mental challenge that merges mechanics from Sudoku, Memory, Jigsaw, and other mini-games into a single smart board. Every day at 06:00 UTC, the board changes for a new challenge. From finding pairs in the Memory Game to cracking The Code, the game guides you through six interconnected stages that will test your reasoning.",
+    seo_benefits: "Why solve logic puzzles?",
+    seo_benefits_text:
+      "Solving riddles and logic puzzles is a fantastic way to exercise your mind while having fun. Jigsudo offers you a space to test your patience and personal reasoning in an immersive way. Some of the reasons to take on the challenge are:",
+    seo_benefit_1:
+      "Purposeful entertainment: Each stage is a unique new mental challenge.",
+    seo_benefit_2:
+      "Focus and patience: The logic of all mini-games requires concentration and calm.",
+    seo_benefit_3:
+      "Stress relief: Immersing yourself in the game acts as an 'active meditation' for your day.",
+    seo_ranking: "Climb the Global Leaderboard",
+    seo_ranking_text:
+      "By creating an account, you can measure your skill against players from all over the world. Jigsudo features a rank point system (RP) that penalizes inactivity while rewarding speed and precision. Don't miss your daily appointment and reach the Galactic rank!",
+    seo_faq: "Frequently Asked Questions (FAQ)",
+    seo_faq_1_q: "When is the daily puzzle updated?",
+    seo_faq_1_a:
+      "The game updates and synchronizes for everyone worldwide at 06:00 UTC. If you don't play during the day, you will lose rank points (RP) in your profile and the leaderboard due to inactivity.",
+    seo_faq_2_q: "Is Jigsudo free to play?",
+    seo_faq_2_a: "Yes, the daily puzzle is 100% free.",
+    seo_faq_3_q: "Can I play puzzles from previous days?",
+    seo_faq_3_a:
+      "Yes! In the <strong>History</strong> section, you can access boards from past days. Keep in mind that only the current day's puzzle counts towards your streak and the global leaderboard.",
+    seo_faq_4_q: "What are the benefits of creating an account?",
+    seo_faq_4_a:
+      "By registering, your progress, statistics, and streak are automatically synchronized in the cloud. Additionally, authentication is required to appear on the leaderboard and compete for the top ranks.",
+    seo_faq_5_q: "How do streaks work?",
+    seo_faq_5_a:
+      "To maintain your streak, you must complete the challenge before the next reset (06:00 UTC). If you miss a day without playing, your streak will reset to zero.",
+    seo_faq_6_q: "How are rank points (RP) calculated?",
+    seo_faq_6_a:
+      "The system rewards your <strong>speed</strong> in all stages and your <strong>precision</strong> specifically in the Peaks and Valleys mini-game. Rank points (RP) are updated daily on the global leaderboard.",
+    seo_faq_7_q: "Can I play Jigsudo on my phone?",
+    seo_faq_7_a:
+      "Absolutely! Jigsudo is designed to be 100% responsive. You can play it from your mobile browser and even add it to your home screen for quick access.",
+    seo_faq_8_q: "Does Jigsudo have ads or micro-payments?",
+    seo_faq_8_a:
+      "Jigsudo has no micro-payments and is free to play. The game includes some non-intrusive ads (currently being implemented) in dedicated spots to help keep the project independent and free.",
   },
 };

@@ -635,6 +635,13 @@ export function initHome() {
     loadAndRenderAllRankings(false);
   });
 
+  // Listen for Language Changes to refresh rankings & button state
+  window.addEventListener("languageChanged", () => {
+    console.log("[Home] Language changed, refreshing UI...");
+    refreshStartButton();
+    loadAndRenderAllRankings(false); // Refreshes tables with new lang formatting
+  });
+
   // --- Router & Game Events (Moved out of showHome) ---
 
   // Listen for Router Changes

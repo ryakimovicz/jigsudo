@@ -204,15 +204,34 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   }
 
   // Smart Update (FLIP Animation)
-  // 0. Update Headers (to ensure they translate if language changed)
+  // Ensure headers are translated
   const userColHeader = container.querySelector("thead .user-col");
   const scoreColHeader = container.querySelector("thead .score-col");
-  if (userColHeader)
+  if (userColHeader) {
     userColHeader.textContent = t.ranking_col_user || "Usuario";
-  if (scoreColHeader)
+    userColHeader.setAttribute("data-i18n", "ranking_col_user");
+  }
+  if (scoreColHeader) {
     scoreColHeader.textContent = t.ranking_col_points || "Puntos";
+    scoreColHeader.setAttribute("data-i18n", "ranking_col_points");
+  }
 
   const tbody = container.querySelector("tbody");
+
+  // Handle Empty State during Smart Update
+  const emptyRow = tbody.querySelector(".empty-row");
+  if (data.length === 0) {
+    if (emptyRow) {
+      emptyRow.textContent = t.rank_empty || "No hay datos todavía";
+      emptyRow.setAttribute("data-i18n", "rank_empty");
+    } else {
+      tbody.innerHTML = `<tr><td colspan="3" class="empty-row" data-i18n="rank_empty">${t.rank_empty || "No hay datos todavía"}</td></tr>`;
+    }
+    return;
+  } else if (emptyRow) {
+    tbody.innerHTML = ""; // Clear empty message to make room for rows
+  }
+
   const oldRows = Array.from(tbody.querySelectorAll("tr[data-uid]"));
   const oldPositions = new Map();
 
@@ -467,15 +486,15 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
       <thead>
         <tr>
           <th class="rank-col">#</th>
-          <th class="user-col">${t.ranking_col_user || "Usuario"}</th>
-          <th class="score-col">${t.ranking_col_points || "Puntos"}</th>
+          <th class="user-col" data-i18n="ranking_col_user">${t.ranking_col_user || "Usuario"}</th>
+          <th class="score-col" data-i18n="ranking_col_points">${t.ranking_col_points || "Puntos"}</th>
         </tr>
       </thead>
       <tbody>
   `;
 
   if (data.length === 0) {
-    html += `<tr><td colspan="3" class="empty-row">${t.rank_empty || "No hay datos todavía"}</td></tr>`;
+    html += `<tr><td colspan="3" class="empty-row" data-i18n="rank_empty">${t.rank_empty || "No hay datos todavía"}</td></tr>`;
   } else {
     data.forEach((entry, index) => {
       const isTop3 = index < 3;
