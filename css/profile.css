@@ -631,15 +631,15 @@ body.dark-mode .profile-avatar-large {
 }
 
 /* FIX: Centered & Narrow Account Buttons */
-.profile-actions {
+.profile-actions, .guest-actions {
   display: flex !important;
   flex-direction: column;
   align-items: center; /* Center children horizontally */
-  gap: 8px; /* Consistent spacing */
+  gap: 12px; /* Balanced spacing */
 }
 
 /* Base Button Style for Profile */
-.profile-actions button {
+.profile-actions button, #btn-profile-login-guest {
   width: 90% !important;
   max-width: 280px !important;
   margin-left: auto !important;
