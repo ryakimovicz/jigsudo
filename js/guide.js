@@ -120,6 +120,13 @@ export function initGuide() {
       loadStage(targetStage);
     }
   });
+
+  // Listen for language changes to refresh the tutorial content
+  window.addEventListener("languageChanged", () => {
+    if (window.location.hash.startsWith("#guide")) {
+      loadStage(currentTutorialStage);
+    }
+  });
 }
 
 function setupSidebarConnection() {
@@ -1011,6 +1018,9 @@ function renderTutorialPeaks() {
   const container = document.getElementById("tutorial-board-container");
   container.innerHTML = "";
 
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
   const board = document.createElement("div");
   board.className = "tutorial-sudoku-board"; // Uses grid layout
 
@@ -1056,10 +1066,10 @@ function renderTutorialPeaks() {
 
       if (isPeak && !isPendingPeak) {
         cell.classList.add("peak-found");
-        cell.title = "Pico";
+        cell.title = t.label_peak || "Pico";
       } else if (isValley && !isPendingValley) {
         cell.classList.add("valley-found");
-        cell.title = "Valle";
+        cell.title = t.label_valley || "Valle";
       }
 
       // Add click listener
@@ -1078,10 +1088,10 @@ function renderTutorialPeaks() {
   statsDiv.className = "peaks-stats";
   statsDiv.id = "tutorial-peaks-stats";
   statsDiv.innerHTML = `
-    <span class="remaining-label">Faltan:</span>
+    <span class="remaining-label">${t.label_peaks_remaining || "Faltan"}:</span>
     <span id="tutorial-peaks-remaining">0</span>
     <span class="separator">|</span>
-    <span class="error-label">Errores:</span>
+    <span class="error-label">${t.label_peaks_errors || "Errores"}:</span>
     <span id="tutorial-peaks-errors">0</span>
   `;
   container.appendChild(statsDiv);
@@ -1166,6 +1176,9 @@ function renderTutorialSearch() {
   const container = document.getElementById("tutorial-board-container");
   container.innerHTML = "";
 
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
   const searchWrapper = document.createElement("div");
   searchWrapper.className = "sudoku-tutorial-wrapper search-mode";
 
@@ -1217,10 +1230,10 @@ function renderTutorialSearch() {
 
       if (isPeak) {
         cellClass += " peak-found";
-        cell.title = "Pico";
+        cell.title = t.label_peak || "Pico";
       } else if (isValley) {
         cellClass += " valley-found";
-        cell.title = "Valle";
+        cell.title = t.label_valley || "Valle";
       } else if (isCode) {
         // Leave clean for next stage
       } else if (isTarget) {
@@ -2374,6 +2387,8 @@ function renderRanksTable(container) {
   const grid = document.createElement("div");
   grid.className = "ranks-grid";
 
+  const t = translations[getCurrentLang()];
+
   RANKS.forEach((rank) => {
     const row = document.createElement("div");
     row.className = "rank-row glass-panel";
@@ -2382,7 +2397,7 @@ function renderRanksTable(container) {
             <div class="rank-icon">${rank.icon}</div>
             <div class="rank-details">
                 <span class="rank-name" data-i18n="${rank.nameKey}">${rank.nameKey}</span>
-                <span class="rank-level">Nivel ${rank.id}</span>
+                <span class="rank-level">${t.label_level_prefix || "Nivel"} ${rank.id}</span>
             </div>
             <div class="rank-req">${rank.minRP} RP</div>
         `;

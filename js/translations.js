@@ -265,6 +265,31 @@ export const translations = {
     alert_next_peaks: "Siguiente juego: Picos y Valles\nPróximamente",
     alert_next_search: "Siguiente juego: Sopa de Números\nPróximamente",
     sudoku_key_completed: "Este número ya se ha usado 9 veces.",
+    
+    // Guide Scoring (Spanish)
+    guide_scoring_title: "📊 Sistema de Puntuación (RP)",
+    guide_scoring_p1: "Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.",
+    guide_base_rp: "Base RP",
+    guide_base_rp_desc: "6.0 puntos garantizados por terminar.",
+    guide_speed: "Velocidad",
+    guide_speed_desc: "Tienes un bono de hasta 10 Puntos que decae durante los primeros 60 minutos. ¡Sé rápido!",
+    guide_penalty: "Penalización",
+    guide_penalty_desc: "En Picos y Valles, -0.5 RP por cada error. La precisión es clave.",
+    guide_streak: "Racha Diaria",
+    guide_streak_desc: "Juega todos los días para demostrar tu constancia.",
+    guide_absence: "Ausencia",
+    guide_absence_desc: "-10.0 RP por cada día sin jugar.",
+    guide_ranks_title: "🏆 Sistema de Rangos",
+    guide_ranks_p1: "Acumula RP para subir de nivel y desbloquear nuevos rangos. Cada rango representa tu maestría en Jigsudo.",
+
+    // UI Labels (Spanish)
+    label_level_prefix: "Nivel",
+    label_peaks_remaining: "Faltan",
+    label_peaks_errors: "Errores",
+    label_peak: "Pico",
+    label_valley: "Valle",
+    btn_next_tip: "Siguiente",
+    btn_prev_tip: "Anterior",
 
     // Search Game Help
     search_help_title: "Cómo jugar", // Standardized
@@ -809,6 +834,31 @@ export const translations = {
     code_level_local: "Level",
     code_win: "CODE CRACKED!",
     sudoku_key_completed: "This number has already been used 9 times.",
+
+    // Guide Scoring (English)
+    guide_scoring_title: "📊 Scoring System (RP)",
+    guide_scoring_p1: "Each game awards base points (RP) upon completion. Additionally, you can earn bonuses for speed and consistency.",
+    guide_base_rp: "Base RP",
+    guide_base_rp_desc: "6.0 points guaranteed for finishing.",
+    guide_speed: "Speed",
+    guide_speed_desc: "You have a bonus of up to 10 Points that decays during the first 60 minutes. Be fast!",
+    guide_penalty: "Penalty",
+    guide_penalty_desc: "In Peaks and Valleys, -0.5 RP for each error. Accuracy is key.",
+    guide_streak: "Daily Streak",
+    guide_streak_desc: "Play every day to demonstrate your consistency.",
+    guide_absence: "Absence",
+    guide_absence_desc: "-10.0 RP for each day without playing.",
+    guide_ranks_title: "🏆 Ranks System",
+    guide_ranks_p1: "Accumulate RP to level up and unlock new ranks. Each rank represents your mastery in Jigsudo.",
+
+    // UI Labels (English)
+    label_level_prefix: "Level",
+    label_peaks_remaining: "Remaining",
+    label_peaks_errors: "Errors",
+    label_peak: "Peak",
+    label_valley: "Valley",
+    btn_next_tip: "Next",
+    btn_prev_tip: "Previous",
 
     // Authentication
     login_title: "Jigsudo Account",
