@@ -128,6 +128,11 @@ body.no-scroll .main-header {
   body.no-scroll .header-center {
     gap: 12px !important;
   }
+
+  body.no-scroll .header-logo {
+    height: 28px !important; /* Perfect fit for 45px condensed header */
+    transition: none !important; /* Instant snap for layout shifts */
+  }
 }
 
 body {

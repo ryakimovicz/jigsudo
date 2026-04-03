@@ -32,14 +32,20 @@ function getTutorialStageDescription(stage, t) {
 
   if (stage === 2) {
     desc = desc.replace("{objective}", t.tutorial_stage_2_obj);
-    desc = desc.replace("{action}", t.label_place);
-    desc = desc.replace("{stylus}", caps.isTouch ? t.label_stylus : "");
+    desc = desc.replace(
+      "{action}",
+      caps.isTouch ? t.label_place_mobile : t.label_place,
+    );
   } else if (stage === 3) {
     desc = desc.replace("{rules}", t.tutorial_stage_3_rules);
     desc = desc.replace("{buttons}", t.tutorial_stage_3_btns);
     desc = desc.replace(
       "{keyboard}",
       caps.isKeyboard ? t.tutorial_stage_3_kb : "",
+    );
+    desc = desc.replace(
+      "{input_method}",
+      caps.isTouch ? t.label_input_method_mobile : t.label_input_method,
     );
   } else if (stage === 4 || stage === 6) {
     let action = t.label_click;
@@ -291,6 +297,12 @@ function startTutorial() {
     initTutorialState();
   }
   openTutorialModal(1);
+}
+
+function nextTutorialStage() {
+  if (currentTutorialStage < 7) {
+    loadStage(currentTutorialStage + 1);
+  }
 }
 
 function initTutorialState() {
@@ -628,10 +640,7 @@ function renderTutorialMemory() {
 
   const grid = document.createElement("div");
   grid.className = "memory-grid tutorial-memory";
-  grid.style.display = "grid";
-  grid.style.gridTemplateColumns = "repeat(4, 1fr)";
-  grid.style.gap = "15px";
-  grid.style.justifyContent = "center";
+  // Removed fixed inline styles to allow CSS responsiveness
 
   let cards = [];
   const pairIndices = [
@@ -653,10 +662,12 @@ function renderTutorialMemory() {
     grid.appendChild(card);
   });
 
-  let canClick = false;
+  let canClick = true; // Enabled by default
   let isAnimating = false;
   let firstCard = null;
-  let matches = 0;
+  // Use global tutorialState for persistent match tracking
+  tutorialState.matchesFound = 0;
+  console.log(`[Tutorial Stage 1] Initialized. canClick: ${canClick}, matchesFound: ${tutorialState.matchesFound}`);
 
   btnMemorize.onclick = () => {
     if (isAnimating) return;
@@ -764,17 +775,30 @@ function renderTutorialMemory() {
         return;
 
       card.classList.add("flipped");
+      console.log(`[Tutorial] Card flipped: Index ${card.dataset.index}`);
 
       if (!firstCard) {
         firstCard = card;
       } else {
-        if (firstCard.dataset.index === card.dataset.index) {
+        const index1 = String(firstCard.dataset.index);
+        const index2 = String(card.dataset.index);
+        console.log(`[Tutorial] Comparing: ${index1} and ${index2}`);
+
+        if (index1 === index2) {
           firstCard.classList.add("matched");
           card.classList.add("matched");
-          matches++;
+          tutorialState.matchesFound++;
+          console.log(`[Tutorial] MATCH SUCCESS! Total matches: ${tutorialState.matchesFound}/4`);
           firstCard = null;
-          if (matches === 4) setTimeout(() => nextTutorialStage(), 1000);
+          
+          if (tutorialState.matchesFound === 4) {
+            console.log("[Tutorial] ALL STAGE 1 MATCHES COMPLETE! Advancing to Stage 2 in 1s...");
+            setTimeout(() => {
+              loadStage(2);
+            }, 1000);
+          }
         } else {
+          console.log("[Tutorial] MATCH FAILED. Unflipping cards...");
           canClick = false;
           setTimeout(() => {
             firstCard.classList.remove("flipped");
@@ -1126,7 +1150,10 @@ function renderTutorialPeaks() {
     board.appendChild(chunk);
   }
 
-  container.appendChild(board);
+  // Wrap board + stats in a vertical column
+  const peaksWrapper = document.createElement("div");
+  peaksWrapper.className = "peaks-tutorial-wrapper";
+  peaksWrapper.appendChild(board);
 
   // Add Stats Counter (Matches Daily Game)
   const statsDiv = document.createElement("div");
@@ -1139,7 +1166,8 @@ function renderTutorialPeaks() {
     <span class="error-label">${t.label_peaks_errors || "Errores"}:</span>
     <span id="tutorial-peaks-errors">0</span>
   `;
-  container.appendChild(statsDiv);
+  peaksWrapper.appendChild(statsDiv);
+  container.appendChild(peaksWrapper);
 
   updateTutorialPeaksCounters();
 }
@@ -1225,7 +1253,7 @@ function renderTutorialSearch() {
   const t = translations[lang];
 
   const searchWrapper = document.createElement("div");
-  searchWrapper.className = "sudoku-tutorial-wrapper search-mode";
+  searchWrapper.className = "search-tutorial-wrapper";
 
   const board = document.createElement("div");
   board.className = "tutorial-sudoku-board";

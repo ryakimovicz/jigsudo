@@ -6,10 +6,12 @@ export const translations = {
     label_click: "haz clic",
     label_touch: "toca",
     label_click_touch: "haz clic o toca",
-    label_stylus: "(usa lápiz óptico si usas táctil)",
     label_drag: "arrastra",
     label_place:
       "Haz clic en la pieza y luego en el tablero o arrástrala a su lugar",
+    label_place_mobile: "Haz clic en la pieza y luego en el tablero",
+    label_input_method: "con el pad en pantalla o el teclado",
+    label_input_method_mobile: "con el pad en pantalla",
 
     // Tutorial Stages Detailed
     tutorial_stage_2_obj:
@@ -67,10 +69,10 @@ export const translations = {
       "<strong>Objetivo:</strong> Encuentra los pares de bloques 3x3. Cada bloque es una sección del Sudoku final.<br><strong>Controles:</strong> Haz clic en dos cartas para revelarlas. Usa el botón 'Memorizar' para echar un vistazo rápido.",
     tutorial_stage_2_title: "Etapa 2: Rompecabezas",
     tutorial_stage_2_desc:
-      "{objective}<br><strong>Controles:</strong> {action} {stylus}.",
+      "{objective}<br><strong>Controles:</strong> {action}.",
     tutorial_stage_3_title: "Etapa 3: Sudoku",
     tutorial_stage_3_desc:
-      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números con el pad en pantalla o el teclado.",
+      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}.",
     tutorial_stage_4_title: "Etapa 4: Picos y Valles",
     tutorial_stage_4_desc:
       "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparados con sus vecinos.<br><strong>Controles:</strong> {action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
@@ -553,10 +555,12 @@ export const translations = {
     label_click: "click",
     label_touch: "tap",
     label_click_touch: "click or tap",
-    label_stylus: "(use stylus if using touch)",
     label_drag: "drag",
     label_place:
       "click the piece and then the board position, or drag it to its spot",
+    label_place_mobile: "click the piece and then the board position",
+    label_input_method: "with the on-screen pad or keyboard",
+    label_input_method_mobile: "with the on-screen pad",
 
     // Tutorial Stages Detailed
     tutorial_stage_2_obj:
@@ -612,10 +616,10 @@ export const translations = {
       "<strong>Goal:</strong> Find the 3x3 block pairs. Each block is a section of the final Sudoku.<br><strong>Controls:</strong> Click two cards to reveal them. Use 'Memorize' for a quick peek.",
     tutorial_stage_2_title: "Stage 2: Jigsaw",
     tutorial_stage_2_desc:
-      "{objective}<br><strong>Controls:</strong> {action} {stylus}.",
+      "{objective}<br><strong>Controls:</strong> {action}.",
     tutorial_stage_3_title: "Stage 3: Sudoku",
     tutorial_stage_3_desc:
-      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers with the on-screen pad or keyboard.",
+      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers {input_method}.",
     tutorial_stage_4_title: "Stage 4: Peaks and Valleys",
     tutorial_stage_4_desc:
       "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to their neighbors.<br><strong>Controls:</strong> {action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",

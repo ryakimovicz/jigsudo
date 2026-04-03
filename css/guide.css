@@ -288,6 +288,37 @@ body.dark-mode .guide-selector {
   overflow: hidden;
 }
 
+/* Peaks & Valleys Tutorial Wrapper */
+.peaks-tutorial-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.peaks-tutorial-wrapper .peaks-stats {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 18px;
+  border-radius: 8px;
+}
+
+/* Search Tutorial Wrapper — targets below board */
+.search-tutorial-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
 /* Remove hardcoded overrides */
 
 .mini-sudoku-grid {
@@ -342,15 +373,33 @@ body.dark-mode .guide-selector {
   .sudoku-tutorial-wrapper {
     flex-direction: column !important;
     align-items: center !important;
-    gap: 20px !important;
+    gap: 8px !important;
   }
   .tutorial-sudoku-board {
-    width: 90vw !important;
+    width: 78vw !important;
+    max-width: 260px !important;
   }
   .tutorial-sudoku-controls {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    max-width: 320px !important;
+    flex: none !important;
+    width: 56vw !important;
+    max-width: 180px !important;
+    gap: 4px !important;
+  }
+  .tutorial-sudoku-controls .control-row.primary.numbers {
+    gap: 4px !important;
+  }
+  .tutorial-sudoku-controls .control-row.secondary {
+    gap: 4px !important;
+  }
+  .tutorial-sudoku-controls .sudoku-num {
+    aspect-ratio: 1/1 !important;
+    height: auto !important;
+    font-size: 0.85rem !important;
+  }
+  .tutorial-sudoku-controls .btn-sudoku-action {
+    aspect-ratio: 1/1 !important;
+    height: auto !important;
+    font-size: 0.9rem !important;
   }
 }
 
@@ -540,15 +589,41 @@ body.dark-mode .mini-cell {
 }
 
 /* Card Overrides for Guide */
+.memory-grid.tutorial-memory {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px; /* Matches previous layout */
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+  max-width: 400px; /* Prevent it from being too wide on tablet */
+  margin: 0 auto;
+}
+
 .tutorial-board-container .memory-card {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  max-width: 80px;
+  aspect-ratio: 1/1 !important;
+  height: auto !important;
   position: relative;
   cursor: pointer;
   transform-style: preserve-3d;
   transition:
     transform 0.2s ease-out,
     box-shadow 0.2s ease;
+  /* Reset glass-panel defaults — faces handle their own styling */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 12px;
+  /* NOTE: overflow:hidden intentionally omitted — it breaks preserve-3d */
+}
+
+@media (max-width: 600px) {
+  .memory-grid.tutorial-memory {
+    gap: 8px; /* Tighter on mobile */
+  }
 }
 
 .tutorial-board-container .memory-card.flipped {
@@ -580,7 +655,7 @@ body.dark-mode .mini-cell {
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 6px;
+  border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -600,7 +675,7 @@ body.dark-mode .tutorial-board-container .memory-card-front {
   background: var(--bg-secondary);
   transform: rotateY(180deg);
   border: 2px solid #1e293b;
-  border-radius: 6px;
+  border-radius: 12px;
   overflow: hidden;
   /* Daily Game Strategy: Hide content when not flipped to prevent bleaching */
   visibility: hidden;
