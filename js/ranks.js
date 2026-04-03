@@ -20,7 +20,7 @@ export const RANKS = [
 export const SCORING = {
   BONUS_DECAY_SECONDS: 3600, // 1 hour (60 * 60)
   MAX_BONUS: 10.0,
-  ERROR_PENALTY_RP: 1.0,
+  ERROR_PENALTY_RP: 0.5,
   MISSED_DAY_RP: 10.0,
 
   PARTIAL_RP: {
