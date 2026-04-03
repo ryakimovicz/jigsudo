@@ -635,6 +635,7 @@
         </button>
 
 
+
         <section id="ranking-container" class="ranking-container-multi">
           <div class="ranking-header-main">
             <h3 data-i18n="ranking_title">Clasificación</h3>
@@ -670,6 +671,27 @@
               <div id="ranking-alltime-wrapper" class="ranking-table-wrapper">
                 <div class="loader-small"></div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Support / Donation Card -->
+        <section id="support-container" class="support-card glass-panel" style="margin-top: 24px;">
+          <h3 data-i18n="support_title">Apoya el Proyecto</h3>
+          <p data-i18n="support_desc">Si disfrutas de Jigsudo y quieres que siga siendo gratuito y sin publicidad, puedes invitarnos un café.</p>
+          <div class="support-buttons">
+            <div class="support-item">
+              <span class="support-tag" data-i18n="support_global">Global / Resto del Mundo</span>
+              <a href="https://ko-fi.com/corolado" target="_blank" class="btn-support btn-kofi">
+                <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
+                <span>Ko-fi</span>
+              </a>
+            </div>
+            <div class="support-item">
+              <span class="support-tag" data-i18n="support_argentina">Argentina</span>
+              <a href='https://cafecito.app/corolado' rel='noopener' target='_blank' class="btn-cafecito-raw">
+                <img srcset='https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x' src='https://cdn.cafecito.app/imgs/buttons/button_1.png' alt='Invitame un café en cafecito.app' />
+              </a>
             </div>
           </div>
         </section>
@@ -791,9 +813,7 @@
                 ¿Cuándo se actualiza el puzzle diario?
               </summary>
               <p data-i18n-html="seo_faq_1_a" style="margin: 8px 0 0 0">
-                El juego se actualiza y sincroniza para todo el mundo a las
-                06:00 UTC. Si no juegas en el día, perderás puntos de rango (RP) en el 
-                perfil y la tabla de clasificación debido a la inactividad.
+                El juego se actualiza y sincroniza para todo el mundo a las 06:00 UTC. Si no juegas en el día, perderás puntos de rango (RP) en el perfil y la tabla de clasificación debido a la inactividad.
               </p>
             </details>
             <details
@@ -936,7 +956,7 @@
                 ¿Puedo jugar Jigsudo en mi celular?
               </summary>
               <p data-i18n-html="seo_faq_7_a" style="margin: 8px 0 0 0">
-                ¡Totalmente! Jigsudo está diseñado para ser 100% responsiva. Puedes usarlo desde el navegador de tu móvil e incluso añadirlo a tu pantalla de inicio para acceder rápidamente.
+                ¡Totalmente! Jigsudo está diseñado para ser 100% responsiva (móvil y tablet). Puedes usarlo desde tu navegador e incluso añadirlo a tu pantalla de inicio.
               </p>
             </details>
 
@@ -959,7 +979,7 @@
                 ¿Jigsudo tiene anuncios o micro-pagos?
               </summary>
               <p data-i18n-html="seo_faq_8_a" style="margin: 8px 0 0 0">
-                Jigsudo no tiene micro-pagos y el acceso es gratuito. El juego incluye algunos anuncios no intrusivos (actualmente en proceso de implementación) en espacios dedicados para ayudar a mantener el proyecto de forma independiente.
+                 Jigsudo es 100% gratuito y libre de publicidad. No tiene micro-pagos. El proyecto se mantiene de forma independiente gracias a las donaciones voluntarias de los jugadores a través de Ko-fi y Cafecito.
               </p>
             </details>
           </div>
@@ -1671,7 +1691,8 @@
 
     <!-- Entry Point -->
     <script type="module" src="js/main.js?v=999"></script>
-    <!-- Entry Point -->
+  </body>
+</html>
 
     <!-- Confirmation Modal -->
     <div id="confirm-modal" class="modal-overlay hidden">
@@ -2178,6 +2199,24 @@
           </div>
         </div>
 
+        <div class="victory-support">
+          <p data-i18n="victory_support_p">¿Te gustó la partida? Apoya el proyecto:</p>
+          <div class="support-buttons">
+            <div class="support-item">
+              <span class="support-tag" data-i18n="support_global">Global</span>
+              <a href="https://ko-fi.com/corolado" target="_blank" class="btn-support btn-kofi">
+                 <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
+                 <span>Ko-fi</span>
+              </a>
+            </div>
+            <div class="support-item">
+              <span class="support-tag" data-i18n="support_argentina">Argentina</span>
+              <a href='https://cafecito.app/corolado' rel='noopener' target='_blank' class="btn-cafecito-raw">
+                <img srcset='https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x' src='https://cdn.cafecito.app/imgs/buttons/button_1.png' alt='Invitame un café en cafecito.app' />
+              </a>
+            </div>
+          </div>
+        </div>
 
         <div class="modal-actions" style="display: flex; gap: 10px">
           <button
