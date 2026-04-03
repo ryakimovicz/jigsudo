@@ -178,12 +178,6 @@ body {
   box-sizing: border-box;
 }
 
-@media (min-width: 1200px) {
-  .modal-overlay {
-    padding-right: 170px;
-  }
-}
-
 .modal-overlay:not(.hidden) {
   opacity: 1;
   visibility: visible;

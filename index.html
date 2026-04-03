@@ -1359,52 +1359,14 @@
               <h2 data-i18n="guide_title">Guía de Juego</h2>
             </div>
             <div class="guide-content-area">
-              <!-- Tutorial Container (Now Exclusive) -->
-              <div id="guide-tutorial" class="guide-tab-content">
-                <div id="tutorial-container">
-                  <div id="tutorial-game-area">
-                    <div id="tutorial-header" class="tutorial-header">
-                      <div class="tutorial-header-main">
-                        <button
-                          id="btn-tutorial-prev"
-                          class="tutorial-nav-btn"
-                          data-i18n-title="btn_prev_tip"
-                          title="Anterior"
-                        >
-                          ←
-                        </button>
-                        <div class="tutorial-title-group">
-                          <span id="tutorial-stage-name">Etapa 1: Memoria</span>
-                          <div id="tutorial-progress-bar">
-                            <div
-                              id="tutorial-progress-fill"
-                              style="width: 0%"
-                            ></div>
-                          </div>
-                        </div>
-                        <button
-                          id="btn-tutorial-next"
-                          class="tutorial-nav-btn"
-                          data-i18n-title="btn_next_tip"
-                          title="Siguiente"
-                        >
-                          →
-                        </button>
-                      </div>
-                      <div
-                        id="tutorial-stage-description"
-                        class="tutorial-stage-description"
-                      >
-                        <!-- Filled by JS -->
-                      </div>
-                    </div>
-                    <div
-                      id="tutorial-board-container"
-                      class="tutorial-board-container"
-                    >
-                      <!-- Dynamic content rendered by JS -->
-                    </div>
-                  </div>
+              <!-- Guide Intro & CTA -->
+              <div id="guide-intro" class="guide-intro-section glass-panel">
+                <h3 data-i18n="guide_intro_title">🎮 Bienvenido a Jigsudo</h3>
+                <p data-i18n="guide_intro_p1">Jigsudo es una mezcla única de rompecabezas, memoria y lógica. Si eres nuevo, te recomendamos completar nuestro tutorial interactivo.</p>
+                <div class="guide-cta-wrapper">
+                  <button id="btn-open-tutorial" class="btn-primary">
+                    <span data-i18n="guide_btn_start_tutorial">🚀 Iniciar Tutorial</span>
+                  </button>
                 </div>
               </div>
 
@@ -1590,12 +1552,8 @@
     <!-- game-manager and other modules are imported by main.js or each other. 
          Removing explicit tags to prevent double-loading (e.g. ?v=1.1 mismatch). -->
 
-    <!-- Terms Section Removed from here -->
-
     <!-- Entry Point -->
     <script type="module" src="js/main.js?v=999"></script>
-  </body>
-</html>
 
     <!-- Confirmation Modal -->
     <div id="confirm-modal" class="modal-overlay hidden">
@@ -2328,6 +2286,62 @@
       </div>
     </div>
     
+    <!-- TUTORIAL MODAL -->
+    <div id="tutorial-modal" class="modal-overlay hidden">
+      <div class="modal-content tutorial-modal-content">
+        <div id="tutorial-container">
+          <div id="tutorial-game-area">
+            <div id="tutorial-header" class="tutorial-header">
+              <div class="tutorial-header-top-row">
+                <button id="btn-skip-tutorial" class="btn-text-only" data-i18n="guide_btn_skip_tutorial">
+                  Omitir tutorial
+                </button>
+              </div>
+              <div class="tutorial-header-main">
+                <button
+                  id="btn-tutorial-prev"
+                  class="tutorial-nav-btn"
+                  data-i18n-title="btn_prev_tip"
+                  title="Anterior"
+                >
+                  ←
+                </button>
+                <div class="tutorial-title-group">
+                  <span id="tutorial-stage-name">Etapa 1: Memoria</span>
+                  <div id="tutorial-progress-bar">
+                    <div
+                      id="tutorial-progress-fill"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                </div>
+                <button
+                  id="btn-tutorial-next"
+                  class="tutorial-nav-btn"
+                  data-i18n-title="btn_next_tip"
+                  title="Siguiente"
+                >
+                  →
+                </button>
+              </div>
+              <div
+                id="tutorial-stage-description"
+                class="tutorial-stage-description"
+              >
+                <!-- Filled by JS -->
+              </div>
+            </div>
+            <div
+              id="tutorial-board-container"
+              class="tutorial-board-container"
+            >
+              <!-- Dynamic content rendered by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- GENERIC ALERT MODAL -->
     <div id="generic-alert-modal" class="modal-overlay hidden">
       <div class="modal-content small-modal">

@@ -4,7 +4,7 @@ import { initHome } from "./home.js";
 import { initLanguage } from "./i18n.js";
 import { initSudoku } from "./sudoku.js";
 import { initHistory } from "./history.js";
-import { initGuide } from "./guide.js";
+import { initGuide, openTutorialModal } from "./guide.js"; // Guide & Tutorial Import
 import { gameManager } from "./game-manager.js";
 import {
   initAuth,
@@ -66,6 +66,35 @@ async function startApp() {
   router.init();
 
   attachAuthListeners();
+
+  // FIRST VISIT TUTORIAL POPUP - Only for new, unauthenticated users
+  window.addEventListener("authReady", (e) => {
+    const user = e.detail.user;
+    const tutorialDone = localStorage.getItem("jigsudo_tutorial_done");
+    
+    // If user is authenticated (not anonymous), they've played before
+    if (user && !user.isAnonymous) {
+      if (!tutorialDone) localStorage.setItem("jigsudo_tutorial_done", "true");
+      return;
+    }
+
+    // Only show if not done, and we are at Home
+    const isHome = !window.location.hash || window.location.hash === "#home" || window.location.hash === "#";
+    
+    if (!tutorialDone && isHome) {
+      // Set the flag IMMEDIATELY so it doesn't show again on reloads
+      localStorage.setItem("jigsudo_tutorial_done", "true");
+
+      // Small delay to ensure everything is rendered before opening the modal
+      setTimeout(() => {
+        // Re-check hash in case user navigated away during the delay
+        const currentHash = window.location.hash;
+        if (!currentHash || currentHash === "#home" || currentHash === "#") {
+          router.navigateTo("#home/tutorial");
+        }
+      }, 500);
+    }
+  }, { once: true });
 
   // DEBUG TOOLS: Exposed only in Debug Mode
   if (CONFIG.debugMode) {

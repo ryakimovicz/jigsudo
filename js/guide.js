@@ -3,6 +3,8 @@ import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { RANKS } from "./ranks.js";
 import { CONFIG } from "./config.js";
+import { toggleModal } from "./ui.js";
+import { router } from "./router.js";
 
 // DOMContentLoaded removed. main.js handles this.
 // document.addEventListener("DOMContentLoaded", () => {
@@ -74,12 +76,11 @@ let currentSearchCells = [];
 let currentSearchPath = [];
 
 export function initGuide() {
-  // setupRouting(); // Handled by router.js
   setupTutorialListeners();
   setupSidebarConnection();
   initTutorialDragAndDrop();
-  // Re-init slider logic
   updateGuideSidebarStatus();
+
   // Initialize Ranks/Info Section
   const ranksContainer = document.getElementById("ranks-table-container");
   if (ranksContainer) renderRanksTable(ranksContainer);
@@ -89,44 +90,82 @@ export function initGuide() {
     versionEl.textContent = CONFIG.version;
   }
 
-  // Listen for Router Changes
+  // CTA button in Guide Section
+  const btnOpenTutorial = document.getElementById("btn-open-tutorial");
+  if (btnOpenTutorial) {
+    btnOpenTutorial.addEventListener("click", () => {
+      const baseRoute = window.location.hash.split("/")[0] || "#home";
+      window.location.hash = `${baseRoute}/tutorial`;
+    });
+  }
+
+  // Skip Tutorial Button in Modal
+  const btnSkip = document.getElementById("btn-skip-tutorial");
+  if (btnSkip) {
+    btnSkip.addEventListener("click", () => {
+      localStorage.setItem("jigsudo_tutorial_done", "true");
+      closeTutorialModal();
+    });
+  }
+
+  // Listen for Router Changes to Handle /tutorial
   window.addEventListener("routeChanged", ({ detail }) => {
-    if (detail.baseRoute === "#guide") {
-      const stageKey = detail.params?.[0];
-      const stageMap = {
-        memory: 1,
-        jigsaw: 2,
-        sudoku: 3,
-        peaks: 4,
-        search: 5,
-        code: 6,
-      };
-
-      let targetStage = stageMap[stageKey];
-
-      if (!targetStage) {
-        // Default to memory if unknown or missing
-        history.replaceState(null, null, "#guide/memory");
-        targetStage = 1;
+    // If route ends in /tutorial, open modal
+    if (detail.params.includes("tutorial")) {
+      openTutorialModal();
+    } else {
+      // If modal is open but route changed away from /tutorial, close modal
+      const modal = document.getElementById("tutorial-modal");
+      if (modal && !modal.classList.contains("hidden")) {
+        closeTutorialModal(false); // Close without re-navigating
       }
-
-      if (!tutorialState) {
-        document
-          .getElementById("tutorial-game-area")
-          .classList.remove("hidden");
-        initTutorialState();
-      }
-
-      loadStage(targetStage);
     }
   });
 
-  // Listen for language changes to refresh the tutorial content
+  // Listen for language changes
   window.addEventListener("languageChanged", () => {
-    if (window.location.hash.startsWith("#guide")) {
+    const modal = document.getElementById("tutorial-modal");
+    if (modal && !modal.classList.contains("hidden")) {
       loadStage(currentTutorialStage);
     }
   });
+}
+
+export function openTutorialModal(stage = 1) {
+  const modal = document.getElementById("tutorial-modal");
+  if (!modal) return;
+
+  // Sync URL if not already there
+  const hash = window.location.hash;
+  if (!hash.includes("/tutorial")) {
+    const baseRoute = hash.split("/")[0] || "#home";
+    router.navigateTo(`${baseRoute}/tutorial`);
+    return; // handleRoute will trigger the actual opening via routeChanged listener
+  }
+
+  toggleModal(modal, true);
+
+  if (!tutorialState) {
+    initTutorialState();
+  }
+
+  currentTutorialStage = stage;
+  loadStage(currentTutorialStage);
+}
+
+export function closeTutorialModal(syncHash = true) {
+  const modal = document.getElementById("tutorial-modal");
+  if (!modal) return;
+
+  toggleModal(modal, false);
+
+  if (syncHash) {
+    const hash = window.location.hash;
+    if (hash.includes("/tutorial")) {
+      const baseRoute = hash.split("/")[0];
+      router.navigateTo(baseRoute);
+    }
+  }
 }
 
 function setupSidebarConnection() {
@@ -138,14 +177,10 @@ function setupSidebarConnection() {
   }
 }
 
-// function setupTabSwitching() { ... } // Removed
-
-// Routing handled by router.js
-// function setupRouting() { ... }
-
 // Physical Keyboard Support for Tutorial
 document.addEventListener("keydown", (e) => {
-  if (!window.location.hash.startsWith("#guide")) return;
+  const modal = document.getElementById("tutorial-modal");
+  if (!modal || modal.classList.contains("hidden")) return;
   if (currentTutorialStage !== 3) return; // Only for Sudoku stage
 
   const key = e.key;
@@ -181,7 +216,8 @@ document.addEventListener("keydown", (e) => {
 
 // Global Click Listener for Tutorial Deselection (Parity)
 document.addEventListener("click", (e) => {
-  if (!window.location.hash.startsWith("#guide")) return;
+  const modal = document.getElementById("tutorial-modal");
+  if (!modal || modal.classList.contains("hidden")) return;
   if (currentTutorialStage !== 3) return;
 
   const isControl = e.target.closest(".tutorial-sudoku-controls");
@@ -234,8 +270,7 @@ function setupTutorialListeners() {
   if (btnPrev) {
     btnPrev.onclick = () => {
       if (currentTutorialStage > 1) {
-        window.location.hash =
-          "#guide/" + getStageKey(currentTutorialStage - 1);
+        loadStage(currentTutorialStage - 1);
       }
     };
   }
@@ -244,19 +279,18 @@ function setupTutorialListeners() {
   if (btnNext) {
     btnNext.onclick = () => {
       if (currentTutorialStage < 6) {
-        window.location.hash =
-          "#guide/" + getStageKey(currentTutorialStage + 1);
+        loadStage(currentTutorialStage + 1);
       }
     };
   }
 }
 
 function startTutorial() {
-  document.getElementById("tutorial-game-area").classList.remove("hidden");
-
   currentTutorialStage = 1;
-  initTutorialState();
-  window.location.hash = "#guide/memory";
+  if (!tutorialState) {
+    initTutorialState();
+  }
+  openTutorialModal(1);
 }
 
 function initTutorialState() {
@@ -512,9 +546,17 @@ function loadStage(stage) {
   const stageDescEl = document.getElementById("tutorial-stage-description");
   const nameEl = document.getElementById("tutorial-stage-name");
   const fill = document.getElementById("tutorial-progress-fill");
+  const btnSkip = document.getElementById("btn-skip-tutorial");
 
   container.innerHTML = "";
-  fill.style.width = `${((stage - 1) / 6) * 100}%`;
+  // progress calculation: 1=0%, 2=16%, ..., 6=83%, 7=100%
+  const progress = Math.min(100, Math.round(((stage - 1) / 6) * 100));
+  fill.style.width = `${progress}%`;
+
+  if (btnSkip) {
+    if (stage === 7) btnSkip.classList.add("hidden");
+    else btnSkip.classList.remove("hidden");
+  }
 
   const lang = getCurrentLang();
   const t = translations[lang];
@@ -532,8 +574,8 @@ function loadStage(stage) {
   // Update Nav Buttons
   const btnPrev = document.getElementById("btn-tutorial-prev");
   const btnNext = document.getElementById("btn-tutorial-next");
-  if (btnPrev) btnPrev.disabled = stage === 1;
-  if (btnNext) btnNext.disabled = stage === 6;
+  if (btnPrev) btnPrev.disabled = stage === 1 || stage === 7;
+  if (btnNext) btnNext.disabled = stage === 6 || stage === 7;
 
   currentTutorialStage = stage;
 
@@ -555,6 +597,9 @@ function loadStage(stage) {
       break;
     case 6:
       renderTutorialCode();
+      break;
+    case 7:
+      renderTutorialSuccess();
       break;
   }
 }
@@ -1382,6 +1427,45 @@ function renderTutorialCode() {
   }, 1000);
 }
 
+function renderTutorialSuccess() {
+  const container = document.getElementById("tutorial-board-container");
+  container.innerHTML = "";
+
+  const successWrapper = document.createElement("div");
+  successWrapper.className = "tutorial-success-wrapper";
+  successWrapper.style.textAlign = "center";
+  successWrapper.style.padding = "40px 20px";
+  successWrapper.style.animation = "slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
+  const icon = document.createElement("div");
+  icon.style.fontSize = "4rem";
+  icon.style.marginBottom = "20px";
+  icon.textContent = "🏅";
+  successWrapper.appendChild(icon);
+
+  const message = document.createElement("p");
+  message.style.fontSize = "1.2rem";
+  message.style.lineHeight = "1.6";
+  message.style.marginBottom = "30px";
+  message.style.color = "var(--text-primary)";
+  // Fallback to ensure we don't show "undefined"
+  message.innerHTML = t.tutorial_stage_7_desc || t.tutorial_finish_desc || "";
+  successWrapper.appendChild(message);
+
+  const btnClose = document.createElement("button");
+  btnClose.className = "btn-primary";
+  btnClose.style.padding = "12px 40px";
+  btnClose.style.fontSize = "1.1rem";
+  btnClose.textContent = t.btn_close || "Cerrar";
+  btnClose.onclick = () => closeTutorialModal();
+
+  successWrapper.appendChild(btnClose);
+  container.appendChild(successWrapper);
+}
+
 function startTutorialIdleTimer() {
   clearTutorialIdleTimer();
   tutorialIdleTimer = setTimeout(() => {
@@ -1468,7 +1552,7 @@ function handleTutorialCodeClick(cell, val) {
         }, 1000);
       } else {
         // Victory!
-        setTimeout(() => finishTutorial(), 500);
+        setTimeout(() => loadStage(7), 500);
       }
     }
   } else {
@@ -1484,23 +1568,6 @@ function handleTutorialCodeClick(cell, val) {
       playTutorialCodeSequence();
     }, 1000);
   }
-}
-
-function nextTutorialStage() {
-  currentTutorialStage++;
-  loadStage(currentTutorialStage);
-}
-
-function finishTutorial() {
-  document.getElementById("tutorial-progress-fill").style.width = "100%";
-  const lang = getCurrentLang(),
-    t = translations[lang];
-  document.getElementById("tutorial-board-container").innerHTML = `
-        <div class="tutorial-finish glass-panel">
-            <h2>🏆 ${t.tutorial_finish_title}</h2>
-            <p>${t.tutorial_finish_desc}</p>
-        </div>
-    `;
 }
 // --- DRAG & DROP ENGINE ---
 function initTutorialDragAndDrop() {
@@ -2376,9 +2443,15 @@ function validateTutorialBoard() {
     }
   });
 
-  if (errorCount === 0) {
-    setTimeout(() => nextTutorialStage(), 1000);
-  }
+    if (errorCount === 0) {
+      if (currentTutorialStage === 6) {
+        // FINISHED TUTORIAL - MOVE TO SUCCESS SCREEN
+        localStorage.setItem("jigsudo_tutorial_done", "true");
+        setTimeout(() => loadStage(7), 1000);
+      } else {
+        setTimeout(() => loadStage(currentTutorialStage + 1), 1000);
+      }
+    }
 }
 
 // --- INFO / RANKS SECTION ---

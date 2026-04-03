@@ -28,10 +28,11 @@ body.header-condensed {
   border-radius: 0;
 }
 
-/* Account for right ad space */
-@media (min-width: 1200px) {
+/* Header padding made symmetrical for balanced centering */
+@media (max-width: 768px) {
   .main-header {
-    padding-right: 170px;
+    padding-left: 50px;
+    padding-right: 50px;
   }
 }
 

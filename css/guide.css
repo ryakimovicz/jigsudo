@@ -18,6 +18,68 @@ body.dark-mode {
   --sudoku-inner-line: #444;
 }
 
+/* Tutorial Modal Specifics */
+.tutorial-modal-content {
+  width: 95%;
+  max-width: 950px; /* Wider for Sudoku keypad + board */
+  padding: 15px;
+  background: var(--bg-paper);
+}
+
+.tutorial-header-top-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 5px;
+}
+
+.btn-text-only {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 5px 10px;
+  transition: color 0.2s;
+}
+
+.btn-text-only:hover {
+  color: var(--accent-color);
+}
+
+/* Guide Intro Section */
+.guide-intro-section {
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 30px;
+  border: 1px solid var(--glass-border);
+}
+
+.guide-intro-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: var(--accent-color);
+}
+
+.guide-intro-section p {
+  max-width: 600px;
+  margin: 0 auto 25px auto;
+  line-height: 1.6;
+}
+
+.guide-cta-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+#btn-open-tutorial {
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  width: auto;
+  min-width: 200px;
+}
+
 .guide-card {
   padding: 25px;
   min-height: 500px;

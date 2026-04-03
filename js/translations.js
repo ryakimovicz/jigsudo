@@ -80,8 +80,8 @@ export const translations = {
     tutorial_stage_6_title: "Etapa 6: El Código",
     tutorial_stage_6_desc:
       "<strong>Objetivo:</strong> Se revelará un patrón de seguridad. Memorízalo y repítelo exactamente en el tablero.<br><strong>Controles:</strong> {action} las celdas en el orden correcto.",
-    tutorial_finish_title: "¡Tutorial Completado!",
-    tutorial_finish_desc:
+    tutorial_stage_7_title: "¡Tutorial Completado!",
+    tutorial_stage_7_desc:
       "Felicidades, has dominado todas las mecánicas de Jigsudo. ¡Ya puedes enfrentarte al desafío de hoy!",
     btn_finish_tutorial: "Finalizar",
 
@@ -267,7 +267,12 @@ export const translations = {
     sudoku_key_completed: "Este número ya se ha usado 9 veces.",
     
     // Guide Scoring (Spanish)
-    guide_scoring_title: "📊 Sistema de Puntuación (RP)",
+    guide_intro_title: "🎮 Bienvenido a Jigsudo",
+    guide_intro_p1: "Jigsudo es una mezcla única de rompecabezas, memoria y lógica. Si eres nuevo, te recomendamos completar nuestro tutorial.",
+    guide_btn_start_tutorial: "🚀 Iniciar Tutorial",
+    guide_btn_skip_tutorial: "Omitir tutorial",
+
+    guide_scoring_title: "📊 Sistema de Puntos (RP)",
     guide_scoring_p1: "Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.",
     guide_base_rp: "Base RP",
     guide_base_rp_desc: "6.0 puntos garantizados por terminar.",
@@ -620,8 +625,8 @@ export const translations = {
     tutorial_stage_6_title: "Stage 6: The Code",
     tutorial_stage_6_desc:
       "<strong>Goal:</strong> A security pattern will be revealed. Memorize and repeat it exactly on the board.<br><strong>Controls:</strong> {action} the cells in the correct order.",
-    tutorial_finish_title: "Tutorial Completed!",
-    tutorial_finish_desc:
+    tutorial_stage_7_title: "Tutorial Completed!",
+    tutorial_stage_7_desc:
       "Congratulations, you've mastered Jigsudo! You're ready for today's challenge.",
     btn_finish_tutorial: "Finish",
 
@@ -836,6 +841,11 @@ export const translations = {
     sudoku_key_completed: "This number has already been used 9 times.",
 
     // Guide Scoring (English)
+    guide_intro_title: "🎮 Welcome to Jigsudo",
+    guide_intro_p1: "Jigsudo is a unique blend of puzzles, memory, and logic. If you're new, we recommend completing our tutorial.",
+    guide_btn_start_tutorial: "🚀 Start Tutorial",
+    guide_btn_skip_tutorial: "Skip tutorial",
+
     guide_scoring_title: "📊 Scoring System (RP)",
     guide_scoring_p1: "Each game awards base points (RP) upon completion. Additionally, you can earn bonuses for speed and consistency.",
     guide_base_rp: "Base RP",
