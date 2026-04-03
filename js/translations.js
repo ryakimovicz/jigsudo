@@ -184,9 +184,9 @@ export const translations = {
     privacy_sec2_p: "Almacenamos tu progreso en las partidas (tiempos, puntuaciones, estado del tablero) para que puedas continuar desde cualquier dispositivo.",
     privacy_sec3_h: "3. Cookies y Almacenamiento Local",
     privacy_sec3_p: "Utilizamos LocalStorage para guardar tus preferencias (Tema, Sonido, Vibración) y mantener tu sesión iniciada.",
-    privacy_sec4_h: "4. Publicidad",
-    privacy_sec4_p: "Jigsudo utiliza Google AdSense. Puedes optar por no recibir publicidad personalizada en la configuración de anuncios de Google.",
-    
+    privacy_sec4_h: "4. Tus Derechos",
+    privacy_sec4_p1: "Tienes derecho a acceder, rectificar o eliminar tu información personal en cualquier momento desde la configuración de tu perfil.",
+    privacy_sec4_p2: "Para consultas adicionales sobre tus datos, puedes contactarnos a través de nuestra página de contacto.",
     terms_intro_text: "Al acceder o utilizar nuestro sitio web, aceptas cumplir con estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de los términos, no deberías utilizar nuestros servicios.",
     terms_sec1_h: "1. Descripción del Servicio",
     terms_sec1_p: "Jigsudo es una aplicación web de juegos de lógica y puzzles diarios. Nos reservamos el derecho de modificar el servicio en cualquier momento.",
@@ -502,9 +502,7 @@ export const translations = {
     seo_faq_7_q: "¿Puedo jugar Jigsudo en mi celular?",
     seo_faq_7_a:
       "¡Totalmente! Jigsudo está diseñado para ser 100% responsiva. Puedes usarlo desde el navegador de tu móvil e incluso añadirlo a tu pantalla de inicio para acceder rápidamente.",
-    seo_faq_8_q: "¿Jigsudo tiene anuncios o micro-pagos?",
-    seo_faq_8_a:
-      "Jigsudo no tiene micro-pagos y el acceso es gratuito. El juego incluye algunos anuncios no intrusivos (actualmente en proceso de implementación) en espacios dedicados para ayudar a mantener el proyecto de forma independiente.",
+    seo_faq_8_a: "Jigsudo no tiene micro-pagos y el acceso es gratuito. El proyecto se mantiene de forma independiente y no contiene publicidad.",
   },
   en: {
     app_title: "JIGSUDO",
@@ -735,9 +733,9 @@ export const translations = {
     privacy_sec2_p: "We store your game progress (times, scores, board state) so you can continue from any device.",
     privacy_sec3_h: "3. Cookies and Local Storage",
     privacy_sec3_p: "We use LocalStorage to save your preferences (Theme, Sound, Vibration) and keep your session logged in.",
-    privacy_sec4_h: "4. Advertising",
-    privacy_sec4_p: "Jigsudo uses Google AdSense. You can opt out of personalized advertising in Google's ad settings.",
-    
+    privacy_sec4_h: "4. Your Rights",
+    privacy_sec4_p1: "You have the right to access, rectify, or delete your personal information at any time from your profile settings.",
+    privacy_sec4_p2: "For additional inquiries about your data, you can contact us through our contact page.",
     terms_intro_text: "By accessing or using our website, you agree to comply with these Terms and Conditions. If you do not agree with any part of the terms, you should not use our services.",
     terms_sec1_h: "1. Description of Service",
     terms_sec1_p: "Jigsudo is a web application for daily logic and puzzle games. We reserve the right to modify the service at any time.",

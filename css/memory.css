@@ -741,11 +741,10 @@ body.dark-mode .memory-card-back {
     font-size: 14px !important; /* Fixed size to prevent layout thrashing */
   }
 
-  /* Collected Piece Mobile size */
   .collected-piece {
     width: 60px;
     height: 60px;
-    border: 1px solid var(--ad-placeholder-border); /* Explicit border for mobile visibility */
+    border: 1px solid var(--glass-border); /* Explicit border for mobile visibility */
     background: rgba(var(--accent-rgb), 0.05); /* Subtle tint for empty slots */
   }
 

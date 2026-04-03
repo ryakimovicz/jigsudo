@@ -20,7 +20,7 @@
   --header-height-expanded: 90px;
   --header-height-condensed: 45px;
   --header-height: var(--header-height-expanded); /* Default */
-  --footer-height: 60px; /* Standard mobile ad height */
+  --footer-height: 0px; /* Reclaimed space from ads */
   --sidebar-width: 50px;
   --sidebar-expanded-width: 200px;
   --sidebar-current-width: var(--sidebar-width);
@@ -38,11 +38,6 @@
   --glass-bg: rgba(255, 255, 255, 0.8); /* Frosted glass becoming Paper-like */
   --glass-border: rgba(0, 0, 0, 0.05);
 
-  /* Ad Placeholders */
-  --ad-placeholder-bg: rgba(0, 0, 0, 0.05);
-  --ad-placeholder-border: rgba(0, 0, 0, 0.1);
-  --ad-placeholder-text: rgba(0, 0, 0, 0.3);
-  --ad-label-bg: rgba(0, 0, 0, 0.1);
 }
 
 /* Midnight Paper Theme (Dark Mode) */
@@ -64,11 +59,6 @@ body.dark-mode {
   --glass-border: #444c56; /* Medium Grey Border */
   --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */
 
-  /* Ad Placeholders - Dark Mode */
-  --ad-placeholder-bg: rgba(255, 255, 255, 0.05);
-  --ad-placeholder-border: rgba(255, 255, 255, 0.2);
-  --ad-placeholder-text: rgba(255, 255, 255, 0.3);
-  --ad-label-bg: rgba(0, 0, 0, 0.5);
 }
 
 /* Ensure glass panel adapts to dark mode */
@@ -345,23 +335,6 @@ body {
   }
 }
 
-/* Account for right ad space */
-@media (min-width: 1200px) {
-  .main-header,
-  #menu-content,
-  #profile-section,
-  #history-section,
-  #guide-section,
-  #info-section,
-  #game-section,
-  #privacy-section,
-  #terms-section,
-  #about-section,
-  #contact-section,
-  .main-footer {
-    padding-right: 170px; /* 160px ad + 10px spacing */
-  }
-}
 
 /* Utility: Hidden */
 .hidden {
