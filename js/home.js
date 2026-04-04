@@ -610,8 +610,31 @@ export function initHome() {
     }
   }
 
-  // Initial Load (Try to use cache first)
-  loadAndRenderAllRankings(false);
+  // --- Lazy Loading Rankings ---
+  let rankingsInitialized = false;
+
+  const observerOptions = {
+    root: null,
+    rootMargin: "0px 0px 200px 0px", // Pre-load when 200px from viewport
+    threshold: 0.1,
+  };
+
+  const rankingObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && !rankingsInitialized) {
+        console.log("[Home] Ranking area visible, initializing load...");
+        rankingsInitialized = true;
+        loadAndRenderAllRankings(false);
+        // We can stop observing after first load if we want, 
+        // but keeping it doesn't hurt much.
+        rankingObserver.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  if (containerDaily) {
+    rankingObserver.observe(containerDaily);
+  }
 
   // Refresh Listener
   if (refreshBtn) {
@@ -625,17 +648,23 @@ export function initHome() {
   // Listen for auth state initialization to re-render rankings with user highlighting
   // Cache is smart enough to invalidate if user changed, so we don't need to force true blindly.
   window.addEventListener("authReady", () => {
-    console.log(
-      "[Home] Auth ready, re-rendering rankings (checking cache user match)",
-    );
-    loadAndRenderAllRankings(false);
+    if (rankingsInitialized) {
+      console.log(
+        "[Home] Auth ready, re-rendering rankings (checking cache user match)",
+      );
+      loadAndRenderAllRankings(false);
+    }
   });
 
   // Listen for Language Changes to refresh rankings & button state
   window.addEventListener("languageChanged", () => {
-    console.log("[Home] Language changed, refreshing UI...");
-    refreshStartButton();
-    loadAndRenderAllRankings(false); // Refreshes tables with new lang formatting
+    if (rankingsInitialized) {
+      console.log("[Home] Language changed, refreshing UI...");
+      refreshStartButton();
+      loadAndRenderAllRankings(false); // Refreshes tables with new lang formatting
+    } else {
+      refreshStartButton(); // Always refresh button text
+    }
   });
 
   // --- Router & Game Events (Moved out of showHome) ---
@@ -656,7 +685,9 @@ export function initHome() {
         });
       } else {
         // Normal refresh
-        loadAndRenderAllRankings();
+        if (rankingsInitialized) {
+          loadAndRenderAllRankings();
+        }
       }
 
       const debugBtn = document.getElementById("debug-help-btn");
@@ -721,6 +752,7 @@ export function initHome() {
   // Listen for Game Completion to force refresh ranking even if cache is fresh
   window.addEventListener("gameCompleted", () => {
     console.log("[Home] Game completed. Refreshing rankings & button state.");
+    rankingsInitialized = true; // Mark as initialized so it keeps updating
     loadAndRenderAllRankings(true);
     refreshStartButton(); // Force button update immediately
   });
