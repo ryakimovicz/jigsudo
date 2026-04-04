@@ -984,7 +984,7 @@ async function handleShareStats() {
 
   try {
     const { showToast } = await import("./ui.js");
-    showToast("Generando imagen... ⏳");
+    showToast("Generando imagen... ⏳", 2000);
 
     // Ensure everything is translated for the card (in case it was hidden)
     updateTexts();
@@ -1177,7 +1177,10 @@ async function handleShareStats() {
     // Increased delay to 500ms to ensure all assets (logos) and layouts settle
     await new Promise((r) => setTimeout(r, 500));
 
-    const canvas = await html2canvas(card, {
+    // TEMPORARILY FORCE DISPLAY (JUST IN CASE CSS IS BLOCKED OR OVERRIDDEN)
+    card.style.display = "flex";
+
+    const canvas = await window.html2canvas(card, {
       backgroundColor:
         getComputedStyle(document.body).getPropertyValue("--bg-paper") ||
         "#f8fafc",
@@ -1187,6 +1190,8 @@ async function handleShareStats() {
       logging: false,
       windowWidth: 1080,
     });
+
+    card.style.display = ""; // REVERT
 
     // 6. Share or Download
     canvas.toBlob(async (blob) => {

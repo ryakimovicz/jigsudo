@@ -238,8 +238,15 @@ async function handleShareVictory(stats) {
   const card = document.getElementById("victory-social-card");
   if (!card) return;
 
+  // 0. Check for html2canvas (Loaded via CDN in index.html)
+  if (typeof window.html2canvas === "undefined") {
+    console.error("html2canvas not loaded");
+    showToast("Error: html2canvas no está cargado ❌", 4000, "error");
+    return;
+  }
+
   try {
-    showToast("Generando imagen... ⏳");
+    showToast("Generando imagen... ⏳", 2000);
 
     // Ensure everything is translated for the card
     updateTexts();
@@ -334,7 +341,10 @@ async function handleShareVictory(stats) {
     // 4. Capture
     await new Promise((r) => setTimeout(r, 500));
 
-    const canvas = await html2canvas(card, {
+    // TEMPORARILY FORCE DISPLAY (JUST IN CASE CSS IS BLOCKED OR OVERRIDDEN)
+    card.style.display = "flex";
+
+    const canvas = await window.html2canvas(card, {
       backgroundColor:
         getComputedStyle(document.body).getPropertyValue("--bg-paper") ||
         "#f8fafc",
@@ -344,6 +354,8 @@ async function handleShareVictory(stats) {
       logging: false,
       windowWidth: 1080,
     });
+
+    card.style.display = ""; // REVERT
 
     // 5. Filename Generation
     const dateStr = new Date().toISOString().split("T")[0];

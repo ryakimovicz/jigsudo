@@ -851,10 +851,12 @@ body.dark-mode .light-only {
 
 /* SOCIAL CARD TEMPLATE (INSTAGRAM STORY FORMAT 9:16) */
 .social-card-template {
-  display: none !important; /* Prevent from affecting layout/overflow */
-  position: absolute;
+  position: fixed;
   left: -9999px;
-  top: 0;
+  top: -9999px;
+  display: flex !important; /* Ensure it HAS a layout for html2canvas */
+  pointer-events: none;
+  z-index: -1000;
   width: 1080px; /* Standard Story Width */
   height: auto; /* Dynamic height to avoid excess space */
   min-height: 1300px; /* Minimum height to look good on Stories */
