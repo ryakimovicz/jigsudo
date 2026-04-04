@@ -188,6 +188,11 @@ body {
   visibility: visible;
 }
 
+#confirm-modal,
+#generic-alert {
+  z-index: 60000 !important;
+}
+
 .modal-content {
   width: 95%; /* More space on narrow */
   max-width: 320px;

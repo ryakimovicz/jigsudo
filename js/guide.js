@@ -1030,7 +1030,32 @@ function renderTutorialSudoku() {
   const btnClear = document.createElement("button");
   btnClear.className = "btn-sudoku-action";
   btnClear.innerHTML = '<span class="icon">🗑️</span>';
-  btnClear.onclick = clearTutorialSelectedCell;
+
+  // Normal click
+  btnClear.addEventListener("click", () => {
+    if (btnClear.dataset.longPressed === "true") {
+      btnClear.dataset.longPressed = "false";
+      return;
+    }
+    clearTutorialSelectedCell();
+  });
+
+  // Long Press logic
+  let clearTimer;
+  const startClearPress = () => {
+    btnClear.dataset.longPressed = "false";
+    clearTimer = setTimeout(() => {
+      btnClear.dataset.longPressed = "true";
+      clearTutorialBoard();
+    }, 800);
+  };
+  const cancelClearPress = () => clearTimeout(clearTimer);
+
+  btnClear.addEventListener("mousedown", startClearPress);
+  btnClear.addEventListener("touchstart", startClearPress, { passive: true });
+  btnClear.addEventListener("mouseup", cancelClearPress);
+  btnClear.addEventListener("mouseleave", cancelClearPress);
+  btnClear.addEventListener("touchend", cancelClearPress);
 
   actionsRow.appendChild(btnUndo);
   actionsRow.appendChild(btnPencil);
@@ -2102,6 +2127,61 @@ function clearTutorialSelectedCell() {
   updateTutorialKeypadHighlights();
   highlightSimilarTutorialCells(null);
   validateTutorialBoard();
+}
+
+function clearTutorialBoard() {
+  const modal = document.getElementById("confirm-modal");
+  if (!modal) {
+    // Fallback if modal is missing from HTML
+    if (confirm("¿Borrar todo el tablero?")) executeClearTutorialBoard();
+    return;
+  }
+
+  // Show the standard Jigsudo confirm modal
+  modal.classList.remove("hidden");
+
+  const confirmBtn = document.getElementById("modal-confirm");
+  const cancelBtn = document.getElementById("modal-cancel");
+
+  // Temporary handlers for this specific board clear
+  const onConfirm = () => {
+    executeClearTutorialBoard();
+    modal.classList.add("hidden");
+    cleanup();
+  };
+  const onCancel = () => {
+    modal.classList.add("hidden");
+    cleanup();
+  };
+  const cleanup = () => {
+    confirmBtn.removeEventListener("click", onConfirm);
+    cancelBtn.removeEventListener("click", onCancel);
+  };
+
+  confirmBtn.addEventListener("click", onConfirm);
+  cancelBtn.addEventListener("click", onCancel);
+}
+
+function executeClearTutorialBoard() {
+  const board = document.getElementById("tutorial-sudoku-grid");
+  if (!board) return;
+
+  undoStack = []; // Reset history on full clear (Standard Jigsudo behavior)
+
+  const cells = board.querySelectorAll(".mini-cell");
+  cells.forEach((cell) => {
+    if (cell.classList.contains("given")) return;
+
+    cell.textContent = "";
+    cell.classList.remove("user-filled", "has-notes", "error", "selected-cell");
+    const notesGrid = cell.querySelector(".notes-grid");
+    if (notesGrid) notesGrid.remove();
+  });
+
+  deselectTutorialCell();
+  updateTutorialKeypadHighlights();
+  validateTutorialBoard();
+  console.log("Tutorial Sudoku board cleared via confirm modal.");
 }
 
 function pushTutorialAction(cell) {
