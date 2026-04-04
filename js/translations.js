@@ -227,7 +227,7 @@ export const translations = {
     terms_sec5_h: "5. Prohibiciones",
     terms_sec5_p: "Queda estrictamente prohibido: copiar, modificar, distribuir o realizar ingeniería inversa del código; utilizar bots o herramientas automatizadas; e intentar extraer datos de la aplicación.",
     terms_sec6_h: "6. Limitación de Responsabilidad",
-    terms_sec6_p: "El servicio se proporciona 'tal cual'. No se garantiza que sea ininterrumpido o libre de errores. No se asume responsabilidad por daños derivados del uso del servicio.",
+    terms_sec6_p: "El servicio se proporciona en su estado actual y según disponibilidad. No se garantiza que sea ininterrumpido o libre de errores. No se asume responsabilidad por daños derivados del uso del servicio.",
 
     // Footer
     footer_rights_html:
