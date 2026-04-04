@@ -61,6 +61,7 @@ export const translations = {
     guide_code_desc: "Revela y repite el patrón final de seguridad.",
     btn_start_tutorial: "Empezar Tutorial",
     btn_memorize: "Memorizar",
+    tutorial_title: "Tutorial",
     tutorial_welcome_title: "Bienvenido",
     tutorial_welcome_desc:
       "Este tutorial te guiará por todas las etapas del juego con un tablero simplificado.",
@@ -272,7 +273,7 @@ export const translations = {
     guide_intro_title: "🎮 Bienvenido a Jigsudo",
     guide_intro_p1: "Jigsudo es una mezcla única de rompecabezas, memoria y lógica. Si eres nuevo, te recomendamos completar nuestro tutorial.",
     guide_btn_start_tutorial: "🚀 Iniciar Tutorial",
-    guide_btn_skip_tutorial: "Omitir tutorial",
+    guide_btn_skip_tutorial: "Omitir",
 
     guide_scoring_title: "📊 Sistema de Puntos (RP)",
     guide_scoring_p1: "Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.",
@@ -608,6 +609,7 @@ export const translations = {
     guide_code_desc: "Reveal and repeat the final security pattern.",
     btn_start_tutorial: "Start Tutorial",
     btn_memorize: "Memorize",
+    tutorial_title: "Tutorial",
     tutorial_welcome_title: "Welcome",
     tutorial_welcome_desc:
       "This tutorial will guide you through all stages of the game with a simplified board.",
@@ -848,7 +850,7 @@ export const translations = {
     guide_intro_title: "🎮 Welcome to Jigsudo",
     guide_intro_p1: "Jigsudo is a unique blend of puzzles, memory, and logic. If you're new, we recommend completing our tutorial.",
     guide_btn_start_tutorial: "🚀 Start Tutorial",
-    guide_btn_skip_tutorial: "Skip tutorial",
+    guide_btn_skip_tutorial: "Skip",
 
     guide_scoring_title: "📊 Scoring System (RP)",
     guide_scoring_p1: "Each game awards base points (RP) upon completion. Additionally, you can earn bonuses for speed and consistency.",

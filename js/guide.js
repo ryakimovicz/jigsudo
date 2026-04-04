@@ -662,9 +662,11 @@ function renderTutorialMemory() {
     grid.appendChild(card);
   });
 
-  let canClick = true; // Enabled by default
+  let canClick = false; // Start disabled for Tutorial
   let isAnimating = false;
   let firstCard = null;
+
+  grid.classList.add("non-interactive"); // Visual feedback that it's locked
   // Use global tutorialState for persistent match tracking
   tutorialState.matchesFound = 0;
   console.log(`[Tutorial Stage 1] Initialized. canClick: ${canClick}, matchesFound: ${tutorialState.matchesFound}`);
@@ -756,6 +758,7 @@ function renderTutorialMemory() {
               });
               isAnimating = false;
               canClick = true;
+              grid.classList.remove("non-interactive");
             }, 700 + 350);
           },
           500 + cards.length * 30,
