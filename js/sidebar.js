@@ -9,6 +9,18 @@ export function updateSidebarActiveState(activeId) {
   });
 }
 
+const lockBodyScroll = () => {
+  if (window.innerWidth <= 768) {
+    document.documentElement.classList.add("no-scroll");
+    document.body.classList.add("no-scroll");
+  }
+};
+
+const unlockBodyScroll = () => {
+  document.documentElement.classList.remove("no-scroll");
+  document.body.classList.remove("no-scroll");
+};
+
 export const closeSidebar = () => {
   const sidebar = document.getElementById("side-sidebar");
   const overlay = document.getElementById("sidebar-overlay");
@@ -16,6 +28,7 @@ export const closeSidebar = () => {
   sidebar.classList.remove("expanded");
   document.body.classList.remove("sidebar-expanded");
   if (overlay) overlay.classList.add("hidden");
+  unlockBodyScroll();
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -28,6 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const isExpanded = sidebar.classList.toggle("expanded");
       document.body.classList.toggle("sidebar-expanded", isExpanded);
 
+      if (isExpanded) {
+        lockBodyScroll();
+      } else {
+        unlockBodyScroll();
+      }
       // manage tooltips
       const navItems = sidebar.querySelectorAll(".nav-item");
       if (isExpanded) {
