@@ -69,32 +69,84 @@ export function initHome() {
     soundModalRow.style.display = "flex";
   }
 
+  // --- Dropdown Management (History Aware) ---
+  const openDropdown = (el) => {
+    if (!el) return;
+    el.classList.remove("hidden");
+    // Add history state for back button to close
+    window.history.pushState({ modalOpen: true, modalId: el.id }, "");
+  };
+
+  const closeDropdown = (el, shouldGoBack = true) => {
+    if (!el || el.classList.contains("hidden")) return;
+    el.classList.add("hidden");
+    // If we closed manually, pop the state from history
+    if (
+      shouldGoBack &&
+      window.history.state?.modalOpen &&
+      window.history.state?.modalId === el.id
+    ) {
+      window.history.back();
+    }
+  };
+
   if (btnProfile && profileDropdown) {
     btnProfile.addEventListener("click", (e) => {
       e.stopPropagation();
-      profileDropdown.classList.toggle("hidden");
-      if (authDropdown) authDropdown.classList.add("hidden"); // Close other
+      if (profileDropdown.classList.contains("hidden")) {
+        // If other is open, close it FIRST without going back to keep state clean
+        if (authDropdown) closeDropdown(authDropdown, false);
+        openDropdown(profileDropdown);
+      } else {
+        closeDropdown(profileDropdown);
+      }
     });
   }
 
   if (btnAuth && authDropdown) {
     btnAuth.addEventListener("click", (e) => {
       e.stopPropagation();
-      authDropdown.classList.toggle("hidden");
-      if (profileDropdown) profileDropdown.classList.add("hidden"); // Close other
+      if (authDropdown.classList.contains("hidden")) {
+        // If other is open, close it FIRST
+        if (profileDropdown) closeDropdown(profileDropdown, false);
+        openDropdown(authDropdown);
+      } else {
+        closeDropdown(authDropdown);
+      }
     });
   }
+
+  // Handle "X" buttons in HTML (Replacing inline onclick for history support)
+  document.querySelectorAll(".dropdown-close-btn").forEach((btn) => {
+    btn.removeAttribute("onclick"); // Remove legacy inline handler
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeDropdown(btn.parentElement);
+    });
+  });
+
+  // Handle Back Button for Dropdowns
+  window.addEventListener("popstate", (e) => {
+    [authDropdown, profileDropdown].forEach((dropdown) => {
+      if (dropdown && !dropdown.classList.contains("hidden")) {
+        // If the current history state is NOT the one that opened this modal, close it
+        if (!e.state || !e.state.modalOpen || e.state.modalId !== dropdown.id) {
+          closeDropdown(dropdown, false); // Don't call back() again
+        }
+      }
+    });
+  });
 
   // Close dropdowns when clicking outside
   document.addEventListener("click", (e) => {
     if (profileDropdown && !profileDropdown.classList.contains("hidden")) {
       if (!profileDropdown.contains(e.target) && e.target !== btnProfile) {
-        profileDropdown.classList.add("hidden");
+        closeDropdown(profileDropdown);
       }
     }
     if (authDropdown && !authDropdown.classList.contains("hidden")) {
       if (!authDropdown.contains(e.target) && e.target !== btnAuth) {
-        authDropdown.classList.add("hidden");
+        closeDropdown(authDropdown);
       }
     }
   });

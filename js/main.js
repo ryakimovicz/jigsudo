@@ -139,26 +139,77 @@ function attachAuthListeners() {
   const btnLogout = document.getElementById("btn-logout");
   const closeBtn = document.getElementById("login-modal-cancel");
 
-  // Open Modal
-  if (btnLoginTrigger) {
-    btnLoginTrigger.addEventListener("click", () => {
-      toggleModal(loginModal, true);
-      // Hide Profile/Account Dropdowns
-      document.getElementById("profile-dropdown")?.classList.add("hidden");
-      document.getElementById("auth-dropdown")?.classList.add("hidden");
-      if (window.innerWidth <= 768) {
-        document.body.classList.add("header-condensed");
-        closeSidebar();
-      }
-    });
-  }
+  // --- Auth Modal Management (History Aware) ---
+  const updateAuthView = (view) => {
+    if (view === "login") {
+      formRegister.classList.add("hidden");
+      formRegister.classList.remove("active");
+      formLogin.classList.remove("hidden");
+      setTimeout(() => formLogin.classList.add("active"), 10);
+    } else {
+      formLogin.classList.add("hidden");
+      formLogin.classList.remove("active");
+      formRegister.classList.remove("hidden");
+      setTimeout(() => formRegister.classList.add("active"), 10);
+    }
+  };
+
+  const openAuthModal = () => {
+    toggleModal(loginModal, true);
+    // Initial state: login
+    window.history.pushState({ authModal: true, view: "login" }, "");
+    updateAuthView("login");
+
+    // UI Cleanup
+    document.getElementById("profile-dropdown")?.classList.add("hidden");
+    document.getElementById("auth-dropdown")?.classList.add("hidden");
+    if (window.innerWidth <= 768) {
+      document.body.classList.add("header-condensed");
+      closeSidebar(false); // Close visually but keep state in history for restoration
+    }
+  };
+
+  const closeAuthModal = (shouldGoBack = true) => {
+    if (!loginModal || loginModal.classList.contains("hidden")) return;
+    toggleModal(loginModal, false);
+
+    // If we closed manually, we need to "pop" all auth states from history.
+    // We might have one (login) or two (login -> register).
+    // We go back until the state no longer has authModal.
+    if (shouldGoBack && window.history.state?.authModal) {
+      window.history.back();
+    }
+  };
+
+  // Open Modal (Home, Sidebar, or Profile)
+  const loginTriggers = ["btn-login-trigger", "btn-profile-login-guest"];
+  loginTriggers.forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener("click", openAuthModal);
+    }
+  });
 
   // Close Modal
   if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      toggleModal(loginModal, false);
-    });
+    closeBtn.addEventListener("click", () => closeAuthModal());
   }
+
+  // Handle Back Button for Auth Modal
+  window.addEventListener("popstate", (e) => {
+    const isAuthModalOpen = !loginModal.classList.contains("hidden");
+
+    if (e.state && e.state.authModal) {
+      // We are in an auth state
+      if (!isAuthModalOpen) toggleModal(loginModal, true);
+      updateAuthView(e.state.view);
+    } else if (isAuthModalOpen) {
+      // State no longer auth, but modal is open -> Close it
+      closeAuthModal(false);
+    }
+  });
+
+  // Profile Navigation (Logged In)
 
   // Profile Navigation (Logged In)
   const btnViewProfile = document.getElementById("btn-view-profile");
@@ -197,20 +248,22 @@ function attachAuthListeners() {
   if (linkRegister) {
     linkRegister.addEventListener("click", (e) => {
       e.preventDefault();
-      formLogin.classList.add("hidden");
-      formLogin.classList.remove("active");
-      formRegister.classList.remove("hidden");
-      setTimeout(() => formRegister.classList.add("active"), 10);
+      // Push Register state
+      window.history.pushState({ authModal: true, view: "register" }, "");
+      updateAuthView("register");
     });
   }
 
   if (linkLogin) {
     linkLogin.addEventListener("click", (e) => {
       e.preventDefault();
-      formRegister.classList.add("hidden");
-      formRegister.classList.remove("active");
-      formLogin.classList.remove("hidden");
-      setTimeout(() => formLogin.classList.add("active"), 10);
+      // Going back to login: If we are in register state, just go back.
+      if (window.history.state?.view === "register") {
+        window.history.back();
+      } else {
+        // Fallback
+        updateAuthView("login");
+      }
     });
   }
 

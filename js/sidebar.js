@@ -21,14 +21,23 @@ const unlockBodyScroll = () => {
   document.body.classList.remove("no-scroll");
 };
 
-export const closeSidebar = () => {
+export const closeSidebar = (shouldGoBack = true) => {
   const sidebar = document.getElementById("side-sidebar");
   const overlay = document.getElementById("sidebar-overlay");
-  if (!sidebar) return;
+  
+  // Only proceed if it was actually expanded
+  if (!sidebar || !sidebar.classList.contains("expanded")) return;
+  
   sidebar.classList.remove("expanded");
   document.body.classList.remove("sidebar-expanded");
   if (overlay) overlay.classList.add("hidden");
   unlockBodyScroll();
+
+  // If we closed via UI (click overlay, link, etc.), 
+  // and there is a sidebar state in history, we "consume" it by going back.
+  if (shouldGoBack && window.history.state?.sidebarOpen) {
+    window.history.back();
+  }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -37,8 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.getElementById("sidebar-overlay");
 
   if (toggleBtns.length > 0 && sidebar) {
-    function toggleSidebar() {
-      const isExpanded = sidebar.classList.toggle("expanded");
+    function applySidebarUI(isExpanded) {
+      sidebar.classList.toggle("expanded", isExpanded);
       document.body.classList.toggle("sidebar-expanded", isExpanded);
 
       if (isExpanded) {
@@ -46,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         unlockBodyScroll();
       }
+
       // manage tooltips
       const navItems = sidebar.querySelectorAll(".nav-item");
       if (isExpanded) {
@@ -68,6 +78,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (overlay) {
         overlay.classList.toggle("hidden", !isExpanded);
+      }
+    }
+
+    function toggleSidebar() {
+      const isExpanded = !sidebar.classList.contains("expanded");
+      applySidebarUI(isExpanded);
+
+      if (isExpanded) {
+        // Add a virtual state for the back button to close
+        window.history.pushState({ sidebarOpen: true }, "");
+      } else {
+        // If we toggled OFF manually, and state exists, pop it
+        if (window.history.state?.sidebarOpen) {
+          window.history.back();
+        }
       }
     }
 
@@ -100,22 +125,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Auto-close on Navigation click (Mobile)
-    const navItems = sidebar.querySelectorAll(
-      ".nav-item:not(#btn-auth):not(#btn-profile)",
-    );
-    navItems.forEach((item) => {
-      item.addEventListener("click", () => {
-        if (window.innerWidth <= 768) {
-          closeSidebar();
-        }
-      });
-    });
-
     // Auto-close on global route change (for footer links, etc.)
     window.addEventListener("routeChanged", () => {
       if (window.innerWidth <= 768) {
-        closeSidebar();
+        // Important: Use false to avoid double-back if the route change already added an entry
+        closeSidebar(false);
+      }
+    });
+
+    // Handle Back Button navigation to close/open sidebar
+    window.addEventListener("popstate", (e) => {
+      if (window.innerWidth <= 768) {
+        const shouldBeExpanded = !!(e.state && e.state.sidebarOpen);
+        const isCurrentlyExpanded = sidebar.classList.contains("expanded");
+
+        if (shouldBeExpanded !== isCurrentlyExpanded) {
+          // Sync UI without pushing/popping history
+          applySidebarUI(shouldBeExpanded);
+        }
       }
     });
   }

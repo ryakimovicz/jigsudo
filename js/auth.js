@@ -716,13 +716,7 @@ function updateUIForLogout() {
     router.handleRoute();
   }
 
-  const btnGuestLogin = document.getElementById("btn-profile-login-guest");
-  if (btnGuestLogin) {
-    btnGuestLogin.onclick = () => {
-      const loginModal = document.getElementById("login-modal");
-      if (loginModal) toggleModal(loginModal, true);
-    };
-  }
+  /* Listener for btn-profile-login-guest handled in main.js to use history-aware openAuthModal */
 }
 
 export async function changeUserEmail(currentPassword, newEmail) {

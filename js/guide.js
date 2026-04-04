@@ -178,7 +178,7 @@ function setupSidebarConnection() {
   const btnHowTo = document.getElementById("nav-how-to");
   if (btnHowTo) {
     btnHowTo.addEventListener("click", () => {
-      window.location.hash = "#guide";
+      router.navigateTo("#guide");
     });
   }
 }

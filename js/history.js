@@ -3,6 +3,7 @@ import { translations } from "./translations.js";
 import { gameManager } from "./game-manager.js";
 import { startDailyGame } from "./home.js";
 import { updateSidebarActiveState } from "./sidebar.js";
+import { router } from "./router.js";
 
 import { getJigsudoDate } from "./utils/time.js";
 
@@ -109,7 +110,7 @@ export function initHistory() {
   const navHistory = document.getElementById("nav-history");
   if (navHistory) {
     navHistory.addEventListener("click", () => {
-      window.location.hash = "history";
+      router.navigateTo("#history");
     });
   }
 }
