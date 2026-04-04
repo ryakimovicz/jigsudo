@@ -487,7 +487,7 @@ export const translations = {
 
     stage_names: {
       memory: "Memoria",
-      jigsaw: "Rompecabezas",
+      jigsaw: "Rompe<wbr>cabezas",
       sudoku: "Sudoku",
       peaks: "Picos",
       search: "Sopa",

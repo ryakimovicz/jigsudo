@@ -567,23 +567,23 @@ function renderProfileStats(stats) {
 
   // Stage Averages
   if (document.getElementById("stat-avg-memory"))
-    document.getElementById("stat-avg-memory").textContent = stageCounts.memory
+    document.getElementById("stat-avg-memory").innerHTML = stageCounts.memory
       ? fmtTime(stageSums.memory / stageCounts.memory)
       : "--:--";
   if (document.getElementById("stat-avg-jigsaw"))
-    document.getElementById("stat-avg-jigsaw").textContent = stageCounts.jigsaw
+    document.getElementById("stat-avg-jigsaw").innerHTML = stageCounts.jigsaw
       ? fmtTime(stageSums.jigsaw / stageCounts.jigsaw)
       : "--:--";
   if (document.getElementById("stat-avg-sudoku"))
-    document.getElementById("stat-avg-sudoku").textContent = stageCounts.sudoku
+    document.getElementById("stat-avg-sudoku").innerHTML = stageCounts.sudoku
       ? fmtTime(stageSums.sudoku / stageCounts.sudoku)
       : "--:--";
   if (document.getElementById("stat-avg-search"))
-    document.getElementById("stat-avg-search").textContent = stageCounts.search
+    document.getElementById("stat-avg-search").innerHTML = stageCounts.search
       ? fmtTime(stageSums.search / stageCounts.search)
       : "--:--";
   if (document.getElementById("stat-avg-code"))
-    document.getElementById("stat-avg-code").textContent = stageCounts.code
+    document.getElementById("stat-avg-code").innerHTML = stageCounts.code
       ? fmtTime(stageSums.code / stageCounts.code)
       : "--:--";
 
@@ -594,7 +594,7 @@ function renderProfileStats(stats) {
     const avgPeaksErr = peaksErrorCount
       ? (totalPeaksErrors / peaksErrorCount).toFixed(1)
       : "0";
-    document.getElementById("stat-avg-peaks").textContent = avgPeaksTime;
+    document.getElementById("stat-avg-peaks").innerHTML = avgPeaksTime;
     if (document.getElementById("stat-avg-peaks-err"))
       document.getElementById("stat-avg-peaks-err").textContent =
         `(${avgPeaksErr} err)`;
