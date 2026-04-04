@@ -2130,6 +2130,13 @@ function clearTutorialSelectedCell() {
 }
 
 function clearTutorialBoard() {
+  const skipConfirm = localStorage.getItem("jigsudo_skip_clear_confirm") === "true";
+
+  if (skipConfirm) {
+    executeClearTutorialBoard();
+    return;
+  }
+
   const modal = document.getElementById("confirm-modal");
   if (!modal) {
     // Fallback if modal is missing from HTML

@@ -42,6 +42,7 @@ export function listenToUserProgress(userId) {
         data.progress,
         data.stats,
         data.forceSaveRequest,
+        data.settings,
       );
     }
   });
@@ -236,7 +237,12 @@ export async function loadUserProgress(userId) {
           { merge: true },
         );
       }
-      await gameManager.handleCloudSync(remoteProgress, remoteStats);
+      await gameManager.handleCloudSync(
+        remoteProgress,
+        remoteStats,
+        null,
+        data.settings,
+      );
     } else {
       console.log("No remote progress found. Creating new entry on next save.");
     }
@@ -311,6 +317,25 @@ export async function updateProfilePrivacy(userId, isPublic) {
     showSaveIndicatorWithMessage("Ajuste guardado");
   } catch (error) {
     console.error("[DB] Error updating profile privacy:", error);
+  }
+}
+
+export async function updateUserPreference(userId, key, value) {
+  if (!userId) return;
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(
+      userRef,
+      {
+        settings: {
+          [key]: value,
+        },
+      },
+      { merge: true },
+    );
+    console.log(`[DB] Preference ${key} saved to cloud: ${value}`);
+  } catch (error) {
+    console.error(`[DB] Error saving preference ${key}:`, error);
   }
 }
 

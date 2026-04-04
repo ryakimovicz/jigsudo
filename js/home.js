@@ -166,21 +166,35 @@ export function initHome() {
   // 1. Confirm Clear (Positive Logic: Checked = Ask)
   const confirmToggle = document.getElementById("confirm-clear-toggle");
   if (confirmToggle) {
-    // Stored as "jigsudo_skip_clear_confirm": "true" (Skip) or "false" (Ask)
-    const isSkipping =
-      localStorage.getItem("jigsudo_skip_clear_confirm") === "true";
+    const updateToggleFromStorage = () => {
+      // Stored as "jigsudo_skip_clear_confirm": "true" (Skip) or "false" (Ask)
+      // Default: "false" (Ask) if missing
+      const isSkipping = localStorage.getItem("jigsudo_skip_clear_confirm") === "true";
+      confirmToggle.checked = !isSkipping;
+    };
 
-    // Toggle = "Confirmar Borrado". Checked means "Ask" (Not skipping)
-    confirmToggle.checked = !isSkipping;
+    updateToggleFromStorage();
 
-    confirmToggle.addEventListener("change", () => {
+    confirmToggle.addEventListener("change", async () => {
       const wantConfirmation = confirmToggle.checked;
-      // If we want confirmation, skip is FALSE.
       const shouldSkip = !wantConfirmation;
-      localStorage.setItem(
-        "jigsudo_skip_clear_confirm",
-        shouldSkip ? "true" : "false",
-      );
+      localStorage.setItem("jigsudo_skip_clear_confirm", shouldSkip ? "true" : "false");
+
+      // Sync to cloud if possible
+      const { getCurrentUser } = await import("./auth.js");
+      const { updateUserPreference } = await import("./db.js");
+      const user = getCurrentUser();
+      if (user && !user.isAnonymous) {
+        // DB key: confirmClear (true = Ask, false = Skip)
+        updateUserPreference(user.uid, "confirmClear", !shouldSkip);
+      }
+    });
+
+    // Listen for cloud updates
+    window.addEventListener("jigsudoSettingsUpdated", (e) => {
+      if (e.detail.key === "confirmClear") {
+        updateToggleFromStorage();
+      }
     });
   }
 

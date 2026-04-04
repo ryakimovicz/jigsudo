@@ -1241,13 +1241,37 @@ export class GameManager {
     this.save();
   }
 
-  async handleCloudSync(remoteProgress, remoteStats, forceSaveRequest) {
+  async handleCloudSync(
+    remoteProgress,
+    remoteStats,
+    forceSaveRequest,
+    remoteSettings,
+  ) {
     console.log("[Sync] handleCloudSync triggered", {
       hasProgress: !!remoteProgress,
       hasStats: !!remoteStats,
       hasRequest: !!forceSaveRequest,
+      hasSettings: !!remoteSettings,
       local: !!this.state,
     });
+
+    // 0. Handle Remote Settings
+    if (remoteSettings) {
+      Object.entries(remoteSettings).forEach(([key, value]) => {
+        // We only apply if local is different
+        // Map DB keys to localStorage keys if necessary. 
+        // For now: confirmClear -> jigsudo_skip_clear_confirm (inverted)
+        if (key === "confirmClear") {
+          const skipValue = value === true ? "false" : "true";
+          if (localStorage.getItem("jigsudo_skip_clear_confirm") !== skipValue) {
+            console.log(`[Sync] Updating local preference: ${key} -> ${skipValue}`);
+            localStorage.setItem("jigsudo_skip_clear_confirm", skipValue);
+            // Notify UI
+            window.dispatchEvent(new CustomEvent("jigsudoSettingsUpdated", { detail: { key, value } }));
+          }
+        }
+      });
+    }
 
     // 0. Handle Remote Save Request (Signal from another device)
     if (forceSaveRequest) {

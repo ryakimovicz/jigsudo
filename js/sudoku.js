@@ -1178,14 +1178,24 @@ function closeConfirmModal() {
   if (modal) modal.classList.add("hidden");
 }
 
-function confirmClearBoard() {
+async function confirmClearBoard() {
   // Check preference
   const dontAsk = document.getElementById("modal-dont-ask");
   if (dontAsk && dontAsk.checked) {
     localStorage.setItem("jigsudo_skip_clear_confirm", "true");
+
     // Sync with settings menu (Logic: Checked = Ask, Unchecked = Skip)
     const toggle = document.getElementById("confirm-clear-toggle");
     if (toggle) toggle.checked = false;
+
+    // Sync to cloud
+    const { getCurrentUser } = await import("./auth.js");
+    const { updateUserPreference } = await import("./db.js");
+    const user = getCurrentUser();
+    if (user && !user.isAnonymous) {
+      // DB key: confirmClear (true = Ask, false = Skip)
+      updateUserPreference(user.uid, "confirmClear", false);
+    }
   }
 
   clearBoard();
