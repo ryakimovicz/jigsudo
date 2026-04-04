@@ -63,12 +63,10 @@ export function initHome() {
   const btnAuth = document.getElementById("btn-auth");
   const authDropdown = document.getElementById("auth-dropdown");
 
-  // Init Dropdown Visibility for Sound
-  const soundModalRow = document.getElementById(
-    "setting-sound-container-modal",
-  );
-  if (soundModalRow && !CONFIG.ENABLE_SOUND) {
-    soundModalRow.style.display = "none";
+  // Show sound settings by default (will be disabled/unchecked via HTML and logic)
+  const soundModalRow = document.getElementById("setting-sound-container-modal");
+  if (soundModalRow) {
+    soundModalRow.style.display = "flex";
   }
 
   if (btnProfile && profileDropdown) {
@@ -189,15 +187,9 @@ export function initHome() {
   // 2. Sound Toggle
   const soundToggle = document.getElementById("sound-toggle");
   if (soundToggle) {
-    const soundOn = localStorage.getItem("jigsudo_sound") !== "false"; // Default ON
-    soundToggle.checked = soundOn;
-
-    soundToggle.addEventListener("change", () => {
-      const isOn = soundToggle.checked;
-      localStorage.setItem("jigsudo_sound", isOn ? "true" : "false");
-      // Update global config if available, or manager
-      // gameManager can read straight from LS or we can implement a setSound method later
-    });
+    // Force sound OFF and remove interactive logic
+    soundToggle.checked = false;
+    localStorage.setItem("jigsudo_sound", "false");
   }
 
   // 3. Vibration Toggle (Mobile Only)
@@ -214,20 +206,9 @@ export function initHome() {
       // Hide on non-mobile devices
       vibContainer.style.display = "none";
     } else {
-      const vibOn = localStorage.getItem("jigsudo_vibration") !== "false"; // Default ON
-      vibToggle.checked = vibOn;
-
-      vibToggle.addEventListener("change", () => {
-        const isOn = vibToggle.checked;
-        localStorage.setItem("jigsudo_vibration", isOn ? "true" : "false");
-
-        // Haptic Feedback for the toggle itself
-        if (isOn && navigator.vibrate) {
-          try {
-            navigator.vibrate(20);
-          } catch (e) {}
-        }
-      });
+      // Force vibration ON for mobile users, but keep the toggle disabled (via HTML)
+      vibToggle.checked = true;
+      localStorage.setItem("jigsudo_vibration", "true");
     }
   }
   // --- Header Info (Date & Challenge #) ---

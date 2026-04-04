@@ -126,16 +126,15 @@ function initSettingsToggles() {
   const vibrationContainer = document.getElementById("setting-vibration-container");
   const confirmClearToggle = document.getElementById("confirm-clear-toggle");
 
-  // Sound Visibility based on CONFIG
-  if (soundContainer && !CONFIG.ENABLE_SOUND) {
-    soundContainer.style.display = "none";
+  // Sound Visibility: Always show but as disabled/unchecked
+  if (soundContainer) {
+    soundContainer.style.display = "flex";
   }
 
   if (soundToggle) {
-    soundToggle.checked = localStorage.getItem("jigsudo_sound") !== "false";
-    soundToggle.addEventListener("change", (e) => {
-      localStorage.setItem("jigsudo_sound", e.target.checked);
-    });
+    // Force sound OFF and remove interactive logic
+    soundToggle.checked = false;
+    localStorage.setItem("jigsudo_sound", "false");
   }
 
   // Vibration Visibility based on Device capabilities

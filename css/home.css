@@ -1022,6 +1022,17 @@ input:checked + .slider-small {
   background-color: var(--accent-color);
 }
 
+input:checked:disabled + .slider-small {
+  background-color: var(--text-muted); /* Gray when forced ON */
+  opacity: 0.6;
+}
+
+input:disabled + .slider-small {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
 input:checked + .slider-small:before {
   transform: translateX(14px);
 }
