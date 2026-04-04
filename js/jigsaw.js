@@ -114,8 +114,7 @@ export function placeInPanel(chunkIndex) {
   placeholder.dataset.chunkIndex = chunkIndex;
 
   const state = gameManager.getState();
-  const chunks = getChunksFromBoard(state.data.initialPuzzle);
-  const chunkData = chunks[chunkIndex];
+  const chunkData = state.data.chunks[chunkIndex];
 
   // "Hydrate" the placeholder
   placeholder.innerHTML = "";
@@ -995,11 +994,10 @@ export async function checkBoardCompletion() {
     // Identify which chunk of numbers this is.
     const chunkId = parseInt(content.dataset.chunkIndex);
     const state = gameManager.getState();
-    const originalChunks = getChunksFromBoard(state.data.initialPuzzle);
-    const chunkData = originalChunks[chunkId]; // 3x3 array of numbers
+    const chunkData = state.data.chunks[chunkId]; // Use pre-calculated untransformed chunks
 
     if (!chunkData) {
-      // Should not happen
+      console.error(`[Jigsaw] Chunk data not found for ID ${chunkId}`);
       reconstructionFailed = true;
       return;
     }

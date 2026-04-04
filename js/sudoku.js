@@ -1066,9 +1066,9 @@ export function resumeSudokuState() {
     // If the slot is empty (e.g. pieces weren't moved in Jigsaw resumption),
     // we MUST generate the content here so it's not a black square.
     if (!slot.classList.contains("filled") || slot.innerHTML === "") {
-      const chunks = Array.isArray(initialPuzzle)
+      const chunks = state.data.chunks || (Array.isArray(initialPuzzle)
         ? getChunksFromBoard(initialPuzzle)
-        : [];
+        : []);
       if (chunks[slotIndex]) {
         const content = createMiniGrid(chunks[slotIndex], slotIndex);
         content.style.width = "100%";

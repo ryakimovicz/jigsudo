@@ -111,7 +111,7 @@ export function initMemoryGame() {
     createPanelPlaceholders(); // <--- Imported from jigsaw.js
 
     // 5. Setup Cards
-    const puzzleChunks = getChunksFromBoard(state.data.initialPuzzle);
+    const puzzleChunks = state.data.chunks || getChunksFromBoard(state.data.initialPuzzle);
     setupCards(puzzleChunks);
 
     // Initialize Resizing
@@ -780,8 +780,11 @@ function placeInBoard(chunkIndex) {
     slot.classList.add("filled");
 
     const state = gameManager.getState();
-    const chunks = getChunksFromBoard(state.data.initialPuzzle);
-    const chunkData = chunks[chunkIndex];
+    const chunkData = state.data.chunks[chunkIndex];
+    if (!chunkData) {
+      console.error(`[Memory] No chunk data for index ${chunkIndex}`);
+      return;
+    }
 
     const content = createMiniGrid(chunkData, chunkIndex);
     // Maybe ensure it fills the slot perfectly?
