@@ -750,7 +750,7 @@ body.dark-mode .tutorial-board-container .memory-card-back {
 .dragging-clone {
   position: fixed;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 100000; /* Above tutorial modal (30000) */
   opacity: 0.9;
   transform: scale(1.1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
