@@ -138,6 +138,17 @@ export const router = {
       } else {
         footer.classList.remove("hidden");
         console.log("[Router] Footer shown");
+
+        // CLEANUP VICTORY UI ON NAVIGATION
+        // If we are navigating AWAY from a game (or landed on a menu),
+        // ensure any victory modal/animation is removed.
+        const cleanup = async () => {
+          const { cleanupVictoryUI } = await import("./ui.js");
+          const { stopVictoryAnimations } = await import("./code.js");
+          cleanupVictoryUI();
+          stopVictoryAnimations();
+        };
+        cleanup();
       }
     }
 

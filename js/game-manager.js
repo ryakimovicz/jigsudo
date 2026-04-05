@@ -1869,6 +1869,8 @@ export class GameManager {
         streak: stats.currentStreak,
         errors: peaksErrors,
         stageTimes: st,
+        date: today, // YYYY-MM-DD
+        isReplay: this.isReplay,
       };
 
       stats.lastLocalUpdate = Date.now(); // Timestamp for conflict resolution

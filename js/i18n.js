@@ -65,6 +65,32 @@ export function updateTexts() {
     //   if (key === "game_memory") key = "jigsaw_help_title"; // Reuse for Title
     // }
 
+    if (key === "victory_desc") {
+      const date = el.dataset.date;
+      const isReplay = el.dataset.isReplay === "true";
+      if (isReplay && date) {
+        const [y, m, d] = date.split("-");
+        const dateObj = new Date(
+          Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d), 12),
+        );
+        const formattedDate = dateObj.toLocaleDateString(
+          currentLang === "es" ? "es-ES" : "en-US",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            timeZone: "UTC",
+          },
+        );
+
+        let msg =
+          t.victory_desc_past ||
+          "Aquí tienes un resumen de tu partida del {date}.";
+        el.textContent = msg.replace("{date}", formattedDate);
+        return;
+      }
+    }
+
     if (t[key]) el.textContent = t[key];
   });
 

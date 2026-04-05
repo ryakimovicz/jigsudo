@@ -137,7 +137,7 @@ document.addEventListener(
   { passive: true, capture: true },
 );
 
-export function showVictorySummary(stats, isHome = false) {
+export async function showVictorySummary(stats, isHome = false) {
   if (!stats) return;
 
   const modal = document.getElementById("victory-summary-modal");
@@ -154,10 +154,25 @@ export function showVictorySummary(stats, isHome = false) {
 
   // Update button text based on mode
   if (btnHome) {
-    const btnKey = isHome ? "btn_close" : "btn_back_home";
+    let btnKey = isHome ? "btn_close" : "btn_back_home";
+    if (!isHome && stats.isReplay) {
+      btnKey = "btn_back_history";
+    }
     btnHome.dataset.i18n = btnKey;
     btnHome.textContent =
       translations[lang][btnKey] || (isHome ? "Cerrar" : "Volver al Inicio");
+  }
+
+  // Update description text based on whether it's a replay
+  const descEl = modal.querySelector(".modal-desc");
+  if (descEl) {
+    descEl.dataset.isReplay = stats.isReplay || "false";
+    descEl.dataset.date = stats.date || "";
+    descEl.dataset.i18n = "victory_desc";
+    
+    // Call updateTexts to apply localized formatting immediately
+    const { updateTexts } = await import("./i18n.js");
+    updateTexts();
   }
 
   // Populating main stats
@@ -219,12 +234,17 @@ export function showVictorySummary(stats, isHome = false) {
           console.warn("Failed to clear ranking cache:", err);
         }
 
-        // 2. Clear current game session if needed (optional, state usually persists but we want fresh Home)
-        // 3. Navigate Home
+        // 2. Navigate based on mode
         const { router } = await import("./router.js");
-        router.navigateTo("#home");
+        if (stats.isReplay && stats.date) {
+          // stats.date is YYYY-MM-DD
+          const [y, m] = stats.date.split("-");
+          router.navigateTo(`#history/${y}/${m}`);
+        } else {
+          router.navigateTo("#home");
+        }
 
-        // 4. Force global events to let Home.js know it should refresh UI
+        // 3. Force global events to let Home.js know it should refresh UI
         window.dispatchEvent(new CustomEvent("gameCompleted"));
       }
     };
