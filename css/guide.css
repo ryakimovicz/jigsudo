@@ -395,8 +395,8 @@ body:not(.dark-mode) .peaks-stats {
     gap: 8px !important;
   }
   .tutorial-sudoku-board {
-    width: 78vw !important;
-    max-width: 260px !important;
+    width: 86vw !important;
+    max-width: 310px !important;
   }
   .tutorial-sudoku-controls {
     flex: none !important;
@@ -1118,6 +1118,10 @@ body.dark-mode .rank-row:hover {
 }
 
 @media (max-width: 768px) {
+  .tutorial-board-container {
+    padding: 15px !important;
+    min-height: 320px !important;
+  }
   .ranks-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;

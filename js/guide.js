@@ -552,6 +552,9 @@ function initTutorialState() {
 }
 
 function loadStage(stage) {
+  const modal = document.getElementById("tutorial-modal");
+  if (modal) modal.scrollTop = 0;
+
   const container = document.getElementById("tutorial-board-container");
   const titleEl = document.getElementById("tutorial-step-title");
   const descEl = document.getElementById("tutorial-step-desc");
