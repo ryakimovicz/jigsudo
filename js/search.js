@@ -304,17 +304,17 @@ function validateSequence() {
 
   // EASTER EGG CHECK: "4,2"
   if (currentNumString === "4,2") {
-    triggerEasterEgg(); // Random emoji
+    triggerEasterEgg(null, [...currentCells]); // Random emoji
   }
 
   // EASTER EGG CHECK: "5"
   if (currentNumString === "5") {
-    triggerEasterEgg("🍵");
+    triggerEasterEgg("🍵", [...currentCells]);
   }
 
   // EASTER EGG CHECK: "6,9"
   if (currentNumString === "6,9") {
-    triggerEasterEgg("😏");
+    triggerEasterEgg("😏", [...currentCells]);
   }
 
   if (currentCells.length <= 1) {
@@ -602,7 +602,7 @@ export async function transitionToCode() {
   initCode();
 }
 
-function triggerEasterEgg(overrideEmoji = null) {
+function triggerEasterEgg(overrideEmoji = null, cells = []) {
   const overlay = document.createElement("div");
   overlay.className = "easter-egg-overlay";
 
@@ -612,6 +612,33 @@ function triggerEasterEgg(overrideEmoji = null) {
 
   const gameSection = document.getElementById("game-section");
   if (gameSection) {
+    // Positioning
+    if (cells.length > 0) {
+      const sectionRect = gameSection.getBoundingClientRect();
+      let minTop = Infinity,
+        minLeft = Infinity,
+        maxBottom = -Infinity,
+        maxRight = -Infinity;
+
+      cells.forEach((cell) => {
+        const r = cell.getBoundingClientRect();
+        minTop = Math.min(minTop, r.top);
+        minLeft = Math.min(minLeft, r.left);
+        maxBottom = Math.max(maxBottom, r.bottom);
+        maxRight = Math.max(maxRight, r.right);
+      });
+
+      const centerX = (minLeft + maxRight) / 2 - sectionRect.left;
+      const centerY = (minTop + maxBottom) / 2 - sectionRect.top;
+
+      overlay.style.left = `${centerX}px`;
+      overlay.style.top = `${centerY}px`;
+    } else {
+      // Fallback to center if no cells provided
+      overlay.style.left = "50%";
+      overlay.style.top = "50%";
+    }
+
     gameSection.appendChild(overlay);
     // Remove after animation (2s)
     setTimeout(() => {

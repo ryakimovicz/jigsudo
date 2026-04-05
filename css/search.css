@@ -313,10 +313,9 @@
 /* Easter Egg Overlay */
 .search-mode .easter-egg-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  /* top/left will be set by JS dynamically over cells */
   transform: translate(-50%, -50%);
-  font-size: 8rem;
+  font-size: 3rem;
   opacity: 0;
   pointer-events: none;
   z-index: 100;

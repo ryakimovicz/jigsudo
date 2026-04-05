@@ -252,6 +252,7 @@ body {
   flex: 1;
   max-width: none !important;
   padding-left: 0 !important;
+  position: relative;
 }
 
 .section-header {
