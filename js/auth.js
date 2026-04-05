@@ -643,7 +643,10 @@ function updateUIForLogin(user) {
   if (btnLogout) {
     btnLogout.onclick = () => {
       const modal = document.getElementById("logout-confirm-modal");
-      if (modal) toggleModal(modal, true);
+      if (modal) {
+        window.history.pushState({ logoutModal: true }, "", window.location.hash);
+        toggleModal(modal, true);
+      }
     };
   }
 
@@ -653,7 +656,7 @@ function updateUIForLogin(user) {
 
   if (btnCancelLogout && logoutModal) {
     btnCancelLogout.onclick = () => {
-      toggleModal(logoutModal, false);
+      window.history.back();
     };
   }
 
@@ -787,6 +790,14 @@ function showPasswordModal(actionType) {
   confirmInput.value = "";
   newPassInput.value = "";
   if (verifyPassInput) verifyPassInput.value = "";
+
+  // History Management for Back Button support
+  window.history.pushState(
+    { profileActionModal: true, action: actionType },
+    "",
+    window.location.hash,
+  );
+
   toggleModal(modal, true);
 
   if (!modal.dataset.toggleListenerAttached) {
@@ -954,10 +965,17 @@ function showPasswordModal(actionType) {
         "btn-confirm-delete-modal",
       );
       if (deleteModal) {
+        window.history.pushState(
+          { deleteAccountStep: 2 },
+          "",
+          window.location.hash,
+        );
         toggleModal(deleteModal, true);
+        toggleModal(modal, false); // Hide step 1 visually
+
         if (btnCancelDelete)
           btnCancelDelete.onclick = () => {
-            toggleModal(deleteModal, false);
+            window.history.back();
           };
         if (btnConfirmDelete) {
           btnConfirmDelete.onclick = async () => {
@@ -1035,10 +1053,43 @@ function showPasswordModal(actionType) {
     };
   }
   btnCancel.onclick = () => {
-    toggleModal(modal, false);
-    title.style.color = "";
+    window.history.back();
   };
 }
+
+// Global Popstate Handler for Profile Modals (Logout, Delete Account, etc.)
+window.addEventListener("popstate", (e) => {
+  const pwdModal = document.getElementById("password-confirm-modal");
+  const logoutModal = document.getElementById("logout-confirm-modal");
+  const deleteConfirmModal = document.getElementById("delete-account-confirm-modal");
+
+  const isPwdOpen = pwdModal && !pwdModal.classList.contains("hidden");
+  const isLogoutOpen = logoutModal && !logoutModal.classList.contains("hidden");
+  const isDeleteConfirmOpen = deleteConfirmModal && !deleteConfirmModal.classList.contains("hidden");
+
+  // Logical Transitions
+  if (e.state && e.state.deleteAccountStep === 2) {
+    // We are in Final Warning step
+    if (!isDeleteConfirmOpen) toggleModal(deleteConfirmModal, true);
+    if (isPwdOpen) toggleModal(pwdModal, false);
+  } else if (e.state && (e.state.deleteAccountStep === 1 || e.state.profileActionModal)) {
+    // We are in Step 1 (Password/Action Confirmation)
+    if (isDeleteConfirmOpen) toggleModal(deleteConfirmModal, false);
+    if (!isPwdOpen) toggleModal(pwdModal, true);
+  } else if (e.state && e.state.logoutModal) {
+    // We are in Logout Confirmation
+    if (!isLogoutOpen) toggleModal(logoutModal, true);
+  } else {
+    // State is null or unrelated -> Close all our modals
+    if (isPwdOpen) {
+      toggleModal(pwdModal, false);
+      const title = document.getElementById("pwd-modal-title");
+      if (title) title.style.color = "";
+    }
+    if (isLogoutOpen) toggleModal(logoutModal, false);
+    if (isDeleteConfirmOpen) toggleModal(deleteConfirmModal, false);
+  }
+});
 
 export async function resendVerification() {
   const user = auth.currentUser;
