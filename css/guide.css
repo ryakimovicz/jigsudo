@@ -263,6 +263,11 @@ body.dark-mode .guide-selector {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+body:not(.dark-mode) .tutorial-header {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
 .tutorial-header-main {
   display: flex;
   justify-content: space-between;
@@ -318,6 +323,10 @@ body.dark-mode .guide-selector {
   background: rgba(0, 0, 0, 0.2);
   padding: 8px 18px;
   border-radius: 8px;
+}
+
+body:not(.dark-mode) .peaks-stats {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Search Tutorial Wrapper — targets below board */
@@ -437,6 +446,12 @@ body.dark-mode .guide-selector {
   flex-shrink: 0;
 }
 
+body:not(.dark-mode) .tutorial-nav-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-main);
+}
+
 .tutorial-nav-btn:hover:not(:disabled) {
   background: var(--primary-color, #fbbf24);
   color: #1e293b;
@@ -464,6 +479,10 @@ body.dark-mode .guide-selector {
   padding: 12px;
   border-radius: 8px;
   border-left: 3px solid var(--primary-color, #fbbf24);
+}
+
+body:not(.dark-mode) .tutorial-stage-description {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .tutorial-stage-description strong {
@@ -494,6 +513,10 @@ body.dark-mode .guide-selector {
   border-radius: 15px;
   padding: 20px;
   position: relative;
+}
+
+body:not(.dark-mode) .tutorial-board-container {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 /* Tutorial specific layout adjustments */
@@ -742,6 +765,11 @@ body.dark-mode .tutorial-board-container .memory-card-back {
   width: 100%;
 }
 
+body:not(.dark-mode) .tutorial-jigsaw-panel {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
 /* Jigsaw Interaction & Drag-Drop */
 .jigsaw-piece.dragging-source {
   opacity: 0.2;
@@ -786,6 +814,11 @@ body.dark-mode .tutorial-board-container .memory-card-back {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-sizing: border-box;
+}
+
+body:not(.dark-mode) .jigsaw-panel-slot {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.05);
 }
 
 .jigsaw-panel-slot.empty {
@@ -995,6 +1028,24 @@ body.dark-mode .jigsaw-slot.filled .mini-sudoku-grid {
 .tutorial-sudoku-board.sudoku-mode .mini-cell.user-filled,
 .tutorial-sudoku-board.sudoku-mode .mini-sudoku-grid .note-slot {
   color: var(--accent-color) !important;
+}
+
+/* Gray-out overrides for Search Mode in Tutorial */
+.tutorial-sudoku-board.search-mode .peak-found,
+.tutorial-sudoku-board.search-mode .valley-found {
+  background-color: #e2e8f0 !important; /* Slate 200 */
+  box-shadow: none !important;
+  color: #94a3b8 !important; /* Slate 400 */
+  border-color: #cbd5e1 !important; /* Slate 300 */
+  cursor: default !important;
+}
+
+body.dark-mode .tutorial-sudoku-board.search-mode .peak-found,
+body.dark-mode .tutorial-sudoku-board.search-mode .valley-found {
+  background-color: #1e293b !important; /* Slate 800 */
+  color: #475569 !important; /* Slate 600 */
+  border-color: #334155 !important; /* Slate 700 */
+  box-shadow: none !important;
 }
 
 /* --- INFO / RANKS STYLES (Merged) --- */

@@ -1284,7 +1284,7 @@ function renderTutorialSearch() {
   searchWrapper.className = "search-tutorial-wrapper";
 
   const board = document.createElement("div");
-  board.className = "tutorial-sudoku-board";
+  board.className = "tutorial-sudoku-board search-mode";
   board.id = "tutorial-search-grid";
 
   // Render 9 chunks (matches daily game)
