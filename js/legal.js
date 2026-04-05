@@ -349,7 +349,7 @@ function updateHeaderInfo() {
 
   // Challenge #: Days since Jan 18, 2026 (Launch Day = #001)
   const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startZero = new Date(2026, 0, 18); // Jan 18, 2026
+  const startZero = new Date(2026, 3, 5); // April 5, 2026 (Launch Day Shift/Reset #1)
 
   const diffTime = todayZero - startZero;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;

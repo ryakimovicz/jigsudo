@@ -322,7 +322,7 @@ export function initHome() {
     const todayZero = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
-    const startZero = new Date(Date.UTC(2026, 0, 18)); // Jan 18, 2026 (Launch Day)
+    const startZero = new Date(Date.UTC(2026, 3, 5)); // April 5, 2026 (Launch Day Shift/Reset #1)
 
     const diffTime = todayZero - startZero;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
