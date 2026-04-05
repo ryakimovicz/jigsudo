@@ -278,7 +278,7 @@ export const translations = {
     guide_scoring_title: "📊 Sistema de Puntos (RP)",
     guide_scoring_p1: "Cada juego otorga puntos base (RP) al completarlo. Además, puedes ganar bonificaciones por velocidad y consistencia.",
     guide_base_rp: "Base RP",
-    guide_base_rp_desc: "6.0 puntos garantizados por terminar.",
+    guide_base_rp_desc: "6.0 puntos garantizados por terminar:",
     guide_speed: "Velocidad",
     guide_speed_desc: "Tienes un bono de hasta 10 Puntos que decae durante los primeros 60 minutos. ¡Sé rápido!",
     guide_penalty: "Penalización",
@@ -518,12 +518,12 @@ export const translations = {
     rank_level_prefix: "Nvl.",
 
     // Minigame Names for Profile (Spanish)
-    p_game_memory: "Juego de Memoria",
-    p_game_jigsaw: "Rompecabezas",
-    p_game_sudoku: "Sudoku",
-    p_game_peaks: "Picos y Valles",
-    p_game_search: "Sopa de Números",
-    p_game_code: "El Código",
+    p_game_memory: "Juego de Memoria (1.0)",
+    p_game_jigsaw: "Rompecabezas (1.0)",
+    p_game_sudoku: "Sudoku (1.0)",
+    p_game_peaks: "Picos y Valles (1.0)",
+    p_game_search: "Sopa de Números (1.0)",
+    p_game_code: "El Código (1.0)",
 
     // Support & Share
     share_text:
@@ -858,7 +858,7 @@ export const translations = {
     guide_scoring_title: "📊 Scoring System (RP)",
     guide_scoring_p1: "Each game awards base points (RP) upon completion. Additionally, you can earn bonuses for speed and consistency.",
     guide_base_rp: "Base RP",
-    guide_base_rp_desc: "6.0 points guaranteed for finishing.",
+    guide_base_rp_desc: "6.0 points guaranteed for finishing:",
     guide_speed: "Speed",
     guide_speed_desc: "You have a bonus of up to 10 Points that decays during the first 60 minutes. Be fast!",
     guide_penalty: "Penalty",
@@ -983,12 +983,12 @@ export const translations = {
     rank_level_prefix: "Lvl.",
 
     // Minigame Names for Profile
-    p_game_memory: "Memory",
-    p_game_jigsaw: "Jigsaw",
-    p_game_sudoku: "Sudoku",
-    p_game_peaks: "Peaks & Valleys",
-    p_game_search: "Number Search",
-    p_game_code: "The Code",
+    p_game_memory: "Memory (1.0)",
+    p_game_jigsaw: "Jigsaw (1.0)",
+    p_game_sudoku: "Sudoku (1.0)",
+    p_game_peaks: "Peaks & Valleys (1.0)",
+    p_game_search: "Number Search (1.0)",
+    p_game_code: "The Code (1.0)",
 
     // Auth Modals & Toasts
     modal_change_name_title: "Change Username",
