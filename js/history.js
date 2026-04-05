@@ -154,9 +154,9 @@ export async function updateHistoryUI() {
   const stats = gameManager.stats ||
     JSON.parse(localStorage.getItem("jigsudo_user_stats")) || { history: {} };
 
-  const year = histViewDate.getFullYear();
-  const month = histViewDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const year = histViewDate.getUTCFullYear();
+  const month = histViewDate.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   const now = getJigsudoDate();
 
   // Pre-fetch the exact list of available puzzles to avoid 404 errors in console
@@ -164,13 +164,13 @@ export async function updateHistoryUI() {
   puzzleExistsCache = {}; // Reset for current view
   
   if (availableDates.length > 0) {
-    // Determine Limits
-    const sorted = availableDates.map(d => new Date(d)).sort((a,b) => a - b);
+    // Determine Limits using UTC consistently
+    const sorted = availableDates.map(d => new Date(d + "T00:00:00Z")).sort((a,b) => a - b);
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
     
-    minNavMonth = new Date(first.getFullYear(), first.getMonth(), 1);
-    maxNavMonth = new Date(last.getFullYear(), last.getMonth(), 1);
+    minNavMonth = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1));
+    maxNavMonth = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), 1));
     
     availableDates.forEach(date => {
       puzzleExistsCache[date] = true;
@@ -182,8 +182,8 @@ export async function updateHistoryUI() {
   } else {
     // Full fallback
     const n = getJigsudoDate();
-    minNavMonth = new Date(n.getFullYear(), n.getMonth(), 1);
-    maxNavMonth = new Date(n.getFullYear(), n.getMonth(), 1);
+    minNavMonth = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1));
+    maxNavMonth = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1));
   }
 
   updateNavButtonsState();
@@ -195,31 +195,31 @@ function updateNavButtonsState() {
   const nextBtn = document.getElementById("hist-next-btn");
   if (!prevBtn || !nextBtn) return;
 
-  const year = histViewDate.getFullYear();
-  const month = histViewDate.getMonth();
+  const year = histViewDate.getUTCFullYear();
+  const month = histViewDate.getUTCMonth();
 
-  // Min limit: First month with puzzles
-  const isMinMonth = minNavMonth && (year === minNavMonth.getFullYear() && month === minNavMonth.getMonth());
+  // Min limit: First month with puzzles (using UTC comparison)
+  const isMinMonth = minNavMonth && (year === minNavMonth.getUTCFullYear() && month === minNavMonth.getUTCMonth());
   prevBtn.classList.toggle("disabled", isMinMonth);
 
   // Max limit: Last month with puzzles
-  const isMaxMonth = maxNavMonth && (year === maxNavMonth.getFullYear() && month === maxNavMonth.getMonth());
+  const isMaxMonth = maxNavMonth && (year === maxNavMonth.getUTCFullYear() && month === maxNavMonth.getUTCMonth());
   nextBtn.classList.toggle("disabled", isMaxMonth);
 }
 
 function changeHistMonth(delta) {
   // Guard against navigating past limits if clicked despite CSS disabled
-  const year = histViewDate.getFullYear();
-  const month = histViewDate.getMonth();
+  const year = histViewDate.getUTCFullYear();
+  const month = histViewDate.getUTCMonth();
 
-  if (delta === -1 && minNavMonth && (year === minNavMonth.getFullYear() && month === minNavMonth.getMonth())) return;
-  if (delta === 1 && maxNavMonth && (year === maxNavMonth.getFullYear() && month === maxNavMonth.getMonth())) return;
+  if (delta === -1 && minNavMonth && (year === minNavMonth.getUTCFullYear() && month === minNavMonth.getUTCMonth())) return;
+  if (delta === 1 && maxNavMonth && (year === maxNavMonth.getUTCFullYear() && month === maxNavMonth.getUTCMonth())) return;
 
   const targetDate = new Date(histViewDate);
-  targetDate.setMonth(targetDate.getMonth() + delta);
+  targetDate.setUTCMonth(targetDate.getUTCMonth() + delta);
 
-  const targetY = targetDate.getFullYear();
-  const targetM = String(targetDate.getMonth() + 1).padStart(2, "0");
+  const targetY = targetDate.getUTCFullYear();
+  const targetM = String(targetDate.getUTCMonth() + 1).padStart(2, "0");
 
   // Update URL to trigger routeChange
   window.location.hash = `#history/${targetY}/${targetM}`;
@@ -232,14 +232,15 @@ function renderHistoryCalendar(history = {}) {
 
   grid.innerHTML = "";
 
-  const year = histViewDate.getFullYear();
-  const month = histViewDate.getMonth();
+  const year = histViewDate.getUTCFullYear();
+  const month = histViewDate.getUTCMonth();
   const locale = getCurrentLang() || "es-ES";
 
   // Month Label
   const monthName = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
+    timeZone: "UTC", // Crucial: ensure label reflects UTC month/year
   }).format(histViewDate);
   if (label) {
     label.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
@@ -261,9 +262,9 @@ function renderHistoryCalendar(history = {}) {
     grid.appendChild(el);
   }
 
-  // Logic for dates
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
+  // Logic for dates (using UTC midnight for cells)
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
 
   // Padding
   for (let i = 0; i < firstDay; i++) {
@@ -272,19 +273,20 @@ function renderHistoryCalendar(history = {}) {
     grid.appendChild(empty);
   }
 
-  // Today for limit
+  // Today for limit (using UTC methods)
   const now = getJigsudoDate();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    const dateObj = new Date(year, month, d);
+    const dateObj = new Date(Date.UTC(year, month, d));
 
     const dayEl = document.createElement("div");
     dayEl.className = "calendar-day";
     dayEl.textContent = d;
 
-    const isFuture = dateObj > now;
+    // Use UTC timestamps for accurate "Future" comparison
+    const isFuture = dateObj.getTime() > now.getTime();
     const exists = puzzleExistsCache[dateStr];
 
     if (isFuture || !exists) {
@@ -323,9 +325,9 @@ function renderHistoryCalendar(history = {}) {
         if (isToday && !isCompleted) {
           window.location.hash = "#game";
         } else {
-          const y = dateObj.getFullYear();
-          const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-          const dStr = String(dateObj.getDate()).padStart(2, "0");
+          const y = dateObj.getUTCFullYear();
+          const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+          const dStr = String(dateObj.getUTCDate()).padStart(2, "0");
           window.location.hash = `#history/${y}/${m}/${dStr}`;
         }
       });

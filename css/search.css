@@ -129,8 +129,9 @@
 
   /* Board Sizing on Mobile */
   .search-mode .memory-board {
-    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 130px);
-    width: min(95vw, var(--v-budget));
+    /* Budget reserved for sequences (relaxed slightly for better adaptation) */
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 150px);
+    width: min(92vw, var(--v-budget));
     max-height: var(--v-budget);
   }
 }
@@ -225,7 +226,8 @@
   max-width: 600px;
   text-align: center;
   animation: fadeIn 0.5s ease;
-  order: 4 !important; /* Below board (1) and (hidden) controls */
+  order: 4 !important;
+  box-sizing: border-box;
 }
 
 .search-targets-container h3 {
@@ -264,18 +266,22 @@
 /* Mobile compact view for sequences */
 @media (max-width: 768px) {
   .search-targets-container {
-    margin-top: 5px;
+    margin-top: 8px;
+    padding: 0 15px 12px; /* Margins for sides and bottom */
   }
   .search-targets-container h3 {
-    display: none; /* Hide header to save vertical space on mobile */
+    display: none; 
   }
   .search-targets-list {
-    gap: 4px;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
   }
   .search-target-chip {
-    padding: 3px 6px;
-    font-size: 0.70rem;
-    font-weight: 400;
+    padding: 5px 10px;
+    font-size: 0.85rem; /* Balanced size */
+    font-weight: 600;
+    white-space: nowrap;
   }
 }
 

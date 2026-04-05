@@ -120,7 +120,7 @@ export const translations = {
 
     // Game Names
     game_memory: "Juego de Memoria",
-    game_jigsaw: "Rompe<wbr>cabezas",
+    game_jigsaw: "Rompecabezas",
     game_sudoku: "Sudoku",
     game_peaks: "Picos y Valles",
     game_search: "Sopa de Números",
@@ -130,7 +130,7 @@ export const translations = {
     menu_title: "Seis desafíos, un solo tablero",
     // innerHTML for description to preserve strong tags
     menu_description_html: `Todo empieza con el <strong>Juego de Memoria</strong>: encuentra los
-            pares, consigue las piezas y arma el <strong>Rompe<wbr>cabezas</strong>.
+            pares, consigue las piezas y arma el <strong>Rompecabezas</strong>.
             Solo así podrás enfrentar al <strong>Sudoku</strong>, superar los
             <strong>Picos y Valles</strong>, buscar en la <strong>Sopa de Números</strong> 
             y descifrar <strong>El Código</strong> final.`,
@@ -491,7 +491,7 @@ export const translations = {
 
     stage_names: {
       memory: "Memoria",
-      jigsaw: "Rompe<wbr>cabezas",
+      jigsaw: "Rompecabezas",
       sudoku: "Sudoku",
       peaks: "Picos",
       search: "Sopa",
