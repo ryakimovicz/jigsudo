@@ -4,8 +4,13 @@ import { translations } from "./translations.js";
 import { gameManager } from "./game-manager.js";
 import { getRankData, calculateRP } from "./ranks.js";
 import { formatTime } from "./ui.js";
+import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js";
+import { fetchPuzzleIndex } from "./history.js";
 
-export let currentViewDate = new Date();
+export let currentViewDate = getJigsudoDate();
+let minNavMonth = null;
+let maxNavMonth = null;
+let activeProfileName = null;
 
 export function initProfile() {
   console.log("Profile Module Loaded");
@@ -27,7 +32,7 @@ export function initProfile() {
 
   // Listen for Language Changes to re-render Profile & Menu Stats (Rank, etc.)
   window.addEventListener("languageChanged", () => {
-    updateProfileData();
+    updateProfileData(activeProfileName);
   });
 
   // Back Button
@@ -54,7 +59,7 @@ export function initProfile() {
   // Real-time Cloud Sync Listener: Refresh UI when stats update in background
   window.addEventListener("userStatsUpdated", () => {
     console.log("[Profile] Stats updated from cloud. Refreshing UI...");
-    updateProfileData();
+    updateProfileData(activeProfileName);
   });
 }
 
@@ -90,6 +95,7 @@ window.addEventListener("routeChanged", async ({ detail }) => {
 
 // Internal UI Manipulation
 function _showProfileUI(requestedUsername) {
+  activeProfileName = requestedUsername;
   const section = document.getElementById("profile-section");
   const menu = document.getElementById("menu-content"); // Main Home Content
   // We might need to hide specific sections depending on what's active (home vs game)
@@ -109,7 +115,7 @@ function _showProfileUI(requestedUsername) {
       if (result.success && result.user && result.user.emailVerified) {
         clearInterval(verificationInterval);
         verificationInterval = null;
-        updateProfileData(requestedUsername); // refresh to hide banner
+        updateProfileData(activeProfileName); // refresh to hide banner
       }
     }, 5000); // Check every 5s while profile is open
   };
@@ -144,7 +150,7 @@ function _showProfileUI(requestedUsername) {
     }
   });
 
-  updateProfileData(requestedUsername);
+  updateProfileData(activeProfileName);
 
   // Update Header Button to Close Icon
   const btnStats = document.getElementById("btn-stats");
@@ -152,6 +158,7 @@ function _showProfileUI(requestedUsername) {
 }
 
 function _hideProfileUI() {
+  activeProfileName = null;
   // Stop any active polling when leaving profile
   if (verificationInterval) {
     clearInterval(verificationInterval);
@@ -176,7 +183,7 @@ function _hideProfileUI() {
   if (btnStats) btnStats.textContent = "📊";
 }
 
-export async function updateProfileData(targetUsername = null) {
+export async function updateProfileData(targetUsername = activeProfileName) {
   const { getCurrentUser } = await import("./auth.js");
   const user = getCurrentUser();
   const lang = getCurrentLang() || "es";
@@ -380,6 +387,29 @@ export async function updateProfileData(targetUsername = null) {
   if (isOwnProfile) {
     const statsStr = localStorage.getItem("jigsudo_user_stats");
     const localStats = statsStr ? JSON.parse(statsStr) : null;
+
+    // Fetch bounds once to set navigation limits
+    if (!minNavMonth) {
+      try {
+        const availableDates = await fetchPuzzleIndex();
+        if (availableDates.length > 0) {
+          const sorted = availableDates.map((d) => new Date(d)).sort((a, b) => a - b);
+          const first = sorted[0];
+          const last = sorted[sorted.length - 1];
+          minNavMonth = new Date(first.getFullYear(), first.getMonth(), 1);
+          maxNavMonth = new Date(last.getFullYear(), last.getMonth(), 1);
+
+          // Update current view if out of bounds
+          if (currentViewDate < minNavMonth)
+            currentViewDate = new Date(minNavMonth);
+          if (currentViewDate > maxNavMonth)
+            currentViewDate = new Date(maxNavMonth);
+        }
+      } catch (e) {
+        console.warn("[Profile] Could not load navigation limits:", e);
+      }
+    }
+
     renderProfileStats(localStats);
   }
 }
@@ -773,25 +803,41 @@ function createMetricCol(icon, value, title) {
   return el;
 }
 
+function updateNavButtonsState() {
+  const prevBtn = document.getElementById("cal-prev-btn");
+  const nextBtn = document.getElementById("cal-next-btn");
+  if (!prevBtn || !nextBtn) return;
+
+  const year = currentViewDate.getFullYear();
+  const month = currentViewDate.getMonth();
+
+  // Min limit: First month with puzzles
+  const isMinMonth = minNavMonth && (year === minNavMonth.getFullYear() && month === minNavMonth.getMonth());
+  prevBtn.classList.toggle("disabled", !!isMinMonth);
+
+  // Max limit: Last month with puzzles
+  const isMaxMonth = maxNavMonth && (year === maxNavMonth.getFullYear() && month === maxNavMonth.getMonth());
+  nextBtn.classList.toggle("disabled", !!isMaxMonth);
+}
+
 function changeMonth(delta) {
   const target = new Date(
     currentViewDate.getFullYear(),
     currentViewDate.getMonth() + delta,
     1,
   );
-  const today = new Date();
-
-  // Reset time for fair comparison
-  target.setHours(0, 0, 0, 0);
-  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  // If target is in the future relative to current month start, block it
-  if (target > currentMonthStart) {
-    return;
+  
+  // NAVIGATION LIMITS
+  if (delta === -1 && minNavMonth && target < minNavMonth) {
+    return; // Block past
+  }
+  if (delta === 1 && maxNavMonth && target > maxNavMonth) {
+    return; // Block future
   }
 
   currentViewDate = target;
-  updateProfileData();
+  updateNavButtonsState();
+  updateProfileData(activeProfileName);
 }
 
 function renderCalendar(history = {}) {
@@ -899,21 +945,18 @@ function renderCalendar(history = {}) {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
       if (history && history[dateStr]) {
-        if (history[dateStr].status === "won") {
+        const dayData = history[dateStr];
+        if (dayData.originalWin) {
           dayEl.classList.add("win");
-
-          // Add crown marker for consistency with history view
-          const dot = document.createElement("span");
-          dot.className = "completed-dot";
-          dot.textContent = "👑";
-          dayEl.appendChild(dot);
-        } else {
+        } else if (dayData.status === "played") {
           dayEl.classList.add("loss");
         }
       }
 
       grid.appendChild(dayEl);
     }
+    
+    updateNavButtonsState();
   } catch (e) {
     console.error("Calendar Error:", e);
     grid.innerHTML =
@@ -943,6 +986,21 @@ async function handleShareStats() {
     const lang = getCurrentLang();
     const t = translations[lang] || translations["es"];
     const user = getCurrentUser();
+
+    // Determine Share URL (Direct profile if public)
+    let shareUrl = "https://jigsudo.com";
+    if (user && !user.isAnonymous) {
+      try {
+        const { fetchLatestUserData } = await import("./db.js");
+        const userData = await fetchLatestUserData(user.uid);
+        if (userData && userData.isPublic !== false && userData.username) {
+          const encodedName = encodeURIComponent(userData.username);
+          shareUrl = `https://jigsudo.com/#profile/${encodedName}`;
+        }
+      } catch (e) {
+        console.warn("[Profile] Failed to fetch privacy for share link:", e);
+      }
+    }
 
     // 1. Populate Header & Basic Stats
     const logoContainer = document.getElementById("sc-logo-container");
@@ -1031,11 +1089,7 @@ async function handleShareStats() {
 
     if (dateEl) {
       const locale = t.date_locale || "es-ES";
-      dateEl.textContent = new Date().toLocaleDateString(locale, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      dateEl.textContent = formatJigsudoDate(locale);
     }
 
     if (playedEl) playedEl.textContent = stats.totalPlayed || 0;
@@ -1148,7 +1202,7 @@ async function handleShareStats() {
     canvas.toBlob(async (blob) => {
       if (!blob) return;
 
-      const dateStr = new Date().toISOString().split("T")[0];
+      const dateStr = getJigsudoDateString();
       const fallbackName = user
         ? t.user_default || "Usuario"
         : t.guest || "Invitado";
@@ -1158,7 +1212,6 @@ async function handleShareStats() {
       const fileName = `jigsudo-stats-${nameClean}-${dateStr}.png`;
 
       const file = new File([blob], fileName, { type: "image/png" });
-      const shareUrl = "https://jigsudo.com";
       const shareData = {
         title: "Resumen Jigsudo",
         text:

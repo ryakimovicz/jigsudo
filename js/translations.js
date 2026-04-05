@@ -243,7 +243,7 @@ export const translations = {
     contact_talk_p3: "Allí podrás abrir un 'Issue' (reporte) y te responderé a la brevedad.",
 
     // History (Historial)
-    history_title: "Historial de Puzzles",
+    history_title: "Historial de Jigsudos",
     history_select_date: "Selecciona una fecha para jugar",
     hist_legend_title: "Referencias",
     hist_legend_nav: "Usa las flechas para navegar entre los meses disponibles.",
@@ -1032,7 +1032,7 @@ export const translations = {
     err_user_exists: "Username is already taken.",
 
     sidebar_history: "History",
-    history_title: "Puzzle History",
+    history_title: "Jigsudos History",
     history_select_date: "Select a date to play",
 
     toast_email_invalid: "The email is invalid.",

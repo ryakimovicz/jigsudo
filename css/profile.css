@@ -354,6 +354,13 @@ body.dark-mode .verification-text {
   color: var(--text-muted);
 }
 
+.icon-btn-small.disabled {
+  opacity: 0.3;
+  filter: grayscale(1);
+  pointer-events: none;
+  cursor: default;
+}
+
 /* Calendar Heatmap Container */
 .calendar-heatmap {
   --cell-size: 36px;

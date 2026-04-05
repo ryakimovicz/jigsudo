@@ -1171,14 +1171,17 @@
           <div class="stats-grid history-grid-row" style="margin-top: 24px">
             <!-- Calendar -->
             <div class="calendar-heatmap" style="margin-top: 0 !important">
+              <div
+                class="section-title history-title"
+                style="margin-bottom: 8px"
+                data-i18n="history_title"
+              >
+                Historial de Jigsudos
+              </div>
               <div class="calendar-header">
                 <button id="cal-prev-btn" class="icon-btn-small">←</button>
-                <div
-                  class="section-title history-title"
-                  id="cal-month-label"
-                  data-i18n="history_title"
-                >
-                  Historial
+                <div class="calendar-month-label" id="cal-month-label">
+                  Mes
                 </div>
                 <button id="cal-next-btn" class="icon-btn-small">→</button>
               </div>
@@ -1308,13 +1311,13 @@
       <!-- History (Historial) Section -->
       <section id="history-section" class="hidden">
         <div class="history-page-wrapper">
-          <h1 class="history-page-title" data-i18n="sidebar_history">Historial</h1>
+          <h1 class="history-page-title" data-i18n="history_title">
+            Historial de Jigsudos
+          </h1>
           <div class="history-card">
             <div class="history-header">
               <button id="hist-prev-btn" class="icon-btn-medium">←</button>
-              <h2 id="hist-month-label" data-i18n="history_title">
-                Historial de Puzzles
-              </h2>
+              <h2 id="hist-month-label">Mes</h2>
               <button id="hist-next-btn" class="icon-btn-medium">→</button>
             </div>
             <p class="history-subtitle" data-i18n="history_select_date">

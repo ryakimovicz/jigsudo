@@ -21,7 +21,7 @@ async function checkPuzzleExists(dateStr) {
   return false;
 }
 
-async function fetchPuzzleIndex() {
+export async function fetchPuzzleIndex() {
   try {
     const response = await fetch("public/puzzles/index.json");
     if (!response.ok) return [];
