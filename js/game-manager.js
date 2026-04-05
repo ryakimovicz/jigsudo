@@ -122,6 +122,22 @@ export class GameManager {
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
         );
+
+      // --- SELF-HEALING: Ensure 'data' branch exists even if local save was corrupted ---
+      if (dailyData && (!this.state.data || !this.state.data.chunks)) {
+        console.warn("[GameManager] Saved state missing 'data' (puzzle definition). Self-healing from Daily data...");
+        
+        // Re-inject static puzzle data from the server while preserving user progress
+        this.state.data = {
+          solution: dailyData.solution,
+          initialPuzzle: dailyData.puzzle,
+          chunks: dailyData.chunks,
+          searchTargetsMap: dailyData.searchTargets,
+          simonValues: dailyData.simonValues || [],
+          codeSequence: dailyData.codeSequence || [],
+        };
+      }
+
       this.save();
       // Purge invalid history once per load
       this._healHistoryProgress();
@@ -651,6 +667,12 @@ export class GameManager {
   async save(syncToCloud = true) {
     if (!this.state) return;
 
+    // --- CRITICAL FIX: Ensure local timestamp is ALWAYS updated before persistence ---
+    // This marks the local progress as newer than the cloud, preventing 'Cloud Echo' loops.
+    if (this.state.meta) {
+      this.state.meta.lastPlayed = new Date().toISOString();
+    }
+
     // Check for progress and update history entry if needed
     this._ensureHistoryRecord();
 
@@ -971,6 +993,12 @@ export class GameManager {
       else return;
     }
     this.state[section] = { ...this.state[section], ...data };
+    
+    // Ensure timestamp is refreshed for any progress change
+    if (this.state.meta) {
+      this.state.meta.lastPlayed = new Date().toISOString();
+    }
+
     this.save();
   }
 
@@ -1395,7 +1423,7 @@ export class GameManager {
             // Fall through to update logic...
           } else if (remoteTime > localTime + 10000) {
             console.warn(
-              "[Sync] Conflict detected! Remote is significantly newer.",
+              "[Sync] Conflict detected! Remote is significantly newer (Remote: " + new Date(remoteTime).toISOString() + ", Local: " + new Date(localTime).toISOString() + ").",
             );
             this.showConflictResolution(hydratedProgress);
             return;
@@ -1403,7 +1431,7 @@ export class GameManager {
           // If local >= remote, we already have this data or newer.
           if (localTime > 100000 && localTime >= remoteTime) {
             console.log(
-              "[Sync] Local is newer or equal to remote. Skipping sync.",
+              "[Sync] Local is newer or equal to remote (Local: " + new Date(localTime).toISOString() + " >= Remote: " + new Date(remoteTime).toISOString() + "). Skipping sync.",
             );
             return;
           }
@@ -1412,6 +1440,20 @@ export class GameManager {
 
       const remoteStage = hydratedProgress.progress?.currentStage || "unknown";
       console.log(`[Sync] Applying Cloud Progress. Stage: ${remoteStage}`);
+
+      // --- CRITICAL FIX: Preserve static puzzle 'data' if missing in remote ---
+      // Cloud sync typically only carries user 'progress' but not the daily puzzle definition.
+      if (this.state && this.state.data && !hydratedProgress.data) {
+        const localSeed = Number(this.state.meta.seed);
+        const remoteSeed = Number(hydratedProgress.meta.seed);
+        if (localSeed === remoteSeed) {
+          console.log("[Sync] Injecting local static puzzle data into hydrated cloud state.");
+          hydratedProgress.data = this.state.data;
+        } else {
+          console.warn("[Sync] Seed mismatch during data injection! Skipping data inheritance.");
+        }
+      }
+
       this.state = hydratedProgress;
       this.save(false); // Silent save: update localStorage but don't re-push to cloud
 
@@ -1601,6 +1643,14 @@ export class GameManager {
                   JSON.stringify(this.stats),
                 );
               }
+            }
+          }
+
+          // --- CRITICAL FIX: Preserve static puzzle 'data' before final assignment ---
+          if (this.state && this.state.data && !finalState.data) {
+            if (Number(this.state.meta.seed) === Number(finalState.meta.seed)) {
+              console.log("[Conflict] Injecting local static puzzle data into resolved state.");
+              finalState.data = this.state.data;
             }
           }
 
