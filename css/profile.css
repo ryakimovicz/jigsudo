@@ -652,7 +652,7 @@ body.dark-mode .profile-avatar-large {
 
 /* FIX: Centered & Narrow Account Buttons */
 .profile-actions, .guest-actions {
-  display: flex !important;
+  display: flex;
   flex-direction: column;
   align-items: center; /* Center children horizontally */
   gap: 12px; /* Balanced spacing */

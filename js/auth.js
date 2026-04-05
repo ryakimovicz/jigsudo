@@ -551,11 +551,7 @@ function updateUIForLogin(user) {
   const loginModal = document.getElementById("login-modal");
   if (loginModal) toggleModal(loginModal, false);
 
-  const profileActions = document.querySelector(".profile-actions");
-  if (profileActions) profileActions.classList.remove("hidden");
-
-  const guestActions = document.querySelector(".guest-actions");
-  if (guestActions) guestActions.classList.add("hidden");
+  // Actions visibility is now managed exclusively by profile.js to handle own vs public profiles correctly.
 
   const loginWrapper = document.getElementById("login-wrapper");
   const loggedInView = document.getElementById("logged-in-view");
@@ -693,11 +689,7 @@ function updateUIForLogout() {
     module.stopListeningAndCleanup();
   });
 
-  const guestActions = document.querySelector(".guest-actions");
-  if (guestActions) guestActions.classList.remove("hidden");
-
-  const profileActions = document.querySelector(".profile-actions");
-  if (profileActions) profileActions.classList.add("hidden");
+  // Actions visibility is now managed exclusively by profile.js.
 
   import("./profile.js").then((module) => {
     module.updateProfileData();
@@ -842,7 +834,9 @@ function showPasswordModal(actionType) {
     if (textInput) {
       textInput.classList.remove("hidden");
       textInput.placeholder = t.modal_new_name_placeholder;
-      textInput.value = auth.currentUser.displayName || "";
+      const currentName = auth.currentUser.displayName || "";
+      // Cleanup if it contains server error message from a failed previous fetch/save
+      textInput.value = currentName.includes("Cannot GET") ? "" : currentName;
       textInput.focus();
     }
     const newBtnConfirm = btnConfirm.cloneNode(true);

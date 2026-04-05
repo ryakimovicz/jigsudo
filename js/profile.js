@@ -270,7 +270,9 @@ export async function updateProfileData(targetUsername = null) {
     }
   } else if (user && !user.isAnonymous) {
     // OWN LOGGED-IN PROFILE
-    const displayName = user.displayName || t.user_default || "Usuario";
+    let displayName = user.displayName || t.user_default || "Usuario";
+    // Sanitize if it contains server error message
+    if (displayName.includes("Cannot GET")) displayName = t.user_default || "Usuario";
     const initial = displayName.charAt(0).toUpperCase();
 
     if (nameEl) nameEl.textContent = displayName;
@@ -304,95 +306,47 @@ export async function updateProfileData(targetUsername = null) {
     }
   }
 
-  // Explicitly manage Actions visibility to prevent Guest leaks
+  // --- Visibility & Actions Management ---
   const profileActions = document.querySelector(".profile-actions");
   const guestActions = document.querySelector(".guest-actions");
+  const isLoggedIn = user && !user.isAnonymous;
+  const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com");
 
-  // Debug Log
-  console.log(
-    "UpdateProfileData User:",
-    user ? user.uid : "Guest",
-    "Target:",
-    decodedTarget,
-  );
-
+  // Main containers
   if (profileActions) {
-    if (user && !user.isAnonymous) {
-      profileActions.classList.remove("hidden");
-      profileActions.style.display = "";
-
-      if (guestActions) {
-        guestActions.classList.add("hidden");
-        guestActions.style.display = "none";
-      }
-    } else {
-      profileActions.classList.add("hidden");
-      profileActions.style.display = "none";
-
-      if (guestActions) {
-        if (!isOwnProfile) {
-          // If a guest interacts with a public profile URL, don't show the login nag
-          guestActions.classList.add("hidden");
-          guestActions.style.display = "none";
-        } else {
-          // Normal guest own-profile view
-          guestActions.classList.remove("hidden");
-          guestActions.style.display = "";
-        }
-      }
-    }
+    // Only show profile settings if it's our own profile and we're logged in
+    profileActions.classList.toggle("hidden", !isOwnProfile || !isLoggedIn);
+  }
+  if (guestActions) {
+    // Only show guest login nag if it's our own profile and we're NOT logged in
+    guestActions.classList.toggle("hidden", !isOwnProfile || isLoggedIn);
   }
 
-  // Double Check: Hide individual buttons if guest (Nuclear Option)
-  const isGoogleUser =
-    user &&
-    user.providerData &&
-    user.providerData.some((p) => p.providerId === "google.com");
+  // Individual buttons within profileActions (managed if profileActions is shown)
+  const sensitiveButtons = {
+    "btn-profile-change-name": true, // Always show if own/logged-in
+    "btn-profile-change-pw": !isGoogleUser, // Password change not for Google users
+    "btn-profile-change-email": !isGoogleUser, // Email change not for Google users
+    "btn-profile-logout": true,
+    "btn-profile-delete": true,
+  };
 
-  const sensitiveButtons = [
-    "btn-profile-change-name",
-    "btn-profile-change-pw",
-    "btn-profile-change-email",
-    "btn-profile-logout",
-    "btn-profile-delete",
-  ];
-
-  sensitiveButtons.forEach((id) => {
+  Object.entries(sensitiveButtons).forEach(([id, shouldShow]) => {
     const btn = document.getElementById(id);
     if (btn) {
-      if (user && !user.isAnonymous) {
-        // Special case: Google users don't have a Jigsudo password/email to change here
-        if (
-          (id === "btn-profile-change-pw" ||
-            id === "btn-profile-change-email") &&
-          isGoogleUser
-        ) {
-          btn.style.display = "none";
-          return;
-        }
-        btn.style.display = ""; // Reset
-        if (btn.closest(".profile-actions")) {
-          btn.closest(".profile-actions").classList.remove("hidden");
-        }
-      } else {
-        btn.style.display = "none"; // Hide element
-      }
+      // Button hidden if logged out OR foreign profile OR specifically excluded (e.g. Google)
+      const forceHide = !isOwnProfile || !isLoggedIn || !shouldShow;
+      btn.classList.toggle("hidden", forceHide);
     }
   });
 
   // Email Verification Banner Logic
-  const verificationBanner = document.getElementById(
-    "profile-verification-banner",
-  );
+  const verificationBanner = document.getElementById("profile-verification-banner");
   if (verificationBanner) {
-    const isGoogleUser =
-      user &&
-      user.providerData &&
-      user.providerData.some((p) => p.providerId === "google.com");
     const isEmailUser = user && !user.isAnonymous && !isGoogleUser;
+    const showBanner = isEmailUser && !user.emailVerified && isOwnProfile;
+    verificationBanner.classList.toggle("hidden", !showBanner);
 
-    if (isEmailUser && !user.emailVerified) {
-      verificationBanner.classList.remove("hidden");
       const resendBtn = document.getElementById("btn-resend-verification");
       if (resendBtn && !resendBtn.dataset.listenerAttached) {
         resendBtn.onclick = async () => {
@@ -419,9 +373,6 @@ export async function updateProfileData(targetUsername = null) {
           }
         };
         resendBtn.dataset.listenerAttached = "true";
-      }
-    } else {
-      verificationBanner.classList.add("hidden");
     }
   }
 
