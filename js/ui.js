@@ -234,6 +234,39 @@ export function showVictorySummary(stats, isHome = false) {
   toggleModal(modal, true);
 }
 
+/**
+ * Centralized cleanup for victory-related UI elements.
+ * Called when starting a new game to ensure a clean state.
+ */
+export function cleanupVictoryUI() {
+  console.log("[UI] Cleaning up victory elements...");
+
+  // 1. Hide Summary Modal
+  const victoryModal = document.getElementById("victory-summary-modal");
+  if (victoryModal) {
+    toggleModal(victoryModal, false);
+  }
+
+  // 2. Remove Flying Digits Container
+  const victoryContainer = document.querySelector(".victory-code-container");
+  if (victoryContainer) {
+    victoryContainer.remove();
+  }
+
+  // 3. Restore Header Title
+  const titleContainer = document.querySelector(".header-title-container");
+  if (titleContainer) {
+    titleContainer.style.display = "";
+  }
+
+  // 4. Restore Debug Button
+  const debugBtn = document.getElementById("debug-help-btn");
+  if (debugBtn) {
+    debugBtn.style.pointerEvents = "";
+    debugBtn.style.opacity = "";
+  }
+}
+
 async function handleShareVictory(stats) {
   const card = document.getElementById("victory-social-card");
   if (!card) return;

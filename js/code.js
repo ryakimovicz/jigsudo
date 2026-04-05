@@ -18,6 +18,7 @@ let activeTimeouts = []; // Track animation timeouts to cancel them on interrupt
 let penaltyMode = false; // New state
 let maxUnlockedLevel = 3; // Tracks the highest level shown to player
 let isMultipressBlocked = false; // Prevent debug overlapping
+let glitchInterval = null; // Track victory glitch interval
 
 // ... (In initCode or reset)
 export function initCode() {
@@ -521,10 +522,34 @@ function startGlitchEffect(elements) {
   }, 800);
 }
 
+/**
+ * Centralized cleanup for victory animations and board states.
+ * Called when starting a new game or resetting UI.
+ */
+export function stopVictoryAnimations() {
+  console.log("[Code] Stopping victory animations...");
+
+  // 1. Clear glitch interval
+  if (glitchInterval) {
+    clearInterval(glitchInterval);
+    glitchInterval = null;
+  }
+
+  // 2. Clear all active timeouts
+  stopAnimation();
+  clearIdleTimer();
+
+  // 3. Remove board disintegration
+  const board = document.getElementById("memory-board");
+  if (board) {
+    board.classList.remove("disintegrate");
+  }
+}
+
 function startResolving(elements, targetWord, chars) {
   let iterations = 0;
 
-  const interval = setInterval(() => {
+  glitchInterval = setInterval(() => {
     // Scramble all UNRESOLVED letters
     elements.forEach((el, idx) => {
       if (!el.classList.contains("victory-final")) {
@@ -550,7 +575,8 @@ function startResolving(elements, targetWord, chars) {
         navigator.vibrate?.(50);
       } else {
         // Done!
-        clearInterval(interval);
+        clearInterval(glitchInterval);
+        glitchInterval = null;
         finalizeVictory();
       }
     }

@@ -11,6 +11,7 @@ import { updateSidebarActiveState } from "./sidebar.js";
 import { router } from "./router.js";
 import { isPuzzleAvailable } from "./history.js";
 import { showAlertModal } from "./ui.js";
+import { getJigsudoDate } from "./utils/time.js";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -284,16 +285,18 @@ export function initHome() {
 
     if (!dateEl || !challengeEl) return;
 
-    const now = new Date();
+    // Use Jigsudo Day (06:00 UTC Cutoff)
+    const now = getJigsudoDate();
     const lang = getCurrentLang();
     const t = translations[lang];
     const locale = t ? t.date_locale : "es-ES";
 
-    // Date
+    // Date - Evaluate shifted date as UTC to get consistent Jigsudo Day
     const dateStr = now.toLocaleDateString(locale, {
       weekday: "long",
       day: "numeric",
       month: "long",
+      timeZone: "UTC",
     });
 
     let formattedDate = dateStr;
@@ -315,12 +318,11 @@ export function initHome() {
     dateEl.textContent = formattedDate;
 
     // Challenge #: Days since Jan 18, 2026 (Launch Day = #001)
+    // We use UTC components because 'now' (Jigsudo Date) was shifted to be UTC-aligned.
     const todayZero = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
-    const startZero = new Date(2026, 0, 18); // Jan 18, 2026
+    const startZero = new Date(Date.UTC(2026, 0, 18)); // Jan 18, 2026 (Launch Day)
 
     const diffTime = todayZero - startZero;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;

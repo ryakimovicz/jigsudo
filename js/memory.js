@@ -15,10 +15,11 @@ import { provideSearchHint } from "./search.js";
 import { gameManager } from "./game-manager.js";
 import { CONFIG } from "./config.js";
 import { startTimer } from "./timer.js";
-import { debugSolveCode, resumeCodeState } from "./code.js";
+import { updateTexts } from "./i18n.js";
+import { cleanupVictoryUI } from "./ui.js";
+import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js";
 import { resumeSudokuState } from "./sudoku.js";
 import { resumePeaksState } from "./peaks.js";
-import { updateTexts } from "./i18n.js";
 
 // DOM Elements
 let memorySection;
@@ -247,6 +248,10 @@ export async function resumeToStage(stage) {
  */
 export function resetUI() {
   console.log("[UI] Resetting stage UI...");
+
+  // 0. Cleanup Victory UI (Flying digits, summary modal, etc)
+  cleanupVictoryUI();
+  stopVictoryAnimations();
 
   const stageClasses = [
     "memory-mode",
