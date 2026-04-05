@@ -309,7 +309,8 @@ function checkPeaksVictory() {
     const lang = getCurrentLang();
     const t = translations[lang];
     const msg =
-      t.alert_next_search || "Siguiente: Sopa de Números\n(Próximamente)";
+      t.alert_next_search || "Siguiente: Sopa de Números";
+
 
     // Trigger Search Stage...
     setTimeout(() => {

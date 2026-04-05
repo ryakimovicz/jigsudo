@@ -264,9 +264,9 @@ export const translations = {
     sudoku_help_title: "Cómo jugar", // Standardized
     sudoku_help_desc:
       "Completa la cuadrícula con los números del 1 al 9.<br />Cada fila, columna y bloque de 3x3 debe contener todos los números sin repetirlos.",
-    alert_next_sudoku: "Siguiente juego: Sudoku\nPróximamente",
-    alert_next_peaks: "Siguiente juego: Picos y Valles\nPróximamente",
-    alert_next_search: "Siguiente juego: Sopa de Números\nPróximamente",
+    alert_next_sudoku: "Siguiente juego: Sudoku",
+    alert_next_peaks: "Siguiente juego: Picos y Valles",
+    alert_next_search: "Siguiente juego: Sopa de Números",
     sudoku_key_completed: "Este número ya se ha usado 9 veces.",
     
     // Guide Scoring (Spanish)
@@ -741,9 +741,9 @@ export const translations = {
     sudoku_help_title: "How to play", // Standardized
     sudoku_help_desc:
       "Complete the grid with numbers from 1 to 9.<br />Each row, column and 3x3 block must contain all numbers without repeating them.",
-    alert_next_sudoku: "Next game: Sudoku\nComing Soon",
-    alert_next_peaks: "Next game: Peaks & Valleys\nComing Soon",
-    alert_next_search: "Next game: Number Search\nComing Soon",
+    alert_next_sudoku: "Next game: Sudoku",
+    alert_next_peaks: "Next game: Peaks & Valleys",
+    alert_next_search: "Next game: Number Search",
 
     // Search Game Help
     search_help_title: "How to play", // Standardized
