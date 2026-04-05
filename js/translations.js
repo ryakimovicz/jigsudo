@@ -519,7 +519,7 @@ export const translations = {
 
     // Minigame Names for Profile (Spanish)
     p_game_memory: "Juego de Memoria",
-    p_game_jigsaw: "Rompe<wbr>cabezas",
+    p_game_jigsaw: "Rompecabezas",
     p_game_sudoku: "Sudoku",
     p_game_peaks: "Picos y Valles",
     p_game_search: "Sopa de Números",
