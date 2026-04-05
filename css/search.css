@@ -204,9 +204,10 @@
 
 /* Found State (Permanent) */
 .search-found-cell {
-  /* Light Mode: Lighter than peaks (#e2e8f0) -> Slate 50 */
-  background-color: #f8fafc !important;
-  color: var(--text-muted) !important;
+  /* Light Mode: Gray hierarchy for better contrast (darker than peaks) */
+  background-color: #94a3b8 !important; /* Slate 400 */
+  color: #ffffff !important;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.1) !important;
   /* text-decoration: line-through; REMOVED */
   opacity: 1; /* Ensure visibility */
 }
