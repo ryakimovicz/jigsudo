@@ -4,7 +4,8 @@
   "description": "Daily puzzle generator for Jigsudo",
   "type": "module",
   "scripts": {
-    "generate": "node scripts/generate-daily.js"
+    "generate": "node scripts/generate-daily.js",
+    "bump": "node scripts/bump.js"
   },
   "dependencies": {
     "firebase-admin": "^13.7.0"

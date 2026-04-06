@@ -1,0 +1,51 @@
+name: 🚀 Auto-Version & Deploy
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'public/puzzles/**' # Ignore daily puzzle generation commits from the bot
+      - '.github/workflows/jigsudo-daily.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  bump-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci || npm install
+
+      - name: 🔖 Bump Version & Bust Cache
+        run: npm run bump
+
+      - name: 📤 Commit and Push Updates
+        run: |
+          git config --global user.name 'Jigsudo Deploy Bot'
+          git config --global user.email 'bot@jigsudo.com'
+          
+          # Check if there are changes (bump.js should have modified config.js and index.html)
+          git add js/config.js index.html
+          if git diff --staged --quiet; then
+            echo "No changes to commit. Version might already be bumped."
+          else
+            git commit -m "🔖 chore: auto-bump version and sync cache [skip ci]"
+            git push origin main
+          fi
+
+      - name: 🏁 Deployment Info
+        run: |
+          echo "✅ Version bump completed. GitHub Pages will now deploy from the updated main branch."
