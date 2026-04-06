@@ -148,21 +148,28 @@ export async function checkUsernameAvailability(
   }
 }
 
-export async function saveUserStats(userId, statsData, username = null) {
+export async function saveUserStats(userId, statsData, username = null, metadataOnly = false) {
   if (!userId) return;
   try {
     const userRef = doc(db, "users", userId);
 
     const updateData = {
-      stats: statsData,
       lastUpdated: serverTimestamp(),
-      // Top-level fields for efficient Firestore indexing
-      totalRP: Number(statsData.currentRP || 0),
-      monthlyRP: Number(statsData.monthlyRP || 0),
-      dailyRP: Number(statsData.dailyRP || 0),
-      lastDailyUpdate: statsData.lastDailyUpdate || null,
-      lastMonthlyUpdate: statsData.lastMonthlyUpdate || null,
     };
+
+    // ONLY update stats key if valid data is provided and not specifically restricted to metadata
+    const hasValidStats = statsData && Object.keys(statsData).length > 2; // Basic sanity check (>2 keys implies real stats)
+    if (hasValidStats && !metadataOnly) {
+      updateData.stats = statsData;
+      // Mirror top-level fields for efficient Firestore indexing
+      updateData.totalRP = Number(statsData.currentRP || 0);
+      updateData.monthlyRP = Number(statsData.monthlyRP || 0);
+      updateData.dailyRP = Number(statsData.dailyRP || 0);
+      updateData.lastDailyUpdate = statsData.lastDailyUpdate || null;
+      updateData.lastMonthlyUpdate = statsData.lastMonthlyUpdate || null;
+    } else {
+      console.log("[DB] Metadata-only update triggered (Skipping stats overwrite).");
+    }
 
     // If username is provided, save it as a top-level searchable field
     const { getCurrentUser } = await import("./auth.js");

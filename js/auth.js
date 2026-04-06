@@ -43,8 +43,9 @@ export async function updateUsername(newUsername) {
     }
 
     await updateProfile(user, { displayName: newUsername });
-
-    const currentStats = gameManager.state.stats;
+    
+    // CRITICAL FIX: Pass the FULL persistent stats, not just the session state!
+    const currentStats = gameManager.stats;
     await saveUserStats(user.uid, currentStats, newUsername);
 
     return { success: true };
@@ -418,8 +419,9 @@ export async function loginWithGoogle() {
         }
       }
     } else {
-      // Regular Google sign-in: Ensure username exists in DB for rankings
-      await saveUserStats(user.uid, {}, assignedName);
+      // Regular Google sign-in: OR existing user.
+      // Use metadataOnly=true to avoid wiping stats if they exist in the cloud.
+      await saveUserStats(user.uid, null, assignedName, true);
     }
 
     // Explicitly update Firebase profile name if it's missing (helps sync UI immediately)

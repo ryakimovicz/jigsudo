@@ -1399,6 +1399,31 @@ export class GameManager {
         }
       }
 
+      // 1. PROTECTION: Guard against "Cloud Wipe" (Empty cloud stats vs populated local)
+      // If local has history but remote doesn't, it's likely a bug-induced wipe.
+      const localHasHistory =
+        this.stats &&
+        this.stats.history &&
+        Object.keys(this.stats.history).length > 0;
+      const remoteHasHistory =
+        remoteStats.history && Object.keys(remoteStats.history).length > 0;
+
+      if (localHasHistory && !remoteHasHistory) {
+        console.warn(
+          "[Sync] Cloud stats are EMPTY but local has history. Protection triggered: BLOCKING OVERWRITE.",
+        );
+        // Instead of adopting, we force a push of our local stats to "heal" the cloud
+        const { getCurrentUser } = await import("./auth.js");
+        const user = getCurrentUser();
+        if (user && !user.isAnonymous) {
+          console.log(
+            "[Sync] Restoration: Pushing local stats to cloud to fix the accidental wipe.",
+          );
+          this.forceCloudSave();
+        }
+        return; // STOP: Do not adopt the empty stats
+      }
+
       // Conflict Resolution for Stats: Prevent "Cloud Echo" overwrites
       // If local has a newer or equal update timestamp, ignore the echo.
       const localTS = this.stats ? this.stats.lastLocalUpdate || 0 : 0;
