@@ -114,7 +114,7 @@ export function showAlertModal(title, message) {
 /**
  * Shows a specialized alert when a new version is detected.
  */
-export async function showUpdateAlert() {
+export async function showUpdateAlert(isSticky = false) {
   const modal = document.getElementById("generic-alert-modal");
   const titleEl = document.getElementById("generic-alert-title");
   const msgEl = document.getElementById("generic-alert-msg");
@@ -127,11 +127,24 @@ export async function showUpdateAlert() {
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
-  titleEl.textContent = t.update_available_title;
-  msgEl.innerHTML = `${t.update_available_msg}<br><br><small style="opacity:0.8; font-size:0.85em;">${t.update_cache_hint || "Si el problema persiste, presiona <b>Ctrl+F5</b> o borra la caché."}</small>`;
+  titleEl.textContent = t.update_available_title || "Actualización";
 
-  // Change close button to "Update"
-  closeBtn.textContent = t.btn_update_now;
+  // High-visibility warning if automatic reload failed
+  const stickyWarning = isSticky
+    ? `<div style="color: #ff4d4d; font-weight: bold; margin-bottom: 15px; border: 1px solid #ff4d4d; padding: 10px; border-radius: 5px; background: rgba(255,0,0,0.1);">
+      ${t.update_sticky_warning || "¡Caché bloqueada! El navegador sigue cargando la versión antigua."}
+    </div>`
+    : "";
+
+  msgEl.innerHTML = `
+    ${stickyWarning}
+    <p>${t.update_available_msg || "Hay una nueva versión disponible."}</p>
+    <div style="background: rgba(var(--primary-rgb), 0.1); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.9em; border: 1px solid var(--primary);">
+        <p><strong>${t.update_cache_hint || "Si los cambios no aparecen después de actualizar, presiona Ctrl+F5 (o Command+Shift+R en Mac)."}</strong></p>
+    </div>
+  `;
+
+  closeBtn.textContent = t.btn_update_now || "Actualizar Ahora";
   closeBtn.classList.add("btn-primary"); // Highlight it
   closeBtn.onclick = () => {
     // 1. Visual Feedback
@@ -141,14 +154,28 @@ export async function showUpdateAlert() {
     // 2. Force aggressive cache-bust via URL parameter
     const url = new URL(window.location.href);
     url.searchParams.set("u", Date.now()); // Hard break from cache
-    
+
     // Store attempt to prevent immediate re-pop during sync
     sessionStorage.setItem("jigsudo_last_update_attempt", Date.now());
-    
-    window.location.assign(url.toString());
+
+    window.location.replace(url.toString());
   };
 
   toggleModal(modal, true);
+}
+
+/**
+ * Stage 1: Non-intrusive Toast for initial update attempt
+ */
+export async function showUpdateToast() {
+  const { translations } = await import("./translations.js");
+  const { getCurrentLang } = await import("./i18n.js");
+  const lang = getCurrentLang();
+  const t = translations[lang] || translations["es"];
+
+  showToast(
+    t.toast_updating || "Actualización disponible. Aplicando cambios...",
+  );
 }
 
 // Mobile Scrollbar Logic: Show thumb only when scrolling

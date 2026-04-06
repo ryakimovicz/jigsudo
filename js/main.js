@@ -49,8 +49,29 @@ async function checkForUpdates() {
       console.warn(
         `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
       );
-      const { showUpdateAlert } = await import("./ui.js");
-      showUpdateAlert();
+      
+      const { showUpdateAlert, showUpdateToast } = await import("./ui.js");
+      
+      // 2. Aggressive Update Strategy
+      const attempts = Number(sessionStorage.getItem("jigsudo_update_attempts") || 0);
+
+      if (attempts < 1) {
+        // --- FIRST TRY: Silent Auto-Reload ---
+        sessionStorage.setItem("jigsudo_update_attempts", "1");
+        sessionStorage.setItem("jigsudo_last_update_attempt", Date.now()); // Cooldown trigger
+        
+        await showUpdateToast();
+        
+        // Wait 3 seconds to let the user see the toast, then force reload
+        setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set("u", Date.now());
+          window.location.replace(url.toString());
+        }, 3000);
+      } else {
+        // --- SECOND TRY: Sticky Cache! Show Recovery Modal ---
+        showUpdateAlert(true); // true = Show sticky cache warning
+      }
     }
   } catch (err) {
     // Silent fail
