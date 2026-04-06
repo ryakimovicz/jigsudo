@@ -24,13 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-
-      - name: 📦 Install Dependencies
-        run: npm ci || npm install
 
       - name: 🔖 Bump Version & Bust Cache
-        run: npm run bump
+        run: node scripts/bump.js
 
       - name: 📤 Commit and Push Updates
         run: |
