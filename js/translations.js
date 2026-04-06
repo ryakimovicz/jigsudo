@@ -555,6 +555,7 @@ export const translations = {
     // Updates
     update_available_title: "Nueva actualización",
     update_available_msg: "Una nueva versión de Jigsudo ha sido detectada. Se recomienda actualizar para evitar errores en las puntuaciones.",
+    update_cache_hint: "Si el problema persiste, presiona <b>Ctrl+F5</b> o borra la caché del navegador.",
     btn_update_now: "Actualizar",
   },
   en: {
@@ -1109,6 +1110,7 @@ export const translations = {
     // Updates
     update_available_title: "New Update",
     update_available_msg: "A new version of Jigsudo has been detected. Refreshing is recommended to ensure correct scoring.",
+    update_cache_hint: "If the issue persists, press <b>Ctrl+F5</b> or clear your browser cache.",
     btn_update_now: "Update Now",
   },
 };

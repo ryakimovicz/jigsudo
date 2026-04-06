@@ -128,7 +128,7 @@ export async function showUpdateAlert() {
   const t = translations[lang] || translations["es"];
 
   titleEl.textContent = t.update_available_title;
-  msgEl.textContent = t.update_available_msg;
+  msgEl.innerHTML = `${t.update_available_msg}<br><br><small style="opacity:0.8; font-size:0.85em;">${t.update_cache_hint || "Si el problema persiste, presiona <b>Ctrl+F5</b> o borra la caché."}</small>`;
 
   // Change close button to "Update"
   closeBtn.textContent = t.btn_update_now;

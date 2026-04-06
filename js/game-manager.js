@@ -1266,15 +1266,15 @@ export class GameManager {
     const countMismatch = wonHistoryCount !== currentWins;
     // 2. Missing date markers while history has entries (fixes new users/sync gaps)
     const missingDates = wonHistoryCount > 0 && !this.stats.lastDailyUpdate;
-    // 3. One-time forced maintenance for v1.0.6 (ensures all beta-cleanup artifacts are fixed)
-    const needsMaintenance = this.stats.integrityChecked !== "1.0.6";
+    // 3. One-time forced maintenance for v1.0.7 (RP reconstruction fix)
+    const needsMaintenance = this.stats.integrityChecked !== "1.0.7";
 
     if (countMismatch || missingDates || needsMaintenance) {
       console.warn(
         `[Healer] Integrity check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, needsMaintenance=${needsMaintenance}. Reconstructing...`,
       );
       this._recalculateRecords(this.stats);
-      this.stats.integrityChecked = "1.0.6"; // Prevent repeated reconstruction
+      this.stats.integrityChecked = "1.0.7"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       this.forceCloudSave();
     }
@@ -1878,6 +1878,7 @@ export class GameManager {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
       await this._ensureStats();
 
+      // RE-FETCH stats after ensureStats in case the healer replaced the object reference
       let stats = this.stats;
       if (!stats.history) stats.history = {};
       if (!stats.stageTimesAccumulated) stats.stageTimesAccumulated = {};
@@ -2113,6 +2114,11 @@ export class GameManager {
     stats.stageWinsAccumulated = {};
     stats.weekdayStatsAccumulated = {};
     stats.played = 0; // Reset stale played counter
+    
+    // RE-INITIALIZE Ranking Points (Source of Truth is History)
+    stats.currentRP = 0;
+    stats.dailyRP = 0;
+    stats.monthlyRP = 0;
 
     if (!stats.history) return;
 
@@ -2151,8 +2157,8 @@ export class GameManager {
       if (hTime > 0 && (stats.bestTime === null || hTime < stats.bestTime)) {
         stats.bestTime = hTime;
       }
-      if (hScore + 7.5 > stats.bestScore) {
-        stats.bestScore = hScore + 7.5;
+      if (hScore > stats.bestScore) {
+        stats.bestScore = hScore;
       }
 
       // Rebuild Stage Stats (Wins & Times)
@@ -2198,6 +2204,22 @@ export class GameManager {
         stats.maxStreak = currentStreakCount;
       }
       lastDate = d;
+
+      // REBUILD Ranking Points (hScore already includes the bonus)
+      const entryPoints = hScore;
+      stats.currentRP = Number((stats.currentRP + entryPoints).toFixed(3));
+
+      // Re-bucket Daily/Monthly RP if the history record matches today/this month
+      const seedStr = this.currentSeed.toString();
+      const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const thisMonth = today.substring(0, 7);
+
+      if (dateStr === today) {
+        stats.dailyRP = entryPoints;
+      }
+      if (dateStr.startsWith(thisMonth)) {
+        stats.monthlyRP = Number((stats.monthlyRP + entryPoints).toFixed(3));
+      }
     });
 
     stats.lastPlayedDate = dates[dates.length - 1];
