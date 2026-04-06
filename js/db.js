@@ -236,13 +236,27 @@ export async function loadUserProgress(userId) {
       const remoteStats = data.stats; // New field
 
       // SELF-HEALING: If user has a username but not the lowercase version, fix it now.
+      const updates = {};
       if (data.username && !data.username_lc) {
         console.log("[DB] Migrating legacy username to lowercase index...");
-        await setDoc(
-          userRef,
-          { username_lc: data.username.toLowerCase() },
-          { merge: true },
-        );
+        updates.username_lc = data.username.toLowerCase();
+      }
+
+      // SELF-HEALING: If registeredAt is missing (Legacy users), fix it now.
+      if (!data.registeredAt) {
+        console.log("[DB] Healing missing registeredAt for legacy user...");
+        let firstDateStr = "2026-04-05T00:00:00.000Z"; // Default launch day
+        if (data.stats && data.stats.history) {
+          const historyDates = Object.keys(data.stats.history).sort();
+          if (historyDates.length > 0) {
+            firstDateStr = historyDates[0] + "T09:00:00.000Z"; // Proxy registration date
+          }
+        }
+        updates.registeredAt = new Date(firstDateStr);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await setDoc(userRef, updates, { merge: true });
       }
       await gameManager.handleCloudSync(
         remoteProgress,
