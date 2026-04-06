@@ -35,42 +35,22 @@ async function bump() {
   try {
     // 1. Read CONFIG
     let configContent = fs.readFileSync(CONFIG_PATH, 'utf8');
-    const oldVersion = getCurrentVersion(configContent);
-    if (!oldVersion) {
+    const currentVersion = getCurrentVersion(configContent);
+    if (!currentVersion) {
       console.error('❌ Could not find version in config.js');
       process.exit(1);
     }
 
-    const newVersion = incrementVersion(oldVersion);
-    const today = new Date().toISOString().split('T')[0];
+    console.log(`✨ Version detected: ${currentVersion}`);
 
-    console.log(`🔹 Old Version: ${oldVersion}`);
-    console.log(`✨ New Version: ${newVersion}`);
-    console.log(`📅 Today: ${today}`);
-
-    // 2. Update config.js (Version and Date)
-    configContent = configContent.replace(
-      /version:\s*["']v?[\d\.]+["']/,
-      `version: "v${newVersion}"`
-    );
-    configContent = configContent.replace(
-      /fechaUpdate:\s*["']\d{4}-\d{2}-\d{2}["']/,
-      `fechaUpdate: "${today}"`
-    );
-    fs.writeFileSync(CONFIG_PATH, configContent);
-    console.log('✅ Updated js/config.js');
-
-    // 3. Update index.html (All ?v= occurrences)
+    // 2. Update index.html (All ?v= occurrences)
     let indexContent = fs.readFileSync(INDEX_PATH, 'utf8');
-    // Regex matches ?v= followed by any combination of digits, dots, or placeholders like 999
-    // It captures up to the closing quote or whitespace
     const versionRegex = /\?v=[\d\.\w]+/g;
-    indexContent = indexContent.replace(versionRegex, `?v=${newVersion}`);
+    indexContent = indexContent.replace(versionRegex, `?v=${currentVersion}`);
     fs.writeFileSync(INDEX_PATH, indexContent);
-    console.log('✅ Updated index.html cache-busting tags');
+    console.log('✅ Updated index.html cache-busting tags with version ' + currentVersion);
 
-    console.log(`\n🎉 Version bumped SUCCESSFULLY to v${newVersion}!`);
-    console.log('   Now commit and upload these files to your server.');
+    console.log(`\n🎉 Files synced successfully to v${currentVersion}!`);
 
   } catch (err) {
     console.error('❌ Error during bump:', err);

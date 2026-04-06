@@ -551,6 +551,11 @@ export const translations = {
     seo_ranking: "Sube en el Ranking Global",
     seo_ranking_text:
       "Al crear una cuenta, puedes medir tu destreza contra jugadores de todo el mundo. Jigsudo cuenta con un sistema de puntos de rango (RP) que penaliza la inactividad y recompensa la velocidad y la precisión. ¡No faltes a tu cita diaria y alcanza el rango Galáctico!",
+    
+    // Updates
+    update_available_title: "Nueva actualización",
+    update_available_msg: "Una nueva versión de Jigsudo ha sido detectada. Se recomienda actualizar para evitar errores en las puntuaciones.",
+    btn_update_now: "Actualizar",
   },
   en: {
     app_title: "JIGSUDO",
@@ -1100,5 +1105,10 @@ export const translations = {
     seo_ranking: "Climb the Global Leaderboard",
     seo_ranking_text:
       "By creating an account, you can measure your skill against players from all over the world. Jigsudo features a rank point system (RP) that penalizes inactivity while rewarding speed and precision. Don't miss your daily appointment and reach the Galactic rank!",
+    
+    // Updates
+    update_available_title: "New Update",
+    update_available_msg: "A new version of Jigsudo has been detected. Refreshing is recommended to ensure correct scoring.",
+    btn_update_now: "Update Now",
   },
 };

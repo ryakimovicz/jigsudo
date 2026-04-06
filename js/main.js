@@ -23,6 +23,33 @@ import { toggleModal } from "./ui.js";
 // Capture native logging before suppression
 const systemLog = console.log;
 
+/**
+ * Checks the server for a newer version by fetching config.js with a cache-buster.
+ */
+async function checkForUpdates() {
+  try {
+    const res = await fetch(`./js/config.js?t=${Date.now()}`);
+    if (!res.ok) return;
+    const text = await res.text();
+
+    const match = text.match(/version:\s*["']v?([\d\.]+)["']/);
+    const serverVersion = match ? match[1] : null;
+
+    // Clean version strings for comparison (e.g. "1.0.3" vs "v1.0.3")
+    const localVersion = CONFIG.version.replace("v", "");
+
+    if (serverVersion && serverVersion !== localVersion) {
+      console.warn(
+        `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
+      );
+      const { showUpdateAlert } = await import("./ui.js");
+      showUpdateAlert();
+    }
+  } catch (err) {
+    // Silent fail
+  }
+}
+
 async function startApp() {
   // Handle Debug Mode
   if (CONFIG.debugMode) {
@@ -95,6 +122,9 @@ async function startApp() {
       }, 500);
     }
   }, { once: true });
+
+  // Background update check
+  checkForUpdates();
 
   // DEBUG TOOLS: Exposed only in Debug Mode
   if (CONFIG.debugMode) {

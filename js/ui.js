@@ -111,6 +111,35 @@ export function showAlertModal(title, message) {
   toggleModal(modal, true);
 }
 
+/**
+ * Shows a specialized alert when a new version is detected.
+ */
+export async function showUpdateAlert() {
+  const modal = document.getElementById("generic-alert-modal");
+  const titleEl = document.getElementById("generic-alert-title");
+  const msgEl = document.getElementById("generic-alert-msg");
+  const closeBtn = document.getElementById("btn-close-generic-alert");
+
+  if (!modal || !titleEl || !msgEl || !closeBtn) return;
+
+  const { translations } = await import("./translations.js");
+  const { getCurrentLang } = await import("./i18n.js");
+  const lang = getCurrentLang();
+  const t = translations[lang] || translations["es"];
+
+  titleEl.textContent = t.update_available_title;
+  msgEl.textContent = t.update_available_msg;
+
+  // Change close button to "Update"
+  closeBtn.textContent = t.btn_update_now;
+  closeBtn.classList.add("btn-primary"); // Highlight it
+  closeBtn.onclick = () => {
+    window.location.reload(true); // Force reload from server
+  };
+
+  toggleModal(modal, true);
+}
+
 // Mobile Scrollbar Logic: Show thumb only when scrolling
 let scrollTimeout;
 function handleScroll() {
