@@ -233,7 +233,15 @@ export class GameManager {
     const stagesCount = this.state.progress?.stagesCompleted?.length || 0;
     const memoryProgress = (this.state.memory?.pairsFound > 0);
     const jigsawProgress = (this.state.jigsaw?.placedChunks?.length > 0);
-    const sudokuProgress = (this.state.sudoku?.movesCount > 0);
+    
+    // Sudoku Progress: compare current board with initial (ignoring movesCount bug)
+    let sudokuProgress = false;
+    if (this.state.sudoku?.currentBoard && this.state.data?.initialPuzzle) {
+      try {
+        // Stringify is okay for a 9x9 grid; ensures we catch any change
+        sudokuProgress = JSON.stringify(this.state.sudoku.currentBoard) !== JSON.stringify(this.state.data.initialPuzzle);
+      } catch (e) { sudokuProgress = false; }
+    }
 
     if (stagesCount > 0 || memoryProgress || jigsawProgress || sudokuProgress) {
       console.log(`[GameManager] Progress detected. Creating history record for ${today}.`);
@@ -749,16 +757,6 @@ export class GameManager {
   async forceCloudSave(overrideUid = null) {
     const { getCurrentUser } = await import("./auth.js");
     const user = getCurrentUser();
-    if (user && !user.isAnonymous) {
-      const isGoogleUser = user.providerData.some(
-        (p) => p.providerId === "google.com",
-      );
-      if (!user.emailVerified && !isGoogleUser) {
-        console.log("[Sync] Guard: Cloud save blocked (email not verified).");
-        return;
-      }
-    }
-
     if (this.isWiping) {
       console.log("[GM] Wiping in progress. Save blocked.");
       return;
