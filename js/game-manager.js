@@ -1266,15 +1266,15 @@ export class GameManager {
     const countMismatch = wonHistoryCount !== currentWins;
     // 2. Missing date markers while history has entries (fixes new users/sync gaps)
     const missingDates = wonHistoryCount > 0 && !this.stats.lastDailyUpdate;
-    // 3. One-time forced maintenance for v1.0.8 (RP reconstruction fix)
-    const needsMaintenance = this.stats.integrityChecked !== "1.0.8";
+    // 3. One-time forced maintenance for v1.0.9 (RP reconstruction fix)
+    const needsMaintenance = this.stats.integrityChecked !== "1.0.9";
 
     if (countMismatch || missingDates || needsMaintenance) {
       console.warn(
         `[Healer] Integrity check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, needsMaintenance=${needsMaintenance}. Reconstructing...`,
       );
       this._recalculateRecords(this.stats);
-      this.stats.integrityChecked = "1.0.8"; // Prevent repeated reconstruction
+      this.stats.integrityChecked = "1.0.9"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       this.forceCloudSave();
     }
@@ -2048,6 +2048,20 @@ export class GameManager {
         peaksErrors,
       };
 
+      // 4. Cleanup progress for History games
+      // If this was a replay, clear the puzzle state but keep the win record
+      if (this.isReplay) {
+        console.log("[GameManager] Replay win recorded. Wiping progress map...");
+        this.state.progress = {
+          stagesCompleted: [],
+          currentStage: "memory",
+        };
+        // Reset stage-specific maps
+        const sections = ["memory", "jigsaw", "sudoku", "peaks", "search", "simon"];
+        sections.forEach(s => { if (this.state[s]) this.state[s] = {}; });
+        this.save();
+      }
+
       const sessionStats = {
         totalTime: totalTimeMs,
         score: dailyScore,
@@ -2137,23 +2151,69 @@ export class GameManager {
 
     dates.forEach((dateStr) => {
       const h = stats.history[dateStr];
-
-      // Update global counters
-      stats.totalPlayed++;
-      stats.wins++;
+      const isOriginal = h.originalWin === true;
 
       // Metric Extraction
       const hTime = Number(h.totalTime || 0);
       const hScore = Number(h.score || 0); // This reflects the 6.0 base + bonus/penalty
       const hErrors = Number(h.peaksErrors || 0);
 
-      // Accumulate totals
-      stats.totalTimeAccumulated += hTime;
-      // Total Score = Stage Points (7.5) + Win Points (hScore)
-      stats.totalScoreAccumulated += hScore + 7.5;
-      stats.totalPeaksErrorsAccumulated += hErrors;
+      // ONLY sum into official ranking and lifetime stats if it was the ORIGINAL day
+      if (isOriginal) {
+        stats.totalPlayed++;
+        stats.wins++;
+        stats.totalTimeAccumulated += hTime;
+        // Total Score = Stage Points (7.5) + Win Points (hScore)
+        stats.totalScoreAccumulated += hScore + 7.5;
+        stats.totalPeaksErrorsAccumulated += hErrors;
 
-      // Update Bests
+        // Rebuild Stage Stats (Wins & Times)
+        if (h.stageTimes) {
+          for (const [stage, time] of Object.entries(h.stageTimes)) {
+            stats.stageTimesAccumulated[stage] =
+              (stats.stageTimesAccumulated[stage] || 0) + time;
+            stats.stageWinsAccumulated[stage] =
+              (stats.stageWinsAccumulated[stage] || 0) + 1;
+          }
+        }
+
+        // Rebuild Weekday Aggregates
+        const d = new Date(dateStr + "T12:00:00");
+        const dayIdx = d.getDay();
+        if (!stats.weekdayStatsAccumulated[dayIdx]) {
+          stats.weekdayStatsAccumulated[dayIdx] = {
+            sumTime: 0,
+            sumErrors: 0,
+            sumScore: 0,
+            count: 0,
+          };
+        }
+        const w = stats.weekdayStatsAccumulated[dayIdx];
+        w.sumTime += hTime;
+        w.sumErrors += hErrors;
+        w.sumScore += hScore + 7.5;
+        w.count++;
+
+        // REBUILD Ranking Points (hScore already includes the bonus)
+        const entryPoints = hScore;
+        stats.currentRP = Number((stats.currentRP + entryPoints).toFixed(3));
+
+        // Re-bucket Daily/Monthly RP if the history record matches today/this month
+        const seedStr = this.currentSeed.toString();
+        const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+        const thisMonth = today.substring(0, 7);
+
+        if (dateStr === today) {
+          stats.dailyRP = entryPoints;
+        }
+        if (dateStr.startsWith(thisMonth)) {
+          stats.monthlyRP = Number((stats.monthlyRP + entryPoints).toFixed(3));
+        }
+      }
+
+      const d = new Date(dateStr + "T12:00:00");
+
+      // Update Bests (Even for History)
       if (hTime > 0 && (stats.bestTime === null || hTime < stats.bestTime)) {
         stats.bestTime = hTime;
       }
@@ -2161,64 +2221,23 @@ export class GameManager {
         stats.bestScore = hScore;
       }
 
-      // Rebuild Stage Stats (Wins & Times)
-      if (h.stageTimes) {
-        for (const [stage, time] of Object.entries(h.stageTimes)) {
-          stats.stageTimesAccumulated[stage] =
-            (stats.stageTimesAccumulated[stage] || 0) + time;
-          stats.stageWinsAccumulated[stage] =
-            (stats.stageWinsAccumulated[stage] || 0) + 1;
-        }
-      }
-
-      // Rebuild Weekday Aggregates
-      const d = new Date(dateStr + "T12:00:00");
-      const dayIdx = d.getDay();
-      if (!stats.weekdayStatsAccumulated[dayIdx]) {
-        stats.weekdayStatsAccumulated[dayIdx] = {
-          sumTime: 0,
-          sumErrors: 0,
-          sumScore: 0,
-          count: 0,
-        };
-      }
-      const w = stats.weekdayStatsAccumulated[dayIdx];
-      w.sumTime += hTime;
-      w.sumErrors += hErrors;
-      w.sumScore += hScore + 7.5;
-      w.count++;
-
-      // Rebuild Streak Logic
-      if (lastDate) {
-        const diff = Math.ceil((d - lastDate) / (1000 * 60 * 60 * 24));
-        if (diff === 1) {
-          currentStreakCount++;
+      // Rebuild Streak Logic (History wins contribute to streak continuity if played on time)
+      if (isOriginal) {
+        if (lastDate) {
+          const diff = Math.ceil((d - lastDate) / (1000 * 60 * 60 * 24));
+          if (diff === 1) {
+            currentStreakCount++;
+          } else {
+            currentStreakCount = 1;
+          }
         } else {
           currentStreakCount = 1;
         }
-      } else {
-        currentStreakCount = 1;
-      }
 
-      if (currentStreakCount > stats.maxStreak) {
-        stats.maxStreak = currentStreakCount;
-      }
-      lastDate = d;
-
-      // REBUILD Ranking Points (hScore already includes the bonus)
-      const entryPoints = hScore;
-      stats.currentRP = Number((stats.currentRP + entryPoints).toFixed(3));
-
-      // Re-bucket Daily/Monthly RP if the history record matches today/this month
-      const seedStr = this.currentSeed.toString();
-      const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-      const thisMonth = today.substring(0, 7);
-
-      if (dateStr === today) {
-        stats.dailyRP = entryPoints;
-      }
-      if (dateStr.startsWith(thisMonth)) {
-        stats.monthlyRP = Number((stats.monthlyRP + entryPoints).toFixed(3));
+        if (currentStreakCount > stats.maxStreak) {
+          stats.maxStreak = currentStreakCount;
+        }
+        lastDate = d;
       }
     });
 
