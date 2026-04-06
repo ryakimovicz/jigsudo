@@ -297,6 +297,65 @@ export class GameManager {
     }
   }
 
+  /**
+   * Internal migration/cleanup: Purge ALL history entries and statistics
+   * from before the v1.0.0 launch (2026-04-05).
+   */
+  _runLaunchCleanup() {
+    if (!this.stats) return false;
+    
+    // Explicit Launch Date: April 5th, 2026
+    const LAUNCH_DATE = "2026-04-05";
+    
+    // If we've already done this (on this device), skip.
+    if (this.stats.launchCleanupV1) return false;
+
+    if (!this.stats.history) {
+      this.stats.launchCleanupV1 = true;
+      return true; 
+    }
+
+    let hasBetaData = false;
+    for (const dateStr of Object.keys(this.stats.history)) {
+      if (dateStr < LAUNCH_DATE) {
+        hasBetaData = true;
+        delete this.stats.history[dateStr];
+      }
+    }
+
+    if (hasBetaData) {
+      console.warn("[LaunchCleanup] Beta data detected! Purging and resetting counters for v1.0.0...");
+      
+      // Nuclear Reset: If there was beta data, we reset all cumulative stats to 0
+      // because we can't easily know which wins/games were beta vs production.
+      // We will rebuild what we can from the remaining (clean) history.
+      this.stats.played = 0;
+      this.stats.totalPlayed = 0;
+      this.stats.wins = 0;
+      this.stats.currentRP = 0;
+      this.stats.totalScoreAccumulated = 0;
+      this.stats.totalTimeAccumulated = 0;
+      this.stats.totalPeaksErrorsAccumulated = 0;
+      
+      // Reset nested counters
+      this.stats.stageTimesAccumulated = {};
+      this.stats.stageWinsAccumulated = {};
+      this.stats.weekdayStatsAccumulated = {};
+
+      // Rebuild what's left (e.g. if they already played on launch day)
+      this._recalculateRecords(this.stats);
+      
+      this.stats.launchCleanupV1 = true;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      return true;
+    }
+
+    // No beta data, just mark as checked
+    this.stats.launchCleanupV1 = true;
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    return false;
+  }
+
   async loadSpecificDay(dateStr) {
     // Check if this is the current live day
     const liveSeed = getDailySeed(); // Real Today Seed
@@ -1178,6 +1237,13 @@ export class GameManager {
     if (this.state && !this.state.meta.stageTimes)
       this.state.meta.stageTimes = {};
     
+    // 3. Launch Cleanup (Purge pre-production beta data)
+    const cleanupDone = this._runLaunchCleanup();
+    if (cleanupDone) {
+      console.log("[LaunchCleanup] Beta data purged. Syncing to cloud...");
+      this.forceCloudSave();
+    }
+
     // Return the decay check promise so callers can await it if needed
     return this._checkRankDecay();
   }
