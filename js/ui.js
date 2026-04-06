@@ -134,7 +134,18 @@ export async function showUpdateAlert() {
   closeBtn.textContent = t.btn_update_now;
   closeBtn.classList.add("btn-primary"); // Highlight it
   closeBtn.onclick = () => {
-    window.location.reload(true); // Force reload from server
+    // 1. Visual Feedback
+    closeBtn.textContent = t.btn_processing || "Procesando...";
+    closeBtn.disabled = true;
+
+    // 2. Force aggressive cache-bust via URL parameter
+    const url = new URL(window.location.href);
+    url.searchParams.set("u", Date.now()); // Hard break from cache
+    
+    // Store attempt to prevent immediate re-pop during sync
+    sessionStorage.setItem("jigsudo_last_update_attempt", Date.now());
+    
+    window.location.assign(url.toString());
   };
 
   toggleModal(modal, true);

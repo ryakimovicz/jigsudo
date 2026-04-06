@@ -28,6 +28,13 @@ const systemLog = console.log;
  */
 async function checkForUpdates() {
   try {
+    // 1. Prevent update-loop-spam (10s cooldown)
+    const lastAttempt = sessionStorage.getItem("jigsudo_last_update_attempt");
+    if (lastAttempt && Date.now() - Number(lastAttempt) < 10000) {
+      console.log("[Updater] In cooldown, skipping check.");
+      return;
+    }
+
     const res = await fetch(`./js/config.js?t=${Date.now()}`);
     if (!res.ok) return;
     const text = await res.text();
