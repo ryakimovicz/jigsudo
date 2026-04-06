@@ -1242,12 +1242,49 @@ export class GameManager {
       this.forceCloudSave();
     }
 
+    // 4. Automated Stats Healer: Fix discrepancies between history and accumulated stats
+    this._healStatsInconsistency();
+
     // Return the decay check promise so callers can await it if needed
     return this._checkRankDecay();
   }
 
+  /**
+   * Automatic cross-check to detect and heal inconsistencies between
+   * cumulative stats and the history log.
+   */
+  _healStatsInconsistency() {
+    if (!this.stats || !this.stats.history) return;
+
+    const wonHistoryCount = Object.values(this.stats.history).filter(
+      (h) => h.status === "won",
+    ).length;
+    const currentWins = this.stats.wins || 0;
+
+    // Advanced Triggers:
+    // 1. Fundamental win count mismatch
+    const countMismatch = wonHistoryCount !== currentWins;
+    // 2. Missing date markers while history has entries (fixes new users/sync gaps)
+    const missingDates = wonHistoryCount > 0 && !this.stats.lastDailyUpdate;
+    // 3. One-time forced maintenance for v1.0.4 (ensures all beta-cleanup artifacts are fixed)
+    const needsMaintenance = this.stats.integrityChecked !== "1.0.4";
+
+    if (countMismatch || missingDates || needsMaintenance) {
+      console.warn(
+        `[Healer] Integrity check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, needsMaintenance=${needsMaintenance}. Reconstructing...`,
+      );
+      this._recalculateRecords(this.stats);
+      this.stats.integrityChecked = "1.0.4"; // Prevent repeated reconstruction
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      this.forceCloudSave();
+    }
+  }
+
   async _checkRankDecay(targetStats = null) {
-    let stats = targetStats || this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+    let stats =
+      targetStats ||
+      this.stats ||
+      JSON.parse(localStorage.getItem("jigsudo_user_stats"));
     if (!stats) return false;
 
     const seedStr = this.currentSeed.toString();
@@ -1255,7 +1292,8 @@ export class GameManager {
     const currentMonth = today.substring(0, 7); // "YYYY-MM"
 
     // Use lastDailyUpdate if available (more reliable for daily sync)
-    const lastCheck = stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
+    const lastCheck =
+      stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
     let changed = false;
 
     if (lastCheck && lastCheck !== today) {
@@ -1298,15 +1336,22 @@ export class GameManager {
           stats.lastDailyUpdate = today;
           changed = true;
         }
+      }
+    } else if (!lastCheck) {
+      // NEW USER: Fundamental initialization of date markers
+      console.log("[Decay] Initializing date markers for new user.");
+      stats.lastDailyUpdate = today;
+      stats.lastMonthlyUpdate = currentMonth;
+      stats.lastDecayCheck = today;
+      changed = true;
+    }
 
-        if (changed) {
-          stats.lastDecayCheck = today;
-          stats.lastLocalUpdate = Date.now();
-          if (!targetStats) {
-            this.stats = stats;
-            localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
-          }
-        }
+    if (changed) {
+      stats.lastDecayCheck = today;
+      stats.lastLocalUpdate = Date.now();
+      if (!targetStats) {
+        this.stats = stats;
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
       }
     }
     return changed;
@@ -2048,20 +2093,30 @@ export class GameManager {
   }
 
   /**
-   * Scans history to re-calculate global records (streaks, best time, etc.)
+   * Scans history to re-calculate global records and cumulative metrics.
+   * This ensures stats are always in sync with the history log (Source of Truth).
    */
   _recalculateRecords(stats) {
     if (!stats) return;
 
-    // Nuclear Reset: Always start from defaults to avoid ghost records
+    // 1. Nuclear Reset of cumulative metrics (preserve configuration but reset counters)
     stats.maxStreak = 0;
     stats.currentStreak = 0;
-    stats.bestTime = null; // JSON safe
+    stats.bestTime = null;
     stats.bestScore = 0;
-    stats.lastPlayedDate = stats.lastPlayedDate || null;
+    stats.totalPlayed = 0;
+    stats.wins = 0;
+    stats.totalScoreAccumulated = 0;
+    stats.totalTimeAccumulated = 0;
+    stats.totalPeaksErrorsAccumulated = 0;
+    stats.stageTimesAccumulated = {};
+    stats.stageWinsAccumulated = {};
+    stats.weekdayStatsAccumulated = {};
+    stats.played = 0; // Reset stale played counter
 
     if (!stats.history) return;
 
+    // 2. Filter and sort won entries to rebuild history timeline
     const dates = Object.keys(stats.history)
       .filter((date) => stats.history[date].status === "won")
       .sort();
@@ -2071,23 +2126,63 @@ export class GameManager {
       return;
     }
 
-    let maxStreak = 0;
     let currentStreakCount = 0;
     let lastDate = null;
 
-    let bestTime = null;
-    let bestScore = 0;
-
     dates.forEach((dateStr) => {
       const h = stats.history[dateStr];
+
+      // Update global counters
+      stats.totalPlayed++;
+      stats.wins++;
+
+      // Metric Extraction
       const hTime = Number(h.totalTime || 0);
-      const hScore = Number(h.score || 0);
+      const hScore = Number(h.score || 0); // This reflects the 6.0 base + bonus/penalty
+      const hErrors = Number(h.peaksErrors || 0);
 
-      if (hTime > 0 && (bestTime === null || hTime < bestTime))
-        bestTime = hTime;
-      if (hScore > bestScore) bestScore = hScore;
+      // Accumulate totals
+      stats.totalTimeAccumulated += hTime;
+      // Total Score = Stage Points (7.5) + Win Points (hScore)
+      stats.totalScoreAccumulated += hScore + 7.5;
+      stats.totalPeaksErrorsAccumulated += hErrors;
 
+      // Update Bests
+      if (hTime > 0 && (stats.bestTime === null || hTime < stats.bestTime)) {
+        stats.bestTime = hTime;
+      }
+      if (hScore + 7.5 > stats.bestScore) {
+        stats.bestScore = hScore + 7.5;
+      }
+
+      // Rebuild Stage Stats (Wins & Times)
+      if (h.stageTimes) {
+        for (const [stage, time] of Object.entries(h.stageTimes)) {
+          stats.stageTimesAccumulated[stage] =
+            (stats.stageTimesAccumulated[stage] || 0) + time;
+          stats.stageWinsAccumulated[stage] =
+            (stats.stageWinsAccumulated[stage] || 0) + 1;
+        }
+      }
+
+      // Rebuild Weekday Aggregates
       const d = new Date(dateStr + "T12:00:00");
+      const dayIdx = d.getDay();
+      if (!stats.weekdayStatsAccumulated[dayIdx]) {
+        stats.weekdayStatsAccumulated[dayIdx] = {
+          sumTime: 0,
+          sumErrors: 0,
+          sumScore: 0,
+          count: 0,
+        };
+      }
+      const w = stats.weekdayStatsAccumulated[dayIdx];
+      w.sumTime += hTime;
+      w.sumErrors += hErrors;
+      w.sumScore += hScore + 7.5;
+      w.count++;
+
+      // Rebuild Streak Logic
       if (lastDate) {
         const diff = Math.ceil((d - lastDate) / (1000 * 60 * 60 * 24));
         if (diff === 1) {
@@ -2098,28 +2193,38 @@ export class GameManager {
       } else {
         currentStreakCount = 1;
       }
-      if (currentStreakCount > maxStreak) maxStreak = currentStreakCount;
+
+      if (currentStreakCount > stats.maxStreak) {
+        stats.maxStreak = currentStreakCount;
+      }
       lastDate = d;
     });
 
-    stats.maxStreak = maxStreak;
-    stats.bestTime = bestTime;
-    stats.bestScore = bestScore;
     stats.lastPlayedDate = dates[dates.length - 1];
 
-    // Final current streak validation: 
-    // Is the streak still active relative to the current puzzle date?
-    const seedStrForRecalc = this.currentSeed.toString();
-    const todayStr = `${seedStrForRecalc.substring(0, 4)}-${seedStrForRecalc.substring(4, 6)}-${seedStrForRecalc.substring(6, 8)}`;
-    const todayObj = new Date(todayStr + "T12:00:00");
-    const lastWinStr = dates[dates.length - 1];
-    const lastWinObj = new Date(lastWinStr + "T12:00:00");
-    const dayGap = Math.ceil((todayObj - lastWinObj) / (1000 * 60 * 60 * 24));
+    // Rebuild date markers based on the last historical win
+    if (stats.lastPlayedDate) {
+      stats.lastDailyUpdate = stats.lastPlayedDate;
+      stats.lastMonthlyUpdate = stats.lastPlayedDate.substring(0, 7);
+      stats.lastDecayCheck = stats.lastPlayedDate;
+    }
 
-    if (dayGap > 1) {
+    // 3. Streak Validity Validation (relative to the active puzzle)
+    try {
+      const seedStr = this.currentSeed.toString();
+      const todayStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const todayObj = new Date(todayStr + "T12:00:00");
+      const lastWinObj = new Date(stats.lastPlayedDate + "T12:00:00");
+      const dayGap = Math.ceil((todayObj - lastWinObj) / (1000 * 60 * 60 * 24));
+
+      if (dayGap > 1) {
+        stats.currentStreak = 0;
+      } else {
+        stats.currentStreak = currentStreakCount;
+      }
+    } catch (err) {
+      console.warn("[Recalc] Failed to validate streak gap:", err);
       stats.currentStreak = 0;
-    } else {
-      stats.currentStreak = currentStreakCount;
     }
   }
 }
