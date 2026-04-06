@@ -151,7 +151,8 @@ export function openTutorialModal(stage = 1) {
 
   toggleModal(modal, true);
 
-  if (!tutorialState) {
+  // CRITICAL: Unconditionally reset state if starting from stage 1
+  if (stage === 1 || !tutorialState) {
     initTutorialState();
   }
 
@@ -292,10 +293,6 @@ function setupTutorialListeners() {
 }
 
 function startTutorial() {
-  currentTutorialStage = 1;
-  if (!tutorialState) {
-    initTutorialState();
-  }
   openTutorialModal(1);
 }
 
@@ -342,17 +339,6 @@ function initTutorialState() {
     ],
   };
 
-  // Memory & Jigsaw configuration (4 specific pieces to find: 1, 3, 5, 7)
-  tutorialState.memoryPairsSelected = [1, 3, 5, 7];
-  tutorialState.matchesFound = 0;
-
-  // Jigsaw Slots (Fix corners/center, leave others null)
-  tutorialState.jigsawSlots = [0, null, 2, null, 4, null, 6, null, 8];
-
-  // Remaining pieces to place (Indices of the 9 blocks: 0-8)
-  // Initially we show the ones NOT in jigsawSlots (1, 3, 5, 7)
-  tutorialState.piecesToPlace = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-
   // Peaks & Valleys (Calculated once for this board)
   const allP = [
     { r: 0, c: 1, val: 9 },
@@ -383,20 +369,7 @@ function initTutorialState() {
   tutorialState.allPeaks = allP;
   tutorialState.allValleys = allV;
 
-  // The 5 Specific Targets requested by user: Peak 9, 8, 7 | Valley 2, 3
-  tutorialState.peaksRemaining = [
-    { r: 0, c: 1, val: 9 },
-    { r: 1, c: 8, val: 8 },
-    { r: 2, c: 0, val: 7 },
-  ];
-  tutorialState.valleysRemaining = [
-    { r: 3, c: 0, val: 2 },
-    { r: 8, c: 5, val: 3 },
-  ];
-  tutorialState.peaksErrors = 0;
-
-  // SEARCH STAGE: 4 user targets (Lengths 6, 5, 4, 3)
-  // Manually verified to be STRICTLY orthogonal.
+  // Search Targets
   tutorialState.searchTargets = [
     {
       id: "s1", // 6 digits
@@ -412,10 +385,9 @@ function initTutorialState() {
       isRequired: true,
     },
     {
-      id: "s2", // 5 digits
-      numbers: [2, 4, 9, 8, 3],
+      id: "s2", // 4 digits
+      numbers: [4, 9, 8, 3],
       path: [
-        { r: 1, c: 3 },
         { r: 2, c: 3 },
         { r: 2, c: 4 },
         { r: 2, c: 5 },
@@ -446,97 +418,23 @@ function initTutorialState() {
     },
   ];
 
-  // SEARCH STAGE: Valid explicitly pre-found sequences
+  // Search Prefilled fillers
   tutorialState.searchPrefound = [
-    {
-      path: [
-        { r: 0, c: 4 },
-        { r: 1, c: 4 },
-        { r: 1, c: 5 },
-      ],
-    },
-    {
-      path: [
-        { r: 1, c: 1 },
-        { r: 2, c: 1 },
-        { r: 3, c: 1 },
-        { r: 4, c: 1 },
-        { r: 4, c: 0 },
-      ],
-    },
-    {
-      path: [
-        { r: 6, c: 0 },
-        { r: 7, c: 0 },
-        { r: 8, c: 0 },
-        { r: 8, c: 1 },
-      ],
-    },
-    {
-      path: [
-        { r: 3, c: 3 },
-        { r: 4, c: 3 },
-        { r: 4, c: 4 },
-      ],
-    },
-    {
-      path: [
-        { r: 2, c: 8 },
-        { r: 3, c: 8 },
-        { r: 4, c: 8 },
-        { r: 5, c: 8 },
-      ],
-    },
-    {
-      path: [
-        { r: 6, c: 1 },
-        { r: 6, c: 2 },
-        { r: 7, c: 2 },
-      ],
-    },
-    {
-      path: [
-        { r: 8, c: 3 },
-        { r: 7, c: 3 },
-        { r: 7, c: 4 },
-        { r: 8, c: 4 },
-      ],
-    },
-    {
-      path: [
-        { r: 3, c: 7 },
-        { r: 3, c: 6 },
-        { r: 4, c: 6 },
-      ],
-    },
-    {
-      path: [
-        { r: 5, c: 7 },
-        { r: 6, c: 7 },
-        { r: 7, c: 7 },
-        { r: 7, c: 8 },
-      ],
-    },
-    {
-      path: [
-        { r: 6, c: 6 },
-        { r: 6, c: 5 },
-        { r: 6, c: 4 },
-      ],
-    },
-    {
-      path: [
-        { r: 7, c: 6 },
-        { r: 8, c: 6 },
-        { r: 8, c: 7 },
-      ],
-    },
+    { path: [{ r: 1, c: 3 }] },
+    { path: [{ r: 0, c: 4 }, { r: 1, c: 4 }, { r: 1, c: 5 }] },
+    { path: [{ r: 1, c: 1 }, { r: 2, c: 1 }, { r: 3, c: 1 }, { r: 4, c: 1 }, { r: 4, c: 0 }] },
+    { path: [{ r: 6, c: 0 }, { r: 7, c: 0 }, { r: 8, c: 0 }, { r: 8, c: 1 }] },
+    { path: [{ r: 3, c: 3 }, { r: 4, c: 3 }, { r: 4, c: 4 }] },
+    { path: [{ r: 2, c: 8 }, { r: 3, c: 8 }, { r: 4, c: 8 }, { r: 5, c: 8 }] },
+    { path: [{ r: 6, c: 1 }, { r: 6, c: 2 }, { r: 7, c: 2 }] },
+    { path: [{ r: 8, c: 3 }, { r: 7, c: 3 }, { r: 7, c: 4 }, { r: 8, c: 4 }] },
+    { path: [{ r: 3, c: 7 }, { r: 3, c: 6 }, { r: 4, c: 6 }] },
+    { path: [{ r: 5, c: 7 }, { r: 6, c: 7 }, { r: 7, c: 7 }, { r: 7, c: 8 }] },
+    { path: [{ r: 6, c: 6 }, { r: 6, c: 5 }, { r: 6, c: 4 }] },
+    { path: [{ r: 7, c: 6 }, { r: 8, c: 6 }, { r: 8, c: 7 }] },
   ];
 
-  tutorialState.searchFound = [];
-
-  // CODE STAGE: 3-digit sequence -> 5-digit sequence
-  // Code cells: (0,0)=8, (1,7)=6, (3,5)=5. Completely separated.
+  // Simon Stage Target
   tutorialState.codeTarget = [
     tutorialState.solution[0][0], // 8
     tutorialState.solution[1][7], // 6
@@ -549,9 +447,76 @@ function initTutorialState() {
     { r: 1, c: 7 },
     { r: 3, c: 5 },
   ];
+
+  // Perform a full reset of all stage-specific variables to start point
+  for (let s = 1; s <= 6; s++) {
+    resetSpecificStageState(s);
+  }
+}
+
+/**
+ * Resets state variables for a PARTICULAR tutorial stage.
+ * Used for both initial startup and navigating between levels.
+ */
+function resetSpecificStageState(stage) {
+  if (!tutorialState) return;
+
+  switch (stage) {
+    case 1: // Memory
+      tutorialState.memoryPairsSelected = [1, 3, 5, 7];
+      tutorialState.matchesFound = 0;
+      break;
+    case 2: // Jigsaw
+      tutorialState.jigsawSlots = [0, null, 2, null, 4, null, 6, null, 8];
+      tutorialState.piecesToPlace = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+      // Reset drag state
+      selectedPieceElement = null;
+      potentialDragTarget = null;
+      if (dragClone) {
+        dragClone.remove();
+        dragClone = null;
+      }
+      break;
+    case 3: // Sudoku
+      undoStack = [];
+      selectedCell = null;
+      lockedNumber = null;
+      tutorialPencilMode = false;
+      break;
+    case 4: // Peaks & Valleys
+      tutorialState.peaksRemaining = [
+        { r: 0, c: 1, val: 9 },
+        { r: 1, c: 8, val: 8 },
+        { r: 2, c: 0, val: 7 },
+      ];
+      tutorialState.valleysRemaining = [
+        { r: 3, c: 0, val: 2 },
+        { r: 8, c: 5, val: 3 },
+      ];
+      tutorialState.peaksErrors = 0;
+      break;
+    case 5: // Search
+      tutorialState.searchFound = [];
+      isSearchSelecting = false;
+      currentSearchCells = [];
+      currentSearchPath = [];
+      break;
+    case 6: // Code
+      codeLevel = 1;
+      codeStep = 0;
+      isCodeInputBlocked = true;
+      cancelTutorialCodePlayback();
+      // Ensure UI knows to re-initialize next time it renders stage 6
+      const container = document.getElementById("tutorial-board-container");
+      if (container) delete container.dataset.codeInitialized;
+      break;
+  }
 }
 
 function loadStage(stage) {
+  // CRITICAL: Reset the specific stage's state before rendering so it starts from zero
+  resetSpecificStageState(stage);
+
   const modal = document.getElementById("tutorial-modal");
   if (modal) modal.scrollTop = 0;
 
