@@ -1,5 +1,5 @@
 /* Firestore Database Module */
-import { db } from "./firebase-config.js";
+import { db } from "./firebase-config.js?v=1.1.2";
 import {
   doc,
   setDoc,
@@ -15,7 +15,7 @@ import {
   addDoc,
   getCountFromServer,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { gameManager } from "./game-manager.js";
+import { gameManager } from "./game-manager.js?v=1.1.2";
 
 // ... (rest of imports/vars)
 

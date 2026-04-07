@@ -1,4 +1,4 @@
-import { getJigsudoSeedInt } from "./time.js";
+import { getJigsudoSeedInt } from "./time.js?v=1.1.2";
 
 /**
  * Mulberry32 - Seeded Pseudo-Random Number Generator

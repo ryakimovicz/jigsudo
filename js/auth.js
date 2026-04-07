@@ -1,5 +1,5 @@
 /* Authentication Module */
-import { auth } from "./firebase-config.js";
+import { auth } from "./firebase-config.js?v=1.1.2";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -19,11 +19,11 @@ import {
   sendEmailVerification,
   verifyBeforeUpdateEmail,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { gameManager } from "./game-manager.js";
-import { router } from "./router.js";
-import { translations } from "./translations.js";
-import { getCurrentLang } from "./i18n.js";
-import { toggleModal, showToast } from "./ui.js";
+import { gameManager } from "./game-manager.js?v=1.1.2";
+import { router } from "./router.js?v=1.1.2";
+import { translations } from "./translations.js?v=1.1.2";
+import { getCurrentLang } from "./i18n.js?v=1.1.2";
+import { toggleModal, showToast } from "./ui.js?v=1.1.2";
 
 export async function updateUsername(newUsername) {
   const user = auth.currentUser;

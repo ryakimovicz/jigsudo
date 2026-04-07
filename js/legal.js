@@ -1,12 +1,12 @@
-import { auth } from "./firebase-config.js";
+import { auth } from "./firebase-config.js?v=1.1.2";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { initLanguage, getCurrentLang } from "./i18n.js";
-import { closeSidebar } from "./sidebar.js";
-import { translations } from "./translations.js";
-import { CONFIG } from "./config.js";
-import { toggleModal, showToast } from "./ui.js";
-import { getRankData } from "./ranks.js";
-import { loginUser, registerUser, loginWithGoogle, initForgotPasswordUI } from "./auth.js";
+import { initLanguage, getCurrentLang } from "./i18n.js?v=1.1.2";
+import { closeSidebar } from "./sidebar.js?v=1.1.2";
+import { translations } from "./translations.js?v=1.1.2";
+import { CONFIG } from "./config.js?v=1.1.2";
+import { toggleModal, showToast } from "./ui.js?v=1.1.2";
+import { getRankData } from "./ranks.js?v=1.1.2";
+import { loginUser, registerUser, loginWithGoogle, initForgotPasswordUI } from "./auth.js?v=1.1.2";
 
 
 // Inject necessary modals for auth/parity before other logic

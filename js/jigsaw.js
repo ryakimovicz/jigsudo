@@ -1,10 +1,10 @@
-import { CONFIG } from "./config.js";
-import { gameManager } from "./game-manager.js";
-import { translations } from "./translations.js";
-import { transitionToSudoku } from "./sudoku.js";
-import { getChunksFromBoard, createMiniGrid } from "./memory.js";
-import { getConflicts } from "./sudoku-logic.js";
-import { getCurrentLang } from "./i18n.js";
+import { CONFIG } from "./config.js?v=1.1.2";
+import { gameManager } from "./game-manager.js?v=1.1.2";
+import { translations } from "./translations.js?v=1.1.2";
+import { transitionToSudoku } from "./sudoku.js?v=1.1.2";
+import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.1.2";
+import { getConflicts } from "./sudoku-logic.js?v=1.1.2";
+import { getCurrentLang } from "./i18n.js?v=1.1.2";
 
 // DOM Elements Reference
 let boardContainer;

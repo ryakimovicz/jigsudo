@@ -1,8 +1,8 @@
-import { translations } from "./translations.js";
-import { getCurrentLang, updateTexts } from "./i18n.js";
-import { getCurrentUser } from "./auth.js";
-import { getRankData } from "./ranks.js";
-import { formatJigsudoDate } from "./utils/time.js";
+import { translations } from "./translations.js?v=1.1.2";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.1.2";
+import { getCurrentUser } from "./auth.js?v=1.1.2";
+import { getRankData } from "./ranks.js?v=1.1.2";
+import { formatJigsudoDate } from "./utils/time.js?v=1.1.2";
 
 export function showToast(message, duration = 3000, type = "info") {
   let container = document.getElementById("toast-container");
