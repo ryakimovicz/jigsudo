@@ -1,11 +1,11 @@
-import { getDailySeed } from "./utils/random.js?v=1.1.2";
+import { getDailySeed } from "./utils/random.js?v=1.1.3";
 // Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
   countSequenceOccurrences,
-} from "./search-gen.js?v=1.1.2";
-import { CONFIG } from "./config.js?v=1.1.2";
-import { calculateRP, SCORING } from "./ranks.js?v=1.1.2";
+} from "./search-gen.js?v=1.1.3";
+import { CONFIG } from "./config.js?v=1.1.3";
+import { calculateRP, SCORING } from "./ranks.js?v=1.1.3";
 
 export class GameManager {
   constructor() {

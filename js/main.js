@@ -1,24 +1,24 @@
 /* Main Entry Point */
 
-import { initHome } from "./home.js?v=1.1.2";
-import { initLanguage } from "./i18n.js?v=1.1.2";
-import { initSudoku } from "./sudoku.js?v=1.1.2";
-import { initHistory } from "./history.js?v=1.1.2";
-import { initGuide, openTutorialModal } from "./guide.js?v=1.1.2"; // Guide & Tutorial Import
-import { gameManager } from "./game-manager.js?v=1.1.2";
+import { initHome } from "./home.js?v=1.1.3";
+import { initLanguage } from "./i18n.js?v=1.1.3";
+import { initSudoku } from "./sudoku.js?v=1.1.3";
+import { initHistory } from "./history.js?v=1.1.3";
+import { initGuide, openTutorialModal } from "./guide.js?v=1.1.3"; // Guide & Tutorial Import
+import { gameManager } from "./game-manager.js?v=1.1.3";
 import {
   initAuth,
   loginUser,
   registerUser,
   logoutUser,
   loginWithGoogle,
-} from "./auth.js?v=1.1.2"; // Auth Import
-import { initProfile, showProfile } from "./profile.js?v=1.1.2"; // Profile Import
-import { CONFIG } from "./config.js?v=1.1.2"; // Keep CONFIG for displayVersion
-import { router } from "./router.js?v=1.1.2"; // Router Import
-import { closeSidebar, initSidebar } from "./sidebar.js?v=1.1.2";
-import { initChangelog } from "./changelog.js?v=1.1.2";
-import { toggleModal } from "./ui.js?v=1.1.2";
+} from "./auth.js?v=1.1.3"; // Auth Import
+import { initProfile, showProfile } from "./profile.js?v=1.1.3"; // Profile Import
+import { CONFIG } from "./config.js?v=1.1.3"; // Keep CONFIG for displayVersion
+import { router } from "./router.js?v=1.1.3"; // Router Import
+import { closeSidebar, initSidebar } from "./sidebar.js?v=1.1.3";
+import { initChangelog } from "./changelog.js?v=1.1.3";
+import { toggleModal } from "./ui.js?v=1.1.3";
 
 // Boot Sequence
 // Capture native logging before suppression
