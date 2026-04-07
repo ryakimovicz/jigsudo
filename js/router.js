@@ -120,9 +120,15 @@ export const router = {
       const game = document.getElementById("game-section");
       if (game) {
         game.classList.add("hidden");
+        game.style.display = "none"; // Hard-enforce hidden state beyond CSS specificity
         console.log(
           `[Router] FORCE HIDING game-section. Classes: ${game.className}`,
         );
+      }
+    } else {
+      const game = document.getElementById("game-section");
+      if (game) {
+        game.style.display = ""; // Restore to CSS default (flex)
       }
     }
 

@@ -127,9 +127,9 @@ export function placeInPanel(chunkIndex) {
 }
 
 export function fitCollectedPieces() {
+  if (!memorySection || memorySection.classList.contains("hidden")) return;
   const wrapper = document.querySelector(".collected-wrapper");
   const pieces = document.querySelectorAll(".collected-piece");
-
   if (!wrapper || !collectedLeft || !collectedRight) return;
 
   // DESKTOP RESET: Trust CSS > 768px (except for laptop specific override handled in CSS)
@@ -522,6 +522,10 @@ export function handleSlotClick_v2(slotIndex) {
 }
 
 export function transitionToJigsaw() {
+  // CRITICAL GUARD: Do not proceed if user navigated away from #game
+  if (!memorySection || memorySection.classList.contains("hidden")) return;
+  if (!window.location.hash.startsWith("#game")) return;
+
   console.log("Transitioning to Jigsaw Stage...");
   const lang = getCurrentLang();
   const t = translations[lang];

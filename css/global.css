@@ -345,8 +345,10 @@ body {
 }
 
 
-/* Utility: Hidden */
-.hidden {
+/* Utility: Hidden - Enforced Specificity to win over ID-based layout rules */
+.hidden, 
+section.hidden, 
+[id].hidden {
   display: none !important;
 }
 
