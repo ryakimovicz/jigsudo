@@ -18,8 +18,13 @@
   padding: 20px;
   border-radius: 16px;
   margin-bottom: 25px;
-  background: rgba(255, 255, 255, 0.05); /* Slight bg */
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: white; /* Light mode default */
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--paper-shadow);
+}
+
+body.dark-mode .terms-card {
+  background: #2d333b; /* Match global glass-panel dark */
 }
 
 .terms-card h2 {
@@ -27,7 +32,7 @@
   margin-bottom: 15px;
   font-size: 1.4rem;
   color: var(--accent-color);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--bg-tertiary);
   padding-bottom: 10px;
 }
 
