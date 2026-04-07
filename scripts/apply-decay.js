@@ -1,7 +1,7 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getJigsudoDateString } from "../js/utils/time.js"; // Uses Jigsudo offset handling
-
+import { getRankData } from "../js/ranks.js"; // Uses dynamic bounds for decay penalty
 const MISSED_DAY_PENALTY = 10.0;
 
 async function runDecay() {
@@ -88,16 +88,25 @@ async function runDecay() {
         if (diffDays > 1) {
           const missedCount = diffDays - 1;
           const currentTotalRP = data.totalRP || 0;
-          let newRP = currentTotalRP - missedCount * MISSED_DAY_PENALTY;
-          if (newRP < 0) newRP = 0;
-          newRP = Number(newRP.toFixed(3)); // Ensure precision matches client
+          
+          let currentSimulatedRP = currentTotalRP;
+
+          for (let i = 0; i < missedCount; i++) {
+            const rankInfo = getRankData(currentSimulatedRP);
+            const penaltyForDay = 5 + rankInfo.level;
+            
+            currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
+            if (currentSimulatedRP === 0) break;
+          }
+
+          let newRP = Number(currentSimulatedRP.toFixed(3)); // Ensure precision matches client
 
           updateObj.totalRP = newRP;
           updateObj["stats.currentRP"] = newRP;
           updateObj["stats.currentStreak"] = 0; // Fix: streak resets to 0
 
           console.log(
-            `📉 Penalty for ${data.username || doc.id}: -${missedCount * MISSED_DAY_PENALTY} RP, Streak Reset to 0`,
+            `📉 Dynamic Penalty for ${data.username || doc.id}: Started with ${currentTotalRP}, dropped to ${newRP} over ${missedCount} days. Streak Reset to 0`,
           );
         } else {
           console.log(

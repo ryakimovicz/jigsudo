@@ -205,6 +205,16 @@ export class GameManager {
     const seedStr = this.currentSeed.toString();
     const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
+    // 1. Process any past missed days first (if starting game for the first time today)
+    await this._checkRankDecay();
+
+    // 2. Register today's activity (Activity Insurance)
+    // By updating lastDailyUpdate to today, any subsequent checks or tonight's bot maintenance
+    // will see that the user was active, saving them from the penalty even if they don't finish.
+    this.stats.lastDailyUpdate = dateStr;
+    this.stats.lastDecayCheck = dateStr;
+    this.save(); // Force save to local storage immediately
+
     if (!this.stats.history[dateStr]) {
       console.log(`[GameManager] Game started for ${dateStr} (Session active).`);
       // We no longer create a history entry here. 
@@ -1069,9 +1079,6 @@ export class GameManager {
       return;
     }
 
-    // Ensure RP reset logic (daily/monthly) runs before awarding partial points
-    await this._checkRankDecay();
-
     // GUARD 2: Already Completed (Prevent refresh farming)
     if (this.state.progress.stagesCompleted.includes(stage)) {
       console.log(`[RP] Stage ${stage} already completed. Skipping points.`);
@@ -1318,12 +1325,24 @@ export class GameManager {
         // 3. Decay Penalty (Missed full Jigsudo days)
         if (diffDays > 1) {
           const missed = diffDays - 1;
-          const penalty = missed * SCORING.MISSED_DAY_RP;
-          if (penalty > 0) {
-            const oldRP = stats.currentRP || 0;
-            stats.currentRP = Math.max(0, oldRP - penalty);
-            stats.currentRP = Number(stats.currentRP.toFixed(3));
-            if (stats.currentRP !== oldRP) changed = true;
+          const { getRankData } = await import("./ranks.js");
+          let currentSimulatedRP = stats.currentRP || 0;
+          
+          for (let i = 0; i < missed; i++) {
+            const rankInfo = getRankData(currentSimulatedRP);
+            // Dynamic Penalty: 5 (base) + user's current level
+            const penaltyForDay = 5 + rankInfo.level;
+            
+            currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
+            if (currentSimulatedRP === 0) break; // Reached absolute bottom
+          }
+          
+          const oldRP = stats.currentRP || 0;
+          stats.currentRP = Number(currentSimulatedRP.toFixed(3));
+          
+          if (stats.currentRP !== oldRP) {
+            changed = true;
+            console.log(`[Decay] Applied dynamic decay for ${missed} days. Current RP: ${stats.currentRP}`);
           }
           // Streak Reset: If more than one day passed, the streak is over
           if (stats.currentStreak !== 0) {
