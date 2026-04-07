@@ -63,6 +63,15 @@ async function checkForUpdates() {
     const localVersion = CONFIG.version.replace("v", "");
 
     if (serverVersion && isNewerVersion(serverVersion, localVersion)) {
+      // PROTECTION: If user is in a game or history detail, don't even prompt yet
+      const isAtGame = window.location.hash.startsWith("#game");
+      const isAtHistoryDetail = window.location.hash.startsWith("#history/") && window.location.hash.split("/").length > 1;
+      
+      if (isAtGame || isAtHistoryDetail) {
+        console.log("[Updater] New version detected, but delaying prompt until user leaves session.");
+        return;
+      }
+      
       console.warn(
         `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
       );
@@ -81,6 +90,15 @@ async function checkForUpdates() {
         
         // Wait 3 seconds to let the user see the toast, then force reload
         setTimeout(() => {
+          // PROTECTION: If user entered a game during the 3s delay, don't reload
+          const isAtGame = window.location.hash.startsWith("#game");
+          const isAtHistoryDetail = window.location.hash.startsWith("#history/") && window.location.hash.split("/").length > 1;
+          
+          if (isAtGame || isAtHistoryDetail) {
+            console.log("[Updater] User is active in a session. Skipping auto-reload to prevent progress loss.");
+            return;
+          }
+
           const url = new URL(window.location.href);
           url.searchParams.set("u", Date.now());
           window.location.replace(url.toString());

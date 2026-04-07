@@ -38,6 +38,7 @@ function renderChangelog() {
             dateKey: "changelog_v112_date",
             itemKeys: [
                 "changelog_v112_item1",
+                "changelog_v112_item2",
             ]
         },
         {
