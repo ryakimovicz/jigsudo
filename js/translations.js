@@ -55,7 +55,7 @@ export const translations = {
     guide_sudoku_desc:
       "Completa el tablero numérico siguiendo las reglas clásicas del Sudoku.",
     guide_peaks_desc:
-      "Identifica los números mayores y menores respecto a sus vecinos.",
+      "Identifica los números mayores y menores respecto a los que tienen pegados alrededor (incluyendo las diagonales).",
     guide_search_desc:
       "Encuentra las secuencias numéricas ocultas en el tablero.",
     guide_code_desc: "Revela y repite el patrón final de seguridad.",
@@ -76,7 +76,7 @@ export const translations = {
       "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}.",
     tutorial_stage_4_title: "Etapa 4: Picos y Valles",
     tutorial_stage_4_desc:
-      "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparados con sus vecinos.<br><strong>Controles:</strong> {action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
+      "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparándolos con los números que tienen pegados alrededor (incluyendo las diagonales). Algunos ya están marcados para ayudarte; debes encontrar los 5 restantes para avanzar.<br><strong>Controles:</strong> {action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
     tutorial_stage_5_title: "Etapa 5: Sopa de Números",
     tutorial_stage_5_desc:
       "<strong>Objetivo:</strong> Localiza las secuencias ocultas en el tablero. Pueden doblar en vertical u horizontal, pero no en diagonal.<br><strong>Controles:</strong> Haz clic y arrastra sobre las celdas que forman la secuencia completa.",
@@ -616,7 +616,7 @@ export const translations = {
     guide_sudoku_desc:
       "Complete the numeric board following the classic rules of Sudoku.",
     guide_peaks_desc:
-      "Identify the higher and lower numbers relative to their neighbors.",
+      "Identify the highest and lowest numbers compared to those immediately surrounding them (including diagonals).",
     guide_search_desc: "Find the hidden numeric sequences on the board.",
     guide_code_desc: "Reveal and repeat the final security pattern.",
     btn_start_tutorial: "Start Tutorial",
@@ -636,7 +636,7 @@ export const translations = {
       "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers {input_method}.",
     tutorial_stage_4_title: "Stage 4: Peaks and Valleys",
     tutorial_stage_4_desc:
-      "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to their neighbors.<br><strong>Controls:</strong> {action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",
+      "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to those immediately surrounding them (including diagonals). Some are already marked to help you; find the remaining 5 to move on.<br><strong>Controls:</strong> {action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",
     tutorial_stage_5_title: "Stage 5: Number Search",
     tutorial_stage_5_desc:
       "<strong>Goal:</strong> Locate the hidden sequences on the board. They can turn vertically or horizontally, but not diagonally.<br><strong>Controls:</strong> Click and drag over the cells that form the sequence.",
