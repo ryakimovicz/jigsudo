@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT_DIR, 'js', 'config.js');
 
-console.log('🚀 Jigsudo Super-Bumper starting...');
+console.log('🚀 Jigsudo Deep-Bumper starting...');
 
 /**
  * Reads config.js and returns the current version string (e.g. 1.0.3)
@@ -18,9 +18,9 @@ function getCurrentVersion(content) {
 }
 
 /**
- * Recursively find all HTML files in a directory
+ * Recursively find all HTML and JS files in a directory
  */
-function findAllHtmlFiles(dir, fileList = []) {
+function findAllTargetFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir, { withFileTypes: true });
   for (const file of files) {
     const filePath = path.join(dir, file.name);
@@ -28,9 +28,12 @@ function findAllHtmlFiles(dir, fileList = []) {
     if (file.name.startsWith('.') || file.name === 'node_modules') continue;
 
     if (file.isDirectory()) {
-      findAllHtmlFiles(filePath, fileList);
-    } else if (file.name.endsWith('.html')) {
-      fileList.push(filePath);
+      findAllTargetFiles(filePath, fileList);
+    } else {
+      const ext = path.extname(file.name);
+      if (ext === '.html' || ext === '.js') {
+        fileList.push(filePath);
+      }
     }
   }
   return fileList;
@@ -43,30 +46,51 @@ async function bump() {
   try {
     // 1. Read VERSION from config.js
     if (!fs.existsSync(CONFIG_PATH)) {
-      console.error(`❌ Could not find config.js at ${CONFIG_PATH}`);
+      console.log(`❌ Could not find config.js at ${CONFIG_PATH}`);
       process.exit(1);
     }
     const configContent = fs.readFileSync(CONFIG_PATH, 'utf8');
     const currentVersion = getCurrentVersion(configContent);
     
     if (!currentVersion) {
-      console.error('❌ Could not find version string in config.js');
+      console.log('❌ Could not find version string in config.js');
       process.exit(1);
     }
 
-    console.log(`✨ Suncing all pages to version: v${currentVersion}`);
+    console.log(`✨ Syncing all modules to version: v${currentVersion}`);
 
-    // 2. Find all HTML files recursively from Root
-    const htmlFiles = findAllHtmlFiles(ROOT_DIR);
-    console.log(`🔍 Found ${htmlFiles.length} HTML files to update.`);
+    // 2. Find all relevant files
+    const targets = findAllTargetFiles(ROOT_DIR);
+    console.log(`🔍 Found ${targets.length} files to update.`);
 
-    // 3. Update all ?v= tags in those files
-    const versionRegex = /\?v=[\d\.\w]+/g; // Matches ?v=1.1, ?v=1.1.0, ?v=beta, etc.
+    // 3. Define regex patterns
+    // Matches ?v=1.1, ?v=1.1.0, etc. (for HTML attributes)
+    const attrVersionRegex = /\?v=[\d\.\w]+/g; 
+    
+    // Matches 'from "./path.js?v=1.1.2"' or 'from "./path.js?v=1.1.2"' (for JS imports)
+    // Group 1: from, Group 2: quotes, Group 3: path leading with ./ or ../, Group 4: the .js part, Group 5: the existing ?v= part
+    const jsImportRegex = /(from|import)\s+(['"])(\.\/|\.\.\/)([^'"]+?\.js)(\?v=[\d\.\w]+)?\2/g;
 
-    htmlFiles.forEach(file => {
+    targets.forEach(file => {
       let content = fs.readFileSync(file, 'utf8');
-      const updatedContent = content.replace(versionRegex, `?v=${currentVersion}`);
+      let updatedContent = content;
+
+      const ext = path.extname(file);
       
+      if (ext === '.html') {
+        // Update all ?v= tags in HTML (CSS, scripts, etc.)
+        updatedContent = content.replace(attrVersionRegex, `?v=${currentVersion}`);
+      } 
+      else if (ext === '.js') {
+        // Don't update config.js itself as it's the source of truth
+        if (file === CONFIG_PATH) return;
+
+        // Update all relative JS imports to include the version
+        updatedContent = content.replace(jsImportRegex, (match, p1, p2, p3, p4, p5) => {
+          return `${p1} ${p2}${p3}${p4}?v=${currentVersion}${p2}`;
+        });
+      }
+
       if (content !== updatedContent) {
         fs.writeFileSync(file, updatedContent);
         const relativePath = path.relative(ROOT_DIR, file);
@@ -74,7 +98,7 @@ async function bump() {
       }
     });
 
-    console.log(`\n🎉 Project-wide synchronization completed! All pages cache-busted to v${currentVersion}.`);
+    console.log(`\n🎉 Project-wide Deep Sync completed! v${currentVersion} propagated.`);
 
   } catch (err) {
     console.error('❌ Error during bump:', err);
