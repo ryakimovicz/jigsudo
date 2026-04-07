@@ -564,6 +564,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v111_title: "Versión 1.1.1",
+    changelog_v111_date: "07/04/2026",
+    changelog_v111_item1: "Arregla error visual donde el tablero de juego podía aparecer debajo del historial de cambios.",
     changelog_v110_title: "Versión 1.1.0",
     changelog_v110_date: "07/04/2026",
     changelog_v110_item1: "Cambia sistema de penalización por no jugar adaptativo al nivel.",
@@ -1140,6 +1143,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v111_title: "Version 1.1.1",
+    changelog_v111_date: "04/07/2026",
+    changelog_v111_item1: "Fixed a visual bug where the game board could appear below the changelog history.",
     changelog_v110_title: "Version 1.1.0",
     changelog_v110_date: "04/07/2026",
     changelog_v110_item1: "New adaptive difficulty penalty for inactivity.",
