@@ -8,18 +8,18 @@ import {
   fitCollectedPieces, // imported if we want to expose it or use it during resize loop?
   handlePieceSelect,
   checkBoardCompletion,
-} from "./jigsaw.js?v=1.1.3";
-import { provideHint as provideSudokuHint } from "./sudoku.js?v=1.1.3";
-import { providePeaksHint } from "./peaks.js?v=1.1.3";
-import { provideSearchHint } from "./search.js?v=1.1.3";
-import { gameManager } from "./game-manager.js?v=1.1.3";
-import { CONFIG } from "./config.js?v=1.1.3";
-import { startTimer } from "./timer.js?v=1.1.3";
-import { updateTexts } from "./i18n.js?v=1.1.3";
-import { cleanupVictoryUI } from "./ui.js?v=1.1.3";
-import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.1.3";
-import { resumeSudokuState } from "./sudoku.js?v=1.1.3";
-import { resumePeaksState } from "./peaks.js?v=1.1.3";
+} from "./jigsaw.js?v=1.1.4";
+import { provideHint as provideSudokuHint } from "./sudoku.js?v=1.1.4";
+import { providePeaksHint } from "./peaks.js?v=1.1.4";
+import { provideSearchHint } from "./search.js?v=1.1.4";
+import { gameManager } from "./game-manager.js?v=1.1.4";
+import { CONFIG } from "./config.js?v=1.1.4";
+import { startTimer } from "./timer.js?v=1.1.4";
+import { updateTexts } from "./i18n.js?v=1.1.4";
+import { cleanupVictoryUI } from "./ui.js?v=1.1.4";
+import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.1.4";
+import { resumeSudokuState } from "./sudoku.js?v=1.1.4";
+import { resumePeaksState } from "./peaks.js?v=1.1.4";
 
 // DOM Elements
 let memorySection;

@@ -67,7 +67,7 @@ async function bump() {
     // Matches ?v=1.1, ?v=1.1.0, etc. (for HTML attributes)
     const attrVersionRegex = /\?v=[\d\.\w]+/g; 
     
-    // Matches 'from "./path.js?v=1.1.3"' or 'from "./path.js?v=1.1.3"' (for JS imports)
+    // Matches 'from "./path.js?v=1.1.4"' or 'from "./path.js?v=1.1.4"' (for JS imports)
     // Group 1: from, Group 2: quotes, Group 3: path leading with ./ or ../, Group 4: the .js part, Group 5: the existing ?v= part
     const jsImportRegex = /(from|import)\s+(['"])(\.\/|\.\.\/)([^'"]+?\.js)(\?v=[\d\.\w]+)?\2/g;
 

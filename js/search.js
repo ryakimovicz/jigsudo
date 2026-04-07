@@ -1,10 +1,10 @@
 /* Search Logic (Sopa de Números) */
-import { gameManager } from "./game-manager.js?v=1.1.3";
-import { translations } from "./translations.js?v=1.1.3";
-import { getCurrentLang } from "./i18n.js?v=1.1.3";
-import { isPeakOrValley, getNeighbors } from "./peaks-logic.js?v=1.1.3";
-import { initCode } from "./code.js?v=1.1.3";
-import { resetUI } from "./memory.js?v=1.1.3";
+import { gameManager } from "./game-manager.js?v=1.1.4";
+import { translations } from "./translations.js?v=1.1.4";
+import { getCurrentLang } from "./i18n.js?v=1.1.4";
+import { isPeakOrValley, getNeighbors } from "./peaks-logic.js?v=1.1.4";
+import { initCode } from "./code.js?v=1.1.4";
+import { resetUI } from "./memory.js?v=1.1.4";
 
 let isSelecting = false;
 let currentPath = []; // Array of {r, c}

@@ -1,17 +1,17 @@
 /* Main Menu Logic */
-import { translations } from "./translations.js?v=1.1.3";
-import { getCurrentLang } from "./i18n.js?v=1.1.3";
-import { showProfile } from "./profile.js?v=1.1.3";
-import { getDailySeed } from "./utils/random.js?v=1.1.3";
-import { gameManager } from "./game-manager.js?v=1.1.3";
-import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js?v=1.1.3";
-import { getCurrentUser } from "./auth.js?v=1.1.3";
-import { CONFIG } from "./config.js?v=1.1.3";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.1.3";
-import { router } from "./router.js?v=1.1.3";
-import { isPuzzleAvailable } from "./history.js?v=1.1.3";
-import { showAlertModal } from "./ui.js?v=1.1.3";
-import { getJigsudoDate } from "./utils/time.js?v=1.1.3";
+import { translations } from "./translations.js?v=1.1.4";
+import { getCurrentLang } from "./i18n.js?v=1.1.4";
+import { showProfile } from "./profile.js?v=1.1.4";
+import { getDailySeed } from "./utils/random.js?v=1.1.4";
+import { gameManager } from "./game-manager.js?v=1.1.4";
+import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js?v=1.1.4";
+import { getCurrentUser } from "./auth.js?v=1.1.4";
+import { CONFIG } from "./config.js?v=1.1.4";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.1.4";
+import { router } from "./router.js?v=1.1.4";
+import { isPuzzleAvailable } from "./history.js?v=1.1.4";
+import { showAlertModal } from "./ui.js?v=1.1.4";
+import { getJigsudoDate } from "./utils/time.js?v=1.1.4";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
