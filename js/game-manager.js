@@ -1945,7 +1945,6 @@ export class GameManager {
         const { calculateTimeBonus } = await import("./ranks.js");
         const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
         let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
-        if (6.0 + netChange < 0) netChange = -6.0;
         const potentialDailyScore = Math.max(0, 6.0 + netChange);
 
         const currentDaily = stats.dailyRP || 0;
@@ -1992,15 +1991,14 @@ export class GameManager {
       const peaksErrors = this.state.stats?.peaksErrors || 0;
       const { calculateTimeBonus } = await import("./ranks.js");
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
-      let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
-      if (6.0 + netChange < 0) netChange = -6.0;
-
+      const netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
       const dailyScore = Math.max(0, 6.0 + netChange);
 
       if (!this.isReplay && !isAlreadyWon) {
-        stats.currentRP = (stats.currentRP || 0) + dailyScore;
-        stats.dailyRP = (stats.dailyRP || 0) + dailyScore;
-        stats.monthlyRP = (stats.monthlyRP || 0) + dailyScore;
+        // Add ONLY the performance delta (bonus/penalty) since 6.0 base was already added per stage
+        stats.currentRP = (stats.currentRP || 0) + netChange;
+        stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
+        stats.dailyRP = dailyScore; // Set absolute daily score (6.0 + netChange)
 
         if (stats.currentRP < 0) stats.currentRP = 0;
         if (stats.dailyRP < 0) stats.dailyRP = 0;
