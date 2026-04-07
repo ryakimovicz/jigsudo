@@ -564,6 +564,16 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v115_title: "Versión 1.1.5",
+    changelog_v115_date: "07/04/2026",
+    changelog_v115_item1: "Actualización de infraestructura: GitHub Actions @v5 y Node.js 24.",
+    changelog_v114_title: "Versión 1.1.4",
+    changelog_v114_date: "07/04/2026",
+    changelog_v114_item1: "Parche de seguridad en la gestión de estados persistentes.",
+    changelog_v113_title: "Versión 1.1.3",
+    changelog_v113_date: "07/04/2026",
+    changelog_v113_item1: "Mejora en el sistema de auto-bump de versiones para mayor robustez.",
+    changelog_v113_item2: "Optimización de la carga de módulos ES para evitar conflictos de caché.",
     changelog_v112_title: "Versión 1.1.2",
     changelog_v112_date: "07/04/2026",
     changelog_v112_item1: "Sincronización automática de caché para todo el sitio (Inicio, Privacidad, Términos, etc.).",
@@ -1147,6 +1157,16 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v115_title: "Version 1.1.5",
+    changelog_v115_date: "04/07/2026",
+    changelog_v115_item1: "Infrastructure update: GitHub Actions @v5 and Node.js 24 support.",
+    changelog_v114_title: "Version 1.1.4",
+    changelog_v114_date: "04/07/2026",
+    changelog_v114_item1: "Security patch for persistent state management.",
+    changelog_v113_title: "Version 1.1.3",
+    changelog_v113_date: "04/07/2026",
+    changelog_v113_item1: "Improved auto-bump versioning system for better reliability.",
+    changelog_v113_item2: "ES modules loading optimization to prevent cache conflicts.",
     changelog_v112_title: "Version 1.1.2",
     changelog_v112_date: "04/07/2026",
     changelog_v112_item1: "Automated site-wide cache synchronization (Home, Privacy, Terms, etc.).",

@@ -2,7 +2,7 @@
  * Changelog subpage logic
  * Fetches translations and renders the version list.
  */
-import { updateTexts } from "./i18n.js?v=1.1.4";
+import { updateTexts } from "./i18n.js?v=1.1.5";
 
 export function initChangelog() {
     const navChangelog = document.getElementById("nav-changelog");
@@ -14,7 +14,7 @@ export function initChangelog() {
 
     renderChangelog();
 
-    // Re-render structure only when route changes (to ensure it's there), 
+    // Re-render structure only when route changed (to ensure it's there), 
     // but translations are handled globally via data-i18n
     window.addEventListener("routeChanged", (e) => {
         if (e.detail.route === "changelog-section") {
@@ -32,6 +32,31 @@ function renderChangelog() {
 
     // Data structure for the changelog (Ordered newest first)
     const versions = [
+        {
+            tag: "v1.1.5",
+            titleKey: "changelog_v115_title",
+            dateKey: "changelog_v115_date",
+            itemKeys: [
+                "changelog_v115_item1",
+            ]
+        },
+        {
+            tag: "v1.1.4",
+            titleKey: "changelog_v114_title",
+            dateKey: "changelog_v114_date",
+            itemKeys: [
+                "changelog_v114_item1",
+            ]
+        },
+        {
+            tag: "v1.1.3",
+            titleKey: "changelog_v113_title",
+            dateKey: "changelog_v113_date",
+            itemKeys: [
+                "changelog_v113_item1",
+                "changelog_v113_item2",
+            ]
+        },
         {
             tag: "v1.1.2",
             titleKey: "changelog_v112_title",
