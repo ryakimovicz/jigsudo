@@ -248,7 +248,8 @@ body {
 #info-section,
 #game-section,
 #privacy-section,
-#terms-section {
+#terms-section,
+#changelog-section {
   flex: 1;
   max-width: none !important;
   padding-left: 0 !important;
@@ -281,6 +282,7 @@ body {
   #terms-section,
   #about-section,
   #contact-section,
+  #changelog-section,
   .main-footer {
     margin-left: var(--sidebar-width);
     transition:
@@ -301,6 +303,7 @@ body {
   body.sidebar-expanded #terms-section,
   body.sidebar-expanded #about-section,
   body.sidebar-expanded #contact-section,
+  body.sidebar-expanded #changelog-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
     width: calc(100% - var(--sidebar-expanded-width));
@@ -323,6 +326,7 @@ body {
   #terms-section,
   #about-section,
   #contact-section,
+  #changelog-section,
   .main-footer,
   .modal-overlay {
     margin-left: 0;

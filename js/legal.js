@@ -30,6 +30,7 @@ if (sidebar) {
   const navHome = document.getElementById("nav-home");
   const navHistory = document.getElementById("nav-history");
   const navHowTo = document.getElementById("nav-how-to");
+  const navChangelog = document.getElementById("nav-changelog");
 
   if (navHome)
     navHome.addEventListener("click", () => (window.location.href = "../#home"));
@@ -37,6 +38,8 @@ if (sidebar) {
     navHistory.addEventListener("click", () => (window.location.href = "../#history"));
   if (navHowTo)
     navHowTo.addEventListener("click", () => (window.location.href = "../#guide"));
+  if (navChangelog)
+    navChangelog.addEventListener("click", () => (window.location.href = "../#changelog"));
 
   // Handle Account and Settings dropdowns
   const btnAuth = document.getElementById("btn-auth");

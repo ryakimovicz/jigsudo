@@ -37,6 +37,7 @@
     <link rel="stylesheet" href="css/privacy.css?v=1.0.14" />
     <link rel="stylesheet" href="css/terms.css?v=1.0.14" />
     <link rel="stylesheet" href="css/sidebar.css?v=1.0.14" />
+    <link rel="stylesheet" href="css/changelog.css?v=1.0.14" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -222,6 +223,15 @@
               >
                 <span class="nav-icon">📖</span>
                 <span class="nav-label" data-i18n="sidebar_how_to">Guía</span>
+              </li>
+              <li
+                class="nav-item"
+                id="nav-changelog"
+                title="Historial de Cambios"
+                data-i18n-title="changelog_title"
+              >
+                <span class="nav-icon">📜</span>
+                <span class="nav-label" data-i18n="sidebar_changelog">Cambios</span>
               </li>
             </ul>
           </nav>
@@ -1455,6 +1465,16 @@
         </div>
       </section>
 
+      <!-- Changelog Section -->
+      <section id="changelog-section" class="hidden static-page">
+        <div class="content-wrapper">
+          <h1 data-i18n="changelog_title">Historial de Cambios</h1>
+          <div id="changelog-container" class="changelog-container">
+            <!-- Content injected by changelog.js -->
+          </div>
+        </div>
+      </section>
+
       <!-- Game Section (Sudoku/Jigsaw) -->
       <section id="game-section" class="hidden">
         <header class="game-header">
@@ -2367,12 +2387,13 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script type="module" src="js/home.js?v=1.0.14"></script>
-    <script type="module" src="js/auth.js?v=1.0.14"></script>
-    <script type="module" src="js/guide.js?v=1.0.14"></script>
+    <script type="module" src="js/home.js?v=1.1.0"></script>
+    <script type="module" src="js/auth.js?v=1.1.0"></script>
+    <script type="module" src="js/guide.js?v=1.1.0"></script>
+    <script type="module" src="js/changelog.js?v=1.1.0"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script type="module" src="js/sidebar.js?v=1.0.14"></script>
-    <script src="js/header.js?v=1.0.14" defer></script>
+    <script type="module" src="js/sidebar.js?v=1.1.0"></script>
+    <script src="js/header.js?v=1.1.0" defer></script>
   </body>
 </html>

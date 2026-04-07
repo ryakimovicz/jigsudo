@@ -11,6 +11,7 @@ export const router = {
     "#history": "history-section",
     "#profile": "profile-section",
     "#game": "game-section",
+    "#changelog": "changelog-section",
   },
 
   // Map Section ID -> Body Class
@@ -19,6 +20,7 @@ export const router = {
     "history-section": "history-active",
     "guide-section": "guide-active",
     "profile-section": "profile-active",
+    "changelog-section": "changelog-active",
   },
 
   init() {
@@ -178,6 +180,7 @@ export const router = {
       "guide-section": "nav-how-to",
       "history-section": "nav-history",
       "profile-section": "btn-auth", // Map profile to auth button
+      "changelog-section": "nav-changelog",
     };
 
     const sidebarId = sidebarMap[activeId];
