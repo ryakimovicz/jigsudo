@@ -1,9 +1,9 @@
-import { gameManager } from "./game-manager.js?v=1.1.4";
-import { translations } from "./translations.js?v=1.1.4";
-import { getCurrentLang } from "./i18n.js?v=1.1.4";
-import { transitionToPeaks } from "./peaks.js?v=1.1.4";
-import { createMiniGrid, getChunksFromBoard } from "./memory.js?v=1.1.4";
-import { showToast } from "./ui.js?v=1.1.4";
+import { gameManager } from "./game-manager.js?v=1.1.5";
+import { translations } from "./translations.js?v=1.1.5";
+import { getCurrentLang } from "./i18n.js?v=1.1.5";
+import { transitionToPeaks } from "./peaks.js?v=1.1.5";
+import { createMiniGrid, getChunksFromBoard } from "./memory.js?v=1.1.5";
+import { showToast } from "./ui.js?v=1.1.5";
 // State
 let selectedCell = null;
 let pencilMode = false;

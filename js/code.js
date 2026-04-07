@@ -1,9 +1,9 @@
 /* El Código (The Code) Logic */
-import { gameManager } from "./game-manager.js?v=1.1.4";
-import { translations } from "./translations.js?v=1.1.4";
-import { getCurrentLang } from "./i18n.js?v=1.1.4";
-import { getDailySeed } from "./utils/random.js?v=1.1.4";
-import { stopTimer } from "./timer.js?v=1.1.4";
+import { gameManager } from "./game-manager.js?v=1.1.5";
+import { translations } from "./translations.js?v=1.1.5";
+import { getCurrentLang } from "./i18n.js?v=1.1.5";
+import { getDailySeed } from "./utils/random.js?v=1.1.5";
+import { stopTimer } from "./timer.js?v=1.1.5";
 
 let sequence = []; // The full 5-digit code
 let currentLevel = 3; // Starts at 3

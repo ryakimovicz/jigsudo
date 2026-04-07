@@ -1,10 +1,10 @@
 /* Peaks Logic */
-import { gameManager } from "./game-manager.js?v=1.1.4";
-import { translations } from "./translations.js?v=1.1.4";
-import { getCurrentLang } from "./i18n.js?v=1.1.4";
-import { transitionToSearch } from "./search.js?v=1.1.4";
-import { getAllTargets } from "./peaks-logic.js?v=1.1.4";
-import { resetUI } from "./memory.js?v=1.1.4";
+import { gameManager } from "./game-manager.js?v=1.1.5";
+import { translations } from "./translations.js?v=1.1.5";
+import { getCurrentLang } from "./i18n.js?v=1.1.5";
+import { transitionToSearch } from "./search.js?v=1.1.5";
+import { getAllTargets } from "./peaks-logic.js?v=1.1.5";
+import { resetUI } from "./memory.js?v=1.1.5";
 
 // State
 let peaksErrors = 0;

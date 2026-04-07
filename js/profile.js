@@ -1,11 +1,11 @@
-import { getCurrentUser, logoutUser } from "./auth.js?v=1.1.4";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.1.4";
-import { translations } from "./translations.js?v=1.1.4";
-import { gameManager } from "./game-manager.js?v=1.1.4";
-import { getRankData, calculateRP } from "./ranks.js?v=1.1.4";
-import { formatTime } from "./ui.js?v=1.1.4";
-import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.1.4";
-import { fetchPuzzleIndex } from "./history.js?v=1.1.4";
+import { getCurrentUser, logoutUser } from "./auth.js?v=1.1.5";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.1.5";
+import { translations } from "./translations.js?v=1.1.5";
+import { gameManager } from "./game-manager.js?v=1.1.5";
+import { getRankData, calculateRP } from "./ranks.js?v=1.1.5";
+import { formatTime } from "./ui.js?v=1.1.5";
+import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.1.5";
+import { fetchPuzzleIndex } from "./history.js?v=1.1.5";
 
 export let currentViewDate = getJigsudoDate();
 let minNavMonth = null;

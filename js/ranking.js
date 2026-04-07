@@ -1,5 +1,5 @@
 /* Ranking Module for Jigsudo */
-import { db } from "./firebase-config.js?v=1.1.4";
+import { db } from "./firebase-config.js?v=1.1.5";
 import {
   collection,
   query,
@@ -8,11 +8,11 @@ import {
   getDocs,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { translations } from "./translations.js?v=1.1.4";
-import { getCurrentLang } from "./i18n.js?v=1.1.4";
-import { getCurrentUser } from "./auth.js?v=1.1.4";
-import { getRankData, SCORING } from "./ranks.js?v=1.1.4";
-import { gameManager } from "./game-manager.js?v=1.1.4";
+import { translations } from "./translations.js?v=1.1.5";
+import { getCurrentLang } from "./i18n.js?v=1.1.5";
+import { getCurrentUser } from "./auth.js?v=1.1.5";
+import { getRankData, SCORING } from "./ranks.js?v=1.1.5";
+import { gameManager } from "./game-manager.js?v=1.1.5";
 
 const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
