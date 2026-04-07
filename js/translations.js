@@ -557,6 +557,9 @@ export const translations = {
     update_available_msg: "Una nueva versión de Jigsudo ha sido detectada. Se recomienda actualizar para evitar errores en las puntuaciones.",
     update_cache_hint: "Si el problema persiste, presiona <b>Ctrl+F5</b> o borra la caché del navegador.",
     btn_update_now: "Actualizar",
+    toast_updating: "Actualizando Jigsudo...",
+    update_sticky_title: "Caché bloqueada",
+    update_sticky_body: "La nueva versión no logra cargar debido a la caché de tu navegador. Por favor, realiza una recarga forzada (Ctrl+F5) para aplicar los cambios críticos.",
   },
   en: {
     app_title: "JIGSUDO",
@@ -1112,5 +1115,8 @@ export const translations = {
     update_available_msg: "A new version of Jigsudo has been detected. Refreshing is recommended to ensure correct scoring.",
     update_cache_hint: "If the issue persists, press <b>Ctrl+F5</b> or clear your browser cache.",
     btn_update_now: "Update Now",
+    toast_updating: "Updating Jigsudo...",
+    update_sticky_title: "Sticky Cache Detected",
+    update_sticky_body: "The new version is failing to load due to browser cache. Please perform a forced reload (Ctrl+F5) to apply critical updates.",
   },
 };
