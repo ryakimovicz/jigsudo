@@ -285,8 +285,8 @@ export const translations = {
     guide_penalty_desc: "En Picos y Valles, -0.5 RP por cada error. La precisión es clave.",
     guide_streak: "Racha Diaria",
     guide_streak_desc: "Juega todos los días para demostrar tu constancia.",
-    guide_absence: "Ausencia",
-    guide_absence_desc: "-10.0 RP por cada día sin jugar.",
+    guide_absence: "Inactividad",
+    guide_absence_desc: "Si dejas pasar un día sin jugar, perderás entre 5 y 20 RP según tu nivel (a mayor rango, mayor penalización). ¡Basta con presionar 'JUGAR' para activar el seguro de actividad y proteger tus puntos hoy!",
     guide_ranks_title: "🏆 Sistema de Rangos",
     guide_ranks_p1: "Acumula RP para subir de nivel y desbloquear nuevos rangos. Cada rango representa tu maestría en Jigsudo.",
 
@@ -874,8 +874,8 @@ export const translations = {
     guide_penalty_desc: "In Peaks and Valleys, -0.5 RP for each error. Accuracy is key.",
     guide_streak: "Daily Streak",
     guide_streak_desc: "Play every day to demonstrate your consistency.",
-    guide_absence: "Absence",
-    guide_absence_desc: "-10.0 RP for each day without playing.",
+    guide_absence: "Inactivity",
+    guide_absence_desc: "If you miss a day without playing, you will lose between 5 and 20 RP daily based on your level (higher ranks face higher penalties). Simply pressing 'PLAY' activates activity insurance to protect your points for the day!",
     guide_ranks_title: "🏆 Ranks System",
     guide_ranks_p1: "Accumulate RP to level up and unlock new ranks. Each rank represents your mastery in Jigsudo.",
 
