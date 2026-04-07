@@ -25,6 +25,22 @@ import { toggleModal } from "./ui.js";
 const systemLog = console.log;
 
 /**
+ * Helper to compare version strings (v1.1.0 vs v1.1.1)
+ * Returns true only if A > B semantically.
+ */
+function isNewerVersion(a, b) {
+  const partsA = a.split(".").map(Number);
+  const partsB = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] || 0;
+    const numB = partsB[i] || 0;
+    if (numA > numB) return true;
+    if (numA < numB) return false;
+  }
+  return false;
+}
+
+/**
  * Checks the server for a newer version by fetching config.js with a cache-buster.
  */
 async function checkForUpdates() {
@@ -46,12 +62,12 @@ async function checkForUpdates() {
     // Clean version strings for comparison (e.g. "1.0.3" vs "v1.0.3")
     const localVersion = CONFIG.version.replace("v", "");
 
-    if (serverVersion && serverVersion !== localVersion) {
+    if (serverVersion && isNewerVersion(serverVersion, localVersion)) {
       console.warn(
         `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
       );
       
-      const { showUpdateAlert, showUpdateToast } = await import("./ui.js");
+      const { showUpdateToast } = await import("./ui.js");
       
       // 2. Aggressive Update Strategy
       const attempts = Number(sessionStorage.getItem("jigsudo_update_attempts") || 0);
@@ -70,8 +86,8 @@ async function checkForUpdates() {
           window.location.replace(url.toString());
         }, 3000);
       } else {
-        // --- SECOND TRY: Sticky Cache! Show Recovery Modal ---
-        showUpdateAlert(true); // true = Show sticky cache warning
+        // If it already failed once, do nothing more to avoid being annoying
+        console.log("[Updater] Update already attempted once. Silent fail to avoid annoyance.");
       }
     }
   } catch (err) {
