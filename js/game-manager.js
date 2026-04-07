@@ -793,7 +793,7 @@ export class GameManager {
           return;
         }
 
-        let username = user.displayName || null; // Fix: Pass username to DB
+        let username = user ? user.displayName : null; // Fix: Pass username to DB
 
         if (this.state) {
           const cloudState = this._serializeState(this.state);
