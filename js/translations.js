@@ -564,6 +564,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v112_title: "Versión 1.1.2",
+    changelog_v112_date: "07/04/2026",
+    changelog_v112_item1: "Sincronización automática de caché para todas las páginas del sitio (Principal, Privacidad, Términos, etc.).",
     changelog_v111_title: "Versión 1.1.1",
     changelog_v111_date: "07/04/2026",
     changelog_v111_item1: "Arregla error visual donde el tablero de juego podía aparecer debajo del historial de cambios.",
@@ -1143,6 +1146,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v112_title: "Version 1.1.2",
+    changelog_v112_date: "04/07/2026",
+    changelog_v112_item1: "Automated cache synchronization for all pages (Home, Privacy, Terms, etc.).",
     changelog_v111_title: "Version 1.1.1",
     changelog_v111_date: "04/07/2026",
     changelog_v111_item1: "Fixed a visual bug where the game board could appear below the changelog history.",
