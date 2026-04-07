@@ -1979,9 +1979,9 @@ export class GameManager {
       const dailyScore = Math.max(0, 6.0 + netChange);
 
       if (!this.isReplay && !isAlreadyWon) {
-        stats.currentRP = (stats.currentRP || 0) + netChange;
-        stats.dailyRP = (stats.dailyRP || 0) + netChange;
-        stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
+        stats.currentRP = (stats.currentRP || 0) + dailyScore;
+        stats.dailyRP = (stats.dailyRP || 0) + dailyScore;
+        stats.monthlyRP = (stats.monthlyRP || 0) + dailyScore;
 
         if (stats.currentRP < 0) stats.currentRP = 0;
         if (stats.dailyRP < 0) stats.dailyRP = 0;
@@ -2000,7 +2000,7 @@ export class GameManager {
         stats.totalTimeAccumulated =
           (stats.totalTimeAccumulated || 0) + totalTimeMs;
         stats.totalScoreAccumulated =
-          (stats.totalScoreAccumulated || 0) + netChange;
+          (stats.totalScoreAccumulated || 0) + dailyScore;
         stats.totalPeaksErrorsAccumulated =
           (stats.totalPeaksErrorsAccumulated || 0) + peaksErrors;
 
@@ -2163,8 +2163,8 @@ export class GameManager {
         stats.totalPlayed++;
         stats.wins++;
         stats.totalTimeAccumulated += hTime;
-        // Total Score = Stage Points (7.5) + Win Points (hScore)
-        stats.totalScoreAccumulated += hScore + 7.5;
+        // Total Score = Win Points (hScore)
+        stats.totalScoreAccumulated += hScore;
         stats.totalPeaksErrorsAccumulated += hErrors;
 
         // Rebuild Stage Stats (Wins & Times)
@@ -2191,7 +2191,7 @@ export class GameManager {
         const w = stats.weekdayStatsAccumulated[dayIdx];
         w.sumTime += hTime;
         w.sumErrors += hErrors;
-        w.sumScore += hScore + 7.5;
+        w.sumScore += hScore;
         w.count++;
 
         // REBUILD Ranking Points (hScore already includes the bonus)

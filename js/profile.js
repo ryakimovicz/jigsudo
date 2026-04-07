@@ -715,7 +715,7 @@ function renderWeekdayStats(stats) {
     // Fallback to History Iteration
     Object.entries(history).forEach(([dateStr, data]) => {
       // Changed to >= 0 to include debug/instant wins
-      if (data.status === "won" && data.totalTime >= 0) {
+      if (data.status === "won" && data.totalTime >= 0 && data.originalWin) {
         const parts = dateStr.split("-");
         if (parts.length === 3) {
           const [y, m, d] = parts.map(Number);
