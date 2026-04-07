@@ -16,7 +16,7 @@ import {
 import { initProfile, showProfile } from "./profile.js"; // Profile Import
 import { CONFIG } from "./config.js"; // Keep CONFIG for displayVersion
 import { router } from "./router.js"; // Router Import
-import { closeSidebar } from "./sidebar.js";
+import { closeSidebar, initSidebar } from "./sidebar.js";
 import { toggleModal } from "./ui.js";
 
 // Boot Sequence
@@ -110,6 +110,7 @@ async function startApp() {
   }
 
   initLanguage();
+  initSidebar();
   initHome();
   initSudoku();
   initAuth(); // Initialize Firebase Auth listener

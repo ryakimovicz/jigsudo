@@ -40,7 +40,7 @@ export const closeSidebar = (shouldGoBack = true) => {
   }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+export function initSidebar() {
   const sidebar = document.getElementById("side-sidebar");
   const toggleBtns = document.querySelectorAll(".sidebar-toggle");
   const overlay = document.getElementById("sidebar-overlay");
@@ -146,4 +146,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-});
+}

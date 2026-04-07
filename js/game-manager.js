@@ -1266,15 +1266,15 @@ export class GameManager {
     const countMismatch = wonHistoryCount !== currentWins;
     // 2. Missing date markers while history has entries (fixes new users/sync gaps)
     const missingDates = wonHistoryCount > 0 && !this.stats.lastDailyUpdate;
-    // 3. One-time forced maintenance for v1.0.10 (RP reconstruction fix)
-    const needsMaintenance = this.stats.integrityChecked !== "1.0.10";
+    // 3. One-time forced maintenance for v1.0.11 (RP reconstruction fix)
+    const needsMaintenance = this.stats.integrityChecked !== "1.0.11";
 
     if (countMismatch || missingDates || needsMaintenance) {
       console.warn(
         `[Healer] Integrity check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, needsMaintenance=${needsMaintenance}. Reconstructing...`,
       );
       this._recalculateRecords(this.stats);
-      this.stats.integrityChecked = "1.0.10"; // Prevent repeated reconstruction
+      this.stats.integrityChecked = "1.0.11"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       this.forceCloudSave();
     }
