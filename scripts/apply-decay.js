@@ -39,12 +39,11 @@ async function runDecay() {
   try {
     const usersRef = db.collection("users");
 
-    // Optimization: Only fetch users whose last update was BEFORE today.
-    // If a user already self-healed via the client, they will be skipped here.
-    const snapshot = await usersRef.where("lastDailyUpdate", "<", todayStr).get();
+    // Optimization: Only fetch users whose maintenance hasn't run today.
+    const snapshot = await usersRef.where("stats.lastDecayCheck", "<", todayStr).get();
 
     if (snapshot.empty) {
-      console.log("✅ No eligible users found for decay.");
+      console.log("✅ No users required maintenance today.");
       process.exit(0);
     }
 
@@ -53,70 +52,68 @@ async function runDecay() {
 
     snapshot.docs.forEach((doc) => {
       const data = doc.data();
-      const lastUpdate = data.lastDailyUpdate;
+      const stats = data.stats || {};
+      const lastIntent = stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
 
-      if (!lastUpdate) return; // Never played, skip decay logic
+      if (!lastIntent) return; // New user without any markers yet
 
-      // Strict day difference calculation using Jigsudo dates
-      const lastDate = new Date(lastUpdate + "T12:00:00Z");
+      // Prepare update object with mandatory resets for a new day
+      const updateObj = {
+        dailyRP: 0,
+        "stats.dailyRP": 0,
+        "stats.lastDecayCheck": todayStr,
+        lastUpdated: FieldValue.serverTimestamp(),
+      };
+
+      // Strict day difference calculation
+      const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
       const todayDate = new Date(todayStr + "T12:00:00Z");
-      const diffDays = Math.round(
-        (todayDate - lastDate) / (1000 * 60 * 60 * 24),
-      );
+      const intentDiff = Math.round((todayDate - lastIntentDate) / (1000 * 60 * 60 * 24));
 
-      if (diffDays >= 1) {
-        // Prepare update object with mandatory resets for a new day
-        const updateObj = {
-          dailyRP: 0,
-          "stats.dailyRP": 0,
-          "stats.lastDecayCheck": todayStr,
-          lastDailyUpdate: todayStr, // Mark maintenance as done for today
-          lastUpdated: FieldValue.serverTimestamp(),
-        };
-
-        // Monthly Reset
-        const lastMonth = lastUpdate.substring(0, 7);
-        const currentMonth = todayStr.substring(0, 7);
-        if (lastMonth !== currentMonth) {
-          updateObj.monthlyRP = 0;
-          updateObj["stats.monthlyRP"] = 0;
-        }
-
-        // Penalty & Streak Reset (Only if user MISSED a full day)
-        // If diffDays is 1, it means they played yesterday and it's simply a new day.
-        // If diffDays > 1, it means they skipped at least one full Jigsudo day.
-        if (diffDays > 1) {
-          const missedCount = diffDays - 1;
-          const currentTotalRP = data.totalRP || 0;
-          
-          let currentSimulatedRP = currentTotalRP;
-
-          for (let i = 0; i < missedCount; i++) {
-            const rankInfo = getRankData(currentSimulatedRP);
-            const penaltyForDay = 5 + rankInfo.level;
-            
-            currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
-            if (currentSimulatedRP === 0) break;
-          }
-
-          let newRP = Number(currentSimulatedRP.toFixed(3)); // Ensure precision matches client
-
-          updateObj.totalRP = newRP;
-          updateObj["stats.currentRP"] = newRP;
-          updateObj["stats.currentStreak"] = 0; // Fix: streak resets to 0
-
-          console.log(
-            `📉 Dynamic Penalty for ${data.username || doc.id}: Started with ${currentTotalRP}, dropped to ${newRP} over ${missedCount} days. Streak Reset to 0`,
-          );
-        } else {
-          console.log(
-            `🌅 New day reset for ${data.username || doc.id} (Daily stats cleared)`,
-          );
-        }
-
-        batch.update(doc.ref, updateObj);
-        penalizedCount++;
+      // 1. Monthly Reset
+      const lastMonth = lastIntent.substring(0, 7);
+      const currentMonth = todayStr.substring(0, 7);
+      if (lastMonth !== currentMonth) {
+        updateObj.monthlyRP = 0;
+        updateObj["stats.monthlyRP"] = 0;
       }
+
+      // 2. Penalty Reset (Only if user MISSED a full day of INTENTIONAL activity)
+      if (intentDiff > 1) {
+        const missedCount = intentDiff - 1;
+        const currentTotalRP = data.totalRP || 0;
+        let currentSimulatedRP = currentTotalRP;
+
+        for (let i = 0; i < missedCount; i++) {
+          const rankInfo = getRankData(currentSimulatedRP);
+          const penaltyForDay = 5 + rankInfo.level;
+          currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
+          if (currentSimulatedRP === 0) break;
+        }
+
+        let newRP = Number(currentSimulatedRP.toFixed(3));
+        updateObj.totalRP = newRP;
+        updateObj["stats.currentRP"] = newRP;
+
+        console.log(
+          `📉 Dynamic Penalty for ${data.username || doc.id}: Missed ${missedCount} days. RP: ${currentTotalRP} -> ${newRP}`,
+        );
+      }
+
+      // 3. Strict Streak Reset (Missed full Jigsudo days of WINNING)
+      const lastWin = stats.lastPlayedDate;
+      if (lastWin && lastWin !== todayStr) {
+        const lastWinDate = new Date(lastWin + "T12:00:00Z");
+        const streakDiff = Math.round((todayDate - lastWinDate) / (1000 * 60 * 60 * 24));
+        
+        if (streakDiff > 1 && stats.currentStreak !== 0) {
+          console.log(`[Streak] Win missed for ${data.username || doc.id}. Resetting streak to 0.`);
+          updateObj["stats.currentStreak"] = 0;
+        }
+      }
+
+      batch.update(doc.ref, updateObj);
+      penalizedCount++;
     });
 
     if (penalizedCount > 0) {

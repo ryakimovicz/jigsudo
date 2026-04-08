@@ -1323,38 +1323,46 @@ export class GameManager {
           changed = true;
         }
 
-        // 3. Decay Penalty (Missed full Jigsudo days)
-        if (diffDays > 1) {
-          const missed = diffDays - 1;
-          const { getRankData } = await import("./ranks.js?v=1.1.6");
-          let currentSimulatedRP = stats.currentRP || 0;
+        // 3. Decay Penalty (Missed full Jigsudo days of INTENTIAL play)
+        // Uses lastDailyUpdate as the specific anchor for "Safe vs Unsafe"
+        const lastIntent = stats.lastDailyUpdate || stats.lastPlayedDate;
+        if (lastIntent && lastIntent !== today) {
+          const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
+          const intentDiff = Math.round((currDate - lastIntentDate) / (1000 * 60 * 60 * 24));
           
-          for (let i = 0; i < missed; i++) {
-            const rankInfo = getRankData(currentSimulatedRP);
-            // Dynamic Penalty: 5 (base) + user's current level
-            const penaltyForDay = 5 + rankInfo.level;
+          if (intentDiff > 1) {
+            const missed = intentDiff - 1;
+            const { getRankData } = await import("./ranks.js?v=1.1.6");
+            let currentSimulatedRP = stats.currentRP || 0;
             
-            currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
-            if (currentSimulatedRP === 0) break; // Reached absolute bottom
-          }
-          
-          const oldRP = stats.currentRP || 0;
-          stats.currentRP = Number(currentSimulatedRP.toFixed(3));
-          
-          if (stats.currentRP !== oldRP) {
-            changed = true;
-            console.log(`[Decay] Applied dynamic decay for ${missed} days. Current RP: ${stats.currentRP}`);
-          }
-          // Streak Reset: If more than one day passed, the streak is over
-          if (stats.currentStreak !== 0) {
-            stats.currentStreak = 0;
-            changed = true;
+            for (let i = 0; i < missed; i++) {
+              const rankInfo = getRankData(currentSimulatedRP);
+              const penaltyForDay = 5 + rankInfo.level;
+              currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
+              if (currentSimulatedRP === 0) break;
+            }
+            
+            const oldRP = stats.currentRP || 0;
+            stats.currentRP = Number(currentSimulatedRP.toFixed(3));
+            
+            if (stats.currentRP !== oldRP) {
+              changed = true;
+              console.log(`[Decay] Applied dynamic decay for ${missed} days of inactivity. Current RP: ${stats.currentRP}`);
+            }
           }
         }
 
-        if (stats.lastDailyUpdate !== today) {
-          stats.lastDailyUpdate = today;
-          changed = true;
+        // 4. Strict Streak Reset (Missed full Jigsudo days of WINNING)
+        // Uses lastPlayedDate (Victory) as the anchor.
+        if (stats.lastPlayedDate && stats.lastPlayedDate !== today) {
+          const lastWinDate = new Date(stats.lastPlayedDate + "T12:00:00Z");
+          const streakDiff = Math.round((currDate - lastWinDate) / (1000 * 60 * 60 * 24));
+          
+          if (streakDiff > 1 && stats.currentStreak !== 0) {
+            console.log(`[Streak] Win missed yesterday (Last win: ${stats.lastPlayedDate}). Resetting streak to 0.`);
+            stats.currentStreak = 0;
+            changed = true;
+          }
         }
       }
     } else if (!lastCheck) {
@@ -1576,11 +1584,19 @@ export class GameManager {
             );
             // Fall through to update logic...
           } else if (remoteTime > localTime + 10000) {
-            console.warn(
-              "[Sync] Conflict detected! Remote is significantly newer (Remote: " + new Date(remoteTime).toISOString() + ", Local: " + new Date(localTime).toISOString() + ").",
-            );
-            this.showConflictResolution(hydratedProgress);
-            return;
+            // SMART SILENT SYNC: Compare game progress before showing conflict UI
+            const isProgressIdentical = this._compareProgress(this.state, hydratedProgress);
+            
+            if (isProgressIdentical) {
+              console.log("[Sync] Remote is newer but progress is identical (Administrative update). Adopting silently.");
+              // Fall through to update logic...
+            } else {
+              console.warn(
+                "[Sync] Conflict detected! Remote is significantly newer and progress differs (Remote: " + new Date(remoteTime).toISOString() + ", Local: " + new Date(localTime).toISOString() + ").",
+              );
+              this.showConflictResolution(hydratedProgress);
+              return;
+            }
           }
           // If local >= remote, we already have this data or newer.
           if (localTime > 100000 && localTime >= remoteTime) {
@@ -2263,7 +2279,16 @@ export class GameManager {
 
     // Rebuild date markers based on the last historical win
     if (stats.lastPlayedDate) {
-      stats.lastDailyUpdate = stats.lastPlayedDate;
+      // SAFETY: Only update markers if history provides a NEWER or missing anchor.
+      // We don't want a recalculation to wipe a "Play Intent" (lastDailyUpdate) from today.
+      const lastPlayedTime = new Date(stats.lastPlayedDate + "T12:00:00Z").getTime();
+      const currentUpdateDate = stats.lastDailyUpdate || "2026-04-05";
+      const currentUpdateTime = new Date(currentUpdateDate + "T12:00:00Z").getTime();
+
+      if (lastPlayedTime >= currentUpdateTime) {
+        stats.lastDailyUpdate = stats.lastPlayedDate;
+      }
+      
       stats.lastMonthlyUpdate = stats.lastPlayedDate.substring(0, 7);
       stats.lastDecayCheck = stats.lastPlayedDate;
     }
@@ -2285,6 +2310,26 @@ export class GameManager {
       console.warn("[Recalc] Failed to validate streak gap:", err);
       stats.currentStreak = 0;
     }
+  }
+
+  _compareProgress(s1, s2) {
+    if (!s1 || !s2) return false;
+    
+    // 1. Compare Stage and Completion
+    if (s1.progress?.currentStage !== s2.progress?.currentStage) return false;
+    if ((s1.progress?.stagesCompleted || []).length !== (s2.progress?.stagesCompleted || []).length) return false;
+
+    // 2. Compare Specific Sub-stage Progress
+    const stage = s1.progress?.currentStage;
+    if (stage === "memory") {
+      if ((s1.memory?.pairsFound || 0) !== (s2.memory?.pairsFound || 0)) return false;
+    } else if (stage === "jigsaw") {
+      if ((s1.jigsaw?.placedChunks || []).length !== (s2.jigsaw?.placedChunks || []).length) return false;
+    } else if (stage === "sudoku") {
+      if ((s1.sudoku?.currentBoard || "") !== (s2.sudoku?.currentBoard || "")) return false;
+    }
+
+    return true;
   }
 }
 export const gameManager = new GameManager();
