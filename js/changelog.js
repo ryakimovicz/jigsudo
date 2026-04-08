@@ -33,6 +33,14 @@ function renderChangelog() {
     // Data structure for the changelog (Ordered newest first)
     const versions = [
         {
+            tag: "v1.1.13",
+            titleKey: "changelog_v1113_title",
+            dateKey: "changelog_v1113_date",
+            itemKeys: [
+                "changelog_v1113_item1",
+            ]
+        },
+        {
             tag: "v1.1.12",
             titleKey: "changelog_v1112_title",
             dateKey: "changelog_v1112_date",

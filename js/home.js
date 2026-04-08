@@ -655,9 +655,14 @@ export function initHome() {
     try {
       currentRankings = await fetchRankings(force);
 
+      // Verify that we still want to render this version (prevent race conditions)
+      // Actually, since we use await, they run sequentially if not careful.
+      // But multiple calls can overlap.
       renderRankings(containerDaily, currentRankings, "daily");
       renderRankings(containerMonthly, currentRankings, "monthly");
       renderRankings(containerAllTime, currentRankings, "allTime");
+    } catch (err) {
+      console.error("[Home] Error loading rankings:", err);
     } finally {
       // Create artificial delay if it was too fast, just to show the spinner?
       // No, fast is good. Just cleanup.
@@ -809,11 +814,19 @@ export function initHome() {
   });
 
   // Listen for Game Completion to force refresh ranking even if cache is fresh
-  window.addEventListener("gameCompleted", () => {
+  window.addEventListener("gameCompleted", async () => {
     console.log("[Home] Game completed. Refreshing rankings & button state.");
     rankingsInitialized = true; // Mark as initialized so it keeps updating
-    loadAndRenderAllRankings(true);
-    refreshStartButton(); // Force button update immediately
+    
+    // REDUNDANCY: Ensure cache is dead
+    const { clearRankingCache } = await import("./ranking.js?v=1.1.12");
+    clearRankingCache();
+    
+    // Add micro-delay to let Firestore settle (optional but safer for eventual consistency)
+    setTimeout(() => {
+      loadAndRenderAllRankings(true);
+      refreshStartButton(); // Force button update immediately
+    }, 500);
   });
 }
 

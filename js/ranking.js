@@ -32,9 +32,15 @@ export async function fetchRankings(forceRefresh = false) {
   const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
   if (!forceRefresh && cached) {
-    const { timestamp, data, userId, cachedToday } = JSON.parse(cached);
+    const { timestamp, data, userId, cachedToday, isAuthenticated } =
+      JSON.parse(cached);
+
+    // Refresh if we were a guest/hint but now have a full verified user
+    const needsAuthUpgrade = user && !isAuthenticated;
+
     // Check TTL, User Match, AND Day Match
     if (
+      !needsAuthUpgrade &&
       now - timestamp < CACHE_TTL &&
       userId === currentUid &&
       cachedToday === today
@@ -42,6 +48,7 @@ export async function fetchRankings(forceRefresh = false) {
       console.log("[Ranking] Using cached data (User and Day verified)");
       return data;
     }
+    if (needsAuthUpgrade) console.log("[Ranking] Cache present but needs auth upgrade.");
   }
 
   const currentMonth = today.substring(0, 7);
@@ -78,6 +85,7 @@ export async function fetchRankings(forceRefresh = false) {
       data: rankings,
       userId: currentUid,
       cachedToday: today,
+      isAuthenticated: !!user,
     }),
   );
   return rankings;
@@ -98,11 +106,17 @@ async function getTopRankings(
     personal: null,
   };
 
-  if (user) {
+  // Robust Personal Row logic: Try with hint if full user isn't here yet
+  const activeUid = user ? user.uid : localStorage.getItem("jigsudo_active_uid");
+  const activeUsername = user
+    ? user.displayName
+    : localStorage.getItem("jigsudo_active_username");
+
+  if (activeUid) {
     // 1. Check if user is in top 10 from DB data
-    const topEntry = top10.find((u) => u.id === user.uid);
-    const inTop10 = top10.findIndex((u) => u.id === user.uid);
-    
+    const topEntry = top10.find((u) => u.id === activeUid);
+    const inTop10 = top10.findIndex((u) => u.id === activeUid);
+
     // UI Robustness: Use gameManager.stats (Source of truth)
     const stats = gameManager.stats;
     let userScore = stats[fieldName] || 0;
@@ -120,23 +134,25 @@ async function getTopRankings(
 
     if (inTop10 !== -1) {
       result.personal = {
+        id: activeUid,
         rank: inTop10 + 1,
         score: userScore,
-        username: user.displayName || "Usuario",
+        username: activeUsername || "Usuario",
         inTop: true,
       };
     } else {
-      // 2. Fetch actual rank using aggregation query (1 read)
-      // Only verify rank for VERIFIED users to avoid index errors on unverified accounts
+      // 2. Fetch actual rank
       let actualRank = "-";
-      if (user.emailVerified) {
+      // We can only fetch real rank if we have a full verified user or we are brave
+      if (user && user.emailVerified) {
         actualRank = await getUserRankFn(fieldName, userScore, true);
       }
 
       result.personal = {
+        id: activeUid,
         rank: actualRank,
         score: userScore,
-        username: user.displayName || "Usuario",
+        username: activeUsername || "Usuario",
         inTop: false,
       };
     }
@@ -268,7 +284,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   // Handle Personal Row (if separated)
   // Handle Personal Row (Always show if not in top section)
   if (personal && !personal.inTop) {
-    newDataMap.set(personal.username + "_p", {
+    newDataMap.set((personal.id || personal.username) + "_p", {
       entry: personal,
       index: 999,
       type: "personal",
@@ -296,7 +312,9 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   const createRow = (entry, index, isPersonal = false) => {
     const tr = document.createElement("tr");
     tr.className = "ranking-row";
-    tr.dataset.uid = isPersonal ? entry.username + "_p" : entry.id; // Consistent ID
+    tr.dataset.uid = isPersonal
+      ? (entry.id || entry.username) + "_p"
+      : entry.id; // Consistent ID
     updateRowContent(tr, entry, index, isPersonal, t, scoreFormat, currentUid);
     return tr;
   };
@@ -311,7 +329,8 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     currentUid,
   ) => {
     const isTop3 = index < 3 && !isPersonal;
-    const isCurrentUser = currentUid && entry.id === currentUid;
+    const isCurrentUser =
+      currentUid && (entry.id === currentUid || entry.id === "personal_row");
     const isPersonalRow = isPersonal; // Explicit flag
     const medal =
       !isPersonal && index === 0
@@ -387,7 +406,9 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     sep.innerHTML = `<td colspan="3">...</td>`;
     newRowNodes.push(sep);
 
-    let pRow = tbody.querySelector(`tr[data-uid='${personal.username}_p']`);
+    let pRow = tbody.querySelector(
+      `tr[data-uid='${(personal.id || personal.username) + "_p"}']`,
+    );
     if (pRow) {
       updateRowContent(pRow, personal, 999, true, t, scoreFormat, currentUid);
     } else {
@@ -549,7 +570,7 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
         <tr class="ranking-separator">
           <td colspan="3">...</td>
         </tr>
-        <tr class="ranking-row current-user-row personal-rank-row" data-uid="${personal.username}_p">
+        <tr class="ranking-row current-user-row personal-rank-row" data-uid="${(personal.id || personal.username) + "_p"}">
           <td class="rank-col">#${personal.rank}</td>
           <td class="user-col">
             <div class="user-info-group">
