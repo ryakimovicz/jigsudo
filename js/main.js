@@ -1,25 +1,25 @@
 /* Main Entry Point */
 
-import { initHome } from "./home.js?v=1.1.8";
-import { initLanguage } from "./i18n.js?v=1.1.8";
-import { initSudoku } from "./sudoku.js?v=1.1.8";
-import { initHistory } from "./history.js?v=1.1.8";
-import { initGuide, openTutorialModal } from "./guide.js?v=1.1.8"; // Guide & Tutorial Import
-import { gameManager } from "./game-manager.js?v=1.1.8";
+import { initHome } from "./home.js?v=1.1.9";
+import { initLanguage } from "./i18n.js?v=1.1.9";
+import { initSudoku } from "./sudoku.js?v=1.1.9";
+import { initHistory } from "./history.js?v=1.1.9";
+import { initGuide, openTutorialModal } from "./guide.js?v=1.1.9"; // Guide & Tutorial Import
+import { gameManager } from "./game-manager.js?v=1.1.9";
 import {
   initAuth,
   loginUser,
   registerUser,
   logoutUser,
   loginWithGoogle,
-} from "./auth.js?v=1.1.8"; // Auth Import
-import { initProfile, showProfile } from "./profile.js?v=1.1.8"; // Profile Import
-import { CONFIG } from "./config.js?v=1.1.8"; // Keep CONFIG for displayVersion
-import { router } from "./router.js?v=1.1.8"; // Router Import
-import { closeSidebar, initSidebar } from "./sidebar.js?v=1.1.8";
-import { initChangelog } from "./changelog.js?v=1.1.8";
-import { toggleModal } from "./ui.js?v=1.1.8";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.8";
+} from "./auth.js?v=1.1.9"; // Auth Import
+import { initProfile, showProfile } from "./profile.js?v=1.1.9"; // Profile Import
+import { CONFIG } from "./config.js?v=1.1.9"; // Keep CONFIG for displayVersion
+import { router } from "./router.js?v=1.1.9"; // Router Import
+import { closeSidebar, initSidebar } from "./sidebar.js?v=1.1.9";
+import { initChangelog } from "./changelog.js?v=1.1.9";
+import { toggleModal } from "./ui.js?v=1.1.9";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.9";
 
 // Boot Sequence
 // Capture native logging before suppression
@@ -77,7 +77,7 @@ async function checkForUpdates() {
         `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
       );
       
-      const { showUpdateToast } = await import("./ui.js?v=1.1.8");
+      const { showUpdateToast } = await import("./ui.js?v=1.1.9");
       
       // 2. Aggressive Update Strategy
       const attempts = Number(sessionStorage.getItem("jigsudo_update_attempts") || 0);
@@ -197,8 +197,8 @@ async function startApp() {
     window.resetToday = () => gameManager.resetCurrentGame();
 
     window.resetAccount = async () => {
-      const { getCurrentUser } = await import("./auth.js?v=1.1.8");
-      const { wipeUserData } = await import("./db.js?v=1.1.8");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.9");
+      const { wipeUserData } = await import("./db.js?v=1.1.9");
       const user = getCurrentUser();
 
       if (
@@ -218,7 +218,7 @@ async function startApp() {
     };
 
     window.magicWand = async () => {
-      const { debugAutoMatch } = await import("./memory.js?v=1.1.8");
+      const { debugAutoMatch } = await import("./memory.js?v=1.1.9");
       debugAutoMatch();
     };
 
@@ -440,8 +440,8 @@ function attachAuthListeners() {
     errBox.classList.add("hidden");
 
     if (pass !== confirmPass) {
-      const { translations } = await import("./translations.js?v=1.1.8");
-      const { getCurrentLang } = await import("./i18n.js?v=1.1.8");
+      const { translations } = await import("./translations.js?v=1.1.9");
+      const { getCurrentLang } = await import("./i18n.js?v=1.1.9");
       const lang = getCurrentLang();
       const t = translations[lang];
       errBox.textContent = t.toast_pw_mismatch || "Passwords do not match.";
@@ -460,8 +460,8 @@ function attachAuthListeners() {
 
   // --- SOCIAL SHARE LOGIC ---
   window.shareApp = async function () {
-    const { translations } = await import("./translations.js?v=1.1.8");
-    const { getCurrentLang } = await import("./i18n.js?v=1.1.8");
+    const { translations } = await import("./translations.js?v=1.1.9");
+    const { getCurrentLang } = await import("./i18n.js?v=1.1.9");
     const lang = getCurrentLang();
     const t = translations[lang];
 
@@ -480,7 +480,7 @@ function attachAuthListeners() {
         await navigator.clipboard.writeText(
           `${shareData.text} Juega gratis aquí: ${shareData.url}`,
         );
-        const { showToast } = await import("./ui.js?v=1.1.8");
+        const { showToast } = await import("./ui.js?v=1.1.9");
         showToast(t.toast_share_success);
       }
     } catch (err) {

@@ -1,4 +1,4 @@
-import { translations } from "./translations.js?v=1.1.8";
+import { translations } from "./translations.js?v=1.1.9";
 
 export let currentLang = "es"; // Default
 

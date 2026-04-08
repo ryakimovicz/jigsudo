@@ -1,5 +1,5 @@
 /* Firestore Database Module */
-import { db } from "./firebase-config.js?v=1.1.8";
+import { db } from "./firebase-config.js?v=1.1.9";
 import {
   doc,
   setDoc,
@@ -15,7 +15,7 @@ import {
   addDoc,
   getCountFromServer,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { gameManager } from "./game-manager.js?v=1.1.8";
+import { gameManager } from "./game-manager.js?v=1.1.9";
 
 // ... (rest of imports/vars)
 
@@ -172,7 +172,7 @@ export async function saveUserStats(userId, statsData, username = null, metadata
     }
 
     // If username is provided, save it as a top-level searchable field
-    const { getCurrentUser } = await import("./auth.js?v=1.1.8");
+    const { getCurrentUser } = await import("./auth.js?v=1.1.9");
     const user = getCurrentUser();
     if (user) {
       const isGoogleUser = user.providerData.some(

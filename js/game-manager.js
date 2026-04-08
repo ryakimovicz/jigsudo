@@ -1,12 +1,12 @@
-import { getDailySeed } from "./utils/random.js?v=1.1.8";
+import { getDailySeed } from "./utils/random.js?v=1.1.9";
 // Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
   countSequenceOccurrences,
-} from "./search-gen.js?v=1.1.8";
-import { CONFIG } from "./config.js?v=1.1.8";
-import { calculateRP, SCORING } from "./ranks.js?v=1.1.8";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.8";
+} from "./search-gen.js?v=1.1.9";
+import { CONFIG } from "./config.js?v=1.1.9";
+import { calculateRP, SCORING } from "./ranks.js?v=1.1.9";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.9";
 
 export class GameManager {
   constructor() {
@@ -686,7 +686,7 @@ export class GameManager {
       const seed = this.currentSeed;
 
       // Dynamic import to avoid circular dependencies if any
-      const { generateSearchSequences } = await import("./search-gen.js?v=1.1.8");
+      const { generateSearchSequences } = await import("./search-gen.js?v=1.1.9");
       const sequences = generateSearchSequences(solution, seed);
 
       if (sequences && sequences.length > 0) {
@@ -766,7 +766,7 @@ export class GameManager {
   }
 
   async forceCloudSave(overrideUid = null) {
-    const { getCurrentUser } = await import("./auth.js?v=1.1.8");
+    const { getCurrentUser } = await import("./auth.js?v=1.1.9");
     const user = getCurrentUser();
     if (this.isWiping) {
       console.log("[GM] Wiping in progress. Save blocked.");
@@ -778,8 +778,8 @@ export class GameManager {
     }
     if (this.conflictBlocked) return;
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.1.8");
-      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.1.8");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.9");
+      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.1.9");
 
       let uid = overrideUid;
       if (!uid) {
@@ -956,9 +956,9 @@ export class GameManager {
 
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.1.8");
-      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.1.8");
-      const { showNotification } = await import("./ui.js?v=1.1.8");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.9");
+      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.1.9");
+      const { showNotification } = await import("./ui.js?v=1.1.9");
       const user = getCurrentUser();
 
       if (user && !user.isAnonymous) {
@@ -1128,10 +1128,10 @@ export class GameManager {
     this.stats = stats;
     localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
-    const { saveUserStats } = await import("./db.js?v=1.1.8");
-    const { getCurrentUser } = await import("./auth.js?v=1.1.8");
+    const { saveUserStats } = await import("./db.js?v=1.1.9");
+    const { getCurrentUser } = await import("./auth.js?v=1.1.9");
     const { getJigsudoDateString, getJigsudoYearMonth } =
-      await import("./utils/time.js?v=1.1.8");
+      await import("./utils/time.js?v=1.1.9");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
       const today = getJigsudoDateString();
@@ -1335,7 +1335,7 @@ export class GameManager {
           
           if (intentDiff > 1) {
             const missed = intentDiff - 1;
-            const { getRankData } = await import("./ranks.js?v=1.1.8");
+            const { getRankData } = await import("./ranks.js?v=1.1.9");
             let currentSimulatedRP = stats.currentRP || 0;
             
             for (let i = 0; i < missed; i++) {
@@ -1465,10 +1465,10 @@ export class GameManager {
         console.log("[Sync] Remote stats were STALE. Applied local decay/reset before comparison.");
         // OPTIMIZATION: Push healed stats back to cloud if user is authenticated.
         // This marks maintenance as "done" for this user, so the GH Action skips them later.
-        const { getCurrentUser } = await import("./auth.js?v=1.1.8");
+        const { getCurrentUser } = await import("./auth.js?v=1.1.9");
         const user = getCurrentUser();
         if (user && !user.isAnonymous) {
-          const { saveUserStats } = await import("./db.js?v=1.1.8");
+          const { saveUserStats } = await import("./db.js?v=1.1.9");
           saveUserStats(user.uid, remoteStats, user.displayName);
         }
       }
@@ -1487,7 +1487,7 @@ export class GameManager {
           "[Sync] Cloud stats are EMPTY but local has history. Protection triggered: BLOCKING OVERWRITE.",
         );
         // Instead of adopting, we force a push of our local stats to "heal" the cloud
-        const { getCurrentUser } = await import("./auth.js?v=1.1.8");
+        const { getCurrentUser } = await import("./auth.js?v=1.1.9");
         const user = getCurrentUser();
         if (user && !user.isAnonymous) {
           console.log(
@@ -1769,7 +1769,7 @@ export class GameManager {
         // 3. Force Push to Cloud
         await this.forceCloudSave();
         // 4. (Optional) Toast
-        const { showToast } = await import("./ui.js?v=1.1.8");
+        const { showToast } = await import("./ui.js?v=1.1.9");
         showToast("Versión local conservada y subida.");
       };
     }
@@ -1785,8 +1785,8 @@ export class GameManager {
 
         try {
           const { fetchLatestUserData, triggerRemoteSave } =
-            await import("./db.js?v=1.1.8");
-          const { getCurrentUser } = await import("./auth.js?v=1.1.8");
+            await import("./db.js?v=1.1.9");
+          const { getCurrentUser } = await import("./auth.js?v=1.1.9");
           const user = getCurrentUser();
 
           if (user) {
@@ -1962,7 +1962,7 @@ export class GameManager {
           : Date.now();
         const totalTimeMs = Date.now() - startMs;
         const peaksErrors = this.state.stats?.peaksErrors || 0;
-        const { calculateTimeBonus } = await import("./ranks.js?v=1.1.8");
+        const { calculateTimeBonus } = await import("./ranks.js?v=1.1.9");
         const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
         let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
         const potentialDailyScore = Math.max(0, 6.0 + netChange);
@@ -2009,7 +2009,7 @@ export class GameManager {
         : Date.now();
       const totalTimeMs = Date.now() - startMs;
       const peaksErrors = this.state.stats?.peaksErrors || 0;
-      const { calculateTimeBonus } = await import("./ranks.js?v=1.1.8");
+      const { calculateTimeBonus } = await import("./ranks.js?v=1.1.9");
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
       const netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
       const dailyScore = Math.max(0, 6.0 + netChange);
@@ -2113,14 +2113,14 @@ export class GameManager {
       this.stats = stats;
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
-      const { saveUserStats } = await import("./db.js?v=1.1.8");
-      const { stopTimer } = await import("./timer.js?v=1.1.8");
+      const { saveUserStats } = await import("./db.js?v=1.1.9");
+      const { stopTimer } = await import("./timer.js?v=1.1.9");
       stopTimer();
-      const { getDailySeed } = await import("./utils/random.js?v=1.1.8");
-      const user = await import("./auth.js?v=1.1.8").then((m) => m.getCurrentUser());
+      const { getDailySeed } = await import("./utils/random.js?v=1.1.9");
+      const user = await import("./auth.js?v=1.1.9").then((m) => m.getCurrentUser());
       if (user && !user.isAnonymous) {
         const { getJigsudoDateString, getJigsudoYearMonth } =
-          await import("./utils/time.js?v=1.1.8");
+          await import("./utils/time.js?v=1.1.9");
         const today = getJigsudoDateString();
         const currentMonth = getJigsudoYearMonth();
 
@@ -2133,7 +2133,7 @@ export class GameManager {
       }
       await this.forceCloudSave();
 
-      const { showToast } = await import("./ui.js?v=1.1.8");
+      const { showToast } = await import("./ui.js?v=1.1.9");
       showToast("¡Progreso Guardado! 💾🏆");
       return sessionStats;
     } catch (err) {
