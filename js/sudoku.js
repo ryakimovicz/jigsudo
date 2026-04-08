@@ -744,11 +744,7 @@ function toggleNote(cell, num, skipHistory = true) {
 
     slot.textContent = shouldBeVisible ? num : "";
 
-    // Only promote if we REMOVED a note (potentially leaving 1).
-    // If we added a note, we are building up candidates, don't auto-promote 0->1.
-    if (!shouldBeVisible) {
-      promoteSingleCandidatesGlobal();
-    }
+    // Promotion logic removed to give user full control over cell finalization.
   }
 
   updateKeypadHighlights(cell);
@@ -832,7 +828,6 @@ export function updateNoteVisibility() {
             nSlot.textContent = num;
           } else {
             nSlot.textContent = "";
-            nSlot.dataset.pinnedConflictCount = "0";
           }
         } else {
           // No conflict, Clear Pin and Show
@@ -843,85 +838,7 @@ export function updateNoteVisibility() {
     });
   });
 
-  // Trigger Promotion Logic (Singles Chain)
-  promoteSingleCandidatesGlobal();
-}
-
-let isPromoting = false; // Guard to prevent infinite re-entry if logic flaws exist
-
-function promoteSingleCandidatesGlobal() {
-  if (isPromoting) return;
-  isPromoting = true;
-
-  const board = document.getElementById("memory-board");
-  if (!board) {
-    isPromoting = false;
-    return;
-  }
-
-  const slots = Array.from(board.querySelectorAll(".sudoku-chunk-slot"));
-
-  // Find ONE candidate to promote (to facilitate chain visualization)
-  // Or promote all?
-  // Safety: Promote ALL that are ready in this pass.
-
-  const cellsToPromote = [];
-
-  slots.forEach((slot) => {
-    const cells = slot.querySelectorAll(".mini-cell");
-    cells.forEach((cell) => {
-      if (!cell.classList.contains("has-notes")) return;
-
-      const notesGrid = cell.querySelector(".notes-grid");
-      if (!notesGrid) return;
-
-      // Count VISIBLE notes vs USER-ACTIVATED notes
-      const allNoteSlots = Array.from(notesGrid.querySelectorAll(".note-slot"));
-      const visibleNotes = allNoteSlots.filter((n) => n.textContent !== "");
-      const userActiveNotes = allNoteSlots.filter(
-        (n) => n.dataset.userActive === "true",
-      );
-
-      // Promote ONLY if it was reduced from multiple candidates to one.
-      // If visible is 1 and userActive is 1, it means the user manually put only one note (drafting).
-      // We don't want to auto-promote drafting notes.
-      if (visibleNotes.length === 1 && userActiveNotes.length > 1) {
-        cellsToPromote.push({
-          cell: cell,
-          num: visibleNotes[0].dataset.note,
-        });
-      }
-    });
-  });
-
-  // Apply promotions
-  cellsToPromote.forEach((action) => {
-    // Re-check validity (in case previous promotion in loop invalidated this one?
-    // e.g. two cells waiting for "1" - impossible if logic is sound but safety first)
-    // Actually, if we have two cells with only "1" visible in same row, both trying to promote...
-    // The first one fills "1". The second one now conflicts.
-    // `handleNumberInput` triggers `updateNoteVisibility` which hides the note in 2nd cell.
-    // So 2nd cell has 0 notes visible.
-    // So we should strictly check before applying.
-
-    if (action.cell.classList.contains("has-notes")) {
-      // Select it to emulate user interaction properly for handleNumberInput
-      // Or refactor handleNumberInput to accept cell?
-      // handleNumberInput uses `selectedCell`.
-
-      // Force Selection
-      selectCell(action.cell, true);
-      console.log("Auto-Promoting Candidate:", action.num);
-
-      // Force Real Number Input
-      const wasPencil = pencilMode;
-      pencilMode = false;
-      handleNumberInput(action.num);
-      pencilMode = wasPencil;
-    }
-  });
-
-  isPromoting = false;
+  // Visibility updated. Auto-promotion logic removed.
 }
 
 function validateBoard() {
