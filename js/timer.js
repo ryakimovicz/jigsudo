@@ -1,5 +1,5 @@
-import { gameManager } from "./game-manager.js?v=1.1.10";
-import { formatTime } from "./ui.js?v=1.1.10";
+import { gameManager } from "./game-manager.js?v=1.1.11";
+import { formatTime } from "./ui.js?v=1.1.11";
 
 let timerInterval = null;
 
