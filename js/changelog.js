@@ -39,6 +39,7 @@ function renderChangelog() {
             itemKeys: [
                 "changelog_v1111_item1",
                 "changelog_v1111_item2",
+                "changelog_v1111_item3",
             ]
         },
         {
