@@ -599,7 +599,7 @@ async function finalizeVictory() {
 
   // Show Summary after a small delay to let the animation sink in
   setTimeout(async () => {
-    const { showVictorySummary } = await import("./ui.js");
+    const { showVictorySummary } = await import("./ui.js?v=1.1.5");
     showVictorySummary(sessionStats, false);
   }, 2000);
 }

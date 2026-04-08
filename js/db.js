@@ -172,7 +172,7 @@ export async function saveUserStats(userId, statsData, username = null, metadata
     }
 
     // If username is provided, save it as a top-level searchable field
-    const { getCurrentUser } = await import("./auth.js");
+    const { getCurrentUser } = await import("./auth.js?v=1.1.5");
     const user = getCurrentUser();
     if (user) {
       const isGoogleUser = user.providerData.some(

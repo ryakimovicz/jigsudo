@@ -475,7 +475,7 @@ export function initHome() {
           stageTimes: todayStats.stageTimes || {},
         };
 
-        const { showVictorySummary } = await import("./ui.js");
+        const { showVictorySummary } = await import("./ui.js?v=1.1.5");
         showVictorySummary(sessionStats, true);
       }
     } catch (e) {
@@ -591,7 +591,7 @@ export function initHome() {
   if (navHome) {
     navHome.addEventListener("click", async () => {
       // Use Router instead of reload to preserve cache and go to canonical #home
-      const { router } = await import("./router.js");
+      const { router } = await import("./router.js?v=1.1.5");
       router.navigateTo("#home");
     });
   }
@@ -850,7 +850,7 @@ export async function startDailyGame() {
     // 3. Load Memory/Stage logic
     const state = gameManager.getState();
     const currentStage = state.progress.currentStage || "memory";
-    const module = await import("./memory.js");
+    const module = await import("./memory.js?v=1.1.5");
 
     if (currentStage === "memory") {
       module.initMemoryGame();
