@@ -43,6 +43,7 @@ function renderChangelog() {
                 "changelog_v1112_item4",
                 "changelog_v1112_item5",
                 "changelog_v1112_item6",
+                "changelog_v1112_item7",
             ]
         },
         {

@@ -3,6 +3,16 @@ import { getCurrentLang, updateTexts } from "./i18n.js?v=1.1.11";
 import { getCurrentUser } from "./auth.js?v=1.1.11";
 import { getRankData } from "./ranks.js?v=1.1.11";
 import { formatJigsudoDate } from "./utils/time.js?v=1.1.11";
+ 
+let lastVictoryStats = null;
+let lastVictoryIsHome = false;
+ 
+window.addEventListener("languageChanged", () => {
+  const modal = document.getElementById("victory-summary-modal");
+  if (modal && !modal.classList.contains("hidden") && lastVictoryStats) {
+    refreshVictorySummaryUI(lastVictoryStats, lastVictoryIsHome);
+  }
+});
 
 export function showToast(message, duration = 3000, type = "info") {
   let container = document.getElementById("toast-container");
@@ -208,78 +218,13 @@ export async function showVictorySummary(stats, isHome = false) {
   if (!stats) return;
 
   const modal = document.getElementById("victory-summary-modal");
-  const timeEl = document.getElementById("victory-total-time");
-  const streakEl = document.getElementById("victory-streak");
-  const errorsEl = document.getElementById("victory-errors");
-  const scoreEl = document.getElementById("victory-score");
-  const stageTimesContainer = document.getElementById("victory-stage-times");
   const btnHome = document.getElementById("btn-victory-home");
-
   if (!modal) return;
 
-  const lang = getCurrentLang();
-
-  // Update button text based on mode
-  if (btnHome) {
-    let btnKey = isHome ? "btn_close" : "btn_back_home";
-    if (!isHome && stats.isReplay) {
-      btnKey = "btn_back_history";
-    }
-    btnHome.dataset.i18n = btnKey;
-    btnHome.textContent =
-      translations[lang][btnKey] || (isHome ? "Cerrar" : "Volver al Inicio");
-  }
-
-  // Update description text based on whether it's a replay
-  const descEl = modal.querySelector(".modal-desc");
-  if (descEl) {
-    descEl.dataset.isReplay = stats.isReplay || "false";
-    descEl.dataset.date = stats.date || "";
-    descEl.dataset.i18n = "victory_desc";
-    
-    // Call updateTexts to apply localized formatting immediately
-    const { updateTexts } = await import("./i18n.js?v=1.1.11");
-    updateTexts();
-  }
-
-  // Populating main stats
-  const scoreFormat = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  });
-
-  if (timeEl) timeEl.textContent = formatTime(stats.totalTime);
-  if (streakEl) streakEl.textContent = stats.streak || "1";
-  if (errorsEl) errorsEl.textContent = stats.errors || "0";
-  if (scoreEl) scoreEl.textContent = `+${scoreFormat.format(stats.score)}`;
-
-  // Populating breakdown
-  if (stageTimesContainer) {
-    stageTimesContainer.innerHTML = "";
-
-    // Ordered categories for display
-    const stages = [
-      { key: "memory", icon: "🧠" },
-      { key: "jigsaw", icon: "🧩" },
-      { key: "sudoku", icon: "🔢" },
-      { key: "peaks", icon: "⛰️" },
-      { key: "search", icon: "🔍" },
-      { key: "code", icon: "📟" },
-    ];
-
-    stages.forEach((stage) => {
-      const timeMs = stats.stageTimes[stage.key] || 0;
-      const stageName = translations[lang].stage_names[stage.key] || stage.key;
-
-      const row = document.createElement("div");
-      row.className = "stage-time-row";
-      row.innerHTML = `
-        <span class="stage-name">${stage.icon} ${stageName}</span>
-        <span class="stage-val">${formatTime(timeMs)}</span>
-      `;
-      stageTimesContainer.appendChild(row);
-    });
-  }
+  lastVictoryStats = stats;
+  lastVictoryIsHome = isHome;
+  
+  await refreshVictorySummaryUI(stats, isHome);
 
   // Share Button Logic
   const shareBtn = document.getElementById("btn-victory-share");
@@ -319,6 +264,77 @@ export async function showVictorySummary(stats, isHome = false) {
 
   // Show Modal
   toggleModal(modal, true);
+}
+
+// Private helper to populate localized summary fields
+async function refreshVictorySummaryUI(stats, isHome) {
+  const lang = getCurrentLang();
+  const timeEl = document.getElementById("victory-total-time");
+  const streakEl = document.getElementById("victory-streak");
+  const errorsEl = document.getElementById("victory-errors");
+  const scoreEl = document.getElementById("victory-score");
+  const stageTimesContainer = document.getElementById("victory-stage-times");
+  const btnHome = document.getElementById("btn-victory-home");
+
+  if (timeEl) timeEl.textContent = formatTime(stats.totalTime);
+  if (streakEl) streakEl.textContent = stats.streak || "1";
+  if (errorsEl) errorsEl.textContent = stats.errors || "0";
+
+  // Formatted score
+  const scoreFormat = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
+  if (scoreEl) scoreEl.textContent = `+${scoreFormat.format(stats.score)}`;
+
+  // Button labels
+  if (btnHome) {
+    let btnKey = isHome ? "btn_close" : "btn_back_home";
+    if (!isHome && stats.isReplay) {
+      btnKey = "btn_back_history";
+    }
+    btnHome.dataset.i18n = btnKey;
+    btnHome.textContent =
+      translations[lang][btnKey] || (isHome ? "Cerrar" : "Volver al Inicio");
+  }
+
+  // Breakdown
+  if (stageTimesContainer) {
+    stageTimesContainer.innerHTML = "";
+    const stages = [
+      { key: "memory", icon: "🧠" },
+      { key: "jigsaw", icon: "🧩" },
+      { key: "sudoku", icon: "🔢" },
+      { key: "peaks", icon: "⛰️" },
+      { key: "search", icon: "🔍" },
+      { key: "code", icon: "📟" },
+    ];
+
+    stages.forEach((stage) => {
+      const timeMs = stats.stageTimes[stage.key] || 0;
+      const stageName = translations[lang].stage_names[stage.key] || stage.key;
+
+      const row = document.createElement("div");
+      row.className = "stage-time-row";
+      row.innerHTML = `
+        <span class="stage-name">${stage.icon} ${stageName}</span>
+        <span class="stage-val">${formatTime(timeMs)}</span>
+      `;
+      stageTimesContainer.appendChild(row);
+    });
+  }
+
+  // Ensure victory_desc and others update
+  const modal = document.getElementById("victory-summary-modal");
+  const descEl = modal?.querySelector(".modal-desc");
+  if (descEl) {
+    descEl.dataset.isReplay = stats.isReplay || "false";
+    descEl.dataset.date = stats.date || "";
+    descEl.dataset.i18n = "victory_desc";
+  }
+
+  const { updateTexts } = await import("./i18n.js?v=1.1.11");
+  updateTexts();
 }
 
 /**
