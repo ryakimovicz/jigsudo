@@ -564,6 +564,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1112_title: "Versión 1.1.12",
+    changelog_v1112_date: "08/04/2026",
+    changelog_v1112_item1: "Estabilidad de Tablas: Se ha blindado la visibilidad de la fila personal ('Tú') para evitar que desaparezca por errores de caché o falta de usuarios en el Top 10.",
+    changelog_v1112_item2: "Caché Inteligente: El ranking ahora detecta el cambio de día (06:00 UTC) e invalida la caché automáticamente para evitar mostrar datos del día anterior.",
+    changelog_v1112_item3: "Sincronización Suave: Se ha implementado un sistema de guardia para evitar parpadeos visuales y peticiones redundantes al actualizar las tablas.",
+    changelog_v1112_item4: "Consistencia de Datos: El sistema ahora prioriza la puntuación de la nube sobre el estado local al renderizar el Top 10, garantizando información precisa.",
     changelog_v1111_title: "Versión 1.1.11",
     changelog_v1111_date: "08/04/2026",
     changelog_v1111_item1: "Control Total en Sudoku: Se ha eliminado la finalización automática de celdas con una sola nota para mayor control del jugador.",
@@ -1184,6 +1190,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1112_title: "Version 1.1.12",
+    changelog_v1112_date: "08/04/2026",
+    changelog_v1112_item1: "Leaderboard Stability: Secured the visibility of the personal ('You') row to prevent it from disappearing due to cache errors or sparse Top 10 results.",
+    changelog_v1112_item2: "Smart Cache: Rankings now detect day transitions (06:00 UTC) and invalidate the cache automatically to avoid showing stale data from the previous day.",
+    changelog_v1112_item3: "Smooth Syncing: Implemented a concurrency guard to prevent visual flickering and redundant requests when updating the tables.",
+    changelog_v1112_item4: "Data Integrity: The system now prioritizes cloud scores over local state when rendering the Top 10, ensuring accurate information.",
     changelog_v1111_title: "Version 1.1.11",
     changelog_v1111_date: "08/04/2026",
     changelog_v1111_item1: "Full Control in Sudoku: Removed automatic cell finalization for single-note candidates for better player control.",
