@@ -159,6 +159,32 @@ export function generateSearchSequences(
           s.path.forEach((p) => pSet.add(`${p.r},${p.c}`)),
         );
         candidateUsedCount = pSet.size;
+
+        // FINAL SECURITY CHECK: Global Composite Uniqueness
+        // Build the set of all cells that will be visible (Snakes + Reserved Cells)
+        const visibleCells = new Set(pSet);
+        if (reservedCells) {
+          reservedCells.forEach((rc) => visibleCells.add(`${rc.r},${rc.c}`));
+        }
+
+        let hasDuplicate = false;
+        for (const seq of candidateSequences) {
+          if (
+            countVisibleOccurrences(board, visibleCells, seq.numbers) > 1
+          ) {
+            hasDuplicate = true;
+            break;
+          }
+        }
+
+        if (hasDuplicate) {
+          if (CONFIG.debugMode)
+            console.warn(
+              `${logPrefix} Composite duplicate sequence detected. Rejecting attempt.`,
+            );
+          // Set usedCount to -1 to treat as failure and trigger retry
+          candidateUsedCount = -1; 
+        }
       }
     }
 
@@ -695,4 +721,77 @@ function calculateUnusedAdjacency(usedMap, peaksValleys, rows, cols) {
     }
   }
   return adjacency;
+}
+
+// ==========================================
+// 🔍 LOGIC: GLOBAL COMPOSITE UNIQUENESS
+// ==========================================
+/**
+ * Checks how many times a sequence exists using ONLY cells from the visible set.
+ */
+function countVisibleOccurrences(grid, visibleCells, targetSeq) {
+  let count = 0;
+  const startVal = targetSeq[0];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (!visibleCells.has(`${r},${c}`)) continue;
+      if (grid[r][c] === startVal) {
+        count += searchVisiblePath(
+          grid,
+          visibleCells,
+          r,
+          c,
+          targetSeq,
+          1,
+          new Set([`${r},${c}`]),
+        );
+        if (count > 1) return count;
+      }
+    }
+  }
+  return count;
+}
+
+function searchVisiblePath(grid, visibleCells, r, c, targetSeq, index, visited) {
+  if (index >= targetSeq.length) return 1;
+  let found = 0;
+  const nextVal = targetSeq[index];
+
+  const currentKey = `${r},${c}`;
+  visited.add(currentKey);
+
+  const dirs = [
+    [0, 1],
+    [0, -1],
+    [1, 0],
+    [-1, 0],
+  ];
+  for (let d of dirs) {
+    const nr = r + d[0];
+    const nc = c + d[1];
+    const key = `${nr},${nc}`;
+    if (
+      nr >= 0 &&
+      nr < 9 &&
+      nc >= 0 &&
+      nc < 9 &&
+      visibleCells.has(key) &&
+      !visited.has(key) &&
+      grid[nr][nc] === nextVal
+    ) {
+      found += searchVisiblePath(
+        grid,
+        visibleCells,
+        nr,
+        nc,
+        targetSeq,
+        index + 1,
+        visited,
+      );
+      if (found > 1) break;
+    }
+  }
+
+  visited.delete(currentKey);
+  return found;
 }
