@@ -564,6 +564,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v116_title: "Versión 1.1.6",
+    changelog_v116_date: "07/04/2026",
+    changelog_v116_item1: "Corrección crítica: El modo historial ahora permite completar la etapa de Memoria y avanzar al Rompecabezas.",
+    changelog_v116_item2: "Estabilización global de módulos ES para evitar errores de hidratación y conflictos de caché.",
+    changelog_v116_item3: "Mejora profunda en el script de versiones (Deep-Bumper) con soporte para importaciones dinámicas.",
     changelog_v115_title: "Versión 1.1.5",
     changelog_v115_date: "07/04/2026",
     changelog_v115_item1: "Actualización de infraestructura: GitHub Actions @v5 y Node.js 24.",
@@ -1157,6 +1162,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v116_title: "Version 1.1.6",
+    changelog_v116_date: "07/04/2026",
+    changelog_v116_item1: "Critical fix: History mode now correctly progresses from Memory to Jigsaw stage.",
+    changelog_v116_item2: "Global ES module stabilization to prevent hydration errors and cache conflicts.",
+    changelog_v116_item3: "Deep improvement to the version script (Deep-Bumper) with dynamic import support.",
     changelog_v115_title: "Version 1.1.5",
     changelog_v115_date: "04/07/2026",
     changelog_v115_item1: "Infrastructure update: GitHub Actions @v5 and Node.js 24 support.",
