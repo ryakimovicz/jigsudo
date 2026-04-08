@@ -109,7 +109,7 @@ export async function transitionToPeaks() {
   initPeaks();
 
   // 7. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js");
+  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.5");
   resumeSudokuState();
   resumePeaksState();
 }

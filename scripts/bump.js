@@ -67,9 +67,10 @@ async function bump() {
     // Matches ?v=1.1, ?v=1.1.0, etc. (for HTML attributes)
     const attrVersionRegex = /\?v=[\d\.\w]+/g; 
     
-    // Matches 'from "./path.js?v=1.1.5"' or 'from "./path.js?v=1.1.5"' (for JS imports)
-    // Group 1: from, Group 2: quotes, Group 3: path leading with ./ or ../, Group 4: the .js part, Group 5: the existing ?v= part
-    const jsImportRegex = /(from|import)\s+(['"])(\.\/|\.\.\/)([^'"]+?\.js)(\?v=[\d\.\w]+)?\2/g;
+    // Matches static: import/from "./path.js?v=1.1.5"
+    // Matches dynamic: import("./path.js?v=1.1.5")
+    // Group 1: from|import, Group 2: optional space/parenthesis, Group 3: quote, Group 4: ./ or ../, Group 5: filename, Group 6: optional version, Group 7: optional matching quote (group 3 reference), Group 8: optional closing parenthesis
+    const jsImportRegex = /(from|import)(\s*\(?\s*)(['"])(\.\/|\.\.\/)([^'"]+?\.js)(\?v=[\d\.\w]+)?\3(\s*\)?)?/g;
 
     targets.forEach(file => {
       let content = fs.readFileSync(file, 'utf8');
@@ -86,8 +87,10 @@ async function bump() {
         if (file === CONFIG_PATH) return;
 
         // Update all relative JS imports to include the version
-        updatedContent = content.replace(jsImportRegex, (match, p1, p2, p3, p4, p5) => {
-          return `${p1} ${p2}${p3}${p4}?v=${currentVersion}${p2}`;
+        updatedContent = content.replace(jsImportRegex, (match, p1, p2, p3, p4, p5, p6, p7) => {
+          // p1: keyword, p2: ( or space, p3: quote, p4: ./, p5: filename, p7: ) or none
+          const closeParen = p7 || '';
+          return `${p1}${p2}${p3}${p4}${p5}?v=${currentVersion}${p3}${closeParen}`;
         });
       }
 

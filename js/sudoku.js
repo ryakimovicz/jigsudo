@@ -1189,8 +1189,8 @@ async function confirmClearBoard() {
     if (toggle) toggle.checked = false;
 
     // Sync to cloud
-    const { getCurrentUser } = await import("./auth.js");
-    const { updateUserPreference } = await import("./db.js");
+    const { getCurrentUser } = await import("./auth.js?v=1.1.5");
+    const { updateUserPreference } = await import("./db.js?v=1.1.5");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
       // DB key: confirmClear (true = Ask, false = Skip)

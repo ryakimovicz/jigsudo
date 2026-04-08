@@ -6,6 +6,7 @@ import {
 } from "./search-gen.js?v=1.1.5";
 import { CONFIG } from "./config.js?v=1.1.5";
 import { calculateRP, SCORING } from "./ranks.js?v=1.1.5";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.5";
 
 export class GameManager {
   constructor() {
@@ -24,7 +25,7 @@ export class GameManager {
         const newSeed = getDailySeed();
         if (this.currentSeed !== newSeed && !this.isReplay) {
           // Mid-game Safety: Don't auto-refresh if the user is currently in a game session
-          const isAtGame = window.location.hash.startsWith("#game");
+          const isAtGame = isAtGameRoute();
           const hasActiveProgress =
             this.state &&
             this.state.progress &&

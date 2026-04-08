@@ -210,29 +210,29 @@ export async function resumeToStage(stage) {
   resumeMemoryState();
 
   if (stage === "jigsaw") {
-    const m = await import("./jigsaw.js");
+    const m = await import("./jigsaw.js?v=1.1.5");
     m.resumeJigsawState();
     m.transitionToJigsaw();
   } else if (stage === "sudoku") {
-    const jigsaw = await import("./jigsaw.js");
+    const jigsaw = await import("./jigsaw.js?v=1.1.5");
     jigsaw.resumeJigsawState();
-    const sudoku = await import("./sudoku.js");
+    const sudoku = await import("./sudoku.js?v=1.1.5");
     sudoku.resumeSudokuState();
     sudoku.transitionToSudoku();
   } else if (stage === "peaks") {
-    const jigsaw = await import("./jigsaw.js");
+    const jigsaw = await import("./jigsaw.js?v=1.1.5");
     jigsaw.resumeJigsawState();
-    const peaks = await import("./peaks.js");
+    const peaks = await import("./peaks.js?v=1.1.5");
     peaks.transitionToPeaks();
   } else if (stage === "search") {
-    const jigsaw = await import("./jigsaw.js");
+    const jigsaw = await import("./jigsaw.js?v=1.1.5");
     jigsaw.resumeJigsawState();
-    const search = await import("./search.js");
+    const search = await import("./search.js?v=1.1.5");
     search.transitionToSearch();
   } else if (stage === "code") {
-    const jigsaw = await import("./jigsaw.js");
+    const jigsaw = await import("./jigsaw.js?v=1.1.5");
     jigsaw.resumeJigsawState();
-    const search = await import("./search.js");
+    const search = await import("./search.js?v=1.1.5");
     search.transitionToCode();
   }
 

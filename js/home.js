@@ -12,6 +12,7 @@ import { router } from "./router.js?v=1.1.5";
 import { isPuzzleAvailable } from "./history.js?v=1.1.5";
 import { showAlertModal } from "./ui.js?v=1.1.5";
 import { getJigsudoDate } from "./utils/time.js?v=1.1.5";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.5";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -234,8 +235,8 @@ export function initHome() {
       localStorage.setItem("jigsudo_skip_clear_confirm", shouldSkip ? "true" : "false");
 
       // Sync to cloud if possible
-      const { getCurrentUser } = await import("./auth.js");
-      const { updateUserPreference } = await import("./db.js");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.5");
+      const { updateUserPreference } = await import("./db.js?v=1.1.5");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
         // DB key: confirmClear (true = Ask, false = Skip)
@@ -566,7 +567,7 @@ export function initHome() {
       console.log("Jigsudo Day Cutoff reached! Refreshing state.");
 
       // Mid-game Safety: Don't auto-refresh the manager if the user is in a game
-      const isAtGame = window.location.hash.startsWith("#game");
+      const isAtGame = isAtGameRoute();
       if (isAtGame) {
         console.log(
           "[Home] 06:00 UTC reached, but user is playing. Refreshing only after return to home.",

@@ -5,6 +5,7 @@ import { RANKS } from "./ranks.js?v=1.1.5";
 import { CONFIG } from "./config.js?v=1.1.5";
 import { toggleModal } from "./ui.js?v=1.1.5";
 import { router } from "./router.js?v=1.1.5";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.5";
 
 // DOMContentLoaded removed. main.js handles this.
 // document.addEventListener("DOMContentLoaded", () => {
@@ -247,7 +248,7 @@ function hideGuide() {
   const isInternalRouting =
     hash === "#profile" ||
     hash === "#history" ||
-    hash === "#game" ||
+    isAtGameRoute() ||
     hash === "#info";
 
   // Only restore home if we're not heading to another section

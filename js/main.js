@@ -19,6 +19,7 @@ import { router } from "./router.js?v=1.1.5"; // Router Import
 import { closeSidebar, initSidebar } from "./sidebar.js?v=1.1.5";
 import { initChangelog } from "./changelog.js?v=1.1.5";
 import { toggleModal } from "./ui.js?v=1.1.5";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.5";
 
 // Boot Sequence
 // Capture native logging before suppression
@@ -64,8 +65,8 @@ async function checkForUpdates() {
 
     if (serverVersion && isNewerVersion(serverVersion, localVersion)) {
       // PROTECTION: If user is in a game or history detail, don't even prompt yet
-      const isAtGame = window.location.hash.startsWith("#game");
-      const isAtHistoryDetail = window.location.hash.startsWith("#history/") && window.location.hash.split("/").length > 1;
+      const isAtGame = isAtGameRoute();
+      const isAtHistoryDetail = window.location.hash.startsWith("#history/") && window.location.hash.split("/").length > 1; // Keeping more detailed check for history menu vs game
       
       if (isAtGame || isAtHistoryDetail) {
         console.log("[Updater] New version detected, but delaying prompt until user leaves session.");
@@ -76,7 +77,7 @@ async function checkForUpdates() {
         `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
       );
       
-      const { showUpdateToast } = await import("./ui.js");
+      const { showUpdateToast } = await import("./ui.js?v=1.1.5");
       
       // 2. Aggressive Update Strategy
       const attempts = Number(sessionStorage.getItem("jigsudo_update_attempts") || 0);
@@ -91,7 +92,7 @@ async function checkForUpdates() {
         // Wait 3 seconds to let the user see the toast, then force reload
         setTimeout(() => {
           // PROTECTION: If user entered a game during the 3s delay, don't reload
-          const isAtGame = window.location.hash.startsWith("#game");
+          const isAtGame = isAtGameRoute();
           const isAtHistoryDetail = window.location.hash.startsWith("#history/") && window.location.hash.split("/").length > 1;
           
           if (isAtGame || isAtHistoryDetail) {
@@ -196,8 +197,8 @@ async function startApp() {
     window.resetToday = () => gameManager.resetCurrentGame();
 
     window.resetAccount = async () => {
-      const { getCurrentUser } = await import("./auth.js");
-      const { wipeUserData } = await import("./db.js");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.5");
+      const { wipeUserData } = await import("./db.js?v=1.1.5");
       const user = getCurrentUser();
 
       if (
@@ -217,7 +218,7 @@ async function startApp() {
     };
 
     window.magicWand = async () => {
-      const { debugAutoMatch } = await import("./memory.js");
+      const { debugAutoMatch } = await import("./memory.js?v=1.1.5");
       debugAutoMatch();
     };
 
@@ -439,8 +440,8 @@ function attachAuthListeners() {
     errBox.classList.add("hidden");
 
     if (pass !== confirmPass) {
-      const { translations } = await import("./translations.js");
-      const { getCurrentLang } = await import("./i18n.js");
+      const { translations } = await import("./translations.js?v=1.1.5");
+      const { getCurrentLang } = await import("./i18n.js?v=1.1.5");
       const lang = getCurrentLang();
       const t = translations[lang];
       errBox.textContent = t.toast_pw_mismatch || "Passwords do not match.";
@@ -459,8 +460,8 @@ function attachAuthListeners() {
 
   // --- SOCIAL SHARE LOGIC ---
   window.shareApp = async function () {
-    const { translations } = await import("./translations.js");
-    const { getCurrentLang } = await import("./i18n.js");
+    const { translations } = await import("./translations.js?v=1.1.5");
+    const { getCurrentLang } = await import("./i18n.js?v=1.1.5");
     const lang = getCurrentLang();
     const t = translations[lang];
 
@@ -479,7 +480,7 @@ function attachAuthListeners() {
         await navigator.clipboard.writeText(
           `${shareData.text} Juega gratis aquí: ${shareData.url}`,
         );
-        const { showToast } = await import("./ui.js");
+        const { showToast } = await import("./ui.js?v=1.1.5");
         showToast(t.toast_share_success);
       }
     } catch (err) {

@@ -6,6 +6,7 @@ import { updateSidebarActiveState } from "./sidebar.js?v=1.1.5";
 import { router } from "./router.js?v=1.1.5";
 
 import { getJigsudoDate } from "./utils/time.js?v=1.1.5";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.5";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
@@ -141,7 +142,7 @@ export function hideHistoryUI() {
   const isInternalRouting =
     hash === "#profile" ||
     hash === "#guide" ||
-    hash === "#game" ||
+    isAtGameRoute() ||
     hash === "#info";
 
   if (!isInternalRouting) {

@@ -507,8 +507,8 @@ export async function transitionToSearch() {
   }
 
   // 7. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js");
-  const { resumePeaksState } = await import("./peaks.js");
+  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.5");
+  const { resumePeaksState } = await import("./peaks.js?v=1.1.5");
   resumeSudokuState();
   resumePeaksState();
 }
@@ -590,9 +590,9 @@ export async function transitionToCode() {
   }
 
   // 6. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js");
-  const { resumePeaksState } = await import("./peaks.js");
-  const { resumeCodeState } = await import("./code.js");
+  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.5");
+  const { resumePeaksState } = await import("./peaks.js?v=1.1.5");
+  const { resumeCodeState } = await import("./code.js?v=1.1.5");
 
   await resumeSudokuState();
   await resumePeaksState();

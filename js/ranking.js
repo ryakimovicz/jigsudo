@@ -37,9 +37,9 @@ export async function fetchRankings(forceRefresh = false) {
   }
 
   console.log("[Ranking] Fetching fresh data from Firestore");
-  const { getUserRank } = await import("./db.js");
+  const { getUserRank } = await import("./db.js?v=1.1.5");
 
-  const { getDailySeed } = await import("./utils/random.js");
+  const { getDailySeed } = await import("./utils/random.js?v=1.1.5");
   const seedStr = getDailySeed().toString();
   const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
   const currentMonth = today.substring(0, 7);

@@ -122,8 +122,8 @@ export async function showUpdateAlert(isSticky = false) {
 
   if (!modal || !titleEl || !msgEl || !closeBtn) return;
 
-  const { translations } = await import("./translations.js");
-  const { getCurrentLang } = await import("./i18n.js");
+  const { translations } = await import("./translations.js?v=1.1.5");
+  const { getCurrentLang } = await import("./i18n.js?v=1.1.5");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -168,8 +168,8 @@ export async function showUpdateAlert(isSticky = false) {
  * Stage 1: Non-intrusive Toast for initial update attempt
  */
 export async function showUpdateToast() {
-  const { translations } = await import("./translations.js");
-  const { getCurrentLang } = await import("./i18n.js");
+  const { translations } = await import("./translations.js?v=1.1.5");
+  const { getCurrentLang } = await import("./i18n.js?v=1.1.5");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -238,7 +238,7 @@ export async function showVictorySummary(stats, isHome = false) {
     descEl.dataset.i18n = "victory_desc";
     
     // Call updateTexts to apply localized formatting immediately
-    const { updateTexts } = await import("./i18n.js");
+    const { updateTexts } = await import("./i18n.js?v=1.1.5");
     updateTexts();
   }
 
@@ -295,14 +295,14 @@ export async function showVictorySummary(stats, isHome = false) {
       if (!isHome) {
         // 1. Refresh Rankings immediately if possible (via home logic listener)
         try {
-          const { clearRankingCache } = await import("./ranking.js");
+          const { clearRankingCache } = await import("./ranking.js?v=1.1.5");
           clearRankingCache();
         } catch (err) {
           console.warn("Failed to clear ranking cache:", err);
         }
 
         // 2. Navigate based on mode
-        const { router } = await import("./router.js");
+        const { router } = await import("./router.js?v=1.1.5");
         if (stats.isReplay && stats.date) {
           // stats.date is YYYY-MM-DD
           const [y, m] = stats.date.split("-");

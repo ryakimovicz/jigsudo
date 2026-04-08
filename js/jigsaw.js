@@ -5,6 +5,7 @@ import { transitionToSudoku } from "./sudoku.js?v=1.1.5";
 import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.1.5";
 import { getConflicts } from "./sudoku-logic.js?v=1.1.5";
 import { getCurrentLang } from "./i18n.js?v=1.1.5";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.5";
 
 // DOM Elements Reference
 let boardContainer;
@@ -524,7 +525,7 @@ export function handleSlotClick_v2(slotIndex) {
 export function transitionToJigsaw() {
   // CRITICAL GUARD: Do not proceed if user navigated away from #game
   if (!memorySection || memorySection.classList.contains("hidden")) return;
-  if (!window.location.hash.startsWith("#game")) return;
+  if (!isAtGameRoute()) return;
 
   console.log("Transitioning to Jigsaw Stage...");
   const lang = getCurrentLang();
@@ -1149,6 +1150,11 @@ export function syncJigsawState() {
  * Hydrates pieces into the board slots from saved state.
  */
 export function resumeJigsawState() {
+  if (!boardContainer) {
+    console.warn("[Jigsaw] boardContainer was undefined in resumeJigsawState. Attempting recovery...");
+    boardContainer = document.getElementById("memory-board");
+  }
+
   const state = gameManager.getState();
   const placedChunks = state.jigsaw?.placedChunks || [];
 
