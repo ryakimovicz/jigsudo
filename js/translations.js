@@ -564,6 +564,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1110_title: "Versión 1.1.10",
+    changelog_v1110_date: "08/04/2026",
+    changelog_v1110_item1: "Optimización del Generador: Mejora drástica en la velocidad de creación de puzzles diarios mediante la reutilización inteligente de tableros Sudoku.",
     changelog_v119_title: "Versión 1.1.9",
     changelog_v119_date: "08/04/2026",
     changelog_v119_item1: "Blindaje de Unicidad (Sopa de Números): El generador ahora valida que cada secuencia sea única en todas las variantes del puzzle, considerando también las celdas del Simon.",
@@ -1174,6 +1177,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1110_title: "Version 1.1.10",
+    changelog_v1110_date: "08/04/2026",
+    changelog_v1110_item1: "Generator Optimization: Drastic improvement in daily puzzle generation speed through smart board reuse logic.",
     changelog_v119_title: "Version 1.1.9",
     changelog_v119_date: "08/04/2026",
     changelog_v119_item1: "Uniqueness Shield (Number Search): The generator now validates that each sequence is unique across all variations, correctly accounting for Simon islands.",
