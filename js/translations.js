@@ -519,12 +519,12 @@ export const translations = {
     rank_level_prefix: "Nvl.",
 
     // Minigame Names for Profile (Spanish)
-    p_game_memory: "Juego de Memoria (1.0)",
-    p_game_jigsaw: "Rompecabezas (1.0)",
-    p_game_sudoku: "Sudoku (1.0)",
-    p_game_peaks: "Picos y Valles (1.0)",
-    p_game_search: "Sopa de Números (1.0)",
-    p_game_code: "El Código (1.0)",
+    p_game_memory: "Juego de Memoria",
+    p_game_jigsaw: "Rompecabezas",
+    p_game_sudoku: "Sudoku",
+    p_game_peaks: "Picos y Valles",
+    p_game_search: "Sopa de Números",
+    p_game_code: "El Código",
 
     // Support & Share
     share_text:
@@ -1053,12 +1053,12 @@ export const translations = {
     rank_level_prefix: "Lvl.",
 
     // Minigame Names for Profile
-    p_game_memory: "Memory (1.0)",
-    p_game_jigsaw: "Jigsaw (1.0)",
-    p_game_sudoku: "Sudoku (1.0)",
-    p_game_peaks: "Peaks & Valleys (1.0)",
-    p_game_search: "Number Search (1.0)",
-    p_game_code: "The Code (1.0)",
+    p_game_memory: "Memory Game",
+    p_game_jigsaw: "Jigsaw Puzzle",
+    p_game_sudoku: "Sudoku",
+    p_game_peaks: "Peaks & Valleys",
+    p_game_search: "Number Search",
+    p_game_code: "The Code",
 
     // Auth Modals & Toasts
     modal_change_name_title: "Change Username",
