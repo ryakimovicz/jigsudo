@@ -564,6 +564,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v119_title: "Versión 1.1.9",
+    changelog_v119_date: "08/04/2026",
+    changelog_v119_item1: "Blindaje de Unicidad (Sopa de Números): El generador ahora valida que cada secuencia sea única en todas las variantes del puzzle, considerando también las celdas del Simon.",
     changelog_v118_title: "Versión 1.1.8",
     changelog_v118_date: "08/04/2026",
     changelog_v118_item1: "Blindaje Administrativo: Los puntos ahora admiten ajustes que persisten incluso tras recálculos automáticos de progreso.",
@@ -1171,6 +1174,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v119_title: "Version 1.1.9",
+    changelog_v119_date: "08/04/2026",
+    changelog_v119_item1: "Uniqueness Shield (Number Search): The generator now validates that each sequence is unique across all variations, correctly accounting for Simon islands.",
     changelog_v118_title: "Version 1.1.8",
     changelog_v118_date: "08/04/2026",
     changelog_v118_item1: "Administrative Shield: Points now support adjustments that persist through automatic progress recalculations.",
