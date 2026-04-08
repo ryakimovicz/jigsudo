@@ -1,5 +1,5 @@
 /* Web Worker for Search Sequence Generation */
-import { generateSearchSequences } from "./search-gen.js?v=1.1.7";
+import { generateSearchSequences } from "./search-gen.js?v=1.1.8";
 
 self.onmessage = function (e) {
   const { board, seed, debugMode } = e.data;
