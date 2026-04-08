@@ -2064,8 +2064,6 @@ function handleTutorialNumberInput(num) {
   if (tutorialPencilMode) {
     toggleTutorialNote(selectedCell, num);
   } else {
-    // If clicking a number that is already there, clear it? Or just replace.
-    // Daily game: Replaces or Clears? Replaces.
     selectedCell.textContent = num;
     selectedCell.classList.add("user-filled");
     selectedCell.classList.remove("has-notes", "error");
@@ -2074,8 +2072,10 @@ function handleTutorialNumberInput(num) {
     const notesGrid = selectedCell.querySelector(".notes-grid");
     if (notesGrid) notesGrid.remove();
 
+    updateTutorialNoteVisibility(); // Check constraints for other cells
     updateTutorialKeypadHighlights();
     highlightSimilarTutorialCells(num);
+
     validateTutorialBoard();
   }
 }
@@ -2305,9 +2305,8 @@ function toggleTutorialNote(cell, num) {
   const existingVal = wasUserFilled ? cell.textContent.trim() : "";
   const hasNotes = cell.classList.contains("has-notes");
 
-  // Parity Change: capture main number transition BEFORE clearing content
   cell.classList.add("has-notes");
-  cell.classList.remove("user-filled", "error");
+  cell.classList.remove("error", "user-filled");
 
   let notesGrid = cell.querySelector(".notes-grid");
   if (!notesGrid) {
@@ -2322,94 +2321,37 @@ function toggleTutorialNote(cell, num) {
       notesGrid.appendChild(slot);
     }
     cell.appendChild(notesGrid);
-  }
 
-  // Conversion logic (High Fidelity Parity)
-  let convertedThisTurn = false;
-  if (wasUserFilled && existingVal && !hasNotes) {
-    const oldSlot = notesGrid.querySelector(`[data-note="${existingVal}"]`);
-    if (oldSlot) {
-      oldSlot.dataset.userActive = "true";
-      oldSlot.textContent = existingVal;
-      if (existingVal === num) convertedThisTurn = true;
+    // Conversion logic (High Fidelity Parity)
+    if (wasUserFilled && existingVal && !hasNotes) {
+      const oldSlot = notesGrid.querySelector(`[data-note="${existingVal}"]`);
+      if (oldSlot) {
+        oldSlot.dataset.userActive = "true";
+        oldSlot.textContent = existingVal;
+      }
     }
   }
 
   const slot = notesGrid.querySelector(`[data-note="${num}"]`);
   if (slot) {
-    if (convertedThisTurn) {
-      // Keep it active
+    const isVisible = !!slot.textContent;
+    const shouldBeVisible = !isVisible;
+    slot.dataset.userActive = shouldBeVisible ? "true" : "false";
+
+    if (shouldBeVisible) {
+      const coords = getTutorialCellCoordinates(cell);
+      const conflictCount = getTutorialConflictCount(coords, num);
+      slot.dataset.pinnedConflictCount =
+        conflictCount > 0 ? conflictCount : "0";
     } else {
-      const isVisible = !!slot.textContent;
-      const shouldBeVisible = !isVisible;
-      slot.dataset.userActive = shouldBeVisible ? "true" : "false";
-
-      if (shouldBeVisible) {
-        const coords = getTutorialCellCoordinates(cell);
-        const conflictCount = getTutorialConflictCount(coords, num);
-        slot.dataset.pinnedConflictCount =
-          conflictCount > 0 ? conflictCount : "0";
-      } else {
-        slot.dataset.pinnedConflictCount = "0";
-      }
-      slot.textContent = shouldBeVisible ? num : "";
-
-      // Fidelity Logic: Only promote if we REMOVED a note (matches Daily Jigsudo)
-      if (!shouldBeVisible) {
-        promoteTutorialSingleCandidatesGlobal();
-      }
+      slot.dataset.pinnedConflictCount = "0";
     }
+    slot.textContent = shouldBeVisible ? num : "";
   }
 
   updateTutorialKeypadHighlights();
-  // REMOVED updateTutorialNoteVisibility() to prevent premature suppression/promotion
 }
 
-let isTutorialPromoting = false;
-function promoteTutorialSingleCandidatesGlobal() {
-  if (isTutorialPromoting) return;
-  isTutorialPromoting = true;
-
-  const board = document.getElementById("tutorial-sudoku-grid");
-  if (!board) {
-    isTutorialPromoting = false;
-    return;
-  }
-
-  const cellsToPromote = [];
-  board.querySelectorAll(".mini-cell").forEach((cell) => {
-    if (!cell.classList.contains("has-notes")) return;
-
-    const notesGrid = cell.querySelector(".notes-grid");
-    if (!notesGrid) return;
-
-    const allNoteSlots = Array.from(notesGrid.querySelectorAll(".note-slot"));
-    const visibleNotes = allNoteSlots.filter((n) => n.textContent !== "");
-    const userActiveNotes = allNoteSlots.filter(
-      (n) => n.dataset.userActive === "true",
-    );
-
-    // Promote ONLY if it was reduced from multiple candidates to one by board logic.
-    if (visibleNotes.length === 1 && userActiveNotes.length > 1) {
-      cellsToPromote.push({
-        cell: cell,
-        num: visibleNotes[0].dataset.note,
-      });
-    }
-  });
-
-  cellsToPromote.forEach((action) => {
-    if (action.cell.classList.contains("has-notes")) {
-      selectTutorialCell(action.cell, true);
-      const wasPencil = tutorialPencilMode;
-      tutorialPencilMode = false;
-      handleTutorialNumberInput(action.num);
-      tutorialPencilMode = wasPencil;
-    }
-  });
-
-  isTutorialPromoting = false;
-}
 
 function getTutorialCellCoordinates(cell) {
   const slot = cell.closest(".sudoku-chunk-slot");
@@ -2481,7 +2423,6 @@ function updateTutorialNoteVisibility() {
             nSlot.textContent = num;
           } else {
             nSlot.textContent = "";
-            nSlot.dataset.pinnedConflictCount = "0";
           }
         } else {
           nSlot.dataset.pinnedConflictCount = "0";
@@ -2490,9 +2431,6 @@ function updateTutorialNoteVisibility() {
       });
     });
   });
-
-  // Fidelity Logic: Trigger Promotion after note visibility pass
-  promoteTutorialSingleCandidatesGlobal();
 }
 
 function validateTutorialBoard() {
