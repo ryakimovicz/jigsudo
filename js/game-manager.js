@@ -1228,6 +1228,7 @@ export class GameManager {
         history: {},
         lastPlayedDate: null,
         lastDecayCheck: null,
+        manualRPAdjustment: 0,
       };
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
     }
@@ -1239,6 +1240,8 @@ export class GameManager {
     if (!this.stats.stageWinsAccumulated) this.stats.stageWinsAccumulated = {};
     if (!this.stats.weekdayStatsAccumulated)
       this.stats.weekdayStatsAccumulated = {};
+    if (this.stats.manualRPAdjustment === undefined)
+      this.stats.manualRPAdjustment = 0;
 
     if (this.state && !this.state.meta.stageTimes)
       this.state.meta.stageTimes = {};
@@ -2310,6 +2313,13 @@ export class GameManager {
       console.warn("[Recalc] Failed to validate streak gap:", err);
       stats.currentStreak = 0;
     }
+
+    // --- ADMINISTRATIVE SHIELD: Apply manual adjustments (admin penalties/bonuses) ---
+    stats.currentRP = Number((stats.currentRP + (stats.manualRPAdjustment || 0)).toFixed(3));
+    stats.totalRP = stats.currentRP; // Sync root mirrored field
+    
+    if (stats.currentRP < 0) stats.currentRP = 0;
+    if (stats.totalRP < 0) stats.totalRP = 0;
   }
 
   _compareProgress(s1, s2) {
