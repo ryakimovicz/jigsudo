@@ -205,9 +205,11 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Escape -> Deselect
+  // Escape -> Deselect / Unlock
   if (key === "Escape") {
+    if (lockedNumber) unlockTutorialNumber();
     deselectTutorialCell();
+    highlightSimilarTutorialCells(null);
     return;
   }
 
@@ -2031,9 +2033,9 @@ function deselectTutorialCell() {
   if (selectedCell) {
     selectedCell.classList.remove("selected-cell");
     selectedCell = null;
-    updateTutorialKeypadHighlights();
-    highlightSimilarTutorialCells(null);
   }
+  updateTutorialKeypadHighlights();
+  highlightSimilarTutorialCells(null);
 }
 
 function handleTutorialNumberInput(num) {
