@@ -564,6 +564,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1111_title: "Versión 1.1.11",
+    changelog_v1111_date: "08/04/2026",
+    changelog_v1111_item1: "Control Total en Sudoku: Se ha eliminado la finalización automática de celdas con una sola nota para mayor control del jugador.",
+    changelog_v1111_item2: "Corrección en Deshacer: Las notas ocultas por conflictos ahora reaparecen correctamente al deshacer jugadas.",
     changelog_v1110_title: "Versión 1.1.10",
     changelog_v1110_date: "08/04/2026",
     changelog_v1110_item1: "Optimización del Generador: Mejora drástica en la velocidad de creación de puzzles diarios mediante la reutilización inteligente de tableros Sudoku.",
@@ -1177,6 +1181,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1111_title: "Version 1.1.11",
+    changelog_v1111_date: "08/04/2026",
+    changelog_v1111_item1: "Full Control in Sudoku: Removed automatic cell finalization for single-note candidates for better player control.",
+    changelog_v1111_item2: "Undo Fix: Notes hidden by conflicts now reappear correctly when undoing moves.",
     changelog_v1110_title: "Version 1.1.10",
     changelog_v1110_date: "08/04/2026",
     changelog_v1110_item1: "Generator Optimization: Drastic improvement in daily puzzle generation speed through smart board reuse logic.",
