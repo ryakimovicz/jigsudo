@@ -620,7 +620,10 @@ export function initHome() {
     }
   };
 
+  let rankingLoading = false;
   async function loadAndRenderAllRankings(force = false) {
+    if (rankingLoading) return;
+    rankingLoading = true;
     // Update Monthly Rank Label dynamically (at the start to avoid "Mes/Month" flash)
     const monthHeader = document.getElementById("ranking-month-header");
     if (monthHeader) {
@@ -662,6 +665,7 @@ export function initHome() {
       toggleHeaderSpinner(containerMonthly, false);
       toggleHeaderSpinner(containerAllTime, false);
       if (refreshBtn) refreshBtn.classList.remove("spinning");
+      rankingLoading = false;
     }
   }
 

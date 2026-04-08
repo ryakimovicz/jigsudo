@@ -13,6 +13,7 @@ import { getCurrentLang } from "./i18n.js?v=1.1.11";
 import { getCurrentUser } from "./auth.js?v=1.1.11";
 import { getRankData, SCORING } from "./ranks.js?v=1.1.11";
 import { gameManager } from "./game-manager.js?v=1.1.11";
+import { getDailySeed } from "./utils/random.js?v=1.1.11";
 
 const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -27,21 +28,22 @@ export async function fetchRankings(forceRefresh = false) {
     ? user.uid
     : localStorage.getItem("jigsudo_active_uid") || "guest";
 
+  const seedStr = getDailySeed().toString();
+  const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+
   if (!forceRefresh && cached) {
-    const { timestamp, data, userId } = JSON.parse(cached);
-    // Check TTL AND User Match
-    if (now - timestamp < CACHE_TTL && userId === currentUid) {
-      console.log("[Ranking] Using cached data (User verified)");
+    const { timestamp, data, userId, cachedToday } = JSON.parse(cached);
+    // Check TTL, User Match, AND Day Match
+    if (
+      now - timestamp < CACHE_TTL &&
+      userId === currentUid &&
+      cachedToday === today
+    ) {
+      console.log("[Ranking] Using cached data (User and Day verified)");
       return data;
     }
   }
 
-  console.log("[Ranking] Fetching fresh data from Firestore");
-  const { getUserRank } = await import("./db.js?v=1.1.11");
-
-  const { getDailySeed } = await import("./utils/random.js?v=1.1.11");
-  const seedStr = getDailySeed().toString();
-  const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
   const currentMonth = today.substring(0, 7);
 
   const rankings = {
@@ -49,7 +51,7 @@ export async function fetchRankings(forceRefresh = false) {
       "dailyRP",
       10,
       user,
-      getUserRank,
+      (await import("./db.js?v=1.1.11")).getUserRank,
       "lastDailyUpdate",
       today,
     ),
@@ -57,16 +59,26 @@ export async function fetchRankings(forceRefresh = false) {
       "monthlyRP",
       10,
       user,
-      getUserRank,
+      (await import("./db.js?v=1.1.11")).getUserRank,
       "lastMonthlyUpdate",
       currentMonth,
     ),
-    allTime: await getTopRankings("totalRP", 10, user, getUserRank),
+    allTime: await getTopRankings(
+      "totalRP",
+      10,
+      user,
+      (await import("./db.js?v=1.1.11")).getUserRank,
+    ),
   };
 
   localStorage.setItem(
     CACHE_KEY,
-    JSON.stringify({ timestamp: now, data: rankings, userId: currentUid }),
+    JSON.stringify({
+      timestamp: now,
+      data: rankings,
+      userId: currentUid,
+      cachedToday: today,
+    }),
   );
   return rankings;
 }
@@ -87,16 +99,22 @@ async function getTopRankings(
   };
 
   if (user) {
-    // 1. Check if user is in top 10
+    // 1. Check if user is in top 10 from DB data
+    const topEntry = top10.find((u) => u.id === user.uid);
     const inTop10 = top10.findIndex((u) => u.id === user.uid);
     
-    // UI Robustness: Use gameManager.stats (Source of truth) and apply instant reset if the period doesn't match
+    // UI Robustness: Use gameManager.stats (Source of truth)
     const stats = gameManager.stats;
     let userScore = stats[fieldName] || 0;
 
+    // Trust DB score over local if discrepancy exists while in Top 10
+    if (topEntry) {
+      userScore = Math.max(userScore, topEntry.score || 0);
+    }
+
     // If we have a filter (Daily/Monthly) and the local stats date doesn't match the target period,
     // it means the maintenance script hasn't run or we haven't played yet -> Show 0.
-    if (filterField && stats[filterField] !== filterValue) {
+    if (filterField && stats[filterField] !== filterValue && !topEntry) {
       userScore = 0;
     }
 
@@ -248,7 +266,8 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   });
 
   // Handle Personal Row (if separated)
-  if (personal && !personal.inTop && personal.rank > 10) {
+  // Handle Personal Row (Always show if not in top section)
+  if (personal && !personal.inTop) {
     newDataMap.set(personal.username + "_p", {
       entry: personal,
       index: 999,
@@ -361,7 +380,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   });
 
   // Personal
-  if (personal && !personal.inTop && personal.rank > 10) {
+  if (personal && !personal.inTop) {
     // Add Separator
     const sep = document.createElement("tr");
     sep.className = "ranking-separator";
@@ -521,7 +540,7 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
       `;
     });
 
-    if (personal && !personal.inTop && personal.rank > 10) {
+    if (personal && !personal.inTop) {
       const pRankData = getRankData(personal.totalRP || personal.score || 0); // fallback if personal doesn't have totalRP yet in this call
       const pRankName = t[pRankData.rank.nameKey] || pRankData.rank.nameKey;
       const pRankLevel = `${t.rank_level_prefix || "Nvl."} ${pRankData.level}`;
