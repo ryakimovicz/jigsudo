@@ -564,6 +564,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v118_title: "Versión 1.1.8",
+    changelog_v118_date: "08/04/2026",
+    changelog_v118_item1: "Blindaje Administrativo: Los puntos ahora admiten ajustes que persisten incluso tras recálculos automáticos de progreso.",
     changelog_v117_title: "Versión 1.1.7",
     changelog_v117_date: "08/04/2026",
     changelog_v117_item1: "Sistema de Presencia Estricta: La protección de rango ahora requiere empezar una partida para certificar actividad.",
@@ -1168,6 +1171,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v118_title: "Version 1.1.8",
+    changelog_v118_date: "08/04/2026",
+    changelog_v118_item1: "Administrative Shield: Points now support adjustments that persist through automatic progress recalculations.",
     changelog_v117_title: "Version 1.1.7",
     changelog_v117_date: "08/04/2026",
     changelog_v117_item1: "Strict Presence System: Rank protection now requires starting a game to certify activity for the day.",
