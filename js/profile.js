@@ -968,23 +968,24 @@ async function handleShareStats() {
   const card = document.getElementById("stats-social-card");
   if (!card) return;
 
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+
   // html2canvas is loaded via CDN in index.html, it should be global
   if (typeof html2canvas === "undefined") {
     console.error("html2canvas not loaded");
     const { showToast } = await import("./ui.js?v=1.1.11");
-    showToast("Error: html2canvas no está cargado ❌");
+    showToast(t.err_html2canvas || "Error: html2canvas no está cargado ❌");
     return;
   }
 
   try {
     const { showToast } = await import("./ui.js?v=1.1.11");
-    showToast("Generando imagen... ⏳", 2000);
+    showToast(t.toast_generating_image || "Generando imagen... ⏳", 2000);
 
     // Ensure everything is translated for the card (in case it was hidden)
     updateTexts();
 
-    const lang = getCurrentLang();
-    const t = translations[lang] || translations["es"];
     const user = getCurrentUser();
 
     // Determine Share URL (Direct profile if public)

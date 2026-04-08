@@ -358,21 +358,22 @@ async function handleShareVictory(stats) {
   const card = document.getElementById("victory-social-card");
   if (!card) return;
 
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+
   // 0. Check for html2canvas (Loaded via CDN in index.html)
   if (typeof window.html2canvas === "undefined") {
     console.error("html2canvas not loaded");
-    showToast("Error: html2canvas no está cargado ❌", 4000, "error");
+    showToast(t.err_html2canvas || "Error: html2canvas no está cargado ❌", 4000, "error");
     return;
   }
 
   try {
-    showToast("Generando imagen... ⏳", 2000);
+    showToast(t.toast_generating_image || "Generando imagen... ⏳", 2000);
 
     // Ensure everything is translated for the card
     updateTexts();
 
-    const lang = getCurrentLang();
-    const t = translations[lang] || translations["es"];
     const user = getCurrentUser();
 
     // 1. Populate Header
@@ -525,7 +526,9 @@ async function handleShareVictory(stats) {
     }, "image/png");
   } catch (err) {
     console.error("Failed to generate victory card:", err);
-    showToast("Error al generar la imagen ❌");
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang] || translations["es"];
+    showToast(t.err_generating_image || "Error al generar la imagen ❌");
   }
 }
 

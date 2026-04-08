@@ -2134,7 +2134,10 @@ export class GameManager {
       await this.forceCloudSave();
 
       const { showToast } = await import("./ui.js?v=1.1.11");
-      showToast("¡Progreso Guardado! 💾🏆");
+      const { getCurrentLang } = await import("./i18n.js?v=1.1.11");
+      const { translations } = await import("./translations.js?v=1.1.11");
+      const lang = getCurrentLang() || "es";
+      showToast(translations[lang]?.toast_progress_saved || "¡Progreso Guardado! 💾🏆");
       return sessionStats;
     } catch (err) {
       console.error("Error saving stats:", err);
