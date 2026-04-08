@@ -564,6 +564,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v117_title: "Versión 1.1.7",
+    changelog_v117_date: "08/04/2026",
+    changelog_v117_item1: "Sistema de Presencia Estricta: La protección de rango ahora requiere empezar una partida para certificar actividad.",
+    changelog_v117_item2: "Rachas Diarias Estrictas: Las rachas ahora vuelven a 0 si no se gana el puzzle del día (jugar ya no es suficiente para la racha).",
+    changelog_v117_item3: "Sincronización Inteligente: Los cambios administrativos se aplican silenciosamente sin interrumpir el flujo del juego.",
+    changelog_v117_item4: "Parche de seguridad en la lógica de recalculación de progreso histórico.",
     changelog_v116_title: "Versión 1.1.6",
     changelog_v116_date: "07/04/2026",
     changelog_v116_item1: "Corrección crítica: El modo historial ahora permite completar la etapa de Memoria y avanzar al Rompecabezas.",
@@ -1162,6 +1168,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v117_title: "Version 1.1.7",
+    changelog_v117_date: "08/04/2026",
+    changelog_v117_item1: "Strict Presence System: Rank protection now requires starting a game to certify activity for the day.",
+    changelog_v117_item2: "Strict Daily Streaks: Streaks now reset to 0 if the daily puzzle is not won (playing alone no longer saves the streak).",
+    changelog_v117_item3: "Smart Sync: Administrative changes (like decay) are now adopted silently without user prompts.",
+    changelog_v117_item4: "Security patch for progress recalculation logic.",
     changelog_v116_title: "Version 1.1.6",
     changelog_v116_date: "07/04/2026",
     changelog_v116_item1: "Critical fix: History mode now correctly progresses from Memory to Jigsaw stage.",
