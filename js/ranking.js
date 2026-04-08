@@ -1,5 +1,5 @@
 /* Ranking Module for Jigsudo */
-import { db } from "./firebase-config.js?v=1.1.5";
+import { db } from "./firebase-config.js?v=1.1.6";
 import {
   collection,
   query,
@@ -8,11 +8,11 @@ import {
   getDocs,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { translations } from "./translations.js?v=1.1.5";
-import { getCurrentLang } from "./i18n.js?v=1.1.5";
-import { getCurrentUser } from "./auth.js?v=1.1.5";
-import { getRankData, SCORING } from "./ranks.js?v=1.1.5";
-import { gameManager } from "./game-manager.js?v=1.1.5";
+import { translations } from "./translations.js?v=1.1.6";
+import { getCurrentLang } from "./i18n.js?v=1.1.6";
+import { getCurrentUser } from "./auth.js?v=1.1.6";
+import { getRankData, SCORING } from "./ranks.js?v=1.1.6";
+import { gameManager } from "./game-manager.js?v=1.1.6";
 
 const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -37,9 +37,9 @@ export async function fetchRankings(forceRefresh = false) {
   }
 
   console.log("[Ranking] Fetching fresh data from Firestore");
-  const { getUserRank } = await import("./db.js?v=1.1.5");
+  const { getUserRank } = await import("./db.js?v=1.1.6");
 
-  const { getDailySeed } = await import("./utils/random.js?v=1.1.5");
+  const { getDailySeed } = await import("./utils/random.js?v=1.1.6");
   const seedStr = getDailySeed().toString();
   const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
   const currentMonth = today.substring(0, 7);

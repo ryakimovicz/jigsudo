@@ -1,7 +1,7 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getJigsudoDateString } from "../js/utils/time.js?v=1.1.5"; // Uses Jigsudo offset handling
-import { getRankData } from "../js/ranks.js?v=1.1.5"; // Uses dynamic bounds for decay penalty
+import { getJigsudoDateString } from "../js/utils/time.js?v=1.1.6"; // Uses Jigsudo offset handling
+import { getRankData } from "../js/ranks.js?v=1.1.6"; // Uses dynamic bounds for decay penalty
 const MISSED_DAY_PENALTY = 10.0;
 
 async function runDecay() {
