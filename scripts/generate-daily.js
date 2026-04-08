@@ -73,267 +73,236 @@ async function generateSinglePuzzle(dateStr, seedInt) {
     // --- BUCLE PRINCIPAL ---
     while (!success) {
       attemptsGlobal++;
-      const currentSeed = baseSeed * 10000000 + attemptsGlobal;
+      const boardSeed = baseSeed * 100000 + attemptsGlobal;
 
-      // Generador aleatorio determinista
-      let localSeed = currentSeed;
-      const nextRnd = () => {
-        localSeed = (localSeed * 9301 + 49297) % 233280;
-        return localSeed / 233280;
-      };
-
-      // 1. Generar Sudoku
-      // Calcular día de la semana para la dificultad (0=Domingo, 6=Sábado)
+      // 1. Generar Sudoku (Pesado)
       const [y, m, d] = dateStr.split("-").map(Number);
       const targetDate = new Date(y, m - 1, d);
       const dayIndex = targetDate.getDay();
 
-      let gameData = generateDailyGame(currentSeed, dayIndex);
+      let gameData = generateDailyGame(boardSeed, dayIndex);
 
-      if (attemptsGlobal % 10 === 1)
-        process.stdout.write(`   > Attempt ${attemptsGlobal}: `);
+      if (attemptsGlobal % 1 === 0)
+        console.log(`\n🧩 [Sudoku Attempt ${attemptsGlobal}] Board Seed: ${boardSeed}`);
 
-      // 2. Definir Variantes
-      let variations = {
+      // 2. Definir Variantes (Fijas para este tablero)
+      let variationsBase = {
         0: { board: JSON.parse(JSON.stringify(gameData.solution)) },
         LR: { board: swapStacks(gameData.solution) },
         TB: { board: swapBands(gameData.solution) },
         HV: { board: swapBands(swapStacks(gameData.solution)) },
       };
 
-      let validTopology = true;
-      let allCandidates = [];
-      let globalForcedValues = new Set();
+      // Intentar múltiples segmentaciones por cada tablero
+      const maxSubAttempts = 100;
+      for (let subAttempt = 1; subAttempt <= maxSubAttempts; subAttempt++) {
+        let variations = JSON.parse(JSON.stringify(variationsBase));
+        let carvingSuccess = true;
+        let validTopology = true;
+        let allCandidates = [];
+        let globalForcedValues = new Set();
+        let tempSearchTargets = {};
 
-      // LIMPIAR CACHÉ
-      uniquenessCache.clear();
+        // Generador aleatorio determinista para la SUB-INTENTO
+        // Usamos una combinación de la semilla del tablero y el subIntento
+        let localSeed = boardSeed + subAttempt * 777;
+        const nextRnd = () => {
+          localSeed = (localSeed * 9301 + 49297) % 233280;
+          return localSeed / 233280;
+        };
 
-      // 3. Procesar cada variante
-      for (let key in variations) {
-        const { targetMap } = getAllTargets(variations[key].board);
-        variations[key].peaksValleys = targetMap;
+        if (subAttempt % 20 === 1)
+          process.stdout.write(`   > Sub-Attempt ${subAttempt}: `);
 
-        // B. Generar Cobertura "Survivor Greedy"
-        const rawPaths = generateSurvivorGreedyCoverage(
-          variations[key].board,
-          variations[key].peaksValleys,
-          nextRnd,
-        );
+        // LIMPIAR CACHÉ
+        uniquenessCache.clear();
 
-        // C. Segmentation Inteligente
-        let { snakes, orphans } = segmentPathsSmart(
-          rawPaths,
-          variations[key].board,
-          variations[key].peaksValleys,
-        );
+        // 3. Procesar cada variante
+        for (let key in variations) {
+          const { targetMap } = getAllTargets(variations[key].board);
+          variations[key].peaksValleys = targetMap;
 
-        // Islas naturales (aisladas por paredes)
-        let naturalIslands = getIslands(rawPaths, variations[key].peaksValleys);
-        let totalIslands = [...naturalIslands, ...orphans];
-
-        // Deduplicar islas
-        let uniqueIslandCoords = new Set();
-        let pendingIslands = [];
-        totalIslands.forEach((isl) => {
-          let k = `${isl.r},${isl.c}`;
-          if (!uniqueIslandCoords.has(k)) {
-            uniqueIslandCoords.add(k);
-            pendingIslands.push(isl);
-          }
-        });
-
-        // D. CLEANUP PHASE (El cambio clave)
-        // Intentar pegar las islas a las víboras existentes
-        const cleanupResult = cleanupIslands(
-          pendingIslands,
-          snakes,
-          variations[key].board,
-          variations[key].peaksValleys,
-        );
-
-        variations[key].snakes = cleanupResult.snakes;
-        let finalIslands = cleanupResult.islands;
-
-        variations[key].islands = finalIslands;
-
-        // REGLA: Máximo 4 celdas libres
-        if (finalIslands.length > 4) {
-          if (attemptsGlobal % 10 === 1)
-            process.stdout.write(
-              `Too many islands in [${key}] (${finalIslands.length}).\r`,
-            );
-          validTopology = false;
-          break;
-        }
-
-        // REGLA: Valores de islas únicos (no duplicados)
-        const islandValSet = new Set(
-          finalIslands.map((i) => variations[key].board[i.r][i.c]),
-        );
-        if (islandValSet.size < finalIslands.length) {
-          if (attemptsGlobal % 10 === 1)
-            process.stdout.write(
-              `Duplicate Island Values in [${key}]. Next.\r`,
-            );
-          validTopology = false;
-          break;
-        }
-
-        // --- CHEQUEO DE ADYACENCIA ---
-        if (hasAdjacency(finalIslands)) {
-          if (attemptsGlobal % 10 === 1)
-            process.stdout.write(`Adjacent Islands in [${key}]. Next.\r`);
-          validTopology = false;
-          break;
-        }
-
-        // Guardar valores forzados
-        finalIslands.forEach((isl) =>
-          globalForcedValues.add(variations[key].board[isl.r][isl.c]),
-        );
-
-        // E. Candidates
-        const candidates = new Set();
-        finalIslands.forEach((isl) =>
-          candidates.add(variations[key].board[isl.r][isl.c]),
-        );
-        variations[key].snakes.forEach((snake) => {
-          candidates.add(variations[key].board[snake[0].r][snake[0].c]);
-          candidates.add(
-            variations[key].board[snake[snake.length - 1].r][
-              snake[snake.length - 1].c
-            ],
+          const rawPaths = generateSurvivorGreedyCoverage(
+            variations[key].board,
+            variations[key].peaksValleys,
+            nextRnd,
           );
-        });
 
-        variations[key].candidates = candidates;
-        allCandidates.push(candidates);
-      }
+          let { snakes, orphans } = segmentPathsSmart(
+            rawPaths,
+            variations[key].board,
+            variations[key].peaksValleys,
+          );
 
-      if (!validTopology) continue;
+          let naturalIslands = getIslands(rawPaths, variations[key].peaksValleys);
+          let totalIslands = [...naturalIslands, ...orphans];
 
-      // --- CHEQUEO: VALORES FORZADOS COMPATIBLES ---
-      if (globalForcedValues.size > 4) {
-        continue;
-      }
+          let uniqueIslandCoords = new Set();
+          let pendingIslands = [];
+          totalIslands.forEach((isl) => {
+            let k = `${isl.r},${isl.c}`;
+            if (!uniqueIslandCoords.has(k)) {
+              uniqueIslandCoords.add(k);
+              pendingIslands.push(isl);
+            }
+          });
 
-      let forcedCompatible = true;
-      for (let forced of globalForcedValues) {
-        for (let candidates of allCandidates) {
-          if (!candidates.has(forced)) {
-            forcedCompatible = false;
+          const cleanupResult = cleanupIslands(
+            pendingIslands,
+            snakes,
+            variations[key].board,
+            variations[key].peaksValleys,
+          );
+
+          variations[key].snakes = cleanupResult.snakes;
+          let finalIslands = cleanupResult.islands;
+          variations[key].islands = finalIslands;
+
+          if (finalIslands.length > 4) {
+            validTopology = false;
             break;
           }
-        }
-        if (!forcedCompatible) break;
-      }
-      if (!forcedCompatible) continue;
 
-      // 4. Buscar Intersección
-      let commonValues = [...allCandidates[0]];
-      for (let i = 1; i < allCandidates.length; i++) {
-        commonValues = commonValues.filter((val) => allCandidates[i].has(val));
-      }
+          const islandValSet = new Set(
+            finalIslands.map((i) => variations[key].board[i.r][i.c]),
+          );
+          if (islandValSet.size < finalIslands.length) {
+            validTopology = false;
+            break;
+          }
 
-      let targets = Array.from(globalForcedValues);
-      let slotsNeeded = 4 - targets.length;
-      let potentialFillers = commonValues.filter(
-        (v) => !globalForcedValues.has(v),
-      );
+          if (hasAdjacency(finalIslands)) {
+            validTopology = false;
+            break;
+          }
 
-      if (potentialFillers.length < slotsNeeded) {
-        continue;
-      }
-
-      let fillers = [...potentialFillers];
-      for (let i = fillers.length - 1; i > 0; i--) {
-        const j = Math.floor(nextRnd() * (i + 1));
-        [fillers[i], fillers[j]] = [fillers[j], fillers[i]];
-      }
-      fillers = fillers.slice(0, slotsNeeded);
-
-      let finalTargets = [...targets, ...fillers];
-
-      console.log(
-        `\n     💎 Match! Targets: [${finalTargets.join(", ")}] (Forced: [${targets.join(", ")}])`,
-      );
-
-      let tempSearchTargets = {};
-      let carvingSuccess = true;
-
-      for (let key in variations) {
-        const res = applyCarving(
-          variations[key].snakes,
-          variations[key].islands,
-          variations[key].board,
-          finalTargets,
-        );
-
-        if (!res.success) {
-          console.error("Carve failed (topology or value mismatch).");
-          carvingSuccess = false;
-          break;
-        }
-
-        if (hasAdjacency(res.simonCoords)) {
-          console.log(`     ❌ Carve failed: Adjacency detected in [${key}].`);
-          carvingSuccess = false;
-          break;
-        }
-
-        if (res.simonCoords.length !== 4) {
-          if (attemptsGlobal % 10 === 1)
-            process.stdout.write(
-              `Carve result bad length (${res.simonCoords.length}) in [${key}].\r`,
-            );
-          carvingSuccess = false;
-          break;
-        }
-
-        // FINAL SECURITY CHECK: Global Multi-Variation Uniqueness
-        // Verify that in the FINAL board of this variation (snakes + Simon islands),
-        // each target sequence appears EXACTLY once.
-        const visibleCells = new Set();
-        // Add all snake cells
-        res.snakes.forEach((s) =>
-          s.forEach((p) => visibleCells.add(`${p.r},${p.c}`)),
-        );
-        // Add all simon cells
-        res.simonCoords.forEach((p) => visibleCells.add(`${p.r},${p.c}`));
-
-        for (let sIdx = 0; sIdx < res.snakes.length; sIdx++) {
-          const snake = res.snakes[sIdx];
-          const seqValues = snake.map((p) => variations[key].board[p.r][p.c]);
-          const occ = countVisibleOccurrences(
-            variations[key].board,
-            visibleCells,
-            seqValues,
+          finalIslands.forEach((isl) =>
+            globalForcedValues.add(variations[key].board[isl.r][isl.c]),
           );
 
-          if (occ > 1) {
-            console.log(
-              `     ❌ Variation [${key}] check FAILED: Duplicate sequence [${seqValues.join("-")}] found in composite. Retrying...`,
+          const candidates = new Set();
+          finalIslands.forEach((isl) =>
+            candidates.add(variations[key].board[isl.r][isl.c]),
+          );
+          variations[key].snakes.forEach((snake) => {
+            candidates.add(variations[key].board[snake[0].r][snake[0].c]);
+            candidates.add(
+              variations[key].board[snake[snake.length - 1].r][
+                snake[snake.length - 1].c
+              ],
             );
+          });
+
+          variations[key].candidates = candidates;
+          allCandidates.push(candidates);
+        }
+
+        if (!validTopology) continue;
+
+        if (globalForcedValues.size > 4) continue;
+
+        let forcedCompatible = true;
+        for (let forced of globalForcedValues) {
+          for (let candSet of allCandidates) {
+            if (!candSet.has(forced)) {
+              forcedCompatible = false;
+              break;
+            }
+          }
+          if (!forcedCompatible) break;
+        }
+        if (!forcedCompatible) continue;
+
+        let commonValues = [...allCandidates[0]];
+        for (let i = 1; i < allCandidates.length; i++) {
+          commonValues = commonValues.filter((val) => allCandidates[i].has(val));
+        }
+
+        let targetsSet = Array.from(globalForcedValues);
+        let slotsNeeded = 4 - targetsSet.length;
+        let potentialFillers = commonValues.filter(
+          (v) => !globalForcedValues.has(v),
+        );
+
+        if (potentialFillers.length < slotsNeeded) continue;
+
+        let fillersList = [...potentialFillers];
+        for (let i = fillersList.length - 1; i > 0; i--) {
+          const j = Math.floor(nextRnd() * (i + 1));
+          [fillersList[i], fillersList[j]] = [fillersList[j], fillersList[i]];
+        }
+        fillersList = fillersList.slice(0, slotsNeeded);
+
+        let finalTargetsValues = [...targetsSet, ...fillersList];
+
+        for (let key in variations) {
+          const res = applyCarving(
+            variations[key].snakes,
+            variations[key].islands,
+            variations[key].board,
+            finalTargetsValues,
+          );
+
+          if (!res.success) {
             carvingSuccess = false;
             break;
           }
+
+          if (hasAdjacency(res.simonCoords)) {
+            carvingSuccess = false;
+            break;
+          }
+
+          if (res.simonCoords.length !== 4) {
+            carvingSuccess = false;
+            break;
+          }
+
+          // FINAL SECURITY CHECK: Global Multi-Variation Uniqueness
+          // Verify that in the FINAL board of this variation (snakes + Simon islands),
+          // each target sequence appears EXACTLY once.
+          const visibleCells = new Set();
+          res.snakes.forEach((s) =>
+            s.forEach((p) => visibleCells.add(`${p.r},${p.c}`)),
+          );
+          res.simonCoords.forEach((p) => visibleCells.add(`${p.r},${p.c}`));
+
+          for (let sIdx = 0; sIdx < res.snakes.length; sIdx++) {
+            const snake = res.snakes[sIdx];
+            const seqValues = snake.map((p) => variations[key].board[p.r][p.c]);
+            const occ = countVisibleOccurrences(
+              variations[key].board,
+              visibleCells,
+              seqValues,
+            );
+
+            if (occ > 1) {
+              carvingSuccess = false;
+              break;
+            }
+          }
+
+          if (!carvingSuccess) break;
+
+          tempSearchTargets[key] = {
+            targets: res.snakes,
+            simon: res.simonCoords,
+          };
         }
 
-        if (!carvingSuccess) break;
-
-        tempSearchTargets[key] = {
-          targets: res.snakes,
-          simon: res.simonCoords,
-        };
-      }
-
-      if (carvingSuccess) {
-        finalSearchTargets = tempSearchTargets;
-        finalSimonValues = finalTargets;
-        finalGameData = gameData;
-        finalCodeSequence = generateCodeSequence(finalTargets, nextRnd);
-        finalGenerationSeed = currentSeed;
-        success = true;
+        if (carvingSuccess) {
+          console.log(
+            `\n     💎 Match Found on Board Attempt ${attemptsGlobal}, Sub-Attempt ${subAttempt}!`,
+          );
+          console.log(`     Targets: [${finalTargetsValues.join(", ")}]`);
+          finalSearchTargets = tempSearchTargets;
+          finalSimonValues = finalTargetsValues;
+          finalGameData = gameData;
+          finalCodeSequence = generateCodeSequence(finalTargetsValues, nextRnd);
+          finalGenerationSeed = boardSeed;
+          success = true;
+          break; // Salir del bucle de subIntentos
+        }
       }
     }
 
