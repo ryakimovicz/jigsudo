@@ -162,6 +162,12 @@ export const translations = {
     menu_account: "Cuenta",
     header_account_label: "Menú de Cuenta",
     settings_appearance: "Apariencia",
+    // Sidebar
+    sidebar_menu: "Menú",
+    sidebar_home: "Inicio",
+    sidebar_history: "Historial",
+    sidebar_how_to: "Guía",
+    sidebar_changelog: "Cambios",
     // New Keys
     theme_light: "Claro",
     theme_auto: "Auto",
@@ -838,6 +844,12 @@ export const translations = {
     menu_account: "Account",
     header_account_label: "Account Menu",
     settings_appearance: "Appearance",
+    // Sidebar
+    sidebar_menu: "Menu",
+    sidebar_home: "Home",
+    sidebar_history: "History",
+    sidebar_how_to: "Guide",
+    sidebar_changelog: "Updates",
     settings_gameplay: "Gameplay",
     // New Keys
     theme_light: "Light",
