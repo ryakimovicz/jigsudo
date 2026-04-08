@@ -297,7 +297,7 @@ window.shareApp = async () => {
   const shareData = {
     title: "Jigsudo",
     text: t.share_msg || "¡Desafía tu mente con Jigsudo!",
-    url: window.location.origin,
+    url: "https://jigsudo.com",
   };
 
   try {

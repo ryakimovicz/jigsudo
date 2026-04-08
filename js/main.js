@@ -468,7 +468,7 @@ function attachAuthListeners() {
     const shareData = {
       title: "Jigsudo",
       text: t.share_text,
-      url: window.location.href, // Or hardcoded 'https://jigsudo.com'
+      url: "https://jigsudo.com",
     };
 
     try {
