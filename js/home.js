@@ -1,18 +1,18 @@
 /* Main Menu Logic */
-import { translations } from "./translations.js?v=1.1.9";
-import { getCurrentLang } from "./i18n.js?v=1.1.9";
-import { showProfile } from "./profile.js?v=1.1.9";
-import { getDailySeed } from "./utils/random.js?v=1.1.9";
-import { gameManager } from "./game-manager.js?v=1.1.9";
-import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js?v=1.1.9";
-import { getCurrentUser } from "./auth.js?v=1.1.9";
-import { CONFIG } from "./config.js?v=1.1.9";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.1.9";
-import { router } from "./router.js?v=1.1.9";
-import { isPuzzleAvailable } from "./history.js?v=1.1.9";
-import { showAlertModal } from "./ui.js?v=1.1.9";
-import { getJigsudoDate } from "./utils/time.js?v=1.1.9";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.9";
+import { translations } from "./translations.js?v=1.1.10";
+import { getCurrentLang } from "./i18n.js?v=1.1.10";
+import { showProfile } from "./profile.js?v=1.1.10";
+import { getDailySeed } from "./utils/random.js?v=1.1.10";
+import { gameManager } from "./game-manager.js?v=1.1.10";
+import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js?v=1.1.10";
+import { getCurrentUser } from "./auth.js?v=1.1.10";
+import { CONFIG } from "./config.js?v=1.1.10";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.1.10";
+import { router } from "./router.js?v=1.1.10";
+import { isPuzzleAvailable } from "./history.js?v=1.1.10";
+import { showAlertModal } from "./ui.js?v=1.1.10";
+import { getJigsudoDate } from "./utils/time.js?v=1.1.10";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.10";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -235,8 +235,8 @@ export function initHome() {
       localStorage.setItem("jigsudo_skip_clear_confirm", shouldSkip ? "true" : "false");
 
       // Sync to cloud if possible
-      const { getCurrentUser } = await import("./auth.js?v=1.1.9");
-      const { updateUserPreference } = await import("./db.js?v=1.1.9");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.10");
+      const { updateUserPreference } = await import("./db.js?v=1.1.10");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
         // DB key: confirmClear (true = Ask, false = Skip)
@@ -475,7 +475,7 @@ export function initHome() {
           stageTimes: todayStats.stageTimes || {},
         };
 
-        const { showVictorySummary } = await import("./ui.js?v=1.1.9");
+        const { showVictorySummary } = await import("./ui.js?v=1.1.10");
         showVictorySummary(sessionStats, true);
       }
     } catch (e) {
@@ -591,7 +591,7 @@ export function initHome() {
   if (navHome) {
     navHome.addEventListener("click", async () => {
       // Use Router instead of reload to preserve cache and go to canonical #home
-      const { router } = await import("./router.js?v=1.1.9");
+      const { router } = await import("./router.js?v=1.1.10");
       router.navigateTo("#home");
     });
   }
@@ -850,7 +850,7 @@ export async function startDailyGame() {
     // 3. Load Memory/Stage logic
     const state = gameManager.getState();
     const currentStage = state.progress.currentStage || "memory";
-    const module = await import("./memory.js?v=1.1.9");
+    const module = await import("./memory.js?v=1.1.10");
 
     if (currentStage === "memory") {
       module.initMemoryGame();

@@ -1,9 +1,9 @@
 /* El Código (The Code) Logic */
-import { gameManager } from "./game-manager.js?v=1.1.9";
-import { translations } from "./translations.js?v=1.1.9";
-import { getCurrentLang } from "./i18n.js?v=1.1.9";
-import { getDailySeed } from "./utils/random.js?v=1.1.9";
-import { stopTimer } from "./timer.js?v=1.1.9";
+import { gameManager } from "./game-manager.js?v=1.1.10";
+import { translations } from "./translations.js?v=1.1.10";
+import { getCurrentLang } from "./i18n.js?v=1.1.10";
+import { getDailySeed } from "./utils/random.js?v=1.1.10";
+import { stopTimer } from "./timer.js?v=1.1.10";
 
 let sequence = []; // The full 5-digit code
 let currentLevel = 3; // Starts at 3
@@ -599,7 +599,7 @@ async function finalizeVictory() {
 
   // Show Summary after a small delay to let the animation sink in
   setTimeout(async () => {
-    const { showVictorySummary } = await import("./ui.js?v=1.1.9");
+    const { showVictorySummary } = await import("./ui.js?v=1.1.10");
     showVictorySummary(sessionStats, false);
   }, 2000);
 }
