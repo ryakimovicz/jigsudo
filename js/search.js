@@ -1,10 +1,10 @@
 /* Search Logic (Sopa de Números) */
-import { gameManager } from "./game-manager.js?v=1.1.14";
-import { translations } from "./translations.js?v=1.1.14";
-import { getCurrentLang } from "./i18n.js?v=1.1.14";
-import { isPeakOrValley, getNeighbors } from "./peaks-logic.js?v=1.1.14";
-import { initCode } from "./code.js?v=1.1.14";
-import { resetUI } from "./memory.js?v=1.1.14";
+import { gameManager } from "./game-manager.js?v=1.1.15";
+import { translations } from "./translations.js?v=1.1.15";
+import { getCurrentLang } from "./i18n.js?v=1.1.15";
+import { isPeakOrValley, getNeighbors } from "./peaks-logic.js?v=1.1.15";
+import { initCode } from "./code.js?v=1.1.15";
+import { resetUI } from "./memory.js?v=1.1.15";
 
 let isSelecting = false;
 let currentPath = []; // Array of {r, c}
@@ -507,8 +507,8 @@ export async function transitionToSearch() {
   }
 
   // 7. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.14");
-  const { resumePeaksState } = await import("./peaks.js?v=1.1.14");
+  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.15");
+  const { resumePeaksState } = await import("./peaks.js?v=1.1.15");
   resumeSudokuState();
   resumePeaksState();
 }
@@ -590,9 +590,9 @@ export async function transitionToCode() {
   }
 
   // 6. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.14");
-  const { resumePeaksState } = await import("./peaks.js?v=1.1.14");
-  const { resumeCodeState } = await import("./code.js?v=1.1.14");
+  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.15");
+  const { resumePeaksState } = await import("./peaks.js?v=1.1.15");
+  const { resumeCodeState } = await import("./code.js?v=1.1.15");
 
   await resumeSudokuState();
   await resumePeaksState();
