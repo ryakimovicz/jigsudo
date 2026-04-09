@@ -194,7 +194,7 @@ export function initAuth() {
           console.log("[Auth] Session initialization complete. Lock released.");
           
           // v1.5.2: Proactive Maintenance Check for authenticated users
-          const user = firebase.auth().currentUser;
+          const user = auth.currentUser;
           if (user && !user.isAnonymous) {
              gameManager.checkMaintenance();
           }
