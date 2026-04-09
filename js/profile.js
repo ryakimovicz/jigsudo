@@ -410,7 +410,8 @@ export async function updateProfileData(targetUsername = activeProfileName) {
       }
     }
 
-    renderProfileStats(localStats);
+    // Render own stats from GameManager source of truth to avoid wipe limbo
+    renderProfileStats(gameManager.stats || localStats);
   }
 }
 

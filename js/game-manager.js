@@ -837,7 +837,9 @@ export class GameManager {
     localStorage.removeItem("jigsudo_active_uid");
     localStorage.removeItem("jigsudo_active_username");
     localStorage.removeItem("jigsudo_ranking_cache_v3");
-    this.stats = null;
+    
+    // Safety: Reset to default stats instead of null to prevent downstream crashes
+    this.stats = this._getDefaultStats();
 
     // Pattern-based removals (clear private state/history/toggles, preserve settings)
     const keys = Object.keys(localStorage);
@@ -1228,26 +1230,7 @@ export class GameManager {
 
     // Initialize stats if null or missing critical fields
     if (!this.stats) {
-      this.stats = {
-        played: 0,
-        currentStreak: 0,
-        maxStreak: 0,
-        currentRP: 0,
-        dailyRP: 0,
-        monthlyRP: 0,
-        bestScore: 0,
-        bestTime: null,
-        totalTimeAccumulated: 0,
-        totalScoreAccumulated: 0,
-        totalPeaksErrorsAccumulated: 0,
-        stageTimesAccumulated: {},
-        stageWinsAccumulated: {},
-        weekdayStatsAccumulated: {},
-        history: {},
-        lastPlayedDate: null,
-        lastDecayCheck: null,
-        manualRPAdjustment: 0,
-      };
+      this.stats = this._getDefaultStats();
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
     }
 
@@ -1542,9 +1525,10 @@ export class GameManager {
         const hasDateKeys = (obj) => obj && Object.keys(obj).some(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
         const localHasHistory = this.stats && this.stats.history && hasDateKeys(this.stats.history);
         const remoteHasHistory = remoteStats.history && hasDateKeys(remoteStats.history);
+        const isEmpty = !remoteHasHistory;
 
-        if (localHasHistory && !remoteHasHistory && !this.isWiping && !this._isRestoring) {
-          console.warn("[Sync] Cloud stats are EMPTY but local has history. Protection triggered.");
+        if (localHasHistory && isEmpty && !this.isWiping) {
+          // Normal flow restoration: Pushing local stats to cloud to fix accidental wipe.
           const { getCurrentUser } = await import("./auth.js?v=1.1.19");
           const user = getCurrentUser();
           if (user && !user.isAnonymous) {
@@ -1558,7 +1542,7 @@ export class GameManager {
               setTimeout(() => { this._isRestoring = false; }, 2000);
             }
           }
-          return; // STOP: Do not adopt empty stats
+          return; // STOP: Do not adopt empty stats unless wiping
         }
 
         console.log(
@@ -2429,6 +2413,31 @@ export class GameManager {
     }
 
     return true;
+  }
+
+  _getDefaultStats() {
+    return {
+      totalPlayed: 0,
+      currentStreak: 0,
+      maxStreak: 0,
+      currentRP: 0,
+      totalRP: 0,
+      dailyRP: 0,
+      monthlyRP: 0,
+      bestScore: 0,
+      bestTime: null,
+      totalTimeAccumulated: 0,
+      totalScoreAccumulated: 0,
+      totalPeaksErrorsAccumulated: 0,
+      stageTimesAccumulated: {},
+      stageWinsAccumulated: {},
+      weekdayStatsAccumulated: {},
+      history: {},
+      lastPlayedDate: null,
+      lastDecayCheck: null,
+      manualRPAdjustment: 0,
+      integrityChecked: "1.1.19"
+    };
   }
 }
 export const gameManager = new GameManager();

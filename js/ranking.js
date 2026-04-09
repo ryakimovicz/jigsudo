@@ -170,7 +170,7 @@ async function getTopRankings(
 
     // If we have a filter (Daily/Monthly) and the local stats date doesn't match the target period,
     // it means the maintenance script hasn't run or we haven't played yet -> Show 0.
-    if (filterField && stats[filterField] !== filterValue && !topEntry) {
+    if (filterField && stats && stats[filterField] !== filterValue && !topEntry) {
       userScore = 0;
     }
 
