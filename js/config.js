@@ -1,6 +1,6 @@
 export const CONFIG = {
-  version: "v1.1.16", // Major.Minor.Patch
-  fechaUpdate: "2026-04-08",
+  version: "v1.1.17", // Major.Minor.Patch
+  fechaUpdate: "2026-04-09",
   autor: "Román Yakimovicz",
   debugMode: false, // Toggle to true to see logs
   betaMode: false, // Toggle to true to enable "Ayuda" button
