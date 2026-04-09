@@ -210,7 +210,7 @@ async function getTopRankings(
       let actualRank = "-";
       // We can only fetch real rank if we have a full verified user or we are brave
       if (user && user.emailVerified) {
-        actualRank = await getUserRankFn(fieldName, userScore, true, filterField, filterValue);
+        actualRank = await getUserRankFn(fieldName, userScore, true, filterField, filterValue) || "-";
       }
 
       result.personal = {
@@ -412,7 +412,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     // Safety check for entry values
     const safeUsername = entry.username || "Anónimo";
     const safeScore = scoreFormat.format(entry.score || 0);
-    const safeRank = isPersonal ? `#${entry.rank}` : medal || index + 1;
+    const safeRank = isPersonal ? `${entry.rank}` : medal || index + 1;
 
     // Rank details for each user
     const rankData = getRankData(entry.totalRP || 0);
@@ -636,7 +636,7 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
           <td colspan="3">...</td>
         </tr>
         <tr class="ranking-row current-user-row personal-rank-row" data-uid="${(personal.id || personal.username) + "_p"}">
-          <td class="rank-col">#${personal.rank}</td>
+          <td class="rank-col">${personal.rank}</td>
           <td class="user-col">
             <div class="user-info-group">
               <span class="username-text">${personal.username} ${t.ranking_you || "(Tú)"}</span>

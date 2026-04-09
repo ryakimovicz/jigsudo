@@ -1372,8 +1372,8 @@ export class GameManager {
     } else if (!lastCheck) {
       // NEW USER: Fundamental initialization of date markers
       console.log("[Decay] Initializing date markers for new user.");
-      stats.lastDailyUpdate = today;
-      stats.lastMonthlyUpdate = currentMonth;
+      // We explicitly DO NOT set lastDailyUpdate / lastMonthlyUpdate here. 
+      // They should only be set when the user actively clicks "EMPEZAR".
       stats.lastDecayCheck = today;
       changed = true;
     }
