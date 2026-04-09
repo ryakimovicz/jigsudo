@@ -239,26 +239,16 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       const nowDoc = getJigsudoDateString();
       const nowMonth = getJigsudoYearMonth();
 
-      // v1.2.19: SURGICAL UPDATE (Include Record and Rank)
+      // v1.3.4: CLIENT NO LONGER OVERWRITES MONTHLY/TOTAL RP.
+      // These are managed exclusively by the Cloud Function via atomic increments.
       updateData["stats.dailyRP"] = Math.max(0, s.dailyRP || 0);
-      updateData["stats.monthlyRP"] = Math.max(0, s.monthlyRP || 0);
-      updateData["stats.totalRP"] = Math.max(0, s.totalRP || 0);
-      updateData["stats.currentRP"] = Math.max(0, s.currentRP || 0);
       updateData["stats.bestScore"] = Math.max(0, s.bestScore || 0);
       updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate || nowDoc;
-      updateData["stats.lastMonthlyUpdate"] = s.lastMonthlyUpdate || nowMonth;
       updateData["stats.lastLocalUpdate"] = Date.now();
-      
-      // Baselines (New in 1.2.16)
-      updateData["stats.monthlyRP_baseline"] = s.monthlyRP_baseline || 0;
-      updateData["stats.totalRP_baseline"] = s.totalRP_baseline || 0;
       
       // Root level fields (Indexed for Ranking queries)
       updateData.dailyRP = Math.max(0, s.dailyRP || 0);
-      updateData.monthlyRP = Math.max(0, s.monthlyRP || 0);
-      updateData.totalRP = Math.max(0, s.totalRP || 0);
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
-      updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
 
       // v1.2.17: Sync Verification bit ONLY if Auth confirms it.
       if (currentUser && currentUser.emailVerified) {
@@ -286,15 +276,9 @@ export async function saveUserStats(userId, statsData, username = null, metadata
         const initialData = { ...updateData };
         initialData.stats = {
           dailyRP: updateData.dailyRP,
-          monthlyRP: updateData.monthlyRP,
-          totalRP: updateData.totalRP,
-          currentRP: updateData["stats.currentRP"],
           bestScore: updateData["stats.bestScore"],
           lastDailyUpdate: updateData.lastDailyUpdate,
-          lastMonthlyUpdate: updateData.lastMonthlyUpdate,
-          lastLocalUpdate: Date.now(),
-          monthlyRP_baseline: updateData["stats.monthlyRP_baseline"],
-          totalRP_baseline: updateData["stats.totalRP_baseline"]
+          lastLocalUpdate: Date.now()
         };
         // Remove dot-notation keys for the clean create
         Object.keys(initialData).forEach(k => { if (k.includes(".")) delete initialData[k]; });

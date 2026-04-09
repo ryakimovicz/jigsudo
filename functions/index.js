@@ -59,11 +59,9 @@ exports.startJigsudoSession = onCall(async (request) => {
       completed: false
     });
 
-    console.log(`[Referee] Session started for ${uid} on ${today}`);
     return { status: "started", startTime: startTime };
   } catch (error) {
-    console.error("Error starting session:", error);
-    throw new HttpsError("internal", "Failed to start session.");
+    throw new HttpsError("internal", error.message);
   }
 });
 
@@ -72,10 +70,14 @@ exports.startJigsudoSession = onCall(async (request) => {
  */
 exports.submitDailyWin = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Must be logged in.");
+    throw new HttpsError("unauthenticated", "Authentication required.");
   }
 
-  const { stageTimes, peaksErrors, seed } = request.data;
+  const { seed, peaksErrors, stageTimes } = request.data;
+  if (!seed || typeof peaksErrors !== "number" || !stageTimes) {
+    throw new HttpsError("invalid-argument", "Missing win data.");
+  }
+
   const uid = request.auth.uid;
   const today = getJigsudoDateString();
   const now = Date.now();
@@ -120,11 +122,13 @@ exports.submitDailyWin = onCall(async (request) => {
   const userData = userSnap.data() || {};
   const stats = userData.stats || {};
 
+  const lastUpdate = userData.lastDailyUpdate || "";
+  const lastMonth = userData.lastMonthlyUpdate || "";
+  const nowMonth = today.substring(0, 7); // YYYY-MM
+  const isNewMonth = lastMonth !== nowMonth;
+
   // Streak Calculation
   let newStreak = 1;
-  const lastUpdate = userData.lastDailyUpdate || "";
-  
-  // Helper to get yesterday
   const d = new Date(today + "T12:00:00Z");
   d.setUTCDate(d.getUTCDate() - 1);
   const yesterday = d.toISOString().split("T")[0];
@@ -141,25 +145,31 @@ exports.submitDailyWin = onCall(async (request) => {
   const batch = db.batch();
 
   // Root fields maintenance + Self-healing (isPublic and isVerified)
-  batch.set(userRef, {
+  const rootUpdate = {
     totalRP: admin.firestore.FieldValue.increment(finalScore),
-    monthlyRP: admin.firestore.FieldValue.increment(finalScore),
+    monthlyRP: isNewMonth ? finalScore : admin.firestore.FieldValue.increment(finalScore),
     dailyRP: finalScore,
     lastDailyUpdate: today,
+    lastMonthlyUpdate: nowMonth,
     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
     isVerified: !!request.auth.token.email_verified,
     isPublic: userData.isPublic !== false // Preserve or default to true
-  }, { merge: true });
+  };
+
+  batch.set(userRef, rootUpdate, { merge: true });
 
   // Stats nested update (Dot notation for surgical precision)
   batch.update(userRef, {
-    "stats.currentRP": admin.firestore.FieldValue.increment(finalScore),
-    "stats.monthlyRP": admin.firestore.FieldValue.increment(finalScore),
+    "stats.dailyRP": finalScore,
+    "stats.monthlyRP": isNewMonth ? finalScore : admin.firestore.FieldValue.increment(finalScore),
     "stats.totalRP": admin.firestore.FieldValue.increment(finalScore),
     "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalScore),
+    "stats.currentRP": finalScore,
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,
+    "stats.lastDailyUpdate": today,
+    "stats.lastMonthlyUpdate": nowMonth,
     [`stats.history.${today}`]: {
         status: "won",
         score: finalScore,
@@ -198,20 +208,8 @@ exports.checkUsernameAvailability = onCall(async (request) => {
 
   const lookName = username.toLowerCase();
   const usersRef = db.collection("users");
-  
-  try {
-    // Search by the normalized lowercase index
-    const snapshot = await usersRef.where("username_lc", "==", lookName).limit(1).get();
-    
-    // Fallback: Check exact case match (Legacy)
-    if (snapshot.empty) {
-      const snap2 = await usersRef.where("username", "==", username).limit(1).get();
-      return { available: snap2.empty };
-    }
+  const q = usersRef.where("username_lc", "==", lookName).limit(1);
+  const snap = await q.get();
 
-    return { available: snapshot.empty };
-  } catch (error) {
-    console.error("Error checking username availability:", error);
-    throw new HttpsError("internal", "Availability check failed.");
-  }
+  return { available: snap.empty };
 });
