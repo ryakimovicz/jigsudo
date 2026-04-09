@@ -218,23 +218,20 @@ export async function registerUser(email, password, username) {
   try {
     const { checkUsernameAvailability, saveUserStats } =
       await import("./db.js?v=1.1.19");
+    
+    // 1. Check availability BEFORE creating Auth user to prevent duplicates
+    const isAvailable = await checkUsernameAvailability(username);
+    if (!isAvailable) {
+      const t = translations[getCurrentLang()] || translations["es"];
+      return { success: false, error: t.err_user_exists };
+    }
+
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
       password,
     );
     const user = userCredential.user;
-
-    const isAvailable = await checkUsernameAvailability(username);
-    if (!isAvailable) {
-      try {
-        await deleteUser(user);
-      } catch (rollbackError) {
-        console.error("Rollback failed:", rollbackError);
-      }
-      const t = translations[getCurrentLang()] || translations["es"];
-      return { success: false, error: t.err_user_exists };
-    }
 
     await updateProfile(user, { displayName: username });
     updateUIForLogin(user);

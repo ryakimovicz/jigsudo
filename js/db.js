@@ -159,7 +159,9 @@ export async function checkUsernameAvailability(
     return true;
   } catch (error) {
     console.error("[DB] Availability check failed:", error);
-    return true; // Fail open to avoid blocking UI, but ideally would handle better
+    // FAIL CLOSED: If we can't verify availability due to network/index errors, 
+    // we must block registration to prevent potential duplicates.
+    return false; 
   }
 }
 
