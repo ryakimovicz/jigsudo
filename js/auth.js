@@ -182,6 +182,7 @@ export function initAuth() {
           console.log(`[Auth] Routing to stage: ${currentStage}`);
           const memoryModule = await import("./memory.js?v=1.1.19");
           memoryModule.resumeToStage(currentStage);
+          gameManager.ensureSessionStarted();
         }
       } catch (err) {
         console.error("[Auth] Error during sync phase:", err);
@@ -508,17 +509,30 @@ export async function deleteUserAccount(currentPassword) {
 
   try {
     const { wipeUserData } = await import("./db.js?v=1.1.19");
+    const { clearRankingCache } = await import("./ranking.js?v=1.1.19");
+    
+    // 1. Delete Firestore Data WHILE we are still authenticated (to have permissions)
     await wipeUserData(user.uid);
+    
+    // 2. Clear local ranking cache to hide the user immediately
+    clearRankingCache();
   } catch (e) {
     console.error("Wipe data failed, proceeding to delete account anyway:", e);
   }
 
   try {
+    // 3. Delete the Auth User
     await deleteUser(user);
-    // CRITICAL: Wipe local data after account deletion so the resulting guest session starts clean.
+    
+    // 4. Wipe local game data so the resulting guest session starts clean.
     await gameManager.clearAllData();
+    
+    // 5. Force sign out cleanup just in case
+    await signOut(auth);
+
     return { success: true };
   } catch (error) {
+    gameManager.isWiping = false;
     return { success: false, error: translateAuthError(error.code) };
   }
 }

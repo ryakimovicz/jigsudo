@@ -119,6 +119,11 @@ export class GameManager {
       if (activeUid && !this.state.meta.userId) {
         this.state.meta.userId = activeUid;
       }
+      
+      // NEW: Anchor session on resume if already logged in
+      if (activeUid) {
+        this.ensureSessionStarted();
+      }
       if (CONFIG.debugMode)
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
@@ -1410,9 +1415,8 @@ export class GameManager {
     this.stageStartTime = Date.now();
     
     // Safety: Ensure server knows we are playing today if logged in
-    if (stage === "memory") {
-        this.ensureSessionStarted();
-    }
+    // This anchors the server-side start time for victory validation
+    this.ensureSessionStarted();
   }
 
   /**
@@ -1536,13 +1540,20 @@ export class GameManager {
         const localHasHistory = this.stats && this.stats.history && hasDateKeys(this.stats.history);
         const remoteHasHistory = remoteStats.history && hasDateKeys(remoteStats.history);
 
-        if (localHasHistory && !remoteHasHistory && !this.isWiping) {
+        if (localHasHistory && !remoteHasHistory && !this.isWiping && !this._isRestoring) {
           console.warn("[Sync] Cloud stats are EMPTY but local has history. Protection triggered.");
           const { getCurrentUser } = await import("./auth.js?v=1.1.19");
           const user = getCurrentUser();
           if (user && !user.isAnonymous) {
             console.log("[Sync] Restoration: Pushing local stats to cloud to fix accidental wipe.");
-            this.forceCloudSave();
+            this._isRestoring = true;
+            try {
+              await this.forceCloudSave();
+              console.log("[Sync] Restoration successful.");
+            } finally {
+              // Wait a bit before releasing the flag to allow snapshots to settle
+              setTimeout(() => { this._isRestoring = false; }, 2000);
+            }
           }
           return; // STOP: Do not adopt empty stats
         }

@@ -47,6 +47,9 @@ export function listenToUserProgress(userId) {
 
   console.log(`[DB] Starting real-time listener for ${userId}`);
   unsubscribeProgress = onSnapshot(userRef, (docSnap) => {
+    // Break infinite sync loops: Ignore snapshots triggered by our own local writes
+    if (docSnap.metadata.hasPendingWrites) return;
+
     if (docSnap.exists()) {
       const data = docSnap.data();
       // Pass data to GameManager for conflict checking
@@ -167,13 +170,11 @@ export async function saveUserStats(userId, statsData, username = null, metadata
 
     const { auth } = await import("./firebase-config.js?v=1.1.19");
     const currentUser = auth.currentUser;
-
-    const { updateDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const { setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
 
     const updateData = {
       lastUpdated: serverTimestamp(),
       isPublic: true, // Self-healing: Ensure visibility for ranking
-      isVerified: currentUser ? currentUser.emailVerified : false
     };
 
     if (username) {
@@ -181,15 +182,22 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       updateData.username_lc = username.toLowerCase();
     }
 
-    if (statsData) {
+    if (statsData && !metadataOnly) {
       const s = statsData;
-      // We only allow the client to update RP values and session metadata.
-      // wins, currentStreak, and maxStreak are RESERVED for the Referee.
+      // Internal stats map (Source of truth for logic)
       updateData["stats.dailyRP"] = s.dailyRP || 0;
       updateData["stats.monthlyRP"] = s.monthlyRP || 0;
       updateData["stats.totalRP"] = s.totalRP || 0;
-      updateData["stats.lastLocalUpdate"] = s.lastLocalUpdate || Date.now();
-      updateData["stats.integrityChecked"] = s.integrityChecked || "v1.2.1";
+      updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate;
+      updateData["stats.lastMonthlyUpdate"] = s.lastMonthlyUpdate;
+      updateData["stats.lastLocalUpdate"] = Date.now();
+      
+      // Root level fields (Indexed for Ranking queries)
+      updateData.dailyRP = s.dailyRP || 0;
+      updateData.monthlyRP = s.monthlyRP || 0;
+      updateData.totalRP = s.totalRP || 0;
+      updateData.lastDailyUpdate = s.lastDailyUpdate;
+      updateData.lastMonthlyUpdate = s.lastMonthlyUpdate;
     }
 
     if (gameManager.isWiping) {
@@ -197,8 +205,8 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       return;
     }
 
-    await updateDoc(userRef, updateData);
-    console.log("[DB] Metadata and RP updated surgicaly.");
+    await setDoc(userRef, updateData, { merge: true });
+    console.log("[DB] Metadata and Ranking RP updated surgicaly.");
   } catch (error) {
     console.error("Error saving stats:", error);
   }

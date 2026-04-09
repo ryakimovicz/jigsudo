@@ -52,8 +52,8 @@ export async function fetchRankings(forceRefresh = false) {
 
     const stats = gameManager.stats;
     const isStaleByScore =
-      (stats.dailyRP || 0) > (data.daily?.personal?.score || 0) ||
-      (stats.monthlyRP || 0) > (data.monthly?.personal?.score || 0);
+      (stats.dailyRP || 0) > (data.daily?.personal?.score ?? -0.001) ||
+      (stats.monthlyRP || 0) > (data.monthly?.personal?.score ?? -0.001);
 
     // PARADOX DETECTION: If cache says user is OUT of top, but local score is GREATER than top people, it's stale!
     let isParadox = false;
@@ -157,7 +157,7 @@ async function getTopRankings(
   if (activeUid) {
     // 1. Check if user is in top 10 from DB data
     const topEntry = top10.find((u) => u.id === activeUid);
-    const inTop10 = top10.findIndex((u) => u.id === activeUid);
+    let inTop10 = top10.findIndex((u) => u.id === activeUid);
 
     // UI Robustness: Use gameManager.stats (Source of truth)
     const stats = gameManager.stats;
@@ -237,15 +237,18 @@ async function getTop10(
     const usersRef = collection(db, "users");
     let q;
     if (filterField && filterValue) {
+      console.log(`[Ranking] Fetching fresh ranking data for ${fieldName} (${filterField}=${filterValue})...`);
       q = query(
         usersRef,
         where(filterField, "==", filterValue),
         where("isVerified", "==", true),
         where("isPublic", "==", true),
+        where(fieldName, ">", 0),
         orderBy(fieldName, "desc"),
         limit(25),
       );
     } else {
+      console.log(`[Ranking] Fetching fresh all-time ranking data for ${fieldName}...`);
       q = query(
         usersRef,
         where("isVerified", "==", true),
