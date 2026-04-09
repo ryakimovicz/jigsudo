@@ -1,18 +1,18 @@
 /* Main Menu Logic */
-import { translations } from "./translations.js?v=1.1.17";
-import { getCurrentLang } from "./i18n.js?v=1.1.17";
-import { showProfile } from "./profile.js?v=1.1.17";
-import { getDailySeed } from "./utils/random.js?v=1.1.17";
-import { gameManager } from "./game-manager.js?v=1.1.17";
-import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.1.17";
-import { getCurrentUser } from "./auth.js?v=1.1.17";
-import { CONFIG } from "./config.js?v=1.1.17";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.1.17";
-import { router } from "./router.js?v=1.1.17";
-import { isPuzzleAvailable } from "./history.js?v=1.1.17";
-import { showAlertModal } from "./ui.js?v=1.1.17";
-import { getJigsudoDate } from "./utils/time.js?v=1.1.17";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.17";
+import { translations } from "./translations.js?v=1.1.18";
+import { getCurrentLang } from "./i18n.js?v=1.1.18";
+import { showProfile } from "./profile.js?v=1.1.18";
+import { getDailySeed } from "./utils/random.js?v=1.1.18";
+import { gameManager } from "./game-manager.js?v=1.1.18";
+import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.1.18";
+import { getCurrentUser } from "./auth.js?v=1.1.18";
+import { CONFIG } from "./config.js?v=1.1.18";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.1.18";
+import { router } from "./router.js?v=1.1.18";
+import { isPuzzleAvailable } from "./history.js?v=1.1.18";
+import { showAlertModal } from "./ui.js?v=1.1.18";
+import { getJigsudoDate } from "./utils/time.js?v=1.1.18";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.18";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -235,8 +235,8 @@ export function initHome() {
       localStorage.setItem("jigsudo_skip_clear_confirm", shouldSkip ? "true" : "false");
 
       // Sync to cloud if possible
-      const { getCurrentUser } = await import("./auth.js?v=1.1.17");
-      const { updateUserPreference } = await import("./db.js?v=1.1.17");
+      const { getCurrentUser } = await import("./auth.js?v=1.1.18");
+      const { updateUserPreference } = await import("./db.js?v=1.1.18");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
         // DB key: confirmClear (true = Ask, false = Skip)
@@ -475,7 +475,7 @@ export function initHome() {
           stageTimes: todayStats.stageTimes || {},
         };
 
-        const { showVictorySummary } = await import("./ui.js?v=1.1.17");
+        const { showVictorySummary } = await import("./ui.js?v=1.1.18");
         showVictorySummary(sessionStats, true);
       }
     } catch (e) {
@@ -591,7 +591,7 @@ export function initHome() {
   if (navHome) {
     navHome.addEventListener("click", async () => {
       // Use Router instead of reload to preserve cache and go to canonical #home
-      const { router } = await import("./router.js?v=1.1.17");
+      const { router } = await import("./router.js?v=1.1.18");
       router.navigateTo("#home");
     });
   }
@@ -832,7 +832,7 @@ export function initHome() {
     rankingsInitialized = true; // Mark as initialized so it keeps updating
     
     // REDUNDANCY: Ensure cache is dead
-    const { clearRankingCache } = await import("./ranking.js?v=1.1.17");
+    const { clearRankingCache } = await import("./ranking.js?v=1.1.18");
     clearRankingCache();
     
     // Add micro-delay to let Firestore settle (optional but safer for eventual consistency)
@@ -880,7 +880,7 @@ export async function startDailyGame() {
     // 3. Load Memory/Stage logic
     const state = gameManager.getState();
     const currentStage = state.progress.currentStage || "memory";
-    const module = await import("./memory.js?v=1.1.17");
+    const module = await import("./memory.js?v=1.1.18");
 
     if (currentStage === "memory") {
       module.initMemoryGame();

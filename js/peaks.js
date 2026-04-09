@@ -1,10 +1,10 @@
 /* Peaks Logic */
-import { gameManager } from "./game-manager.js?v=1.1.17";
-import { translations } from "./translations.js?v=1.1.17";
-import { getCurrentLang } from "./i18n.js?v=1.1.17";
-import { transitionToSearch } from "./search.js?v=1.1.17";
-import { getAllTargets } from "./peaks-logic.js?v=1.1.17";
-import { resetUI } from "./memory.js?v=1.1.17";
+import { gameManager } from "./game-manager.js?v=1.1.18";
+import { translations } from "./translations.js?v=1.1.18";
+import { getCurrentLang } from "./i18n.js?v=1.1.18";
+import { transitionToSearch } from "./search.js?v=1.1.18";
+import { getAllTargets } from "./peaks-logic.js?v=1.1.18";
+import { resetUI } from "./memory.js?v=1.1.18";
 
 // State
 let peaksErrors = 0;
@@ -109,7 +109,7 @@ export async function transitionToPeaks() {
   initPeaks();
 
   // 7. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.17");
+  const { resumeSudokuState } = await import("./sudoku.js?v=1.1.18");
   resumeSudokuState();
   resumePeaksState();
 }

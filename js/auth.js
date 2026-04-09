@@ -1,5 +1,5 @@
 /* Authentication Module */
-import { auth } from "./firebase-config.js?v=1.1.17";
+import { auth } from "./firebase-config.js?v=1.1.18";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -19,11 +19,11 @@ import {
   sendEmailVerification,
   verifyBeforeUpdateEmail,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { gameManager } from "./game-manager.js?v=1.1.17";
-import { router } from "./router.js?v=1.1.17";
-import { translations } from "./translations.js?v=1.1.17";
-import { getCurrentLang } from "./i18n.js?v=1.1.17";
-import { toggleModal, showToast } from "./ui.js?v=1.1.17";
+import { gameManager } from "./game-manager.js?v=1.1.18";
+import { router } from "./router.js?v=1.1.18";
+import { translations } from "./translations.js?v=1.1.18";
+import { getCurrentLang } from "./i18n.js?v=1.1.18";
+import { toggleModal, showToast } from "./ui.js?v=1.1.18";
 
 export async function updateUsername(newUsername) {
   const user = auth.currentUser;
@@ -31,7 +31,7 @@ export async function updateUsername(newUsername) {
 
   try {
     const { checkUsernameAvailability, saveUserStats } =
-      await import("./db.js?v=1.1.17");
+      await import("./db.js?v=1.1.18");
 
     if (user.displayName === newUsername) return { success: true };
 
@@ -132,7 +132,7 @@ export function initAuth() {
       try {
         console.log(`[Auth] Step 2: Syncing account data for ${user.uid}...`);
         const { loadUserProgress, listenToUserProgress } =
-          await import("./db.js?v=1.1.17");
+          await import("./db.js?v=1.1.18");
 
         // Await the fetch and the handleCloudSync call inside it
         await loadUserProgress(user.uid);
@@ -180,7 +180,7 @@ export function initAuth() {
           const state = gameManager.getState();
           const currentStage = state?.progress?.currentStage || "memory";
           console.log(`[Auth] Routing to stage: ${currentStage}`);
-          const memoryModule = await import("./memory.js?v=1.1.17");
+          const memoryModule = await import("./memory.js?v=1.1.18");
           memoryModule.resumeToStage(currentStage);
         }
       } catch (err) {
@@ -216,7 +216,7 @@ export async function registerUser(email, password, username) {
   isRegistering = true;
   try {
     const { checkUsernameAvailability, saveUserStats } =
-      await import("./db.js?v=1.1.17");
+      await import("./db.js?v=1.1.18");
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
@@ -325,7 +325,7 @@ export async function loginUser(email, password) {
 
 export async function logoutUser() {
   try {
-    const { stopListeningAndCleanup } = await import("./db.js?v=1.1.17");
+    const { stopListeningAndCleanup } = await import("./db.js?v=1.1.18");
     stopListeningAndCleanup();
 
     // Force sync before wiping local data
@@ -378,7 +378,7 @@ export async function loginWithGoogle() {
 
     const user = result.user;
     const { saveUserStats, checkUsernameAvailability } =
-      await import("./db.js?v=1.1.17");
+      await import("./db.js?v=1.1.18");
 
     // Persist username to Firestore if it's a new or migrated account
     // For Google users, we use their Google Display Name or email prefix, ensuring it's UNIQUE
@@ -387,7 +387,7 @@ export async function loginWithGoogle() {
     // Check if this user (UID) already has a username in our DB to avoid overwriting or redundant checks
     const { doc, getDoc } =
       await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
-    const { db } = await import("./firebase-config.js?v=1.1.17");
+    const { db } = await import("./firebase-config.js?v=1.1.18");
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const existingNameInDb = userDoc.exists() ? userDoc.data().username : null;
 
@@ -506,7 +506,7 @@ export async function deleteUserAccount(currentPassword) {
   }
 
   try {
-    const { wipeUserData } = await import("./db.js?v=1.1.17");
+    const { wipeUserData } = await import("./db.js?v=1.1.18");
     await wipeUserData(user.uid);
   } catch (e) {
     console.error("Wipe data failed, proceeding to delete account anyway:", e);
@@ -584,7 +584,7 @@ function updateUIForLogin(user) {
   if (!isNavigating && !isGameActive) {
     if (window.location.hash.startsWith("#profile")) {
       // If we are already on the profile page, just refresh the data to handle the login
-      import("./profile.js?v=1.1.17").then((mod) => {
+      import("./profile.js?v=1.1.18").then((mod) => {
         if (mod.updateProfileData) mod.updateProfileData();
       });
     } else {
@@ -625,7 +625,7 @@ function updateUIForLogin(user) {
   if (btnChangeEmail)
     btnChangeEmail.onclick = () => showPasswordModal("change_email");
 
-  import("./profile.js?v=1.1.17").then((module) => {
+  import("./profile.js?v=1.1.18").then((module) => {
     module.updateProfileData();
   });
 
@@ -641,7 +641,7 @@ function updateUIForLogin(user) {
       privacyToggle.checked = cachedPrivacy === "true";
     }
 
-    import("./db.js?v=1.1.17").then(async (dbMod) => {
+    import("./db.js?v=1.1.18").then(async (dbMod) => {
       const userData = await dbMod.fetchLatestUserData(user.uid);
       if (userData) {
         // Protect against Firestore returning a partial document due to pending merge writes on load
@@ -682,7 +682,7 @@ function updateUIForLogin(user) {
 
   if (btnConfirmLogout && logoutModal) {
     btnConfirmLogout.onclick = async () => {
-      const { showToast } = await import("./ui.js?v=1.1.17");
+      const { showToast } = await import("./ui.js?v=1.1.18");
       btnConfirmLogout.textContent = "Saliendo...";
       btnConfirmLogout.disabled = true;
       const result = await logoutUser();
@@ -708,13 +708,13 @@ function updateUIForLogout() {
   const profileEmail = document.getElementById("profile-email-display");
   if (profileEmail) profileEmail.textContent = "";
 
-  import("./db.js?v=1.1.17").then((module) => {
+  import("./db.js?v=1.1.18").then((module) => {
     module.stopListeningAndCleanup();
   });
 
   // Actions visibility is now managed exclusively by profile.js.
 
-  import("./profile.js?v=1.1.17").then((module) => {
+  import("./profile.js?v=1.1.18").then((module) => {
     module.updateProfileData();
   });
 
@@ -874,7 +874,7 @@ function showPasswordModal(actionType) {
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
     newBtnConfirm.textContent = t.btn_confirm;
     newBtnConfirm.onclick = async () => {
-      const { showToast } = await import("./ui.js?v=1.1.17");
+      const { showToast } = await import("./ui.js?v=1.1.18");
       const newName = textInput ? textInput.value.trim() : "";
       if (!newName) {
         showToast(t.toast_name_empty, 3000, "error");
@@ -893,7 +893,7 @@ function showPasswordModal(actionType) {
         const profileNameLarge = document.getElementById("profile-name-large");
         if (profileNameLarge) profileNameLarge.textContent = newName;
         try {
-          const { updateProfileData } = await import("./profile.js?v=1.1.17");
+          const { updateProfileData } = await import("./profile.js?v=1.1.18");
           updateProfileData();
         } catch (e) {
           console.error("Error updating profile card:", e);
@@ -917,7 +917,7 @@ function showPasswordModal(actionType) {
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
     newBtnConfirm.textContent = t.btn_confirm;
     newBtnConfirm.onclick = async () => {
-      const { showToast } = await import("./ui.js?v=1.1.17");
+      const { showToast } = await import("./ui.js?v=1.1.18");
       const currentPass = confirmInput.value;
       const newPass = newPassInput.value;
       const verifyPass = verifyPassInput ? verifyPassInput.value : "";
@@ -968,7 +968,7 @@ function showPasswordModal(actionType) {
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
     newBtnConfirm.textContent = t.btn_confirm;
     newBtnConfirm.onclick = async () => {
-      const { showToast } = await import("./ui.js?v=1.1.17");
+      const { showToast } = await import("./ui.js?v=1.1.18");
       const currentPass = isGoogleUser ? null : confirmInput.value;
 
       if (!isGoogleUser && !currentPass) {
@@ -1045,7 +1045,7 @@ function showPasswordModal(actionType) {
     btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
     newBtnConfirm.textContent = t.btn_confirm;
     newBtnConfirm.onclick = async () => {
-      const { showToast } = await import("./ui.js?v=1.1.17");
+      const { showToast } = await import("./ui.js?v=1.1.18");
       const currentPass = isGoogleUser ? null : confirmInput.value;
       const newEmail = emailInput ? emailInput.value.trim() : "";
 
@@ -1192,7 +1192,7 @@ export function initForgotPasswordUI() {
       const email = inputResetEmail.value.trim();
       console.log("[Auth] Confirm reset clicked for:", email);
       if (!email) {
-        const { showToast } = await import("./ui.js?v=1.1.17");
+        const { showToast } = await import("./ui.js?v=1.1.18");
         const lang = getCurrentLang() || "es";
         const t = translations[lang] || translations["es"];
         showToast(t.toast_email_invalid, 3000, "error");
@@ -1208,7 +1208,7 @@ export function initForgotPasswordUI() {
       btnConfirmReset.disabled = false;
       btnConfirmReset.textContent = originalText;
 
-      const { showToast } = await import("./ui.js?v=1.1.17");
+      const { showToast } = await import("./ui.js?v=1.1.18");
       const lang = getCurrentLang() || "es";
       const t = translations[lang] || translations["es"];
 
