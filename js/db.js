@@ -181,8 +181,8 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       updateData.username_lc = username.toLowerCase();
     }
 
-    if (userStats && userStats.stats) {
-      const s = userStats.stats;
+    if (statsData) {
+      const s = statsData;
       // We only allow the client to update RP values and session metadata.
       // wins, currentStreak, and maxStreak are RESERVED for the Referee.
       updateData["stats.dailyRP"] = s.dailyRP || 0;
