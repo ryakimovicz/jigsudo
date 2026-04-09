@@ -15,6 +15,8 @@ export class GameManager {
     this.cloudSaveTimeout = null;
     this.isWiping = false;
     this.isReplay = false;
+    this.validationQueue = [];
+    this.isProcessingQueue = false;
 
     // Listen for tab focus/visibility to force save or handle day transitions
     document.addEventListener("visibilitychange", async () => {
@@ -1173,20 +1175,93 @@ export class GameManager {
       }
     }
     
-    // Check if current partial score beats the record BEFORE syncing to cloud
-    this._updateBestScore();
-
+    // v1.3.5/v1.4.1: Internal UI/Stats update
     // Force a net recalculation to ensure penalties are applied to the new points
     this.stats = stats;
     this._recalculateNetStats();
 
-    const { saveUserStats } = await import("./db.js?v=1.1.19");
+    // v1.4.1: ASYNC REFEREE (Background Validation)
+    // We queue the validation and continue immediately.
+    this._enqueueValidation(stage, points);
+  }
+
+  /**
+   * Adds a stage result to the background processing queue.
+   */
+  _enqueueValidation(stage, points) {
+    const stageTime = this.state.history?.[stage]?.time || 0;
+    const peaksErrors = this.state.stats?.peaksErrors || 0;
+    
+    this.validationQueue.push({
+      stage,
+      points,
+      stageTime,
+      peaksErrors,
+      seed: this.currentSeed
+    });
+
+    console.log(`[Referee] Stage ${stage} queued for background validation.`);
+    this._processValidationQueue();
+  }
+
+  /**
+   * Background processor for the validation queue.
+   * Ensures sequential delivery to the server to avoid race conditions.
+   */
+  async _processValidationQueue() {
+    if (this.isProcessingQueue || this.validationQueue.length === 0) return;
+    
+    this.isProcessingQueue = true;
+    
+    const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js");
+    const functions = getFunctions();
+    const submitStageResult = httpsCallable(functions, "submitStageResult");
     const { getCurrentUser } = await import("./auth.js?v=1.1.19");
-    const user = getCurrentUser();
-    if (user && !user.isAnonymous) {
-      console.log(`[RP] Syncing stage points and records to cloud for ${stage}...`);
+    const { saveUserStats } = await import("./db.js?v=1.1.19");
+
+    while (this.validationQueue.length > 0) {
+      const task = this.validationQueue[0];
+      const user = getCurrentUser();
+
+      if (!user || user.isAnonymous) {
+        console.warn("[Referee] Background validation skipped: No registered user.");
+        this.validationQueue.shift();
+        continue;
+      }
+
+      try {
+        console.log(`[Referee] Validating stage ${task.stage} (Asynchronous)...`);
+        
+        const result = await submitStageResult({
+          stage: task.stage,
+          seed: task.seed,
+          stageTime: task.stageTime,
+          peaksErrors: task.peaksErrors
+        });
+
+        if (result.data.status === "success" || result.data.status === "already_verified") {
+          console.log(`[Referee] Stage ${task.stage} verified by server! Points awarded.`);
+          this.validationQueue.shift(); // Remove from queue only on success
+          
+          // Trigger a global event so UI components (like Ranking) know they can refresh
+          window.dispatchEvent(new CustomEvent("stageVerified", { detail: task }));
+        } else {
+          console.warn("[Referee] Server rejected stage validation:", result.data);
+          this.validationQueue.shift(); // Remove anyway to avoid infinite loops, but log it
+        }
+      } catch (error) {
+        console.error(`[Referee] Connection error during stage ${task.stage} validation. Retrying later...`, error);
+        // On network error, we STOP processing and wait for next trigger (don't shift)
+        break; 
+      }
+
+      // Sync local progress (board state, levels completed) to cloud as usual
+      // Note: RP fields are now blacklisted in firestore.rules, so db.js will only save progress map.
       saveUserStats(user.uid, this.stats, user.displayName);
     }
+
+    this.isProcessingQueue = false;
+  }
   }
 
   /**
@@ -2147,6 +2222,15 @@ export class GameManager {
             console.log("[Referee] Submitting results for validation...");
             try {
                 const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
+                
+                // v1.4.1: Ensure background queue is empty before final win submission
+                if (this.isProcessingQueue || this.validationQueue.length > 0) {
+                    console.log("[Referee] Waiting for background stage validations to finish...");
+                    while (this.isProcessingQueue || this.validationQueue.length > 0) {
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                }
+
                 const serverResult = await callJigsudoFunction("submitDailyWin", {
                     stageTimes: this.state.meta.stageTimes || {},
                     peaksErrors: this.state.stats?.peaksErrors || 0,
@@ -2154,17 +2238,16 @@ export class GameManager {
                 });
                 
                 if (serverResult.status === "success") {
-                    console.log("[Referee] Points and Streaks verified by server:", serverResult);
-                    // The server already updated Firestore. 
-                    // We adopt the OFFICIAL server values for the local UI
-                    stats.currentRP = (stats.currentRP || 0) + serverResult.score;
-                    stats.monthlyRP = (stats.monthlyRP || 0) + serverResult.score;
-                    stats.dailyRP = serverResult.score;
-                    
-                    // NEW: Adopt official streak and win count
+                    console.log("[Referee] Game finalized and verified by server:", serverResult);
+                    // Adopt official server values
+                    stats.dailyRP = serverResult.finalScore;
                     stats.currentStreak = serverResult.streak;
-                    stats.maxStreak = serverResult.maxStreak;
-                    stats.wins = serverResult.wins;
+
+                    // v1.3.4: Since server is authority, we sync local currentRP/monthlyRP 
+                    // indirectly via the reload or let them be updated next time.
+                    // But for immediate UI, let's update them:
+                    stats.currentRP = serverResult.finalScore; 
+                    // (Actually we might need FetchLatest to be perfect, but this is enough for feedback)
                 }
             } catch (err) {
                 console.error("[Referee] Validation failed!", err);

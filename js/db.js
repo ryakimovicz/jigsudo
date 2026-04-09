@@ -239,15 +239,12 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       const nowDoc = getJigsudoDateString();
       const nowMonth = getJigsudoYearMonth();
 
-      // v1.3.4: CLIENT NO LONGER OVERWRITES MONTHLY/TOTAL RP.
-      // These are managed exclusively by the Cloud Function via atomic increments.
-      updateData["stats.dailyRP"] = Math.max(0, s.dailyRP || 0);
-      updateData["stats.bestScore"] = Math.max(0, s.bestScore || 0);
+      // v1.3.4/v1.4.1: CLIENT NO LONGER OVERWRITES STATS OR RP.
+      // These are managed exclusively by the Cloud Function (Referee).
       updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate || nowDoc;
       updateData["stats.lastLocalUpdate"] = Date.now();
       
-      // Root level fields (Indexed for Ranking queries)
-      updateData.dailyRP = Math.max(0, s.dailyRP || 0);
+      // Root level fields: We keep only non-competitive maintenance fields
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
 
       // v1.2.17: Sync Verification bit ONLY if Auth confirms it.
@@ -274,13 +271,7 @@ export async function saveUserStats(userId, statsData, username = null, metadata
         // Convert surgical dots back to nested for initial creation if necessary
         // or just use a clean creation object.
         const initialData = { ...updateData };
-        initialData.stats = {
-          dailyRP: updateData.dailyRP,
-          bestScore: updateData["stats.bestScore"],
-          lastDailyUpdate: updateData.lastDailyUpdate,
-          lastLocalUpdate: Date.now()
-        };
-        // Remove dot-notation keys for the clean create
+        // Clean creation: No competitive fields in initial data from client
         Object.keys(initialData).forEach(k => { if (k.includes(".")) delete initialData[k]; });
         
         await setDoc(userRef, initialData, { merge: true });

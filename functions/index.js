@@ -21,7 +21,16 @@ const SCORING = {
     peaks: 10,
     search: 10,
     code: 10
-  }
+  },
+  PARTIAL_RP: {
+    memory: 1.0,
+    jigsaw: 1.0,
+    sudoku: 1.0,
+    peaks: 1.0,
+    search: 1.0,
+    code: 1.0
+  },
+  STAGE_ORDER: ["memory", "jigsaw", "sudoku", "peaks", "search", "code"]
 };
 
 function getJigsudoDateString() {
@@ -56,7 +65,8 @@ exports.startJigsudoSession = onCall(async (request) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       uid: uid,
       date: today,
-      completed: false
+      completed: false,
+      stagesCompleted: []
     });
 
     return { status: "started", startTime: startTime };
@@ -100,32 +110,117 @@ exports.submitDailyWin = onCall(async (request) => {
     throw new HttpsError("already-exists", "Victory already recorded.");
   }
 
-  const serverDurationMs = now - sessionData.startTime;
+/**
+ * 2. submitStageResult (v1.4.1)
+ * Progressive verification of each level.
+ */
+exports.submitStageResult = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
+  
+  const { stage, seed, stageTime, peaksErrors } = request.data;
+  const uid = request.auth.uid;
+  const today = getJigsudoDateString();
+  const now = Date.now();
 
-  // 3. Validation
-  for (const [stage, minMs] of Object.entries(SCORING.MIN_TIME_THRESHOLDS)) {
-    if ((stageTimes[stage] || 0) < minMs) {
-      throw new HttpsError("out-of-range", `Stage ${stage} too fast.`);
-    }
+  // 1. Fetch Session
+  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
+  const sessionDoc = await sessionRef.get();
+  if (!sessionDoc.exists) throw new HttpsError("failed-precondition", "Session not initialized.");
+  
+  const sessionData = sessionDoc.data();
+  if (sessionData.completed) throw new HttpsError("already-exists", "Victory already recorded.");
+  
+  const stagesDone = sessionData.stagesCompleted || [];
+  if (stagesDone.includes(stage)) return { status: "already_verified" };
+
+  // 2. Validate Sequence
+  const stageIndex = SCORING.STAGE_ORDER.indexOf(stage);
+  if (stageIndex === -1) throw new HttpsError("invalid-argument", "Invalid stage.");
+  if (stagesDone.length !== stageIndex) throw new HttpsError("failed-precondition", "Out of sequence.");
+
+  // 3. Validate Time
+  const minTime = SCORING.MIN_TIME_THRESHOLDS[stage] || 0;
+  if (stageTime < minTime) throw new HttpsError("out-of-range", "Stage too fast.");
+
+  // 4. Score Calculation
+  const basePoints = SCORING.PARTIAL_RP[stage] || 0;
+  const penalty = (peaksErrors || 0) * SCORING.ERROR_PENALTY_RP;
+  const stagePoints = Math.max(0, basePoints - penalty);
+
+  // 5. Atomic Update
+  const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const userData = userSnap.data() || {};
+  const lastMonth = userData.lastMonthlyUpdate || "";
+  const nowMonth = today.substring(0, 7);
+  const isNewMonth = lastMonth !== nowMonth;
+
+  const batch = db.batch();
+  
+  // Root update (Official Ranking)
+  batch.set(userRef, {
+    totalRP: admin.firestore.FieldValue.increment(stagePoints),
+    monthlyRP: isNewMonth ? admin.firestore.FieldValue.increment(stagePoints) : admin.firestore.FieldValue.increment(stagePoints),
+    dailyRP: admin.firestore.FieldValue.increment(stagePoints),
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  // Stats nested update
+  batch.update(userRef, {
+    "stats.dailyRP": admin.firestore.FieldValue.increment(stagePoints),
+    "stats.totalRP": admin.firestore.FieldValue.increment(stagePoints),
+    "stats.monthlyRP": admin.firestore.FieldValue.increment(stagePoints),
+    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(stagePoints)
+  });
+
+  // Session update
+  batch.update(sessionRef, {
+    stagesCompleted: admin.firestore.FieldValue.arrayUnion(stage),
+    [`results.${stage}`]: { time: stageTime, points: stagePoints, timestamp: now }
+  });
+
+  await batch.commit();
+
+  return { status: "success", awarded: stagePoints };
+});
+
+/**
+ * 3. submitDailyWin (v1.4.1)
+ * Finalizes the game, adds Time Bonus and updates history.
+ */
+exports.submitDailyWin = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
+
+  const { seed, peaksErrors, stageTimes } = request.data;
+  const uid = request.auth.uid;
+  const today = getJigsudoDateString();
+  const now = Date.now();
+
+  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
+  const sessionDoc = await sessionRef.get();
+  if (!sessionDoc.exists) throw new HttpsError("failed-precondition", "Session not initialized.");
+
+  const sessionData = sessionDoc.data();
+  if (sessionData.completed) throw new HttpsError("already-exists", "Victory already recorded.");
+
+  const stagesDone = sessionData.stagesCompleted || [];
+  if (stagesDone.length < SCORING.STAGE_ORDER.length) {
+    throw new HttpsError("failed-precondition", "Missing stages.");
   }
 
-  // 4. Calculate Score
+  // Calculate Time Bonus
+  const serverDurationMs = now - sessionData.startTime;
   const totalSeconds = serverDurationMs / 1000;
   const decayPerSecond = SCORING.MAX_BONUS / SCORING.BONUS_DECAY_SECONDS;
   const timeBonus = Math.max(0, SCORING.MAX_BONUS - (totalSeconds * decayPerSecond));
-  const finalRP = Number((SCORING.BASE_WIN_RP + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
-  const finalScore = Math.max(0, finalRP);
+  const finalBonus = Number(timeBonus.toFixed(3));
 
-  // 5. ATOMIC UPDATE (Read before write for streak logic)
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
   const userData = userSnap.data() || {};
   const stats = userData.stats || {};
-
   const lastUpdate = userData.lastDailyUpdate || "";
-  const lastMonth = userData.lastMonthlyUpdate || "";
-  const nowMonth = today.substring(0, 7); // YYYY-MM
-  const isNewMonth = lastMonth !== nowMonth;
+  const nowMonth = today.substring(0, 7);
 
   // Streak Calculation
   let newStreak = 1;
@@ -136,35 +231,35 @@ exports.submitDailyWin = onCall(async (request) => {
   if (lastUpdate === yesterday) {
     newStreak = (stats.currentStreak || 0) + 1;
   } else if (lastUpdate === today) {
-    newStreak = stats.currentStreak || 1; // Already won today, keep streak
+    newStreak = stats.currentStreak || 1;
   }
 
   const newMaxStreak = Math.max(stats.maxStreak || 0, newStreak);
   const newWins = (stats.wins || 0) + 1;
 
+  // We need to know the CURRENT dailyRP to save it in history correctly
+  // But wait, it's safer to just add the bonus.
+  // The final score in history should be Total Stage Points + Time Bonus.
+  const baseScore = (userData.dailyRP || 0); // Already includes stage points
+  const finalScoreResult = Number((baseScore + finalBonus).toFixed(3));
+
   const batch = db.batch();
 
-  // Root fields maintenance + Self-healing (isPublic and isVerified)
-  const rootUpdate = {
-    totalRP: admin.firestore.FieldValue.increment(finalScore),
-    monthlyRP: isNewMonth ? finalScore : admin.firestore.FieldValue.increment(finalScore),
-    dailyRP: finalScore,
+  batch.set(userRef, {
+    totalRP: admin.firestore.FieldValue.increment(finalBonus),
+    monthlyRP: admin.firestore.FieldValue.increment(finalBonus),
+    dailyRP: finalScoreResult, // Set final absolute dailyRP
     lastDailyUpdate: today,
     lastMonthlyUpdate: nowMonth,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-    isVerified: !!request.auth.token.email_verified,
-    isPublic: userData.isPublic !== false // Preserve or default to true
-  };
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
 
-  batch.set(userRef, rootUpdate, { merge: true });
-
-  // Stats nested update (Dot notation for surgical precision)
   batch.update(userRef, {
-    "stats.dailyRP": finalScore,
-    "stats.monthlyRP": isNewMonth ? finalScore : admin.firestore.FieldValue.increment(finalScore),
-    "stats.totalRP": admin.firestore.FieldValue.increment(finalScore),
-    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalScore),
-    "stats.currentRP": finalScore,
+    "stats.dailyRP": finalScoreResult,
+    "stats.monthlyRP": admin.firestore.FieldValue.increment(finalBonus),
+    "stats.totalRP": admin.firestore.FieldValue.increment(finalBonus),
+    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalBonus),
+    "stats.currentRP": finalScoreResult,
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,
@@ -172,28 +267,24 @@ exports.submitDailyWin = onCall(async (request) => {
     "stats.lastMonthlyUpdate": nowMonth,
     [`stats.history.${today}`]: {
         status: "won",
-        score: finalScore,
+        score: finalScoreResult,
         totalTime: serverDurationMs,
-        peaksErrors: peaksErrors || 0,
         stageTimes: stageTimes,
         timestamp: now,
         originalWin: true
     }
   });
 
-  batch.update(sessionRef, { completed: true, score: finalScore, durationMs: serverDurationMs });
+  batch.update(sessionRef, { 
+    completed: true, 
+    score: finalScoreResult, 
+    timeBonus: finalBonus,
+    durationMs: serverDurationMs 
+  });
 
   await batch.commit();
-  console.log(`[Referee] Points awarded to ${uid}: ${finalScore}`);
 
-  return { 
-    status: "success", 
-    score: finalScore, 
-    durationMs: serverDurationMs,
-    streak: newStreak,
-    maxStreak: newMaxStreak,
-    wins: newWins
-  };
+  return { status: "success", bonus: finalBonus, finalScore: finalScoreResult, streak: newStreak };
 });
 
 /**
