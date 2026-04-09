@@ -1,20 +1,11 @@
 /* Profile Page Styles v2 */
 #profile-section {
   display: block;
-  margin-left: 0 !important; /* Force reset for mobile */
-  width: 100% !important;
   background-color: var(--bg-paper);
   overflow: visible;
   height: auto;
   min-height: 0;
   z-index: 10;
-}
-
-@media (min-width: 769px) {
-  #profile-section {
-    margin-left: var(--sidebar-width) !important;
-    width: calc(100% - var(--sidebar-width)) !important;
-  }
 }
 
 #profile-section .scrollable-content {
