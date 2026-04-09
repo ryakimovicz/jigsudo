@@ -30,8 +30,16 @@ function renderChangelog() {
     // If structure already exists, don't re-render (seamless translation handles the rest)
     if (container.children.length > 0) return;
 
-    // Data structure for the changelog (Ordered newest first)
     const versions = [
+        {
+            tag: "v1.1.18",
+            titleKey: "changelog_v1118_title",
+            dateKey: "changelog_v1118_date",
+            itemKeys: [
+                "changelog_v1118_item1",
+                "changelog_v1118_item2",
+            ]
+        },
         {
             tag: "v1.1.17",
             titleKey: "changelog_v1117_title",
