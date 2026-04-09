@@ -394,21 +394,18 @@ export async function wipeUserData(userId) {
  * Efficiently calculates the rank of a user by counting documents with a higher score.
  * Cost: 1 document read.
  */
-export async function getUserRank(fieldName, score, onlyVerified = false) {
+export async function getUserRank(fieldName, score, onlyVerified = false, filterField = null, filterValue = null) {
   if (score === undefined || score === null) return null;
   try {
     const usersRef = collection(db, "users");
     // Rank = (Number of users with score > current score) + 1
     let q;
-    if (onlyVerified) {
-      q = query(
-        usersRef,
-        where("isVerified", "==", true),
-        where(fieldName, ">", score),
-      );
-    } else {
-      q = query(usersRef, where(fieldName, ">", score));
-    }
+    let conditions = [where(fieldName, ">", score)];
+    
+    if (onlyVerified) conditions.push(where("isVerified", "==", true));
+    if (filterField && filterValue) conditions.push(where(filterField, "==", filterValue));
+
+    q = query(usersRef, ...conditions);
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count + 1;
   } catch (error) {

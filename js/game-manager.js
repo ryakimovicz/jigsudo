@@ -213,6 +213,7 @@ export class GameManager {
     // By updating lastDailyUpdate to today, any subsequent checks or tonight's bot maintenance
     // will see that the user was active, saving them from the penalty even if they don't finish.
     this.stats.lastDailyUpdate = dateStr;
+    this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
     this.stats.lastDecayCheck = dateStr;
     this.save(); // Force save to local storage immediately
 

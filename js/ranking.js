@@ -15,7 +15,7 @@ import { getRankData, SCORING } from "./ranks.js?v=1.1.17";
 import { gameManager } from "./game-manager.js?v=1.1.17";
 import { getDailySeed } from "./utils/random.js?v=1.1.17";
 
-const CACHE_KEY = "jigsudo_ranking_cache";
+const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 export function getCachedRankings() {
@@ -210,7 +210,7 @@ async function getTopRankings(
       let actualRank = "-";
       // We can only fetch real rank if we have a full verified user or we are brave
       if (user && user.emailVerified) {
-        actualRank = await getUserRankFn(fieldName, userScore, true);
+        actualRank = await getUserRankFn(fieldName, userScore, true, filterField, filterValue);
       }
 
       result.personal = {
@@ -248,6 +248,7 @@ async function getTop10(
       q = query(
         usersRef,
         where("isVerified", "==", true),
+        where(fieldName, ">", 0),
         orderBy(fieldName, "desc"),
         limit(10),
       );
