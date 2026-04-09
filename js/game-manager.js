@@ -1589,13 +1589,29 @@ export class GameManager {
   /**
    * Calls the Cloud Function to anchor the start time on the server.
    */
+  /**
+   * Proactive Maintenance Check (v1.5.2)
+   * Calls the server logic to check for decay without claiming a session or shield.
+   */
+  async checkMaintenance() {
+    try {
+      const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
+      await callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true });
+      console.log("[Maintenance] Proactive check triggered successfully.");
+    } catch (err) {
+      console.warn("[Maintenance] Proactive check failed (non-critical):", err);
+    }
+  }
+
   async ensureSessionStarted() {
     const { getCurrentUser } = await import("./auth.js?v=1.1.19");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
         try {
             const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
-            const result = await callJigsudoFunction("startJigsudoSession", {});
+            const result = await callJigsudoFunction("startJigsudoSession", {
+                sessionId: this.localSessionId
+            });
             console.log("[Sync] Server Session Anchor:", result);
         } catch (err) {
             console.warn("[Sync] Failed to anchor server session:", err);

@@ -59,17 +59,23 @@ exports.startJigsudoSession = onCall(async (request) => {
     const userSnap = await userRef.get();
     if (!userSnap.exists) throw new HttpsError("not-found", "User profile not found.");
     const userData = userSnap.data();
-    const stats = userData.stats || {};
+    const sessionId = request.data.sessionId || null;
+    const onlyMaintenance = request.data.onlyMaintenance || false;
 
-    // 1. PERFORM MAINTENANCE (v1.4.2)
-    // If the cron script hasn't run yet, apply decay before starting
+    // 1. PERFORM MAINTENANCE (v1.4.2 / v1.5.2)
+    // If the cron script hasn't run yet, apply decay before anything else
     if ((stats.lastDecayCheck || "") < today) {
       await _performUserMaintenance(userRef, userData, today);
     }
 
+    // NEW (v1.5.2): If only maintenance requested, stop here.
+    // Do NOT update lastIntentDate (No shield).
+    if (onlyMaintenance) {
+       return { status: "maintenance_complete" };
+    }
+
     // 2. MARK INTENT (THE SHIELD) & SESSION LOCK (v1.5.0)
-    // Just by calling this, the user is safe for today and takes control of the session.
-    const sessionId = request.data.sessionId || null;
+    // Full Play Button click: user gets the shield and takes control of the session.
     const updateData = {
       "stats.lastIntentDate": today,
       "stats.lastDecayCheck": today

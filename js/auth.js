@@ -192,6 +192,12 @@ export function initAuth() {
         setTimeout(() => {
           gameManager.isWiping = false; // LOCK OFF
           console.log("[Auth] Session initialization complete. Lock released.");
+          
+          // v1.5.2: Proactive Maintenance Check for authenticated users
+          const user = firebase.auth().currentUser;
+          if (user && !user.isAnonymous) {
+             gameManager.checkMaintenance();
+          }
         }, 500);
 
         document.body.classList.remove("syncing-account");
