@@ -635,13 +635,26 @@ function updateUIForLogin(user) {
   // Initialize Privacy Toggle
   const privacyToggle = document.getElementById("profile-public-toggle");
   if (privacyToggle) {
+    // Optimistic UI: Apply cached local state immediately to avoid visual flicker while DB loads
+    const cachedPrivacy = localStorage.getItem(`jigsudo_isPublic_${user.uid}`);
+    if (cachedPrivacy !== null) {
+      privacyToggle.checked = cachedPrivacy === "true";
+    }
+
     import("./db.js?v=1.1.17").then(async (dbMod) => {
       const userData = await dbMod.fetchLatestUserData(user.uid);
       if (userData) {
-        privacyToggle.checked = userData.isPublic !== false;
+        // Protect against Firestore returning a partial document due to pending merge writes on load
+        if (userData.isPublic === undefined && cachedPrivacy !== null) {
+          privacyToggle.checked = cachedPrivacy === "true";
+        } else {
+          privacyToggle.checked = userData.isPublic !== false;
+        }
+        localStorage.setItem(`jigsudo_isPublic_${user.uid}`, privacyToggle.checked);
       }
       privacyToggle.onchange = (e) => {
         dbMod.updateProfilePrivacy(user.uid, e.target.checked);
+        localStorage.setItem(`jigsudo_isPublic_${user.uid}`, e.target.checked);
       };
     });
   }
