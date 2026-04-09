@@ -347,8 +347,9 @@ export async function loginWithGoogle() {
   const provider = new GoogleAuthProvider();
   const currentUser = auth.currentUser;
 
-  // Signal that we are transitioning, to prevent auto-wipe in onAuthStateChanged
-  isRegistering = true;
+  // Pattern: We no longer set isRegistering = true blindy.
+  // Instead, the wipe/migrate decision is handled by onAuthStateChanged based on UID mismatch.
+  // Exception: registerUser() explicitly sets it for new email/pwd accounts.
 
   try {
     let result;

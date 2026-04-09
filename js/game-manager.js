@@ -745,7 +745,7 @@ export class GameManager {
   }
 
   async save(syncToCloud = true) {
-    if (!this.state) return;
+    if (!this.state || this.isWiping) return;
 
     // --- CRITICAL FIX: Ensure local timestamp is ALWAYS updated before persistence ---
     // This marks the local progress as newer than the cloud, preventing 'Cloud Echo' loops.
@@ -1044,9 +1044,13 @@ export class GameManager {
   setUserId(uid) {
     if (uid) localStorage.setItem("jigsudo_active_uid", uid);
     else localStorage.removeItem("jigsudo_active_uid");
+    
+    // Pattern: During a wipe/login transition, we update the UID in memory
+    // but we MUST NOT save yet, as the cloud sync will fulfill the state.
     if (this.state && this.state.meta) {
       this.state.meta.userId = uid;
-      this.save();
+      if (!this.isWiping) this.save();
+      else console.log("[GameManager] setUserId: Wipe lock active, skipping save.");
     }
   }
 
@@ -1526,15 +1530,21 @@ export class GameManager {
       // 1. No local stats exist.
       // 2. Remote is newer than local.
       // 3. Remote has significantly higher totalPlayed (merged from another device)
+      // 4. We are currently wiping (Context switch/Login) -> FORCE ADOPT
       if (
         !this.stats ||
+        this.isWiping ||
         remoteTS > localTS ||
         (remoteStats.totalPlayed || 0) > (this.stats.totalPlayed || 0)
       ) {
         console.log(
-          `[Sync] Accepting remote stats. (Local: ${localTS}, Remote: ${remoteTS})`,
+          `[Sync] Accepting remote stats. (Local: ${localTS}, Remote: ${remoteTS}, Wiping: ${this.isWiping})`,
         );
         this.stats = remoteStats;
+        
+        // Ensure streaks and records are healthy after adoption
+        this._recalculateRecords(this.stats);
+        
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
         window.dispatchEvent(
           new CustomEvent("userStatsUpdated", { detail: this.stats }),
