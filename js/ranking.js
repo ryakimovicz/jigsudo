@@ -38,16 +38,34 @@ export async function fetchRankings(forceRefresh = false) {
     const { timestamp, data, userId, cachedToday, isAuthenticated } =
       JSON.parse(cached);
 
-    // SMARTEST CACHE: Check if local stats are better than cached ones (Post-win return)
     const stats = gameManager.stats;
     const isStaleByScore =
       (stats.dailyRP || 0) > (data.daily?.personal?.score || 0) ||
       (stats.monthlyRP || 0) > (data.monthly?.personal?.score || 0);
 
-    // Refresh if we were a guest/hint but now have a full verified user
-    const needsAuthUpgrade = (user && !isAuthenticated) || isStaleByScore;
+    // PARADOX DETECTION: If cache says user is OUT of top, but local score is GREATER than top people, it's stale!
+    let isParadox = false;
+    const categories = ["daily", "monthly", "allTime"];
+    categories.forEach((cat) => {
+      const catData = data[cat];
+      if (catData && catData.personal && !catData.personal.inTop) {
+        const myScore = catData.personal.score;
+        const topList = catData.top || [];
+        if (topList.length > 0) {
+          const lastTopScore = topList[topList.length - 1].score;
+          if (myScore > lastTopScore) {
+            isParadox = true;
+            console.warn(`[Ranking] Paradox detected in ${cat}: My score ${myScore} > Last top score ${lastTopScore}. Forcing refresh.`);
+          }
+        } else if (myScore > 0) {
+          // Table is empty in cache but I have points? Paradox!
+          isParadox = true;
+        }
+      }
+    });
 
-    // Check TTL, User Match, AND Day Match
+    const needsAuthUpgrade = (user && !isAuthenticated) || isStaleByScore || isParadox;
+
     if (
       !needsAuthUpgrade &&
       now - timestamp < CACHE_TTL &&
@@ -59,7 +77,7 @@ export async function fetchRankings(forceRefresh = false) {
     }
     if (needsAuthUpgrade)
       console.log(
-        `[Ranking] Cache present but invalidated (Auth: ${!!user}, Stale: ${isStaleByScore})`,
+        `[Ranking] Cache invalidated (Auth: ${!!user}, Stale: ${isStaleByScore}, Paradox: ${isParadox})`,
       );
   }
 
@@ -293,14 +311,13 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     newDataMap.set(entry.id, { entry, index, type: "top" });
   });
 
-  // Handle Personal Row (if separated)
-  // Handle Personal Row (Always show if not in top section)
+  // Handle Personal Row (Only if NOT in top 10)
   if (personal && !personal.inTop) {
-    newDataMap.set((personal.id || personal.username) + "_p", {
+    newDataMap.set(personal.id || "personal_row", {
       entry: personal,
       index: 999,
       type: "personal",
-    }); // Pseudo-ID for personal
+    });
   }
 
   // 3. Identify Exiting Rows
@@ -324,9 +341,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   const createRow = (entry, index, isPersonal = false) => {
     const tr = document.createElement("tr");
     tr.className = "ranking-row";
-    tr.dataset.uid = isPersonal
-      ? (entry.id || entry.username) + "_p"
-      : entry.id; // Consistent ID
+    tr.dataset.uid = entry.id || (isPersonal ? "personal_row" : "guest");
     updateRowContent(tr, entry, index, isPersonal, t, scoreFormat, currentUid);
     return tr;
   };
@@ -341,8 +356,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     currentUid,
   ) => {
     const isTop3 = index < 3 && !isPersonal;
-    const isCurrentUser =
-      currentUid && (entry.id === currentUid || entry.id === "personal_row");
+    const isCurrentUser = currentUid && entry.id === currentUid;
     const isPersonalRow = isPersonal; // Explicit flag
     const medal =
       !isPersonal && index === 0
@@ -418,10 +432,12 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     sep.innerHTML = `<td colspan="3">...</td>`;
     newRowNodes.push(sep);
 
-    let pRow = tbody.querySelector(
-      `tr[data-uid='${(personal.id || personal.username) + "_p"}']`,
-    );
+    let pRow = tbody.querySelector(`tr[data-uid='${personal.id || "personal_row"}']`);
     if (pRow) {
+      if (pRow.classList.contains("exiting")) {
+        pRow.classList.remove("exiting");
+        pRow.style.transform = "";
+      }
       updateRowContent(pRow, personal, 999, true, t, scoreFormat, currentUid);
     } else {
       pRow = createRow(personal, 999, true);
