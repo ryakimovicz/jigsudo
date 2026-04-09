@@ -1,12 +1,12 @@
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.1.13";
-import { translations } from "./translations.js?v=1.1.13";
-import { gameManager } from "./game-manager.js?v=1.1.13";
-import { startDailyGame } from "./home.js?v=1.1.13";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.1.13";
-import { router } from "./router.js?v=1.1.13";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.1.14";
+import { translations } from "./translations.js?v=1.1.14";
+import { gameManager } from "./game-manager.js?v=1.1.14";
+import { startDailyGame } from "./home.js?v=1.1.14";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.1.14";
+import { router } from "./router.js?v=1.1.14";
 
-import { getJigsudoDate } from "./utils/time.js?v=1.1.13";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.13";
+import { getJigsudoDate } from "./utils/time.js?v=1.1.14";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.14";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
