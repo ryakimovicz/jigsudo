@@ -242,7 +242,7 @@ async function getTop10(
         where(filterField, "==", filterValue),
         where("isVerified", "==", true),
         orderBy(fieldName, "desc"),
-        limit(10),
+        limit(25),
       );
     } else {
       q = query(
@@ -250,7 +250,7 @@ async function getTop10(
         where("isVerified", "==", true),
         where(fieldName, ">", 0),
         orderBy(fieldName, "desc"),
-        limit(10),
+        limit(25),
       );
     }
     let querySnapshot = await getDocsFromServer(q);
@@ -261,12 +261,18 @@ async function getTop10(
       querySnapshot = await getDocsFromServer(q);
     }
 
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      username: doc.data().username || "Anonymous",
-      score: doc.data()[fieldName] || 0,
-      totalRP: doc.data().totalRP || 0, // Fetch totalRP for rank calculation
-    }));
+    const activeUid = localStorage.getItem("jigsudo_active_uid");
+
+    return querySnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        username: doc.data().username || "Anonymous",
+        score: doc.data()[fieldName] || 0,
+        totalRP: doc.data().totalRP || 0, // Fetch totalRP for rank calculation
+        isPublic: doc.data().isPublic !== false
+      }))
+      .filter((u) => u.isPublic || u.id === activeUid)
+      .slice(0, 10);
   } catch (error) {
     console.error(`[Ranking] Error fetching ${fieldName}:`, error);
     return [];
