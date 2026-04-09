@@ -112,37 +112,32 @@ exports.submitDailyWin = functions.https.onCall(async (data, context) => {
   const finalRP = Number((SCORING.BASE_WIN_RP + timeBonus - penalty).toFixed(3));
   const finalScore = Math.max(0, finalRP);
 
-  // 5. ATOMIC UPDATE: Stats and History
+  // 5. ATOMIC UPDATE: Stats and History using Dot Notation for Nested Fields (Safety v1.1.21)
   const userRef = db.collection("users").doc(uid);
   const batch = db.batch();
 
-  // Update root mirrored fields
-  batch.set(userRef, {
+  const updates = {
     totalRP: admin.firestore.FieldValue.increment(finalScore),
     monthlyRP: admin.firestore.FieldValue.increment(finalScore),
     dailyRP: finalScore,
     lastDailyUpdate: today,
     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-    // Stats nested map (for app consumption)
-    stats: {
-        currentRP: admin.firestore.FieldValue.increment(finalScore),
-        monthlyRP: admin.firestore.FieldValue.increment(finalScore),
-        totalRP: admin.firestore.FieldValue.increment(finalScore),
-        totalScoreAccumulated: admin.firestore.FieldValue.increment(finalScore),
-        // We'll trust the provided stageTimes for the history log entry (it's purely for display)
-        history: {
-            [today]: {
-                status: "won",
-                score: finalScore,
-                totalTime: serverDurationMs,
-                peaksErrors: peaksErrors || 0,
-                stageTimes: stageTimes,
-                timestamp: now,
-                originalWin: true
-            }
-        }
+    "stats.currentRP": admin.firestore.FieldValue.increment(finalScore),
+    "stats.monthlyRP": admin.firestore.FieldValue.increment(finalScore),
+    "stats.totalRP": admin.firestore.FieldValue.increment(finalScore),
+    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalScore),
+    [`stats.history.${today}`]: {
+        status: "won",
+        score: finalScore,
+        totalTime: serverDurationMs,
+        peaksErrors: peaksErrors || 0,
+        stageTimes: stageTimes,
+        timestamp: now,
+        originalWin: true
     }
-  }, { merge: true });
+  };
+
+  batch.update(userRef, updates);
 
   // Mark session as completed
   batch.update(sessionRef, { completed: true, score: finalScore, durationMs: serverDurationMs });

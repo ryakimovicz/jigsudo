@@ -169,18 +169,19 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       lastUpdated: serverTimestamp(),
     };
 
-    // ONLY update stats key if valid data is provided and not specifically restricted to metadata
-    const hasValidStats = statsData && Object.keys(statsData).length > 2; // Basic sanity check (>2 keys implies real stats)
-    if (hasValidStats && !metadataOnly) {
-      updateData.stats = statsData;
-      // Mirror top-level fields for efficient Firestore indexing
-      updateData.totalRP = Number(statsData.currentRP || 0);
-      updateData.monthlyRP = Number(statsData.monthlyRP || 0);
-      updateData.dailyRP = Number(statsData.dailyRP || 0);
-      updateData.lastDailyUpdate = statsData.lastDailyUpdate || null;
-      updateData.lastMonthlyUpdate = statsData.lastMonthlyUpdate || null;
-    } else {
-      console.log("[DB] Metadata-only update triggered (Skipping stats overwrite).");
+    // --- SECURITY FILTER (v1.1.21) ---
+    // If the user is authenticated, we DO NOT send competitive stats from the client.
+    // The Security Rules will block them anyway, so we strip them here to avoid 
+    // the entire update being rejected.
+    const hasValidStats = statsData && Object.keys(statsData).length > 2;
+    const shouldSkipStats = hasValidStats && !metadataOnly;
+
+    if (shouldSkipStats) {
+      console.log("[DB] Client-side competitive stats update suppressed (Protected by Referee).");
+      // We only keep metadata that is still allowed for the client (like peaksErrors)
+      if (statsData.peaksErrors !== undefined) {
+         updateData.stats = { peaksErrors: statsData.peaksErrors };
+      }
     }
 
     // If username is provided, save it as a top-level searchable field

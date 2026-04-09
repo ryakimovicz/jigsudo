@@ -973,7 +973,6 @@ export class GameManager {
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
       const { getCurrentUser } = await import("./auth.js?v=1.1.19");
-      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.1.19");
       const { showNotification } = await import("./ui.js?v=1.1.19");
       const user = getCurrentUser();
 
@@ -1153,18 +1152,10 @@ export class GameManager {
     const { getJigsudoDateString, getJigsudoYearMonth } =
       await import("./utils/time.js?v=1.1.19");
     const user = getCurrentUser();
-    if (user && !user.isAnonymous) {
-      const today = getJigsudoDateString();
-      const currentMonth = getJigsudoYearMonth();
-
-      const statsWithDates = {
-        ...stats,
-        lastDailyUpdate: today,
-        lastMonthlyUpdate: currentMonth,
-      };
-      delete statsWithDates.lastPenaltyDate; // Clear penalty anchor on stat recalculation
-      saveUserStats(user.uid, statsWithDates);
-    }
+    // --- REFEREE TRANSITION (v1.1.21) ---
+    // We no longer push partial points to the cloud here. 
+    // They are kept locally for the UI, and the final Referee call will validate them.
+    console.log(`[RP] Local points awarded for ${stage}. Cloud update deferred to Referee.`);
 
     // Check if current partial score beats the record
     this._updateBestScore();
