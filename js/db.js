@@ -400,10 +400,22 @@ export async function wipeUserData(userId) {
   }
   try {
     const userRef = doc(db, "users", userId);
-    // Instead of deleting the whole doc, just delete game data
+
+    // 1. Recursive cleanup: Delete sessions subcollection
+    // Firestore deleteDoc does NOT delete subcollections automatically.
+    const sessionsRef = collection(db, "users", userId, "sessions");
+    const sessionsSnap = await getDocs(sessionsRef);
+    
+    if (!sessionsSnap.empty) {
+      console.log(`[DB] Deleting ${sessionsSnap.size} orphan sessions for ${userId}...`);
+      const deletePromises = sessionsSnap.docs.map(sessionDoc => deleteDoc(sessionDoc.ref));
+      await Promise.all(deletePromises);
+    }
+
+    // 2. Delete the main user document
     await deleteDoc(userRef);
 
-    console.warn(`🔥 User Game Data Wiped for ${userId}`);
+    console.warn(`🔥 User and all associated data Wiped for ${userId}`);
   } catch (error) {
     console.error("Error wiping user data:", error);
   }
