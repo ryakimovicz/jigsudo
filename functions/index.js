@@ -30,7 +30,8 @@ const SCORING = {
     search: 1.0,
     code: 1.0
   },
-  STAGE_ORDER: ["memory", "jigsaw", "sudoku", "peaks", "search", "code"]
+  STAGE_ORDER: ["memory", "jigsaw", "sudoku", "peaks", "search", "code"],
+  RANK_THRESHOLDS: [0, 15, 45, 100, 160, 250, 400, 650, 1000, 1500, 2100, 2800, 3700, 5000, 6500, 8000]
 };
 
 function getJigsudoDateString() {
@@ -51,9 +52,28 @@ exports.startJigsudoSession = onCall(async (request) => {
 
   const uid = request.auth.uid;
   const today = getJigsudoDateString();
-  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
+  const userRef = db.collection("users").doc(uid);
+  const sessionRef = userRef.collection("sessions").doc(today);
 
   try {
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) throw new HttpsError("not-found", "User profile not found.");
+    const userData = userSnap.data();
+    const stats = userData.stats || {};
+
+    // 1. PERFORM MAINTENANCE (v1.4.2)
+    // If the cron script hasn't run yet, apply decay before starting
+    if ((stats.lastDecayCheck || "") < today) {
+      await _performUserMaintenance(userRef, userData, today);
+    }
+
+    // 2. MARK INTENT (THE SHIELD)
+    // Just by calling this, the user is safe for today.
+    await userRef.update({
+      "stats.lastIntentDate": today,
+      "stats.lastDecayCheck": today
+    });
+
     const sessionDoc = await sessionRef.get();
     if (sessionDoc.exists) {
       return { status: "already_started", startTime: sessionDoc.data().startTime };
@@ -71,9 +91,93 @@ exports.startJigsudoSession = onCall(async (request) => {
 
     return { status: "started", startTime: startTime };
   } catch (error) {
+    console.error("[startJigsudoSession] Error:", error);
     throw new HttpsError("internal", error.message);
   }
 });
+
+/**
+ * Internal Maintenance Logic (v1.4.2)
+ * Shared with GitHub Actions script logic.
+ */
+async function _performUserMaintenance(userRef, userData, today) {
+  const stats = userData.stats || {};
+  const lastIntent = stats.lastIntentDate || userData.lastDailyUpdate || userData.lastPlayedDate || today;
+  const lastUpdate = userData.lastDailyUpdate || "";
+  const lastMonth = userData.lastMonthlyUpdate || "";
+  const nowMonth = today.substring(0, 7);
+  const isNewMonth = lastMonth !== nowMonth;
+
+  const updates = {};
+  
+  // 1. Reset Daily Points for the new day
+  if (lastUpdate !== today) {
+    updates.dailyRP = 0;
+    updates["stats.dailyRP"] = 0;
+  }
+
+  // 2. Reset Monthly Points if Month changed
+  if (isNewMonth) {
+    updates.monthlyRP = 0;
+    updates["stats.monthlyRP"] = 0;
+  }
+
+  // 3. Dynamic Decay Penalty (5 + Level)
+  const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
+  const todayDate = new Date(today + "T12:00:00Z");
+  const intentDiff = Math.round((todayDate - lastIntentDate) / (1000 * 60 * 60 * 24));
+
+  if (intentDiff > 1) {
+    const missedCount = intentDiff - 1;
+    let currentTempRP = userData.totalRP || 0;
+    let totalPenalty = 0;
+
+    for (let i = 0; i < missedCount; i++) {
+      // Find Rank Level
+      let level = 0;
+      for (let j = 0; j < SCORING.RANK_THRESHOLDS.length; j++) {
+        if (currentTempRP >= SCORING.RANK_THRESHOLDS[j]) level = j;
+        else break;
+      }
+      const penalty = 5 + level;
+      currentTempRP = Math.max(0, currentTempRP - penalty);
+      totalPenalty += penalty;
+      if (currentTempRP === 0) break;
+    }
+
+    if (totalPenalty > 0) {
+      console.log(`[Maintenance] Applying penalty to ${userData.username || userRef.id}: -${totalPenalty} RP`);
+      const negPenalty = -Number(totalPenalty.toFixed(3));
+      
+      updates.totalRP = admin.firestore.FieldValue.increment(negPenalty);
+      updates.monthlyRP = admin.firestore.FieldValue.increment(negPenalty);
+      updates["stats.currentRP"] = admin.firestore.FieldValue.increment(negPenalty);
+      updates["stats.totalRP"] = admin.firestore.FieldValue.increment(negPenalty);
+      updates["stats.monthlyRP"] = admin.firestore.FieldValue.increment(negPenalty);
+      
+      // Store negative adjustment for auditing
+      updates["stats.manualRPAdjustment"] = admin.firestore.FieldValue.increment(negPenalty);
+      
+      const yesterdayDate = new Date(todayDate.getTime());
+      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+      updates["stats.lastPenaltyDate"] = yesterdayDate.toISOString().substring(0, 10);
+    }
+  }
+
+  // 4. Streak Reset
+  if (lastUpdate) {
+    const lastWinDate = new Date(lastUpdate + "T12:00:00Z");
+    const streakDiff = Math.round((todayDate - lastWinDate) / (1000 * 60 * 60 * 24));
+    if (streakDiff > 1 && (stats.currentStreak || 0) !== 0) {
+      updates["stats.currentStreak"] = 0;
+    }
+  }
+
+  updates["stats.lastDecayCheck"] = today;
+  updates.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
+
+  await userRef.update(updates);
+}
 
 /**
  * 2. submitDailyWin (v2)

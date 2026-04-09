@@ -50,67 +50,75 @@ async function runDecay() {
     const batch = db.batch();
     let penalizedCount = 0;
 
-    snapshot.docs.forEach((doc) => {
+snapshot.docs.forEach((doc) => {
       const data = doc.data();
       const stats = data.stats || {};
-      const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
+      const lastIntent = stats.lastIntentDate || data.lastDailyUpdate || data.lastPlayedDate;
+      const lastUpdate = data.lastDailyUpdate || "";
+      const lastMonth = data.lastMonthlyUpdate || "";
+      const nowMonth = todayStr.substring(0, 7);
+      const isNewMonth = lastMonth !== nowMonth;
 
-      if (!lastIntent) return; // New user without any markers yet
+      if (!lastIntent) return; 
 
-      // Prepare update object with mandatory resets for a new day
       const updateObj = {
-        dailyRP: 0,
-        "stats.dailyRP": 0,
         "stats.lastDecayCheck": todayStr,
         lastUpdated: FieldValue.serverTimestamp(),
       };
 
-      // Strict day difference calculation
-      const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
-      const todayDate = new Date(todayStr + "T12:00:00Z");
-      const intentDiff = Math.round((todayDate - lastIntentDate) / (1000 * 60 * 60 * 24));
+      // 1. Reset Daily Points for the new day
+      if (lastUpdate !== todayStr) {
+        updateObj.dailyRP = 0;
+        updateObj["stats.dailyRP"] = 0;
+      }
 
-      // 1. Monthly Reset
-      const lastMonth = lastIntent.substring(0, 7);
-      const currentMonth = todayStr.substring(0, 7);
-      if (lastMonth !== currentMonth) {
+      // 2. Reset Monthly Points if Month changed
+      if (isNewMonth) {
         updateObj.monthlyRP = 0;
         updateObj["stats.monthlyRP"] = 0;
       }
 
-      // 2. Penalty Reset (Only if user MISSED a full day of INTENTIONAL activity)
+      // 3. Dynamic Decay Penalty (5 + Level)
+      const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
+      const todayDate = new Date(todayStr + "T12:00:00Z");
+      const intentDiff = Math.round((todayDate - lastIntentDate) / (1000 * 60 * 60 * 24));
+
       if (intentDiff > 1) {
         const missedCount = intentDiff - 1;
-        const currentTotalRP = data.totalRP || 0;
-        let currentSimulatedRP = currentTotalRP;
+        let currentTempRP = data.totalRP || 0;
+        let totalPenalty = 0;
 
         for (let i = 0; i < missedCount; i++) {
-          const rankInfo = getRankData(currentSimulatedRP);
-          const penaltyForDay = 5 + rankInfo.level;
-          currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
-          if (currentSimulatedRP === 0) break;
+          const rankInfo = getRankData(currentTempRP);
+          const penalty = 5 + rankInfo.level;
+          currentTempRP = Math.max(0, currentTempRP - penalty);
+          totalPenalty += penalty;
+          if (currentTempRP === 0) break;
         }
 
-        let newRP = Number(currentSimulatedRP.toFixed(3));
-        updateObj.totalRP = newRP;
-        updateObj["stats.currentRP"] = newRP;
-
-          console.log(
-            `📉 Dynamic Penalty for ${data.username || doc.id}: Missed ${missedCount} days. RP: ${currentTotalRP} -> ${newRP}`,
-          );
-
+        if (totalPenalty > 0) {
+          const negPenalty = -Number(totalPenalty.toFixed(3));
+          console.log(`📉 Penalty for ${data.username || doc.id}: -${totalPenalty} RP (Missed ${missedCount} days)`);
+          
+          updateObj.totalRP = FieldValue.increment(negPenalty);
+          updateObj.monthlyRP = FieldValue.increment(negPenalty);
+          updateObj["stats.currentRP"] = FieldValue.increment(negPenalty);
+          updateObj["stats.totalRP"] = FieldValue.increment(negPenalty);
+          updateObj["stats.monthlyRP"] = FieldValue.increment(negPenalty);
+          updateObj["stats.manualRPAdjustment"] = FieldValue.increment(negPenalty);
+          
           const yesterdayDate = new Date(todayDate.getTime());
           yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
           updateObj["stats.lastPenaltyDate"] = yesterdayDate.toISOString().substring(0, 10);
+        }
       }
 
-      // 3. Strict Streak Reset (Missed full Jigsudo days of WINNING)
-      const lastWin = stats.lastPlayedDate;
-      if (lastWin && lastWin !== todayStr) {
+      // 4. Streak Reset
+      const lastWin = data.lastDailyUpdate;
+      if (lastWin) {
         const lastWinDate = new Date(lastWin + "T12:00:00Z");
         const streakDiff = Math.round((todayDate - lastWinDate) / (1000 * 60 * 60 * 24));
-        
-        if (streakDiff > 1 && stats.currentStreak !== 0) {
+        if (streakDiff > 1 && (stats.currentStreak || 0) !== 0) {
           console.log(`[Streak] Win missed for ${data.username || doc.id}. Resetting streak to 0.`);
           updateObj["stats.currentStreak"] = 0;
         }

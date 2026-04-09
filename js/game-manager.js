@@ -217,17 +217,38 @@ export class GameManager {
     const seedStr = this.currentSeed.toString();
     const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
-    // 1. Process any past missed days first (if starting game for the first time today)
-    await this._checkRankDecay();
+    // v1.4.2: SERVER AUTHORITY START
+    const { getCurrentUser } = await import("./auth.js?v=1.1.19");
+    const user = getCurrentUser();
 
-    // 2. Register today's activity (Activity Insurance)
-    // By updating lastDailyUpdate to today, any subsequent checks or tonight's bot maintenance
-    // will see that the user was active, saving them from the penalty even if they don't finish.
-    this.stats.lastDailyUpdate = dateStr;
+    if (user && !user.isAnonymous) {
+      console.log("[Referee] Registering game start and maintenance check on server...");
+      try {
+        const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
+        const result = await callJigsudoFunction("startJigsudoSession", {
+          seed: this.currentSeed
+        });
+        
+        if (result.status === "started" || result.status === "already_started") {
+          console.log("[Referee] Session successfully initialized/resumed.");
+          // We trust server applied decay. Local update for UI:
+          this.stats.lastIntentDate = dateStr;
+          this.stats.lastDecayCheck = dateStr;
+        }
+      } catch (err) {
+        console.error("[Referee] Failed to initialize session on server:", err);
+        // Fallback or Alert?
+      }
+    } else {
+      // Guest/Anonymous Flow: Keep client-side decay logic
+      await this._checkRankDecay();
+      this.stats.lastDailyUpdate = dateStr;
+      this.stats.lastDecayCheck = dateStr;
+    }
+
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
-    this.stats.lastDecayCheck = dateStr;
     delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
-    this.save(); // Force save to local storage immediately
+    this.save(); 
 
     if (!this.stats.history[dateStr]) {
       console.log(`[GameManager] Game started for ${dateStr} (Session active).`);
@@ -1261,7 +1282,6 @@ export class GameManager {
     }
 
     this.isProcessingQueue = false;
-  }
   }
 
   /**
