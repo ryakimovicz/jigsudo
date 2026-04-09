@@ -65,7 +65,7 @@ function _reconstructStats(data) {
     lastDailyUpdate: s.lastDailyUpdate || data.lastDailyUpdate || data["stats.lastDailyUpdate"] || null,
     lastMonthlyUpdate: s.lastMonthlyUpdate || data.lastMonthlyUpdate || data["stats.lastMonthlyUpdate"] || null,
     history: s.history || data.history || {},
-    activeSessionId: statsWrap.activeSessionId || data.activeSessionId || data["stats.activeSessionId"] || null,
+    activeSessionId: s.activeSessionId || data.activeSessionId || data["stats.activeSessionId"] || null,
     integrityChecked: "1.5.0"
   };
 
