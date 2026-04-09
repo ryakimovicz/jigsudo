@@ -40,7 +40,8 @@ function renderChangelog() {
                 "changelog_v1118_item2",
                 "changelog_v1118_item3",
                 "changelog_v1118_item4",
-                "changelog_v1118_item5"
+                "changelog_v1118_item5",
+                "changelog_v1118_item6"
             ]
         },
         {
