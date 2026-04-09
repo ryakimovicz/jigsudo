@@ -165,45 +165,40 @@ export async function saveUserStats(userId, statsData, username = null, metadata
   try {
     const userRef = doc(db, "users", userId);
 
+    const { auth } = await import("./firebase-config.js?v=1.1.19");
+    const currentUser = auth.currentUser;
+
+    const { updateDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+
     const updateData = {
       lastUpdated: serverTimestamp(),
+      isPublic: true, // Self-healing: Ensure visibility for ranking
+      isVerified: currentUser ? currentUser.emailVerified : false
     };
 
-    // --- SECURITY FILTER (v1.1.21) ---
-    // If the user is authenticated, we DO NOT send competitive stats from the client.
-    // The Security Rules will block them anyway, so we strip them here to avoid 
-    // the entire update being rejected.
-    const hasValidStats = statsData && Object.keys(statsData).length > 2;
-    const shouldSkipStats = hasValidStats && !metadataOnly;
-
-    if (shouldSkipStats) {
-      console.log("[DB] Client-side competitive stats update suppressed (Protected by Referee).");
-      // We only keep metadata that is still allowed for the client (like peaksErrors)
-      if (statsData.peaksErrors !== undefined) {
-         updateData.stats = { peaksErrors: statsData.peaksErrors };
-      }
-    }
-
-    // If username is provided, save it as a top-level searchable field
-    const { getCurrentUser } = await import("./auth.js?v=1.1.19");
-    const user = getCurrentUser();
-    if (user) {
-      const isGoogleUser = user.providerData.some(
-        (p) => p.providerId === "google.com",
-      );
-      updateData.isVerified = user.emailVerified || isGoogleUser;
-    }
     if (username) {
       updateData.username = username;
       updateData.username_lc = username.toLowerCase();
+    }
+
+    if (userStats && userStats.stats) {
+      const s = userStats.stats;
+      // We only allow the client to update RP values and session metadata.
+      // wins, currentStreak, and maxStreak are RESERVED for the Referee.
+      updateData["stats.dailyRP"] = s.dailyRP || 0;
+      updateData["stats.monthlyRP"] = s.monthlyRP || 0;
+      updateData["stats.totalRP"] = s.totalRP || 0;
+      updateData["stats.lastLocalUpdate"] = s.lastLocalUpdate || Date.now();
+      updateData["stats.integrityChecked"] = s.integrityChecked || "v1.2.1";
     }
 
     if (gameManager.isWiping) {
       console.log("[DB] Update blocked: GM is wiping.");
       return;
     }
-    await setDoc(userRef, updateData, { merge: true });
-    console.log("Stats saved to cloud.");
+
+    await updateDoc(userRef, updateData);
+    console.log("[DB] Metadata and RP updated surgicaly.");
   } catch (error) {
     console.error("Error saving stats:", error);
   }

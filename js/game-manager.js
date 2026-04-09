@@ -1152,10 +1152,10 @@ export class GameManager {
     const { getJigsudoDateString, getJigsudoYearMonth } =
       await import("./utils/time.js?v=1.1.19");
     const user = getCurrentUser();
-    // --- REFEREE TRANSITION (v1.1.21) ---
-    // We no longer push partial points to the cloud here. 
-    // They are kept locally for the UI, and the final Referee call will validate them.
-    console.log(`[RP] Local points awarded for ${stage}. Cloud update deferred to Referee.`);
+    if (user && !user.isAnonymous) {
+      console.log(`[RP] Syncing stage points to cloud for ${stage}...`);
+      saveUserStats(user.uid, this.stats, user.displayName);
+    }
 
     // Check if current partial score beats the record
     this._updateBestScore();
@@ -1512,31 +1512,6 @@ export class GameManager {
         }
       }
 
-      // 1. PROTECTION: Guard against "Cloud Wipe" (Empty cloud stats vs populated local)
-      // If local has history but remote doesn't, it's likely a bug-induced wipe.
-      const localHasHistory =
-        this.stats &&
-        this.stats.history &&
-        Object.keys(this.stats.history).length > 0;
-      const remoteHasHistory =
-        remoteStats.history && Object.keys(remoteStats.history).length > 0;
-
-      if (localHasHistory && !remoteHasHistory) {
-        console.warn(
-          "[Sync] Cloud stats are EMPTY but local has history. Protection triggered: BLOCKING OVERWRITE.",
-        );
-        // Instead of adopting, we force a push of our local stats to "heal" the cloud
-        const { getCurrentUser } = await import("./auth.js?v=1.1.19");
-        const user = getCurrentUser();
-        if (user && !user.isAnonymous) {
-          console.log(
-            "[Sync] Restoration: Pushing local stats to cloud to fix the accidental wipe.",
-          );
-          this.forceCloudSave();
-        }
-        return; // STOP: Do not adopt the empty stats
-      }
-
       // Conflict Resolution for Stats: Prevent "Cloud Echo" overwrites
       // If local has a newer or equal update timestamp, ignore the echo.
       const localTS = this.stats ? this.stats.lastLocalUpdate || 0 : 0;
@@ -1553,6 +1528,25 @@ export class GameManager {
         remoteTS > localTS ||
         (remoteStats.totalPlayed || 0) > (this.stats.totalPlayed || 0)
       ) {
+        // 1. PROTECTION: Guard against "Cloud Wipe" (Empty cloud stats vs populated local)
+        // If local has history but remote doesn't, it's likely a bug-induced wipe.
+        
+        // Refinement: Detect actual game entries, not just metadata keys
+        const hasDateKeys = (obj) => obj && Object.keys(obj).some(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
+        const localHasHistory = this.stats && this.stats.history && hasDateKeys(this.stats.history);
+        const remoteHasHistory = remoteStats.history && hasDateKeys(remoteStats.history);
+
+        if (localHasHistory && !remoteHasHistory && !this.isWiping) {
+          console.warn("[Sync] Cloud stats are EMPTY but local has history. Protection triggered.");
+          const { getCurrentUser } = await import("./auth.js?v=1.1.19");
+          const user = getCurrentUser();
+          if (user && !user.isAnonymous) {
+            console.log("[Sync] Restoration: Pushing local stats to cloud to fix accidental wipe.");
+            this.forceCloudSave();
+          }
+          return; // STOP: Do not adopt empty stats
+        }
+
         console.log(
           `[Sync] Accepting remote stats. (Local: ${localTS}, Remote: ${remoteTS}, Wiping: ${this.isWiping})`,
         );
@@ -2075,14 +2069,17 @@ export class GameManager {
                 });
                 
                 if (serverResult.status === "success") {
-                    console.log("[Referee] Points verified and saved by server:", serverResult.score);
+                    console.log("[Referee] Points and Streaks verified by server:", serverResult);
                     // The server already updated Firestore. 
-                    // We just need to ensure our local 'stats' object reflects the new state 
-                    // so the UI updates without waiting for the next sync.
-                    const diff = serverResult.score;
-                    stats.currentRP = (stats.currentRP || 0) + diff;
-                    stats.monthlyRP = (stats.monthlyRP || 0) + diff;
-                    stats.dailyRP = diff;
+                    // We adopt the OFFICIAL server values for the local UI
+                    stats.currentRP = (stats.currentRP || 0) + serverResult.score;
+                    stats.monthlyRP = (stats.monthlyRP || 0) + serverResult.score;
+                    stats.dailyRP = serverResult.score;
+                    
+                    // NEW: Adopt official streak and win count
+                    stats.currentStreak = serverResult.streak;
+                    stats.maxStreak = serverResult.maxStreak;
+                    stats.wins = serverResult.wins;
                 }
             } catch (err) {
                 console.error("[Referee] Validation failed!", err);

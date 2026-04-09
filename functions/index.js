@@ -114,17 +114,41 @@ exports.submitDailyWin = onCall(async (request) => {
   const finalRP = Number((SCORING.BASE_WIN_RP + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
   const finalScore = Math.max(0, finalRP);
 
-  // 5. ATOMIC UPDATE
+  // 5. ATOMIC UPDATE (Read before write for streak logic)
   const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const userData = userSnap.data() || {};
+  const stats = userData.stats || {};
+
+  // Streak Calculation
+  let newStreak = 1;
+  const lastUpdate = userData.lastDailyUpdate || "";
+  
+  // Helper to get yesterday
+  const d = new Date(today + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 1);
+  const yesterday = d.toISOString().split("T")[0];
+
+  if (lastUpdate === yesterday) {
+    newStreak = (stats.currentStreak || 0) + 1;
+  } else if (lastUpdate === today) {
+    newStreak = stats.currentStreak || 1; // Already won today, keep streak
+  }
+
+  const newMaxStreak = Math.max(stats.maxStreak || 0, newStreak);
+  const newWins = (stats.wins || 0) + 1;
+
   const batch = db.batch();
 
-  // Root fields maintenance
+  // Root fields maintenance + Self-healing (isPublic and isVerified)
   batch.set(userRef, {
     totalRP: admin.firestore.FieldValue.increment(finalScore),
     monthlyRP: admin.firestore.FieldValue.increment(finalScore),
     dailyRP: finalScore,
     lastDailyUpdate: today,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    isVerified: !!request.auth.token.email_verified,
+    isPublic: userData.isPublic !== false // Preserve or default to true
   }, { merge: true });
 
   // Stats nested update (Dot notation for surgical precision)
@@ -133,6 +157,9 @@ exports.submitDailyWin = onCall(async (request) => {
     "stats.monthlyRP": admin.firestore.FieldValue.increment(finalScore),
     "stats.totalRP": admin.firestore.FieldValue.increment(finalScore),
     "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalScore),
+    "stats.currentStreak": newStreak,
+    "stats.maxStreak": newMaxStreak,
+    "stats.wins": newWins,
     [`stats.history.${today}`]: {
         status: "won",
         score: finalScore,
@@ -149,5 +176,12 @@ exports.submitDailyWin = onCall(async (request) => {
   await batch.commit();
   console.log(`[Referee] Points awarded to ${uid}: ${finalScore}`);
 
-  return { status: "success", score: finalScore, durationMs: serverDurationMs };
+  return { 
+    status: "success", 
+    score: finalScore, 
+    durationMs: serverDurationMs,
+    streak: newStreak,
+    maxStreak: newMaxStreak,
+    wins: newWins
+  };
 });
