@@ -143,10 +143,13 @@ export class GameManager {
       // Purge invalid history once per load
       this._healHistoryProgress();
     } else if (dailyData) {
-      console.log("[GameManager] Starting Fresh Daily Puzzle!");
       this.state = this.createStateFromJSON(dailyData);
       const activeUid = localStorage.getItem("jigsudo_active_uid");
-      if (activeUid) this.state.meta.userId = activeUid;
+      if (activeUid) {
+        this.state.meta.userId = activeUid;
+        // Anchor the server session for victory validation
+        this.ensureSessionStarted();
+      }
 
       // Record as played in history ONLY if it's the original day
       const seedStr = this.currentSeed.toString();
@@ -1414,6 +1417,28 @@ export class GameManager {
   startStageTimer(stage) {
     this.currentStage = stage;
     this.stageStartTime = Date.now();
+    
+    // Safety: Ensure server knows we are playing today if logged in
+    if (stage === "memory") {
+        this.ensureSessionStarted();
+    }
+  }
+
+  /**
+   * Calls the Cloud Function to anchor the start time on the server.
+   */
+  async ensureSessionStarted() {
+    const { getCurrentUser } = await import("./auth.js?v=1.1.19");
+    const user = getCurrentUser();
+    if (user && !user.isAnonymous) {
+        try {
+            const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
+            const result = await callJigsudoFunction("startJigsudoSession", {});
+            console.log("[Sync] Server Session Anchor:", result);
+        } catch (err) {
+            console.warn("[Sync] Failed to anchor server session:", err);
+        }
+    }
   }
 
   stopStageTimer() {
@@ -2044,10 +2069,40 @@ export class GameManager {
       const dailyScore = Math.max(0, 6.0 + netChange);
 
       if (!this.isReplay && !isAlreadyWon) {
-        // Add ONLY the performance delta (bonus/penalty) since 6.0 base was already added per stage
-        stats.currentRP = (stats.currentRP || 0) + netChange;
-        stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
-        stats.dailyRP = dailyScore; // Set absolute daily score (6.0 + netChange)
+        // --- REFEREE INTEGRATION ---
+        const { getCurrentUser } = await import("./auth.js?v=1.1.19");
+        const user = getCurrentUser();
+        
+        if (user && !user.isAnonymous) {
+            console.log("[Referee] Submitting results for validation...");
+            try {
+                const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
+                const serverResult = await callJigsudoFunction("submitDailyWin", {
+                    stageTimes: this.state.meta.stageTimes || {},
+                    peaksErrors: this.state.stats?.peaksErrors || 0,
+                    seed: this.currentSeed
+                });
+                
+                if (serverResult.status === "success") {
+                    console.log("[Referee] Points verified and saved by server:", serverResult.score);
+                    // The server already updated Firestore. 
+                    // We just need to ensure our local 'stats' object reflects the new state 
+                    // so the UI updates without waiting for the next sync.
+                    const diff = serverResult.score;
+                    stats.currentRP = (stats.currentRP || 0) + diff;
+                    stats.monthlyRP = (stats.monthlyRP || 0) + diff;
+                    stats.dailyRP = diff;
+                }
+            } catch (err) {
+                console.error("[Referee] Validation failed!", err);
+                // Fallback or critical error? For now, we allow local save but it will be rejected by Rules.
+            }
+        } else {
+            // Guest Flow: Maintain legacy local calculation (Not competitive)
+            stats.currentRP = (stats.currentRP || 0) + netChange;
+            stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
+            stats.dailyRP = dailyScore;
+        }
 
         if (stats.currentRP < 0) stats.currentRP = 0;
         if (stats.dailyRP < 0) stats.dailyRP = 0;
@@ -2092,7 +2147,7 @@ export class GameManager {
         w.sumScore += dailyScore;
         w.count++;
 
-        stats.lastPlayedDate = today; // Only update lastPlayedDate if it was a real win
+        stats.lastPlayedDate = today; 
         stats.lastDecayCheck = today;
       }
 

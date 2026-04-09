@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User Profiles & Game Data
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // RESTRICTED WRITE:
+      // We allow the client to save progress and settings, 
+      // but NOT competitive stats (RP, Streak, History).
+      // Competitive stats can ONLY be updated by the Cloud Function (Admin).
+      allow write: if request.auth != null && request.auth.uid == userId 
+                   && !request.resource.data.diff(resource.data).affectedKeys()
+                      .hasAny(['totalRP', 'monthlyRP', 'dailyRP', 'currentStreak', 'wins', 'history', 'isVerified']);
+      
+      // Sessions for the Referee (Internal use)
+      match /sessions/{sessionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        // Client can only CREATE a session (handled by startRegistration function normally, 
+        // but we keep it tight). The function will have Admin access regardless.
+        allow write: if false; 
+      }
+    }
+
+    // Public Leaderboards (Read only for everyone)
+    match /leaderboards/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // Global Config / Puzzles
+    match /puzzles/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

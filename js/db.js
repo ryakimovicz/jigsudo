@@ -1,5 +1,4 @@
-/* Firestore Database Module */
-import { db } from "./firebase-config.js?v=1.1.19";
+import { db, functions } from "./firebase-config.js?v=1.1.19";
 import {
   doc,
   setDoc,
@@ -15,9 +14,22 @@ import {
   addDoc,
   getCountFromServer,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js";
 import { gameManager } from "./game-manager.js?v=1.1.19";
 
-// ... (rest of imports/vars)
+/**
+ * Helper to call a Jigsudo Cloud Function (Referee)
+ */
+export async function callJigsudoFunction(name, data) {
+  try {
+    const fn = httpsCallable(functions, name);
+    const result = await fn(data);
+    return result.data;
+  } catch (error) {
+    console.error(`[Functions] Error calling ${name}:`, error);
+    throw error;
+  }
+}
 
 // Real-time listener unsubscribe function
 let unsubscribeProgress = null;
