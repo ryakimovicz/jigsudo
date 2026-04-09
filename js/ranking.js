@@ -631,28 +631,28 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
         </tr>
       `;
     });
+  }
 
-    if (personal && !personal.inTop) {
-      const pRankData = getRankData(personal.totalRP || personal.score || 0); // fallback if personal doesn't have totalRP yet in this call
-      const pRankName = t[pRankData.rank.nameKey] || pRankData.rank.nameKey;
-      const pRankLevel = `${t.rank_level_prefix || "Nvl."} ${pRankData.level}`;
+  if (personal && !personal.inTop) {
+    const pRankData = getRankData(personal.totalRP || personal.score || 0); // fallback if personal doesn't have totalRP yet in this call
+    const pRankName = t[pRankData.rank.nameKey] || pRankData.rank.nameKey;
+    const pRankLevel = `${t.rank_level_prefix || "Nvl."} ${pRankData.level}`;
 
-      html += `
-        <tr class="ranking-separator">
-          <td colspan="3">...</td>
-        </tr>
-        <tr class="ranking-row current-user-row personal-rank-row" data-uid="${(personal.id || personal.username) + "_p"}">
-          <td class="rank-col">${personal.rank}</td>
-          <td class="user-col">
-            <div class="user-info-group">
-              <span class="username-text">${personal.username} ${t.ranking_you || "(Tú)"}</span>
-              <span class="user-rank-subtext">${pRankLevel} • ${pRankName}</span>
-            </div>
-          </td>
-          <td class="score-col">${scoreFormat.format(personal.score)}</td>
-        </tr>
-      `;
-    }
+    html += `
+      <tr class="ranking-separator">
+        <td colspan="3">...</td>
+      </tr>
+      <tr class="ranking-row current-user-row personal-rank-row" data-uid="${(personal.id || personal.username) + "_p"}">
+        <td class="rank-col">${personal.rank}</td>
+        <td class="user-col">
+          <div class="user-info-group">
+            <span class="username-text">${personal.username} ${t.ranking_you || "(Tú)"}</span>
+            <span class="user-rank-subtext">${pRankLevel} • ${pRankName}</span>
+          </div>
+        </td>
+        <td class="score-col">${scoreFormat.format(personal.score)}</td>
+      </tr>
+    `;
   }
 
   html += `</tbody></table>`;
