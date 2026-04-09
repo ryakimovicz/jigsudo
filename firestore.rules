@@ -15,11 +15,10 @@ service cloud.firestore {
       // but NOT competitive stats (RP, Streak, History).
       // Competitive stats can ONLY be updated by the Cloud Function (Admin).
       allow create: if request.auth != null && request.auth.uid == userId 
-                    && !request.resource.data.keys().hasAny(['currentStreak', 'wins', 'history', 'isVerified']);
+                    && !request.resource.data.keys().hasAny(['currentStreak', 'wins', 'history', 'stats.currentStreak', 'stats.wins', 'stats.history']);
       
       allow update: if request.auth != null && request.auth.uid == userId 
-                    && !request.resource.data.diff(resource.data).affectedKeys()
-                      .hasAny(['currentStreak', 'wins', 'history', 'isVerified']);
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['currentStreak', 'wins', 'history', 'stats.currentStreak', 'stats.wins', 'stats.history']);
       
       allow delete: if request.auth != null && request.auth.uid == userId;
       

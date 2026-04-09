@@ -188,9 +188,13 @@ export function initAuth() {
         console.error("[Auth] Error during sync phase:", err);
         if (!gameManager.getState()) await gameManager.prepareDaily();
       } finally {
-        gameManager.isWiping = false; // LOCK OFF
+        // v1.2.11: Extend wipe lock slightly to ensure sync has fully settled
+        setTimeout(() => {
+          gameManager.isWiping = false; // LOCK OFF
+          console.log("[Auth] Session initialization complete. Lock released.");
+        }, 500);
+
         document.body.classList.remove("syncing-account");
-        console.log("[Auth] Session initialization complete. Lock released.");
 
         // Dispatch custom event to signal that auth and data are ready
         window.dispatchEvent(
@@ -326,11 +330,14 @@ export async function logoutUser() {
     const { stopListeningAndCleanup } = await import("./db.js?v=1.1.19");
     stopListeningAndCleanup();
 
-    // Force sync before wiping local data
+    // 1. Force sync before wiping local data (Ensure points reach the cloud)
     try {
-      await gameManager.forceCloudSave();
+      if (gameManager.isDirty) {
+        console.log("[Auth] User is dirty. Forcing final cloud save before logout...");
+        await gameManager.forceCloudSave();
+      }
     } catch (e) {
-      console.warn("[Auth] Cloud save before logout failed:", e);
+      console.warn("[Auth] Final cloud save before logout failed or timed out. Proceeding with logout.", e);
     }
 
     await gameManager.clearAllData();

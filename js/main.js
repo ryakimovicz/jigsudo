@@ -127,13 +127,7 @@ async function startApp() {
   // Handle Beta Mode (Help Button)
   if (CONFIG.betaMode) {
     document.body.classList.add("beta-mode");
-    const debugBtn = document.getElementById("debug-help-btn");
-
-    // Listener handling delegated to memory.js (debugAutoMatch) to avoid double-firing
-    // and "No solver for this state" warnings.
   }
-
-  console.log("Jigsudo App Starting...");
 
   console.log("Jigsudo App Starting...");
 
@@ -142,7 +136,6 @@ async function startApp() {
     await gameManager.ready;
   } catch (err) {
     console.error("[Main] Game Manager failed to initialize:", err);
-    // Ensure we don't block the UI entirely
   }
 
   initLanguage();
@@ -165,22 +158,17 @@ async function startApp() {
     const user = e.detail.user;
     const tutorialDone = localStorage.getItem("jigsudo_tutorial_done");
     
-    // If user is authenticated (not anonymous), they've played before
     if (user && !user.isAnonymous) {
       if (!tutorialDone) localStorage.setItem("jigsudo_tutorial_done", "true");
       return;
     }
 
-    // Only show if not done, and we are at Home
     const isHome = !window.location.hash || window.location.hash === "#home" || window.location.hash === "#";
     
     if (!tutorialDone && isHome) {
-      // Set the flag IMMEDIATELY so it doesn't show again on reloads
       localStorage.setItem("jigsudo_tutorial_done", "true");
 
-      // Small delay to ensure everything is rendered before opening the modal
       setTimeout(() => {
-        // Re-check hash in case user navigated away during the delay
         const currentHash = window.location.hash;
         if (!currentHash || currentHash === "#home" || currentHash === "#") {
           router.navigateTo("#home/tutorial");
@@ -189,7 +177,6 @@ async function startApp() {
     }
   }, { once: true });
 
-  // Background update check
   checkForUpdates();
 
   // DEBUG TOOLS: Exposed only in Debug Mode
@@ -219,7 +206,10 @@ async function startApp() {
 
     window.magicWand = async () => {
       const { debugAutoMatch } = await import("./memory.js?v=1.1.19");
-      debugAutoMatch();
+      // v1.3.3: Artificial delay to prevent anti-cheat "too fast" errors on server
+      setTimeout(() => {
+        debugAutoMatch();
+      }, 150);
     };
 
     console.log("🛠️ Debug Commands Available:");
@@ -252,32 +242,25 @@ function attachAuthListeners() {
 
   const openAuthModal = () => {
     toggleModal(loginModal, true);
-    // Initial state: login
     window.history.pushState({ authModal: true, view: "login" }, "");
     updateAuthView("login");
 
-    // UI Cleanup
     document.getElementById("profile-dropdown")?.classList.add("hidden");
     document.getElementById("auth-dropdown")?.classList.add("hidden");
     if (window.innerWidth <= 768) {
       document.body.classList.add("header-condensed");
-      closeSidebar(false); // Close visually but keep state in history for restoration
+      closeSidebar(false);
     }
   };
 
   const closeAuthModal = (shouldGoBack = true) => {
     if (!loginModal || loginModal.classList.contains("hidden")) return;
     toggleModal(loginModal, false);
-
-    // If we closed manually, we need to "pop" all auth states from history.
-    // We might have one (login) or two (login -> register).
-    // We go back until the state no longer has authModal.
     if (shouldGoBack && window.history.state?.authModal) {
       window.history.back();
     }
   };
 
-  // Open Modal (Home, Sidebar, or Profile)
   const loginTriggers = ["btn-login-trigger", "btn-profile-login-guest"];
   loginTriggers.forEach((id) => {
     const btn = document.getElementById(id);
@@ -286,28 +269,21 @@ function attachAuthListeners() {
     }
   });
 
-  // Close Modal
   if (closeBtn) {
     closeBtn.addEventListener("click", () => closeAuthModal());
   }
 
-  // Handle Back Button for Auth Modal
   window.addEventListener("popstate", (e) => {
     const isAuthModalOpen = !loginModal.classList.contains("hidden");
 
     if (e.state && e.state.authModal) {
-      // We are in an auth state
       if (!isAuthModalOpen) toggleModal(loginModal, true);
       updateAuthView(e.state.view);
     } else if (isAuthModalOpen) {
-      // State no longer auth, but modal is open -> Close it
       closeAuthModal(false);
     }
   });
 
-  // Profile Navigation (Logged In)
-
-  // Profile Navigation (Logged In)
   const btnViewProfile = document.getElementById("btn-view-profile");
   if (btnViewProfile) {
     btnViewProfile.addEventListener("click", () => {
@@ -321,7 +297,6 @@ function attachAuthListeners() {
     });
   }
 
-  // Profile Navigation (Guest)
   const btnGuestProfile = document.getElementById("btn-guest-profile");
   if (btnGuestProfile) {
     btnGuestProfile.addEventListener("click", () => {
@@ -335,7 +310,6 @@ function attachAuthListeners() {
     });
   }
 
-  // Switch Forms
   const linkRegister = document.getElementById("switch-to-register");
   const linkLogin = document.getElementById("switch-to-login");
   const formLogin = document.getElementById("login-form");
@@ -344,7 +318,6 @@ function attachAuthListeners() {
   if (linkRegister) {
     linkRegister.addEventListener("click", (e) => {
       e.preventDefault();
-      // Push Register state
       window.history.pushState({ authModal: true, view: "register" }, "");
       updateAuthView("register");
     });
@@ -353,45 +326,29 @@ function attachAuthListeners() {
   if (linkLogin) {
     linkLogin.addEventListener("click", (e) => {
       e.preventDefault();
-      // Going back to login: If we are in register state, just go back.
       if (window.history.state?.view === "register") {
         window.history.back();
       } else {
-        // Fallback
         updateAuthView("login");
       }
     });
   }
 
-  // Logout - Removed from Menu
-  // Profile logout handled in profile.js
-
-  // Toggle Password Visibility
   document.querySelectorAll(".toggle-password").forEach((btn) => {
     btn.addEventListener("click", (e) => {
-      // Find the input associated with this button
-      const wrapper = e.currentTarget.closest(".password-wrapper"); // Use currentTarget for button
+      const wrapper = e.currentTarget.closest(".password-wrapper");
       const input = wrapper.querySelector("input");
-
       const newType = input.type === "password" ? "text" : "password";
-
-      // Update this input
       input.type = newType;
       e.currentTarget.textContent = newType === "text" ? "🙈" : "👁️";
 
-      // If this is the Register Password field, also toggle the Confirm field
       if (input.id === "register-password") {
-        const confirmInput = document.getElementById(
-          "register-password-confirm",
-        );
-        if (confirmInput) {
-          confirmInput.type = newType;
-        }
+        const confirmInput = document.getElementById("register-password-confirm");
+        if (confirmInput) confirmInput.type = newType;
       }
     });
   });
 
-  // Google Login Buttons
   document.querySelectorAll(".btn-login-google").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const errBox = document.getElementById("auth-error-msg");
@@ -409,15 +366,12 @@ function attachAuthListeners() {
     });
   });
 
-  // Submit Handlers
   formLogin?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = document.getElementById("login-email").value;
     const pass = document.getElementById("login-password").value;
     const errBox = document.getElementById("auth-error-msg");
-
     errBox.classList.add("hidden");
-
     const res = await loginUser(email, pass);
     if (!res.success) {
       errBox.textContent = res.error;
@@ -432,9 +386,7 @@ function attachAuthListeners() {
     const user = document.getElementById("register-username").value;
     const email = document.getElementById("register-email").value;
     const pass = document.getElementById("register-password").value;
-    const confirmPass = document.getElementById(
-      "register-password-confirm",
-    ).value;
+    const confirmPass = document.getElementById("register-password-confirm").value;
     const errBox = document.getElementById("auth-error-msg");
 
     errBox.classList.add("hidden");
@@ -458,7 +410,6 @@ function attachAuthListeners() {
     }
   });
 
-  // --- SOCIAL SHARE LOGIC ---
   window.shareApp = async function () {
     const { translations } = await import("./translations.js?v=1.1.19");
     const { getCurrentLang } = await import("./i18n.js?v=1.1.19");
@@ -474,12 +425,8 @@ function attachAuthListeners() {
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-        console.log("Shared successfully");
       } else {
-        // Fallback for Desktop
-        await navigator.clipboard.writeText(
-          `${shareData.text} Juega gratis aquí: ${shareData.url}`,
-        );
+        await navigator.clipboard.writeText(`${shareData.text} Juega gratis aquí: ${shareData.url}`);
         const { showToast } = await import("./ui.js?v=1.1.19");
         showToast(t.toast_share_success);
       }
@@ -489,7 +436,6 @@ function attachAuthListeners() {
   };
 }
 
-// Wait for DOM to be ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", startApp);
 } else {
@@ -498,15 +444,10 @@ if (document.readyState === "loading") {
 
 console.log("Main Loaded. Daily Seed:", gameManager.currentSeed);
 
-// Display Version
-// Display Version
 function displayVersion() {
   const footerBottom = document.querySelector(".footer-bottom");
   if (footerBottom) {
-    // Separator
     footerBottom.appendChild(document.createTextNode(" | "));
-
-    // Version Tag
     const versionSpan = document.createElement("span");
     versionSpan.className = "version-tag";
     versionSpan.innerText = CONFIG.version;

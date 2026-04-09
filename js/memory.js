@@ -158,7 +158,10 @@ export function attachDebugListener() {
       e.preventDefault();
       e.stopPropagation();
       console.log("Debug button clicked");
-      debugAutoMatch();
+      // v1.3.3: Artificial delay to prevent anti-cheat "too fast" errors on server
+      setTimeout(() => {
+        debugAutoMatch();
+      }, 150);
     };
   }
 }

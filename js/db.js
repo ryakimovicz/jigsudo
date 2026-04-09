@@ -34,6 +34,42 @@ export async function callJigsudoFunction(name, data) {
 // Real-time listener unsubscribe function
 let unsubscribeProgress = null;
 
+/**
+ * Internal helper to unify legacy stats reconstruction (v1.2.9)
+ */
+function _reconstructStats(data) {
+  // If no stats at all, return null
+  if (!data.stats && data.dailyRP === undefined && data.totalRP === undefined) return null;
+
+  const s = data.stats || {};
+  
+  // v1.2.13: Ghost-Field Scavenging
+  // We check BOTH the proper map AND those literal keys with dots (ghost fields)
+  // because previous versions created them incorrectly.
+  const scavenge = (key, fallback) => {
+    const ghostKey = `stats.${key}`;
+    return Math.max(fallback || 0, data[ghostKey] || 0);
+  };
+
+  // Compare Map vs Root vs Ghost and pick the highest value for each field
+  const stats = {
+    totalPlayed: scavenge("totalPlayed", Math.max(s.totalPlayed || s.played || 0, data.totalPlayed || data.played || 0)),
+    currentStreak: scavenge("currentStreak", Math.max(s.currentStreak || 0, data.currentStreak || 0)),
+    maxStreak: scavenge("maxStreak", Math.max(s.maxStreak || 0, data.maxStreak || 0)),
+    currentRP: scavenge("currentRP", Math.max(s.currentRP || s.totalRP || 0, data.currentRP || data.totalRP || 0)),
+    totalRP: scavenge("totalRP", Math.max(s.totalRP || 0, data.totalRP || 0)),
+    dailyRP: scavenge("dailyRP", Math.max(s.dailyRP || 0, data.dailyRP || 0)),
+    monthlyRP: scavenge("monthlyRP", Math.max(s.monthlyRP || 0, data.monthlyRP || 0)),
+    bestScore: scavenge("bestScore", Math.max(s.bestScore || 0, data.bestScore || 0)),
+    lastDailyUpdate: s.lastDailyUpdate || data.lastDailyUpdate || data["stats.lastDailyUpdate"] || null,
+    lastMonthlyUpdate: s.lastMonthlyUpdate || data.lastMonthlyUpdate || data["stats.lastMonthlyUpdate"] || null,
+    history: s.history || data.history || {},
+    integrityChecked: "1.3.0"
+  };
+
+  return stats;
+}
+
 export function listenToUserProgress(userId) {
   if (!userId) return;
 
@@ -52,10 +88,12 @@ export function listenToUserProgress(userId) {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
+      const remoteStats = _reconstructStats(data);
+
       // Pass data to GameManager for conflict checking
       gameManager.handleCloudSync(
         data.progress,
-        data.stats,
+        remoteStats,
         data.forceSaveRequest,
         data.settings,
       );
@@ -117,53 +155,31 @@ export async function checkUsernameAvailability(
 ) {
   if (!username) return false;
   try {
-    const usersRef = collection(db, "users");
     const lookName = username.toLowerCase();
-
     console.log(
       `[DB] Checking availability for: "${username}" (lc: "${lookName}"), excluding: ${excludeUserId}`,
     );
 
-    // 1. Check case-insensitive index (New System)
-    const q1 = query(usersRef, where("username_lc", "==", lookName));
-    const snap1 = await getDocs(q1);
+    // CALL CLOUD FUNCTION:
+    // This solves the 'Missing Permissions' error for guests
+    const response = await callJigsudoFunction("checkUsernameAvailability", { 
+      username 
+    });
 
-    if (!snap1.empty) {
-      // Check if any match is NOT the current user
-      const conflict = snap1.docs.some((doc) => doc.id !== excludeUserId);
-      if (conflict) {
-        console.log(`[DB] Conflict found in username_lc index.`);
-        return false;
-      }
+    if (response && response.available === false) {
+      console.log(`[DB] Conflict found via Cloud Function.`);
+      return false;
     }
-
-    // 2. Fallback: Check case-sensitive exact match (Legacy Protection)
-    // This is vital for users who haven't logged in since the 'username_lc' system was added.
-    const q2 = query(usersRef, where("username", "==", username));
-    const snap2 = await getDocs(q2);
-    if (!snap2.empty) {
-      const conflict = snap2.docs.some((doc) => doc.id !== excludeUserId);
-      if (conflict) {
-        console.log(`[DB] Conflict found in legacy username field.`);
-        return false;
-      }
-    }
-
-    // 3. Extra Safety: Check for case-insensitive matches in legacy 'username' field
-    // Since we can't do case-insensitive queries in Firestore without a normalized field,
-    // and we hit this point only if 'username_lc' was missing, we can't do much more
-    // without a full collection scan (expensive). However, the 'username_lc' field
-    // will be populated as soon as those legacy users log in.
 
     console.log(`[DB] Username "${username}" is available.`);
     return true;
   } catch (error) {
     console.error("[DB] Availability check failed:", error);
-    // FAIL CLOSED: If we can't verify availability due to network/index errors, 
-    // we must block registration to prevent potential duplicates.
+    // FAIL CLOSED: Block registration if we can't verify availability
     return false; 
   }
 }
+
 
 export async function saveUserStats(userId, statsData, username = null, metadataOnly = false) {
   if (!userId) return;
@@ -172,7 +188,8 @@ export async function saveUserStats(userId, statsData, username = null, metadata
 
     const { auth } = await import("./firebase-config.js?v=1.1.19");
     const currentUser = auth.currentUser;
-    const { setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.1.19");
+    const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
 
     const updateData = {
       lastUpdated: serverTimestamp(),
@@ -186,23 +203,67 @@ export async function saveUserStats(userId, statsData, username = null, metadata
 
     if (statsData && !metadataOnly) {
       const s = statsData;
-      // Internal stats map (Source of truth for logic)
-      const nowDoc = new Date().toISOString().split('T')[0];
-      const nowMonth = nowDoc.substring(0, 7);
+      
+      // --- ANTI-REGRESSION VALVE (v1.2.11) ---
+      // Before saving, verify we aren't overwriting real points with 0 due to a local wipe.
+      try {
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          const cloudData = docSnap.data();
+          const cloudStats = cloudData.stats || {};
+          
+          // Compare local against the BEST of either ROOT or MAP
+          const cloudDaily = Math.max(cloudData.dailyRP || 0, cloudStats.dailyRP || 0);
+          const cloudTotal = Math.max(cloudData.totalRP || 0, cloudStats.totalRP || 0);
+          
+          const localDaily = s.dailyRP || 0;
+          const localTotal = s.totalRP || 0;
 
-      updateData["stats.dailyRP"] = s.dailyRP || 0;
-      updateData["stats.monthlyRP"] = s.monthlyRP || 0;
-      updateData["stats.totalRP"] = s.totalRP || 0;
+          // If cloud has more points and it's THE SAME DAY, REJECT the save.
+          const currentDayStr = s.lastDailyUpdate || new Date().toISOString().split('T')[0];
+          const cloudDayStr = cloudData.lastDailyUpdate || (cloudStats.lastDailyUpdate || "");
+          const isSameDay = cloudDayStr === currentDayStr;
+          
+          if (isSameDay && (cloudDaily > localDaily || cloudTotal > localTotal)) {
+            console.error(
+              `[DB] ANTI-REGRESSION TRIGGERED: Aborting save. Cloud has more points (${cloudDaily}p) than local (${localDaily}p).`,
+            );
+            return; // ABORT THE SAVE
+          }
+        }
+      } catch (err) {
+        console.warn("[DB] Anti-regression check failed (Network?), proceeding with caution.", err);
+      }
+
+      // Internal stats map (Source of truth for logic)
+      const nowDoc = getJigsudoDateString();
+      const nowMonth = getJigsudoYearMonth();
+
+      // v1.2.19: SURGICAL UPDATE (Include Record and Rank)
+      updateData["stats.dailyRP"] = Math.max(0, s.dailyRP || 0);
+      updateData["stats.monthlyRP"] = Math.max(0, s.monthlyRP || 0);
+      updateData["stats.totalRP"] = Math.max(0, s.totalRP || 0);
+      updateData["stats.currentRP"] = Math.max(0, s.currentRP || 0);
+      updateData["stats.bestScore"] = Math.max(0, s.bestScore || 0);
       updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate || nowDoc;
       updateData["stats.lastMonthlyUpdate"] = s.lastMonthlyUpdate || nowMonth;
       updateData["stats.lastLocalUpdate"] = Date.now();
       
+      // Baselines (New in 1.2.16)
+      updateData["stats.monthlyRP_baseline"] = s.monthlyRP_baseline || 0;
+      updateData["stats.totalRP_baseline"] = s.totalRP_baseline || 0;
+      
       // Root level fields (Indexed for Ranking queries)
-      updateData.dailyRP = s.dailyRP || 0;
-      updateData.monthlyRP = s.monthlyRP || 0;
-      updateData.totalRP = s.totalRP || 0;
+      updateData.dailyRP = Math.max(0, s.dailyRP || 0);
+      updateData.monthlyRP = Math.max(0, s.monthlyRP || 0);
+      updateData.totalRP = Math.max(0, s.totalRP || 0);
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
       updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
+
+      // v1.2.17: Sync Verification bit ONLY if Auth confirms it.
+      if (currentUser && currentUser.emailVerified) {
+        updateData.isVerified = true;
+      }
     }
 
     if (gameManager.isWiping) {
@@ -210,8 +271,40 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       return;
     }
 
-    await setDoc(userRef, updateData, { merge: true });
-    console.log("[DB] Metadata and Ranking RP updated surgicaly.");
+    // Surgical Execution Flow
+    try {
+      // 1. Try updateDoc (Fastest, respects all non-mentioned fields in maps)
+      await updateDoc(userRef, updateData);
+      console.log("[DB] Metadata and Ranking RP updated surgically (updateDoc).");
+    } catch (e) {
+      // 2. Fallback: If document doesn't exist, we must use setDoc
+      if (e.code === "not-found") {
+        console.log("[DB] Profile not found, creating with initial stats...");
+        
+        // Convert surgical dots back to nested for initial creation if necessary
+        // or just use a clean creation object.
+        const initialData = { ...updateData };
+        initialData.stats = {
+          dailyRP: updateData.dailyRP,
+          monthlyRP: updateData.monthlyRP,
+          totalRP: updateData.totalRP,
+          currentRP: updateData["stats.currentRP"],
+          bestScore: updateData["stats.bestScore"],
+          lastDailyUpdate: updateData.lastDailyUpdate,
+          lastMonthlyUpdate: updateData.lastMonthlyUpdate,
+          lastLocalUpdate: Date.now(),
+          monthlyRP_baseline: updateData["stats.monthlyRP_baseline"],
+          totalRP_baseline: updateData["stats.totalRP_baseline"]
+        };
+        // Remove dot-notation keys for the clean create
+        Object.keys(initialData).forEach(k => { if (k.includes(".")) delete initialData[k]; });
+        
+        await setDoc(userRef, initialData, { merge: true });
+        console.log("[DB] Profile created successfully (setDoc).");
+      } else {
+        throw e;
+      }
+    }
   } catch (error) {
     console.error("Error saving stats:", error);
   }
@@ -254,10 +347,38 @@ export async function loadUserProgress(userId) {
     if (docSnap.exists()) {
       const data = docSnap.data();
       const remoteProgress = data.progress;
-      const remoteStats = data.stats; // New field
+      let remoteStats = _reconstructStats(data);
+
+      const updates = {};
+      
+      // --- CONSOLIDATION & DUAL-SYNC (v1.2.12) ---
+      // 1. If 'stats' map is missing but root fields exist, create the map.
+      // 2. If 'stats' map exists but root fields are missing/stale, update root.
+      if (remoteStats) {
+        const cloudDaily = data.dailyRP || 0;
+        const cloudMonthly = data.monthlyRP || 0;
+        const cloudTotal = data.totalRP || 0;
+
+        // If stats map is missing OR root fields are behind the map, trigger dual-sync.
+        if (!data.stats || (remoteStats.dailyRP > cloudDaily) || (remoteStats.monthlyRP > cloudMonthly)) {
+          console.log("[DB] Syncing Root fields with Stats map (Dual-Sync v1.2.13)...");
+          updates.stats = remoteStats;
+          updates.dailyRP = remoteStats.dailyRP;
+          updates.monthlyRP = remoteStats.monthlyRP;
+          updates.totalRP = remoteStats.totalRP;
+          updates.lastDailyUpdate = remoteStats.lastDailyUpdate;
+          updates.lastMonthlyUpdate = remoteStats.lastMonthlyUpdate;
+          
+          // GHOST CLEANUP: Delete fields with literal dots in their names
+          const { deleteField } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+          const ghostKeys = ["stats.dailyRP", "stats.monthlyRP", "stats.totalRP", "stats.lastDailyUpdate", "stats.lastMonthlyUpdate", "stats.lastLocalUpdate"];
+          ghostKeys.forEach(k => {
+            if (data[k] !== undefined) updates[k] = deleteField();
+          });
+        }
+      }
 
       // SELF-HEALING: If user has a username but not the lowercase version, fix it now.
-      const updates = {};
       if (data.username && !data.username_lc) {
         console.log("[DB] Migrating legacy username to lowercase index...");
         updates.username_lc = data.username.toLowerCase();
@@ -267,8 +388,8 @@ export async function loadUserProgress(userId) {
       if (!data.registeredAt) {
         console.log("[DB] Healing missing registeredAt for legacy user...");
         let firstDateStr = "2026-04-05T00:00:00.000Z"; // Default launch day
-        if (data.stats && data.stats.history) {
-          const historyDates = Object.keys(data.stats.history).sort();
+        if (remoteStats && remoteStats.history) {
+          const historyDates = Object.keys(remoteStats.history).sort();
           if (historyDates.length > 0) {
             firstDateStr = historyDates[0] + "T09:00:00.000Z"; // Proxy registration date
           }
@@ -279,6 +400,7 @@ export async function loadUserProgress(userId) {
       if (Object.keys(updates).length > 0) {
         await setDoc(userRef, updates, { merge: true });
       }
+      
       await gameManager.handleCloudSync(
         remoteProgress,
         remoteStats,

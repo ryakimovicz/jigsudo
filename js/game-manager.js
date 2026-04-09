@@ -811,7 +811,17 @@ export class GameManager {
           const cloudState = this._serializeState(this.state);
           await saveUserProgress(uid, cloudState);
         }
-        if (this.stats) await saveUserStats(uid, this.stats, username);
+        if (this.stats) {
+          // v1.2.11: ZERO-POINT GUARD
+          // If stats are empty (0 dailyRP, 0 totalPlayed) but user is authenticated,
+          // it's almost certainly a transition bug. Block the save.
+          const isZeroStats = (this.stats.dailyRP || 0) === 0 && (this.stats.totalPlayed || 0) === 0;
+          if (isZeroStats && !overrideUid) {
+            console.warn("[GM] Cloud stats save blocked: Attempting to save zero points to account.");
+          } else {
+            await saveUserStats(uid, this.stats, username);
+          }
+        }
       }
     } catch (e) {
       console.warn("Cloud save failed", e);
@@ -1087,14 +1097,23 @@ export class GameManager {
       if (section === "stats") this.state.stats = {};
       else return;
     }
-    this.state[section] = { ...this.state[section], ...data };
     
+    // v1.2.16: Detect error increment for live penalty
+    const oldErrors = this.state.stats?.peaksErrors || 0;
+    this.state[section] = { ...this.state[section], ...data };
+    const newErrors = this.state.stats?.peaksErrors || 0;
+
     // Ensure timestamp is refreshed for any progress change
     if (this.state.meta) {
       this.state.meta.lastPlayed = new Date().toISOString();
     }
 
     this.save();
+
+    // If errors increased, recalculate and sync to cloud immediately
+    if (section === "stats" && newErrors > oldErrors) {
+      this._recalculateNetStats();
+    }
   }
 
   async awardStagePoints(stage) {
@@ -1133,10 +1152,12 @@ export class GameManager {
       JSON.parse(localStorage.getItem("jigsudo_user_stats")) ||
       {};
 
-    // Synchronize points across all ranking categories
+    // v1.2.16: Synchronize ALL points categories including historical totalRP
+    // Note: awardStagePoints only adds 'achievements'. Net calculation happens in _recalculateNetStats.
     stats.currentRP = (stats.currentRP || 0) + points;
     stats.dailyRP = (stats.dailyRP || 0) + points;
     stats.monthlyRP = (stats.monthlyRP || 0) + points;
+    stats.totalRP = (stats.totalRP || 0) + points; // Nomenclature fix for 'Siempre' table
 
     stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + points;
 
@@ -1151,22 +1172,21 @@ export class GameManager {
         this.save();
       }
     }
-    stats.lastLocalUpdate = Date.now(); // Timestamp for conflict resolution
+    
+    // Check if current partial score beats the record BEFORE syncing to cloud
+    this._updateBestScore();
+
+    // Force a net recalculation to ensure penalties are applied to the new points
     this.stats = stats;
-    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    this._recalculateNetStats();
 
     const { saveUserStats } = await import("./db.js?v=1.1.19");
     const { getCurrentUser } = await import("./auth.js?v=1.1.19");
-    const { getJigsudoDateString, getJigsudoYearMonth } =
-      await import("./utils/time.js?v=1.1.19");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
-      console.log(`[RP] Syncing stage points to cloud for ${stage}...`);
+      console.log(`[RP] Syncing stage points and records to cloud for ${stage}...`);
       saveUserStats(user.uid, this.stats, user.displayName);
     }
-
-    // Check if current partial score beats the record
-    this._updateBestScore();
   }
 
   /**
@@ -1194,6 +1214,51 @@ export class GameManager {
       this.stats.bestScore = currentScore;
       this.save();
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    }
+  }
+
+  /**
+   * v1.2.16: Live Net Scorer.
+   * Recalculates current ranking points by (Achievements - Penalties).
+   * Ensures Ranking reflects the real state of the game in real-time.
+   */
+  async _recalculateNetStats() {
+    if (!this.stats) return;
+
+    // 1. Calculate Base Achievement points
+    let baseAchievementPoints = 0;
+    this.state.progress.stagesCompleted.forEach((stage) => {
+      baseAchievementPoints += SCORING.PARTIAL_RP[stage] || 0;
+    });
+
+    // 2. Calculate Penalty points
+    const errors = this.state.stats?.peaksErrors || 0;
+    const penaltyPoints = errors * SCORING.ERROR_PENALTY_RP;
+
+    // 3. Update top-level stats (daily/monthly/total) with the net result
+    // We maintain 'totalRP' as the historical baseline + current session net
+    const netSessionPoints = baseAchievementPoints - penaltyPoints;
+    
+    // For Daily: It's just the net session
+    this.stats.dailyRP = Math.max(0, netSessionPoints);
+    
+    if (this.stats.monthlyRP_baseline === undefined) this.stats.monthlyRP_baseline = (this.stats.monthlyRP || 0) - (this.stats.dailyRP || 0);
+    if (this.stats.totalRP_baseline === undefined) this.stats.totalRP_baseline = (this.stats.totalRP || 0) - (this.stats.dailyRP || 0);
+
+    // v1.3.0: Enforce logical hierarchy (daily <= monthly <= total)
+    this.stats.monthlyRP = Math.max(this.stats.dailyRP, (this.stats.monthlyRP_baseline || 0) + netSessionPoints);
+    this.stats.totalRP = Math.max(this.stats.monthlyRP, (this.stats.totalRP_baseline || 0) + netSessionPoints);
+    this.stats.currentRP = Math.max(this.stats.currentRP || 0, this.stats.totalRP);
+
+    this.stats.lastLocalUpdate = Date.now();
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+
+    // Sync to Cloud immediately if logged in
+    const { getCurrentUser } = await import("./auth.js?v=1.1.19");
+    const user = getCurrentUser();
+    if (user && !user.isAnonymous) {
+      const { saveUserStats } = await import("./db.js?v=1.1.19");
+      saveUserStats(user.uid, this.stats, user.displayName);
     }
   }
 
@@ -1279,16 +1344,33 @@ export class GameManager {
     const countMismatch = wonHistoryCount !== currentWins;
     // 2. Missing date markers while history has entries (fixes new users/sync gaps)
     const missingDates = wonHistoryCount > 0 && !this.stats.lastDailyUpdate;
-    // 3. One-time forced maintenance for the current version (RP reconstruction fix)
-    const needsMaintenance = this.stats.integrityChecked !== CONFIG.version;
+    // 3. Hierarchy paradox (Hoy > Mes or Mes > Siempre) - v1.3.0
+    const dailyRP = this.stats.dailyRP || 0;
+    const monthlyRP = this.stats.monthlyRP || 0;
+    const totalRP = this.stats.totalRP || 0;
+    const hierarchyMismatch = (monthlyRP < dailyRP) || (totalRP < monthlyRP);
+    
+    // 4. One-time forced maintenance for the current version (RP reconstruction fix)
+    const needsMaintenance = this.stats.integrityChecked !== "1.3.0";
 
-    if (countMismatch || missingDates || needsMaintenance) {
+    if (countMismatch || missingDates || needsMaintenance || hierarchyMismatch) {
       console.warn(
-        `[Healer] Integrity check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, needsMaintenance=${needsMaintenance}. Reconstructing...`,
+        `[Healer] Integrity check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, hierarchyMismatch=${hierarchyMismatch}, needsMaintenance=${needsMaintenance}. Reconstructing...`,
       );
       this._recalculateRecords(this.stats);
-      this.stats.integrityChecked = CONFIG.version; // Prevent repeated reconstruction
+      
+      // Hierarchy Healing
+      this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
+      this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP || 0);
+      this.stats.currentRP = Math.max(this.stats.currentRP || 0, this.stats.totalRP || 0);
+
+      this.stats.integrityChecked = "1.3.0"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      
+      // v1.2.11: DECOUPLED CLOUD SAVE.
+      // We no longer push healed stats immediately to avoid racing with account transitions.
+      // Persistence will happen during the next natural save event.
+      
       return true; // Indicate changes made
     }
     return false;
@@ -1516,7 +1598,7 @@ export class GameManager {
         !this.stats ||
         this.isWiping ||
         remoteTS > localTS ||
-        (remoteStats.totalPlayed || 0) > (this.stats.totalPlayed || 0)
+        (remoteStats && (remoteStats.totalPlayed || 0) > (this.stats.totalPlayed || 0))
       ) {
         // 1. PROTECTION: Guard against "Cloud Wipe" (Empty cloud stats vs populated local)
         // If local has history but remote doesn't, it's likely a bug-induced wipe.
@@ -1548,10 +1630,15 @@ export class GameManager {
         console.log(
           `[Sync] Accepting remote stats. (Local: ${localTS}, Remote: ${remoteTS}, Wiping: ${this.isWiping})`,
         );
-        this.stats = remoteStats;
-        
-        // Ensure streaks and records are healthy after adoption
-        this._recalculateRecords(this.stats);
+
+        // 2. PROTECTION: Never adopt null/undefined stats if local stats are already populated (v1.2.9)
+        if (!remoteStats && this.stats) {
+          console.warn("[Sync] Rejected null remote stats to prevent accidental wipe.");
+        } else {
+          this.stats = remoteStats;
+          // Ensure streaks and records are healthy after adoption
+          this._recalculateRecords(this.stats);
+        }
         
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
         window.dispatchEvent(

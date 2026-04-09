@@ -15,12 +15,12 @@ const SCORING = {
   BASE_WIN_RP: 6.0,
   JIGSUDO_OFFSET_HOURS: 6,
   MIN_TIME_THRESHOLDS: {
-    memory: 100,
-    jigsaw: 100,
-    sudoku: 100,
-    peaks: 100,
-    search: 100,
-    code: 100
+    memory: 10,
+    jigsaw: 10,
+    sudoku: 10,
+    peaks: 10,
+    search: 10,
+    code: 10
   }
 };
 
@@ -184,4 +184,34 @@ exports.submitDailyWin = onCall(async (request) => {
     maxStreak: newMaxStreak,
     wins: newWins
   };
+});
+
+/**
+ * 3. checkUsernameAvailability (v2)
+ * Allows guests to check if a name is taken without broad collection access.
+ */
+exports.checkUsernameAvailability = onCall(async (request) => {
+  const { username } = request.data;
+  if (!username) {
+    throw new HttpsError("invalid-argument", "Username is required.");
+  }
+
+  const lookName = username.toLowerCase();
+  const usersRef = db.collection("users");
+  
+  try {
+    // Search by the normalized lowercase index
+    const snapshot = await usersRef.where("username_lc", "==", lookName).limit(1).get();
+    
+    // Fallback: Check exact case match (Legacy)
+    if (snapshot.empty) {
+      const snap2 = await usersRef.where("username", "==", username).limit(1).get();
+      return { available: snap2.empty };
+    }
+
+    return { available: snapshot.empty };
+  } catch (error) {
+    console.error("Error checking username availability:", error);
+    throw new HttpsError("internal", "Availability check failed.");
+  }
 });

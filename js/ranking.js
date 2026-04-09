@@ -666,4 +666,11 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
 
 export function clearRankingCache() {
   localStorage.removeItem(CACHE_KEY);
+  console.log("[Ranking] Cache cleared.");
 }
+
+// v1.3.1: Auto-invalidate cache when points change
+window.addEventListener("userStatsUpdated", () => {
+  console.log("[Ranking] Auto-invalidating cache due to points update.");
+  clearRankingCache();
+});
