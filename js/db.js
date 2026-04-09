@@ -334,6 +334,8 @@ export async function loadUserProgress(userId) {
       let remoteStats = _reconstructStats(data);
 
       const updates = {};
+      const todayStr = getJigsudoDateString();
+      const nowMonth = getJigsudoYearMonth();
       
       // --- CONSOLIDATION & DUAL-SYNC (v1.2.12) ---
       // 1. If 'stats' map is missing but root fields exist, create the map.
@@ -343,15 +345,16 @@ export async function loadUserProgress(userId) {
         const cloudMonthly = data.monthlyRP || 0;
         const cloudTotal = data.totalRP || 0;
 
-        // If stats map is missing OR root fields are behind the map, trigger dual-sync.
-        if (!data.stats || (remoteStats.dailyRP > cloudDaily) || (remoteStats.monthlyRP > cloudMonthly)) {
-          console.log("[DB] Syncing Root fields with Stats map (Dual-Sync v1.2.13)...");
+        // v1.3.5: Proactive Legacy Seeding. 
+        // If Root fields are missing OR inconsistent with the Stats map, we HEAL immediately.
+        if (!data.stats || (remoteStats.dailyRP > cloudDaily) || (remoteStats.monthlyRP > cloudMonthly) || (remoteStats.totalRP > cloudTotal)) {
+          console.log("[DB] Healing Legacy/Inconsistent Root fields (v1.3.5)...");
           updates.stats = remoteStats;
           updates.dailyRP = remoteStats.dailyRP;
           updates.monthlyRP = remoteStats.monthlyRP;
           updates.totalRP = remoteStats.totalRP;
-          updates.lastDailyUpdate = remoteStats.lastDailyUpdate;
-          updates.lastMonthlyUpdate = remoteStats.lastMonthlyUpdate;
+          updates.lastDailyUpdate = remoteStats.lastDailyUpdate || todayStr;
+          updates.lastMonthlyUpdate = remoteStats.lastMonthlyUpdate || nowMonth;
           
           // GHOST CLEANUP: Delete fields with literal dots in their names
           const { deleteField } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
