@@ -241,6 +241,7 @@ async function getTop10(
         usersRef,
         where(filterField, "==", filterValue),
         where("isVerified", "==", true),
+        where("isPublic", "==", true),
         orderBy(fieldName, "desc"),
         limit(25),
       );
@@ -248,6 +249,7 @@ async function getTop10(
       q = query(
         usersRef,
         where("isVerified", "==", true),
+        where("isPublic", "==", true),
         where(fieldName, ">", 0),
         orderBy(fieldName, "desc"),
         limit(25),

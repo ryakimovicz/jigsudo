@@ -1,10 +1,13 @@
-const functions = require("firebase-functions");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
-admin.initializeApp();
 
+admin.initializeApp();
 const db = admin.firestore();
 
-// --- SCORING CONFIG (Aligned with ranks.js) ---
+// Set global options to ensure all functions use us-central1
+setGlobalOptions({ region: "us-central1" });
+
 const SCORING = {
   MAX_BONUS: 10.0,
   BONUS_DECAY_SECONDS: 3600,
@@ -12,18 +15,15 @@ const SCORING = {
   BASE_WIN_RP: 6.0,
   JIGSUDO_OFFSET_HOURS: 6,
   MIN_TIME_THRESHOLDS: {
-    memory: 5000,   // 5s
-    jigsaw: 3000,   // 3s
-    sudoku: 20000,  // 20s
-    peaks: 5000,    // 5s
-    search: 10000,  // 10s
-    code: 3000      // 3s
+    memory: 5000,
+    jigsaw: 3000,
+    sudoku: 20000,
+    peaks: 5000,
+    search: 10000,
+    code: 3000
   }
 };
 
-/**
- * Helper to get Jigsudo Date String (YYYY-MM-DD) synced with server time
- */
 function getJigsudoDateString() {
   const d = new Date(Date.now() - SCORING.JIGSUDO_OFFSET_HOURS * 3600 * 1000);
   const yyyy = d.getUTCFullYear();
@@ -33,73 +33,77 @@ function getJigsudoDateString() {
 }
 
 /**
- * 1. startJigsudoSession
- * Called when the user clicks "PLAY" for the daily puzzle.
- * Anchors the start time for the Referee.
+ * 1. startJigsudoSession (v2)
  */
-exports.startJigsudoSession = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Must be logged in.");
+exports.startJigsudoSession = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be logged in.");
   }
 
-  const uid = context.auth.uid;
+  const uid = request.auth.uid;
   const today = getJigsudoDateString();
   const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
 
-  const doc = await sessionRef.get();
-  if (doc.exists) {
-    return { status: "already_started", startTime: doc.data().startTime };
+  try {
+    const sessionDoc = await sessionRef.get();
+    if (sessionDoc.exists) {
+      return { status: "already_started", startTime: sessionDoc.data().startTime };
+    }
+
+    const startTime = Date.now();
+    await sessionRef.set({
+      startTime: startTime,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      uid: uid,
+      date: today,
+      completed: false
+    });
+
+    console.log(`[Referee] Session started for ${uid} on ${today}`);
+    return { status: "started", startTime: startTime };
+  } catch (error) {
+    console.error("Error starting session:", error);
+    throw new HttpsError("internal", "Failed to start session.");
   }
-
-  const startTime = Date.now();
-  await sessionRef.set({
-    startTime: startTime,
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
-  });
-
-  return { status: "started", startTime: startTime };
 });
 
 /**
- * 2. submitDailyWin
- * Called when the user finishes all stages.
- * Only the server can AWARD points and update the STREAK.
+ * 2. submitDailyWin (v2)
  */
-exports.submitDailyWin = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Must be logged in.");
+exports.submitDailyWin = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be logged in.");
   }
 
-  const uid = context.auth.uid;
-  const { stageTimes, peaksErrors, seed } = data;
+  const { stageTimes, peaksErrors, seed } = request.data;
+  const uid = request.auth.uid;
   const today = getJigsudoDateString();
+  const now = Date.now();
 
-  // 1. Verify Seed matches Today
+  // 1. Verify Seed
   const serverSeed = parseInt(today.replace(/-/g, ""), 10);
   if (seed !== serverSeed) {
-    throw new functions.https.HttpsError("invalid-argument", "Date mismatch. You can only submit the current daily puzzle.");
+    throw new HttpsError("invalid-argument", "Date mismatch.");
   }
 
-  // 2. Fetch Session Anchor
+  // 2. Fetch Session
   const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
   const sessionDoc = await sessionRef.get();
   if (!sessionDoc.exists) {
-    throw new functions.https.HttpsError("failed-precondition", "Session not initialized. Please refresh and try again.");
+    throw new HttpsError("failed-precondition", "Session not initialized.");
   }
 
   const sessionData = sessionDoc.data();
   if (sessionData.completed) {
-    throw new functions.https.HttpsError("already-exists", "Victory already recorded for today.");
+    throw new HttpsError("already-exists", "Victory already recorded.");
   }
 
-  const now = Date.now();
   const serverDurationMs = now - sessionData.startTime;
 
-  // 3. Validation: Minimum thresholds (anti-speed-hack)
+  // 3. Validation
   for (const [stage, minMs] of Object.entries(SCORING.MIN_TIME_THRESHOLDS)) {
-    const stageTime = stageTimes[stage] || 0;
-    if (stageTime < minMs) {
-      throw new functions.https.HttpsError("out-of-range", `Stage ${stage} completed too fast. Possible script detected.`);
+    if ((stageTimes[stage] || 0) < minMs) {
+      throw new HttpsError("out-of-range", `Stage ${stage} too fast.`);
     }
   }
 
@@ -107,21 +111,24 @@ exports.submitDailyWin = functions.https.onCall(async (data, context) => {
   const totalSeconds = serverDurationMs / 1000;
   const decayPerSecond = SCORING.MAX_BONUS / SCORING.BONUS_DECAY_SECONDS;
   const timeBonus = Math.max(0, SCORING.MAX_BONUS - (totalSeconds * decayPerSecond));
-  const penalty = (peaksErrors || 0) * SCORING.ERROR_PENALTY_RP;
-  
-  const finalRP = Number((SCORING.BASE_WIN_RP + timeBonus - penalty).toFixed(3));
+  const finalRP = Number((SCORING.BASE_WIN_RP + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
   const finalScore = Math.max(0, finalRP);
 
-  // 5. ATOMIC UPDATE: Stats and History using Dot Notation for Nested Fields (Safety v1.1.21)
+  // 5. ATOMIC UPDATE
   const userRef = db.collection("users").doc(uid);
   const batch = db.batch();
 
-  const updates = {
+  // Root fields maintenance
+  batch.set(userRef, {
     totalRP: admin.firestore.FieldValue.increment(finalScore),
     monthlyRP: admin.firestore.FieldValue.increment(finalScore),
     dailyRP: finalScore,
     lastDailyUpdate: today,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  // Stats nested update (Dot notation for surgical precision)
+  batch.update(userRef, {
     "stats.currentRP": admin.firestore.FieldValue.increment(finalScore),
     "stats.monthlyRP": admin.firestore.FieldValue.increment(finalScore),
     "stats.totalRP": admin.firestore.FieldValue.increment(finalScore),
@@ -135,19 +142,12 @@ exports.submitDailyWin = functions.https.onCall(async (data, context) => {
         timestamp: now,
         originalWin: true
     }
-  };
+  });
 
-  batch.update(userRef, updates);
-
-  // Mark session as completed
   batch.update(sessionRef, { completed: true, score: finalScore, durationMs: serverDurationMs });
 
   await batch.commit();
+  console.log(`[Referee] Points awarded to ${uid}: ${finalScore}`);
 
-  return {
-    status: "success",
-    score: finalScore,
-    durationMs: serverDurationMs,
-    totalRP_claimed: finalScore
-  };
+  return { status: "success", score: finalScore, durationMs: serverDurationMs };
 });

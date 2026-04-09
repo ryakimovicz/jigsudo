@@ -413,7 +413,10 @@ export async function getUserRank(fieldName, score, onlyVerified = false, filter
     const usersRef = collection(db, "users");
     // Rank = (Number of users with score > current score) + 1
     let q;
-    let conditions = [where(fieldName, ">", score)];
+    let conditions = [
+      where(fieldName, ">", score),
+      where("isPublic", "==", true)
+    ];
     
     if (onlyVerified) conditions.push(where("isVerified", "==", true));
     if (filterField && filterValue) conditions.push(where(filterField, "==", filterValue));

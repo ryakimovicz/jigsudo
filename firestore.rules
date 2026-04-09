@@ -5,7 +5,10 @@ service cloud.firestore {
     
     // User Profiles & Game Data
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // Allow reading if:
+      // 1. It is the user's own profile.
+      // 2. The profile is marked as public (allows guests to see leaderboards).
+      allow read: if (request.auth != null && request.auth.uid == userId) || resource.data.isPublic == true;
       
       // RESTRICTED WRITE:
       // We allow the client to save progress and settings, 
@@ -18,8 +21,6 @@ service cloud.firestore {
       // Sessions for the Referee (Internal use)
       match /sessions/{sessionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
-        // Client can only CREATE a session (handled by startRegistration function normally, 
-        // but we keep it tight). The function will have Admin access regardless.
         allow write: if false; 
       }
     }
