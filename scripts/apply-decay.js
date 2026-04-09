@@ -53,7 +53,7 @@ async function runDecay() {
     snapshot.docs.forEach((doc) => {
       const data = doc.data();
       const stats = data.stats || {};
-      const lastIntent = stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
+      const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
 
       if (!lastIntent) return; // New user without any markers yet
 
@@ -95,9 +95,13 @@ async function runDecay() {
         updateObj.totalRP = newRP;
         updateObj["stats.currentRP"] = newRP;
 
-        console.log(
-          `📉 Dynamic Penalty for ${data.username || doc.id}: Missed ${missedCount} days. RP: ${currentTotalRP} -> ${newRP}`,
-        );
+          console.log(
+            `📉 Dynamic Penalty for ${data.username || doc.id}: Missed ${missedCount} days. RP: ${currentTotalRP} -> ${newRP}`,
+          );
+
+          const yesterdayDate = new Date(todayDate.getTime());
+          yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+          updateObj["stats.lastPenaltyDate"] = yesterdayDate.toISOString().substring(0, 10);
       }
 
       // 3. Strict Streak Reset (Missed full Jigsudo days of WINNING)

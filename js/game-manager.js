@@ -215,6 +215,7 @@ export class GameManager {
     this.stats.lastDailyUpdate = dateStr;
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
     this.stats.lastDecayCheck = dateStr;
+    delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
     this.save(); // Force save to local storage immediately
 
     if (!this.stats.history[dateStr]) {
@@ -1143,6 +1144,7 @@ export class GameManager {
         lastDailyUpdate: today,
         lastMonthlyUpdate: currentMonth,
       };
+      delete statsWithDates.lastPenaltyDate; // Clear penalty anchor on stat recalculation
       saveUserStats(user.uid, statsWithDates);
     }
 
@@ -1328,8 +1330,8 @@ export class GameManager {
         }
 
         // 3. Decay Penalty (Missed full Jigsudo days of INTENTIAL play)
-        // Uses lastDailyUpdate as the specific anchor for "Safe vs Unsafe"
-        const lastIntent = stats.lastDailyUpdate || stats.lastPlayedDate;
+        // Uses lastPenaltyDate (if exists) or lastDailyUpdate as the specific anchor for "Safe vs Unsafe"
+        const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
         if (lastIntent && lastIntent !== today) {
           const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
           const intentDiff = Math.round((currDate - lastIntentDate) / (1000 * 60 * 60 * 24));
@@ -1353,6 +1355,11 @@ export class GameManager {
               changed = true;
               console.log(`[Decay] Applied dynamic decay for ${missed} days of inactivity. Current RP: ${stats.currentRP}`);
             }
+            
+            // Advance the penalty anchor to "yesterday" so we don't penalize these same days again tomorrow
+            const anchorDate = new Date(currDate.getTime());
+            anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
+            stats.lastPenaltyDate = anchorDate.toISOString().substring(0, 10);
           }
         }
 
