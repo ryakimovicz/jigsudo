@@ -67,12 +67,19 @@ exports.startJigsudoSession = onCall(async (request) => {
       await _performUserMaintenance(userRef, userData, today);
     }
 
-    // 2. MARK INTENT (THE SHIELD)
-    // Just by calling this, the user is safe for today.
-    await userRef.update({
+    // 2. MARK INTENT (THE SHIELD) & SESSION LOCK (v1.5.0)
+    // Just by calling this, the user is safe for today and takes control of the session.
+    const sessionId = request.data.sessionId || null;
+    const updateData = {
       "stats.lastIntentDate": today,
       "stats.lastDecayCheck": today
-    });
+    };
+    
+    if (sessionId) {
+      updateData["stats.activeSessionId"] = sessionId;
+    }
+
+    await userRef.update(updateData);
 
     const sessionDoc = await sessionRef.get();
     if (sessionDoc.exists) {

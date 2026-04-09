@@ -602,6 +602,12 @@ export const translations = {
     changelog_v1118_item5: "Corrección de Penalizaciones: Se implementó 'lastPenaltyDate' resolviendo dos fallos críticos: el cobro de multas duplicadas y la inactividad infinita por la amnesia del bot de mantenimiento.",
     changelog_v1118_item6: "Modo Ninja (Perfiles Ocultos): Al ocultar tu perfil ya no aparecerás públicamente en el Salón de la Fama, permitiéndote competir en las sombras viéndote a ti mismo en la tabla sin revelar tus estadísticas a los demás.",
     changelog_v1118_item7: "Estabilidad en la Privacidad: Solucionado un comportamiento de pérdida de estado donde el indicador de privacidad parecía reiniciarse erróneamente al recargar la página debido a lecturas asíncronas parciales en los servidores.",
+    
+    // Multi-device Sync (Spanish)
+    sync_exclusive_title: "Cuenta en uso",
+    sync_exclusive_desc: "Jigsudo se ha abierto en otro dispositivo o pestaña. Solo puedes tener una sesión activa para evitar pérdida de datos.",
+    sync_btn_continue: "Continuar aquí 🔄",
+
     changelog_v1117_title: "Versión 1.1.17",
     changelog_v1117_date: "09/04/2026",
     changelog_v1117_item1: "Carga SWR Automática: Las tablas de ranking ahora cargan instantáneamente rescatando la última visualización de la caché. Unos indicadores circulares en las cabeceras te avisan que se está haciendo una actualización suave en segundo plano y las filas se acomodan inteligentemente (Técnica Stale-While-Revalidate).",
@@ -1356,5 +1362,10 @@ export const translations = {
     changelog_v100_title: "Version 1.0.0",
     changelog_v100_date: "04/05/2026",
     changelog_v100_item1: "Official Jigsudo launch!",
+
+    // Multi-device Sync (English)
+    sync_exclusive_title: "Account in use",
+    sync_exclusive_desc: "Jigsudo is open on another device or tab. You can only have one active session to prevent data loss.",
+    sync_btn_continue: "Continue here 🔄",
   },
 };

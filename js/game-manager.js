@@ -17,6 +17,8 @@ export class GameManager {
     this.isReplay = false;
     this.validationQueue = [];
     this.isProcessingQueue = false;
+    this.localSessionId = Math.random().toString(36).substring(7); // v1.5.0: Unique Tab/Device ID
+    this.sessionBlocked = false;
 
     // Listen for tab focus/visibility to force save or handle day transitions
     document.addEventListener("visibilitychange", async () => {
@@ -226,7 +228,8 @@ export class GameManager {
       try {
         const { callJigsudoFunction } = await import("./db.js?v=1.1.19");
         const result = await callJigsudoFunction("startJigsudoSession", {
-          seed: this.currentSeed
+          seed: this.currentSeed,
+          sessionId: this.localSessionId // v1.5.0: Claim server throne
         });
         
         if (result.status === "started" || result.status === "already_started") {
@@ -234,6 +237,7 @@ export class GameManager {
           // We trust server applied decay. Local update for UI:
           this.stats.lastIntentDate = dateStr;
           this.stats.lastDecayCheck = dateStr;
+          this.stats.activeSessionId = this.localSessionId;
         }
       } catch (err) {
         console.error("[Referee] Failed to initialize session on server:", err);
@@ -1663,6 +1667,19 @@ export class GameManager {
     }
 
     if (remoteStats) {
+      // --- SESSION LOCK (v1.5.0) ---
+      // If the account is being used elsewhere, block this session
+      const { getCurrentUser } = await import("./auth.js?v=1.1.19");
+      const user = getCurrentUser();
+      
+      if (user && !user.isAnonymous && remoteStats.activeSessionId) {
+        if (remoteStats.activeSessionId !== this.localSessionId) {
+          console.warn("[Sync] Exclusive Session Conflict: This device is no longer the active throne.");
+          this.showExclusiveSessionBlock();
+          return; // STOP everything
+        }
+      }
+
       // 0. SELF-HEALING: Protect against stale server data
       // If the server hasn't run its maintenance yet (GH Actions delay),
       // we apply the decay logic to the remote stats before comparing.
@@ -2126,6 +2143,70 @@ export class GameManager {
 
     // Cap at 100
     return Math.min(100, Math.round(points));
+  }
+
+  /**
+   * Exclusive Session Block (v1.5.0)
+   * Prevents multi-device conflicts by forcing a single active origin.
+   */
+  showExclusiveSessionBlock() {
+    if (this.sessionBlocked) return;
+    this.sessionBlocked = true;
+
+    // Remove any existing sync overlays
+    const existingSync = document.getElementById("conflict-overlay");
+    if (existingSync) document.body.removeChild(existingSync);
+
+    const overlay = document.createElement("div");
+    overlay.id = "exclusive-session-overlay";
+    Object.assign(overlay.style, {
+      position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
+      background: "rgba(10, 15, 30, 0.98)", color: "white",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      zIndex: "100000", fontFamily: "'Outfit', sans-serif", backdropFilter: "blur(12px)",
+      textAlign: "center", padding: "20px"
+    });
+
+    const lang = localStorage.getItem("jigsudo_lang") || "es";
+    // We already have translations imported from top if available, 
+    // but in case of dynamic load issues, we fallback.
+    let t = {
+      sync_exclusive_title: "Cuenta en uso",
+      sync_exclusive_desc: "Jigsudo se ha abierto en otro dispositivo o pestaña. Solo puedes tener una sesión activa para evitar pérdida de datos.",
+      sync_btn_continue: "Continuar aquí 🔄"
+    };
+
+    try {
+      // Access pre-loaded translations if possible
+      const { translations } = require("./translations.js?v=1.1.19");
+      if (translations && translations[lang]) {
+        t = translations[lang];
+      }
+    } catch (e) { console.warn("Fallback translations used for block screen."); }
+
+    overlay.innerHTML = `
+      <div style="font-size: 4rem; margin-bottom: 20px;">🔒</div>
+      <h2 style="font-size: 2rem; margin-bottom: 15px;">${t.sync_exclusive_title || "Cuenta en uso"}</h2>
+      <p style="font-size: 1.1rem; opacity: 0.8; max-width: 500px; line-height: 1.6; margin-bottom: 40px;">
+        ${t.sync_exclusive_desc || "Jigsudo se ha abierto en otro dispositivo. Solo puedes tener una sesión activa."}
+      </p>
+      <button class="btn-resume-here" style="
+        padding: 16px 40px; border-radius: 50px; border: none;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        transition: transform 0.2s, background 0.2s;
+      ">${t.sync_btn_continue || "Continuar aquí 🔄"}</button>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const btn = overlay.querySelector(".btn-resume-here");
+    if (btn) {
+      btn.onmouseover = () => btn.style.transform = "scale(1.05)";
+      btn.onmouseout = () => btn.style.transform = "scale(1)";
+      btn.onclick = () => window.location.reload();
+    }
   }
 
   async recordWin() {
