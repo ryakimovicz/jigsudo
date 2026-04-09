@@ -185,19 +185,22 @@ export async function saveUserStats(userId, statsData, username = null, metadata
     if (statsData && !metadataOnly) {
       const s = statsData;
       // Internal stats map (Source of truth for logic)
+      const nowDoc = new Date().toISOString().split('T')[0];
+      const nowMonth = nowDoc.substring(0, 7);
+
       updateData["stats.dailyRP"] = s.dailyRP || 0;
       updateData["stats.monthlyRP"] = s.monthlyRP || 0;
       updateData["stats.totalRP"] = s.totalRP || 0;
-      updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate;
-      updateData["stats.lastMonthlyUpdate"] = s.lastMonthlyUpdate;
+      updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate || nowDoc;
+      updateData["stats.lastMonthlyUpdate"] = s.lastMonthlyUpdate || nowMonth;
       updateData["stats.lastLocalUpdate"] = Date.now();
       
       // Root level fields (Indexed for Ranking queries)
       updateData.dailyRP = s.dailyRP || 0;
       updateData.monthlyRP = s.monthlyRP || 0;
       updateData.totalRP = s.totalRP || 0;
-      updateData.lastDailyUpdate = s.lastDailyUpdate;
-      updateData.lastMonthlyUpdate = s.lastMonthlyUpdate;
+      updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
+      updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
     }
 
     if (gameManager.isWiping) {
@@ -309,8 +312,8 @@ export async function getPublicUserByUsername(username) {
     const usersRef = collection(db, "users");
     const lookName = username.toLowerCase();
 
-    // Check case-insensitive index
-    const q = query(usersRef, where("username_lc", "==", lookName));
+    // Check case-insensitive index and satisfy security rules
+    const q = query(usersRef, where("username_lc", "==", lookName), where("isPublic", "==", true));
     const snap = await getDocs(q);
 
     if (snap.empty) {

@@ -109,13 +109,14 @@ export class GameManager {
       this.stats =
         JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
       const decayOccurred = await this._ensureStats();
-      if (decayOccurred) {
-        console.log(
-          "[GameManager] Self-healing detected at startup. Syncing to cloud...",
-        );
-        this.forceCloudSave();
-      }
       const activeUid = localStorage.getItem("jigsudo_active_uid");
+
+      if (decayOccurred && !activeUid) {
+        console.log(
+          "[GameManager] Local self-healing detected. Syncing guest data to storage...",
+        );
+        this.save(); // Save locally, but don't forceCloudSave yet if we are logged in
+      }
       if (activeUid && !this.state.meta.userId) {
         this.state.meta.userId = activeUid;
       }
@@ -160,9 +161,9 @@ export class GameManager {
       const seedStr = this.currentSeed.toString();
       const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
       const decayOccurred = await this._ensureStats();
-      if (decayOccurred) {
-        console.log("[GameManager] Self-healing detected on fresh start. Syncing to cloud...");
-        this.forceCloudSave();
+      if (decayOccurred && !activeUid) {
+        console.log("[GameManager] Self-healing detected on fresh start. Syncing locally...");
+        this.save();
       }
       this.save();
     } else {
@@ -1219,7 +1220,7 @@ export class GameManager {
     document.body.appendChild(overlay);
   }
 
-  _ensureStats() {
+  async _ensureStats() {
     // Ensure stats object exists
     if (!this.stats) {
       this.stats = JSON.parse(localStorage.getItem("jigsudo_user_stats"));
@@ -1271,10 +1272,11 @@ export class GameManager {
     }
 
     // 4. Automated Stats Healer: Fix discrepancies between history and accumulated stats
-    this._healStatsInconsistency();
+    const healerChanged = this._healStatsInconsistency();
 
     // Return the decay check promise so callers can await it if needed
-    return this._checkRankDecay();
+    const decayResult = await this._checkRankDecay();
+    return healerChanged || decayResult;
   }
 
   /**
@@ -1304,8 +1306,9 @@ export class GameManager {
       this._recalculateRecords(this.stats);
       this.stats.integrityChecked = CONFIG.version; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
-      this.forceCloudSave();
+      return true; // Indicate changes made
     }
+    return false;
   }
 
   async _checkRankDecay(targetStats = null) {

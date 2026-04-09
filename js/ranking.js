@@ -161,7 +161,7 @@ async function getTopRankings(
 
     // UI Robustness: Use gameManager.stats (Source of truth)
     const stats = gameManager.stats;
-    let userScore = stats[fieldName] || 0;
+    let userScore = (stats && stats[fieldName]) || 0;
 
     // Trust DB score over local if discrepancy exists while in Top 10
     if (topEntry) {
