@@ -18,6 +18,18 @@ import { getDailySeed } from "./utils/random.js?v=1.1.16";
 const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+export function getCachedRankings() {
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached).data;
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function fetchRankings(forceRefresh = false) {
   // Ensure gameManager is ready so local stats are up to date for score comparison
   await gameManager.ready;

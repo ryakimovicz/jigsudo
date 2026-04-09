@@ -4,7 +4,7 @@ import { getCurrentLang } from "./i18n.js?v=1.1.16";
 import { showProfile } from "./profile.js?v=1.1.16";
 import { getDailySeed } from "./utils/random.js?v=1.1.16";
 import { gameManager } from "./game-manager.js?v=1.1.16";
-import { fetchRankings, renderRankings, clearRankingCache } from "./ranking.js?v=1.1.16";
+import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.1.16";
 import { getCurrentUser } from "./auth.js?v=1.1.16";
 import { CONFIG } from "./config.js?v=1.1.16";
 import { updateSidebarActiveState } from "./sidebar.js?v=1.1.16";
@@ -636,18 +636,31 @@ export function initHome() {
       monthHeader.textContent = capitalized;
     }
 
-    // Only clear if empty (first load)
-    if (containerDaily && !containerDaily.hasChildNodes())
-      containerDaily.innerHTML = '<div class="loader-small"></div>';
-    else toggleHeaderSpinner(containerDaily, true);
+    // Only clear if empty (first load) AND no cache available
+    const cachedRankings = getCachedRankings();
+    
+    if (cachedRankings) {
+      // PRE-RENDER (Stale-While-Revalidate): Show cached table instantly
+      renderRankings(containerDaily, cachedRankings, "daily");
+      renderRankings(containerMonthly, cachedRankings, "monthly");
+      renderRankings(containerAllTime, cachedRankings, "allTime");
+      
+      toggleHeaderSpinner(containerDaily, true);
+      toggleHeaderSpinner(containerMonthly, true);
+      toggleHeaderSpinner(containerAllTime, true);
+    } else {
+      if (containerDaily && !containerDaily.hasChildNodes())
+        containerDaily.innerHTML = '<div class="loader-small"></div>';
+      else toggleHeaderSpinner(containerDaily, true);
 
-    if (containerMonthly && !containerMonthly.hasChildNodes())
-      containerMonthly.innerHTML = '<div class="loader-small"></div>';
-    else toggleHeaderSpinner(containerMonthly, true);
+      if (containerMonthly && !containerMonthly.hasChildNodes())
+        containerMonthly.innerHTML = '<div class="loader-small"></div>';
+      else toggleHeaderSpinner(containerMonthly, true);
 
-    if (containerAllTime && !containerAllTime.hasChildNodes())
-      containerAllTime.innerHTML = '<div class="loader-small"></div>';
-    else toggleHeaderSpinner(containerAllTime, true);
+      if (containerAllTime && !containerAllTime.hasChildNodes())
+        containerAllTime.innerHTML = '<div class="loader-small"></div>';
+      else toggleHeaderSpinner(containerAllTime, true);
+    }
 
     // Also spin the main refresh button
     if (refreshBtn) refreshBtn.classList.add("spinning");
