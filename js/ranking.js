@@ -19,6 +19,9 @@ const CACHE_KEY = "jigsudo_ranking_cache";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 export async function fetchRankings(forceRefresh = false) {
+  // Ensure gameManager is ready so local stats are up to date for score comparison
+  await gameManager.ready;
+
   const now = Date.now();
   const cached = localStorage.getItem(CACHE_KEY);
 
@@ -35,8 +38,14 @@ export async function fetchRankings(forceRefresh = false) {
     const { timestamp, data, userId, cachedToday, isAuthenticated } =
       JSON.parse(cached);
 
+    // SMARTEST CACHE: Check if local stats are better than cached ones (Post-win return)
+    const stats = gameManager.stats;
+    const isStaleByScore =
+      (stats.dailyRP || 0) > (data.daily?.personal?.score || 0) ||
+      (stats.monthlyRP || 0) > (data.monthly?.personal?.score || 0);
+
     // Refresh if we were a guest/hint but now have a full verified user
-    const needsAuthUpgrade = user && !isAuthenticated;
+    const needsAuthUpgrade = (user && !isAuthenticated) || isStaleByScore;
 
     // Check TTL, User Match, AND Day Match
     if (
@@ -48,7 +57,10 @@ export async function fetchRankings(forceRefresh = false) {
       console.log("[Ranking] Using cached data (User and Day verified)");
       return data;
     }
-    if (needsAuthUpgrade) console.log("[Ranking] Cache present but needs auth upgrade.");
+    if (needsAuthUpgrade)
+      console.log(
+        `[Ranking] Cache present but invalidated (Auth: ${!!user}, Stale: ${isStaleByScore})`,
+      );
   }
 
   const currentMonth = today.substring(0, 7);

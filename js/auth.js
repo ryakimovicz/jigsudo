@@ -605,6 +605,11 @@ function updateUIForLogin(user) {
       (user.isAnonymous ? t.guest || "Anónimo" : t.user_default || "Usuario");
   }
 
+  // SAVE HINTS FOR RANKING FALLBACK
+  if (user.uid) localStorage.setItem("jigsudo_active_uid", user.uid);
+  if (user.displayName)
+    localStorage.setItem("jigsudo_active_username", user.displayName);
+
   const btnChangeName = document.getElementById("btn-profile-change-name");
   if (btnChangeName)
     btnChangeName.onclick = () => showPasswordModal("change_username");
