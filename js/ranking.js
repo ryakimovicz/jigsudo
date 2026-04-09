@@ -5,7 +5,7 @@ import {
   query,
   orderBy,
   limit,
-  getDocs,
+  getDocsFromServer,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { translations } from "./translations.js?v=1.1.14";
@@ -162,6 +162,29 @@ async function getTopRankings(
       userScore = 0;
     }
 
+    // NEW ROBUST INJECTION: If user is missing from DB list due to latency/cache, inject them!
+    if (inTop10 === -1 && userScore > 0) {
+      const injectEntry = {
+        id: activeUid,
+        username: activeUsername || "Usuario",
+        score: userScore,
+        totalRP: stats.totalScoreAccumulated || stats.currentRP || 0, // Fallback for correct rank level
+      };
+
+      // Find where they belong
+      let insertIndex = top10.findIndex((u) => userScore > u.score);
+      
+      if (insertIndex !== -1) {
+        top10.splice(insertIndex, 0, injectEntry);
+        if (top10.length > 10) top10.pop(); // Keep it strictly Top 10
+      } else if (top10.length < 10) {
+        top10.push(injectEntry);
+      }
+      
+      // Re-evaluate their position after injection
+      inTop10 = top10.findIndex((u) => u.id === activeUid);
+    }
+
     if (inTop10 !== -1) {
       result.personal = {
         id: activeUid,
@@ -183,6 +206,7 @@ async function getTopRankings(
         rank: actualRank,
         score: userScore,
         username: activeUsername || "Usuario",
+        totalRP: stats.totalScoreAccumulated || stats.currentRP || 0,
         inTop: false,
       };
     }
@@ -216,12 +240,12 @@ async function getTop10(
         limit(10),
       );
     }
-    let querySnapshot = await getDocs(q);
+    let querySnapshot = await getDocsFromServer(q);
 
     if (retryOnEmpty && querySnapshot.empty) {
       console.log(`[Ranking] ${fieldName} empty, retrying in 1.5s...`);
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      querySnapshot = await getDocs(q);
+      querySnapshot = await getDocsFromServer(q);
     }
 
     return querySnapshot.docs.map((doc) => ({
