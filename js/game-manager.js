@@ -822,13 +822,24 @@ export class GameManager {
       clearTimeout(this.cloudSaveTimeout);
       this.cloudSaveTimeout = null;
     }
-    localStorage.removeItem("jigsudo_user_stats");
-    this.stats = null;
-    localStorage.removeItem("jigsudo_active_uid");
 
+    // Direct removals
+    localStorage.removeItem("jigsudo_user_stats");
+    localStorage.removeItem("jigsudo_active_uid");
+    localStorage.removeItem("jigsudo_active_username");
+    localStorage.removeItem("jigsudo_ranking_cache_v3");
+    this.stats = null;
+
+    // Pattern-based removals (clear private state/history/toggles, preserve settings)
     const keys = Object.keys(localStorage);
     keys.forEach((key) => {
-      if (key.startsWith("jigsudo_state_")) localStorage.removeItem(key);
+      if (
+        key.startsWith("jigsudo_state_") ||
+        key.startsWith("jigsudo_isPublic_") ||
+        key.startsWith("jigsudo_history_")
+      ) {
+        localStorage.removeItem(key);
+      }
     });
 
     this.state = null;
