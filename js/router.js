@@ -151,8 +151,8 @@ export const router = {
         // If we are navigating AWAY from a game (or landed on a menu),
         // ensure any victory modal/animation is removed.
         const cleanup = async () => {
-          const { cleanupVictoryUI } = await import("./ui.js?v=1.1.18");
-          const { stopVictoryAnimations } = await import("./code.js?v=1.1.18");
+          const { cleanupVictoryUI } = await import("./ui.js?v=1.1.19");
+          const { stopVictoryAnimations } = await import("./code.js?v=1.1.19");
           cleanupVictoryUI();
           stopVictoryAnimations();
         };
