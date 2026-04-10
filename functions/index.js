@@ -15,12 +15,12 @@ const SCORING = {
   BASE_WIN_RP: 6.0,
   JIGSUDO_OFFSET_HOURS: 6,
   MIN_TIME_THRESHOLDS: {
-    memory: 10,
-    jigsaw: 10,
-    sudoku: 10,
-    peaks: 10,
-    search: 10,
-    code: 10
+    memory: 5,
+    jigsaw: 5,
+    sudoku: 5,
+    peaks: 5,
+    search: 5,
+    code: 5
   },
   PARTIAL_RP: {
     memory: 1.0,

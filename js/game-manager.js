@@ -1224,8 +1224,12 @@ export class GameManager {
    * Adds a stage result to the background processing queue.
    */
   _enqueueValidation(stage, points) {
-    const stageTime = this.state.history?.[stage]?.time || 0;
-    const peaksErrors = this.state.stats?.peaksErrors || 0;
+    // v1.2.6: Fix stageTime retrieval (pull from meta.stageTimes converted to seconds)
+    const stageTimeMs = this.state.meta?.stageTimes?.[stage] || 0;
+    const stageTime = Math.floor(stageTimeMs / 1000);
+    
+    // Safety check for peaksErrors (ensure we pull from the live stats)
+    const peaksErrors = (this.stats && this.stats.peaksErrors) || 0;
     
     this.validationQueue.push({
       stage,
@@ -1285,9 +1289,20 @@ export class GameManager {
           this.validationQueue.shift(); // Remove anyway to avoid infinite loops, but log it
         }
       } catch (error) {
+        // v1.2.6: UNCLOGGER - Distinguish between connectivity issues and logical rejections
+        // Logic errors shouldn't be retried because they will fail again (clean up the queue)
+        const logicCodes = ["out-of-range", "failed-precondition", "invalid-argument"];
+        const isLogicError = logicCodes.includes(error.code) || 
+                             (error.message && error.message.includes("too fast"));
+
+        if (isLogicError) {
+          console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
+          this.validationQueue.shift(); // Remove permanent failure
+          continue; // Proceed with next item
+        }
+
         console.error(`[Referee] Connection error during stage ${task.stage} validation. Retrying later...`, error);
         // On network error, stop processing this turn to allow retries later
-        // v1.2.1: Ensure we don't block the UI lock forever
         this.isProcessingQueue = false;
         break; 
       }
