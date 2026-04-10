@@ -1,11 +1,11 @@
-import { updateSidebarActiveState } from "./sidebar.js?v=1.1.19";
-import { translations } from "./translations.js?v=1.1.19";
-import { getCurrentLang } from "./i18n.js?v=1.1.19";
-import { RANKS } from "./ranks.js?v=1.1.19";
-import { CONFIG } from "./config.js?v=1.1.19";
-import { toggleModal } from "./ui.js?v=1.1.19";
-import { router } from "./router.js?v=1.1.19";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.1.19";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.2.0";
+import { translations } from "./translations.js?v=1.2.0";
+import { getCurrentLang } from "./i18n.js?v=1.2.0";
+import { RANKS } from "./ranks.js?v=1.2.0";
+import { CONFIG } from "./config.js?v=1.2.0";
+import { toggleModal } from "./ui.js?v=1.2.0";
+import { router } from "./router.js?v=1.2.0";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.2.0";
 
 // DOMContentLoaded removed. main.js handles this.
 // document.addEventListener("DOMContentLoaded", () => {
