@@ -19,6 +19,7 @@ export class GameManager {
     this.isProcessingQueue = false;
     this.localSessionId = Math.random().toString(36).substring(7); // v1.5.0: Unique Tab/Device ID
     this.sessionBlocked = false;
+    this._throneShieldExpires = 0; // v1.2.3: Grace period for session claims
 
     // Listen for tab focus/visibility to force save or handle day transitions
     document.addEventListener("visibilitychange", async () => {
@@ -127,7 +128,16 @@ export class GameManager {
       
       // NEW: Anchor session on resume if already logged in
       if (activeUid) {
-        this.ensureSessionStarted();
+        // v1.2.2: If we were forced to reload to claim the session, we MUST await the anchor
+        const forceClaim = localStorage.getItem("jigsudo_force_throne") === "true";
+        if (forceClaim) {
+          localStorage.removeItem("jigsudo_force_throne");
+          // v1.2.4: Activate shield IMMEDIATELY before the call to silence cache-triggers
+          this._throneShieldExpires = Date.now() + 10000;
+          await this.ensureSessionStarted();
+        } else {
+          this.ensureSessionStarted();
+        }
       }
       if (CONFIG.debugMode)
         console.log(
@@ -1276,7 +1286,9 @@ export class GameManager {
         }
       } catch (error) {
         console.error(`[Referee] Connection error during stage ${task.stage} validation. Retrying later...`, error);
-        // On network error, we STOP processing and wait for next trigger (don't shift)
+        // On network error, stop processing this turn to allow retries later
+        // v1.2.1: Ensure we don't block the UI lock forever
+        this.isProcessingQueue = false;
         break; 
       }
 
@@ -1613,6 +1625,9 @@ export class GameManager {
                 sessionId: this.localSessionId
             });
             console.log("[Sync] Server Session Anchor:", result);
+            
+            // v1.2.3: Activate Throne Shield - 10s grace period to allow Firestore to update its cache
+            this._throneShieldExpires = Date.now() + 10000;
         } catch (err) {
             console.warn("[Sync] Failed to anchor server session:", err);
         }
@@ -1689,6 +1704,12 @@ export class GameManager {
       const user = getCurrentUser();
       
       if (user && !user.isAnonymous && remoteStats.activeSessionId) {
+        // v1.2.3: THRONE SHIELD - Ignore conflicts if we just claimed the session (prevents cache loop)
+        if (Date.now() < this._throneShieldExpires) {
+          console.log("[Sync] Session conflict detected but ignored (Throne Shield active)");
+          return;
+        }
+
         if (remoteStats.activeSessionId !== this.localSessionId) {
           console.warn("[Sync] Exclusive Session Conflict: This device is no longer the active throne.");
           this.showExclusiveSessionBlock();
@@ -2165,7 +2186,7 @@ export class GameManager {
    * Exclusive Session Block (v1.5.0)
    * Prevents multi-device conflicts by forcing a single active origin.
    */
-  showExclusiveSessionBlock() {
+  async showExclusiveSessionBlock() {
     if (this.sessionBlocked) return;
     this.sessionBlocked = true;
 
@@ -2193,10 +2214,10 @@ export class GameManager {
     };
 
     try {
-      // Access pre-loaded translations if possible
-      const { translations } = require("./translations.js?v=1.1.19");
-      if (translations && translations[lang]) {
-        t = translations[lang];
+      // v1.2.2: Access dynamic translations correctly
+      const { translations: tData } = await import("./translations.js?v=1.1.19");
+      if (tData && tData[lang]) {
+        t = { ...t, ...tData[lang] };
       }
     } catch (e) { console.warn("Fallback translations used for block screen."); }
 
@@ -2221,7 +2242,11 @@ export class GameManager {
     if (btn) {
       btn.onmouseover = () => btn.style.transform = "scale(1.05)";
       btn.onmouseout = () => btn.style.transform = "scale(1)";
-      btn.onclick = () => window.location.reload();
+      btn.onclick = () => {
+        // v1.2.2: Signal that on reload, this tab MUST take the throne immediately
+        localStorage.setItem("jigsudo_force_throne", "true");
+        window.location.reload();
+      };
     }
   }
 
@@ -2343,8 +2368,14 @@ export class GameManager {
                 // v1.4.1: Ensure background queue is empty before final win submission
                 if (this.isProcessingQueue || this.validationQueue.length > 0) {
                     console.log("[Referee] Waiting for background stage validations to finish...");
-                    while (this.isProcessingQueue || this.validationQueue.length > 0) {
+                    let attempts = 0;
+                    // v1.2.1: Add 5s max timeout to prevent UI hang on CORS/Network issues
+                    while ((this.isProcessingQueue || this.validationQueue.length > 0) && attempts < 50) {
                         await new Promise(r => setTimeout(r, 100));
+                        attempts++;
+                    }
+                    if (this.validationQueue.length > 0) {
+                        console.warn("[Referee] Proceeding with final victory despite pending validations (Network/CORS issues).");
                     }
                 }
 

@@ -45,7 +45,7 @@ function getJigsudoDateString() {
 /**
  * 1. startJigsudoSession (v2)
  */
-exports.startJigsudoSession = onCall(async (request) => {
+exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Must be logged in.");
   }
@@ -194,7 +194,7 @@ async function _performUserMaintenance(userRef, userData, today) {
 }
 
 
-exports.submitStageResult = onCall(async (request) => {
+exports.submitStageResult = onCall({ cors: true }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
   
   const { stage, seed, stageTime, peaksErrors } = request.data;
@@ -268,7 +268,7 @@ exports.submitStageResult = onCall(async (request) => {
  * 3. submitDailyWin (v1.4.1)
  * Finalizes the game, adds Time Bonus and updates history.
  */
-exports.submitDailyWin = onCall(async (request) => {
+exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
 
   const { seed, peaksErrors, stageTimes } = request.data;
@@ -371,7 +371,7 @@ exports.submitDailyWin = onCall(async (request) => {
  * 3. checkUsernameAvailability (v2)
  * Allows guests to check if a name is taken without broad collection access.
  */
-exports.checkUsernameAvailability = onCall(async (request) => {
+exports.checkUsernameAvailability = onCall({ cors: true }, async (request) => {
   const { username } = request.data;
   if (!username) {
     throw new HttpsError("invalid-argument", "Username is required.");

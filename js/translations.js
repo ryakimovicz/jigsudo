@@ -689,6 +689,11 @@ export const translations = {
     changelog_v100_title: "Versión 1.0.0",
     changelog_v100_date: "05/04/2026",
     changelog_v100_item1: "¡Lanzamiento oficial de Jigsudo!",
+    
+    // Sincronización Multidispositivo (Español)
+    sync_exclusive_title: "Cuenta en uso",
+    sync_exclusive_desc: "Jigsudo se ha abierto en otro dispositivo o pestaña. Solo puedes tener una sesión activa para evitar pérdida de datos.",
+    sync_btn_continue: "Continuar aquí 🔄",
   },
   en: {
     app_title: "JIGSUDO",
