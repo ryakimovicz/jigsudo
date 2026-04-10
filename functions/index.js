@@ -64,6 +64,7 @@ exports.startJigsudoSession = onCall(async (request) => {
 
     // 1. PERFORM MAINTENANCE (v1.4.2 / v1.5.2)
     // If the cron script hasn't run yet, apply decay before anything else
+    const stats = userData.stats || {};
     if ((stats.lastDecayCheck || "") < today) {
       await _performUserMaintenance(userRef, userData, today);
     }
@@ -192,45 +193,7 @@ async function _performUserMaintenance(userRef, userData, today) {
   await userRef.update(updates);
 }
 
-/**
- * 2. submitDailyWin (v2)
- */
-exports.submitDailyWin = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
 
-  const { seed, peaksErrors, stageTimes } = request.data;
-  if (!seed || typeof peaksErrors !== "number" || !stageTimes) {
-    throw new HttpsError("invalid-argument", "Missing win data.");
-  }
-
-  const uid = request.auth.uid;
-  const today = getJigsudoDateString();
-  const now = Date.now();
-
-  // 1. Verify Seed
-  const serverSeed = parseInt(today.replace(/-/g, ""), 10);
-  if (seed !== serverSeed) {
-    throw new HttpsError("invalid-argument", "Date mismatch.");
-  }
-
-  // 2. Fetch Session
-  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
-  const sessionDoc = await sessionRef.get();
-  if (!sessionDoc.exists) {
-    throw new HttpsError("failed-precondition", "Session not initialized.");
-  }
-
-  const sessionData = sessionDoc.data();
-  if (sessionData.completed) {
-    throw new HttpsError("already-exists", "Victory already recorded.");
-  }
-
-/**
- * 2. submitStageResult (v1.4.1)
- * Progressive verification of each level.
- */
 exports.submitStageResult = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
   
