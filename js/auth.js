@@ -1195,8 +1195,9 @@ export function initForgotPasswordUI() {
         inputResetEmail.focus();
       }
     });
-  } else {
-    console.warn("[Auth] Forgot password elements not found:", {
+  } else if (linkForgot || modalReset) {
+    // Only warn if there's a Mismatch (one exists but not the other)
+    console.warn("[Auth] Forgot password elements partial mismatch:", {
       linkForgot: !!linkForgot,
       modalReset: !!modalReset,
     });

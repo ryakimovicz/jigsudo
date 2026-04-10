@@ -15,6 +15,8 @@ initSidebar();
 // Inject necessary modals for auth/parity before other logic
 injectModals();
 attachAuthListeners();
+// Note: initForgotPasswordUI is self-invoked by auth.js on import, 
+// but we call it here again to ensure it catches the freshly injected modals.
 initForgotPasswordUI();
 
 // Initialize language support
@@ -233,6 +235,16 @@ function initAuthListener() {
     // Always show quick stats, even for guests (matches main app parity)
     if (quickStats) quickStats.classList.remove("hidden");
     
+    // v1.5.2: Proactive maintenance for data consistency on legal pages
+    // We use onlyMaintenance: true to avoid claiming the "throne" (Exclusive Session)
+    if (!isGuest && user) {
+        import("./db.js?v=1.1.19").then(({ callJigsudoFunction }) => {
+            callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true })
+                .then(() => console.log("[Maintenance] Proactive check (legal) complete."))
+                .catch(e => console.warn("[Maintenance] check failed:", e));
+        });
+    }
+
     // Populate stats data
     populateMenuStats();
   });
