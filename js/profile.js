@@ -1,11 +1,11 @@
-import { getCurrentUser, logoutUser } from "./auth.js?v=1.2.1";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.2.1";
-import { translations } from "./translations.js?v=1.2.1";
-import { gameManager } from "./game-manager.js?v=1.2.1";
-import { getRankData, calculateRP } from "./ranks.js?v=1.2.1";
-import { formatTime } from "./ui.js?v=1.2.1";
-import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.2.1";
-import { fetchPuzzleIndex } from "./history.js?v=1.2.1";
+import { getCurrentUser, logoutUser } from "./auth.js?v=1.4.6";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.6";
+import { translations } from "./translations.js?v=1.4.6";
+import { gameManager } from "./game-manager.js?v=1.4.6";
+import { getRankData, calculateRP } from "./ranks.js?v=1.4.6";
+import { formatTime } from "./ui.js?v=1.4.6";
+import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.4.6";
+import { fetchPuzzleIndex } from "./history.js?v=1.4.6";
 
 export let currentViewDate = getJigsudoDate();
 let minNavMonth = null;
@@ -75,7 +75,7 @@ let verificationInterval = null;
 // Listen for Router Changes to trigger polling/updates
 window.addEventListener("routeChanged", async ({ detail }) => {
   if (detail.baseRoute === "#profile") {
-    const { getCurrentUser } = await import("./auth.js?v=1.2.1");
+    const { getCurrentUser } = await import("./auth.js?v=1.4.6");
     const user = getCurrentUser();
     const requestedUsername = detail.params?.[0];
 
@@ -110,7 +110,7 @@ function _showProfileUI(requestedUsername) {
   const startPolling = async () => {
     if (verificationInterval) return;
     verificationInterval = setInterval(async () => {
-      const { refreshUserStatus } = await import("./auth.js?v=1.2.1");
+      const { refreshUserStatus } = await import("./auth.js?v=1.4.6");
       const result = await refreshUserStatus();
       if (result.success && result.user && result.user.emailVerified) {
         clearInterval(verificationInterval);
@@ -120,7 +120,7 @@ function _showProfileUI(requestedUsername) {
     }, 5000); // Check every 5s while profile is open
   };
 
-  import("./auth.js?v=1.2.1").then((mod) => {
+  import("./auth.js?v=1.4.6").then((mod) => {
     const user = mod.getCurrentUser();
     if (user && !user.isAnonymous && !user.emailVerified) {
       startPolling();
@@ -144,7 +144,7 @@ function _showProfileUI(requestedUsername) {
   if (footer) footer.classList.remove("hidden");
 
   // Highlight Sidebar Button (Cuenta)
-  import("./sidebar.js?v=1.2.1").then((mod) => {
+  import("./sidebar.js?v=1.4.6").then((mod) => {
     if (mod.updateSidebarActiveState) {
       mod.updateSidebarActiveState("btn-auth");
     }
@@ -184,7 +184,7 @@ function _hideProfileUI() {
 }
 
 export async function updateProfileData(targetUsername = activeProfileName) {
-  const { getCurrentUser } = await import("./auth.js?v=1.2.1");
+  const { getCurrentUser } = await import("./auth.js?v=1.4.6");
   const user = getCurrentUser();
   const lang = getCurrentLang() || "es";
   const t = translations[lang] || translations["es"];
@@ -238,7 +238,7 @@ export async function updateProfileData(targetUsername = activeProfileName) {
 
     // Fetch public stats from DB
     try {
-      const { getPublicUserByUsername } = await import("./db.js?v=1.2.1");
+      const { getPublicUserByUsername } = await import("./db.js?v=1.4.6");
       const publicData = await getPublicUserByUsername(decodedTarget);
 
       if (publicData) {
@@ -357,8 +357,8 @@ export async function updateProfileData(targetUsername = activeProfileName) {
       const resendBtn = document.getElementById("btn-resend-verification");
       if (resendBtn && !resendBtn.dataset.listenerAttached) {
         resendBtn.onclick = async () => {
-          const { resendVerification } = await import("./auth.js?v=1.2.1");
-          const { showToast } = await import("./ui.js?v=1.2.1");
+          const { resendVerification } = await import("./auth.js?v=1.4.6");
+          const { showToast } = await import("./ui.js?v=1.4.6");
           const lang = getCurrentLang() || "es";
           const t = translations[lang] || translations["es"];
 
@@ -429,15 +429,18 @@ function renderProfileStats(stats) {
   // SHOW ALL STATS UI
   statsContainers.forEach((el) => el.classList.remove("hidden"));
 
-  // 1. Basic Stats
+  // v1.4.5: Robust Hybrid Detection. Root fields (v7.1) vs Inner Map (Legacy/Partial)
+  // We prefer the values at the root if available, otherwise look into the 'stats' map.
+  const s = stats;
+  const i = stats.stats || {}; // Inner map if exists
+  
+  // 1. Basic Stats (Prefer inner map for competitive, root for identity)
   if (document.getElementById("stat-played"))
-    document.getElementById("stat-played").textContent = stats.totalPlayed;
+    document.getElementById("stat-played").textContent = i.totalPlayed || s.totalPlayed || 0;
   if (document.getElementById("stat-streak"))
-    document.getElementById("stat-streak").textContent =
-      stats.currentStreak || 0;
+    document.getElementById("stat-streak").textContent = i.currentStreak || s.currentStreak || 0;
   if (document.getElementById("stat-max-streak"))
-    document.getElementById("stat-max-streak").textContent =
-      stats.maxStreak || 0;
+    document.getElementById("stat-max-streak").textContent = i.maxStreak || s.maxStreak || 0;
 
   // 2. Aggregate History Stats
   let maxScore = 0;
@@ -465,51 +468,23 @@ function renderProfileStats(stats) {
   let totalPeaksErrors = 0;
   let peaksErrorCount = 0;
 
-  // Optimized Cache Strategy (Only use cache if it has stage data)
-  const hasCache =
-    stats.stageTimesAccumulated &&
-    Object.keys(stats.stageTimesAccumulated).length > 0 &&
-    stats.totalTimeAccumulated !== undefined;
+  // Optimized Cache Strategy (v1.3.0)
+  // We now use the Server-calculated aggregates for O(1) performance.
+  bestTime = i.bestTime || s.bestTime || Infinity;
+  totalTime = i.totalTimeAccumulated || s.totalTimeAccumulated || 0;
+  wonCount = i.wins || s.wins || 0;
+  totalPeaksErrors = i.totalPeaksErrorsAccumulated || s.totalPeaksErrorsAccumulated || 0;
+  peaksErrorCount = i.wins || s.wins || 0;
+  maxScore = i.bestScore || s.bestScore || 0;
 
-  if (hasCache) {
-    // O(1) Access!
-    bestTime = stats.bestTime || Infinity;
-    totalTime = stats.totalTimeAccumulated || 0;
-    wonCount = stats.wins || 0;
-    totalPeaksErrors = stats.totalPeaksErrorsAccumulated || 0;
-    peaksErrorCount = stats.wins || 0;
-
-    for (const [stage, time] of Object.entries(stats.stageTimesAccumulated)) {
+  const st = i.stageTimesAccumulated || s.stageTimesAccumulated;
+  if (st) {
+    for (const [stage, time] of Object.entries(st)) {
       if (stageSums[stage] !== undefined) {
         stageSums[stage] = time;
-        stageCounts[stage] = stats.stageWinsAccumulated?.[stage] || 0;
+        stageCounts[stage] = s.stageWinsAccumulated?.[stage] || 0;
       }
     }
-  } else if (stats.history) {
-    // Fallback: O(n) iteration for legacy data
-    Object.values(stats.history).forEach((day) => {
-      if (day.score && day.score > maxScore) maxScore = day.score;
-
-      if (day.totalTime && day.status === "won") {
-        if (day.totalTime < bestTime) bestTime = day.totalTime;
-        totalTime += day.totalTime;
-        wonCount++;
-      }
-
-      if (day.stageTimes) {
-        for (const [stage, time] of Object.entries(day.stageTimes)) {
-          if (stageSums[stage] !== undefined && time > 0) {
-            stageSums[stage] += time;
-            stageCounts[stage]++;
-          }
-        }
-      }
-
-      if (day.peaksErrors !== undefined) {
-        totalPeaksErrors += day.peaksErrors;
-        peaksErrorCount++;
-      }
-    });
   }
 
   const fmtTime = (ms) => formatTime(ms);
@@ -582,8 +557,8 @@ function renderProfileStats(stats) {
         `(${avgPeaksErr} err)`;
   }
 
-  // Rank UI
-  const currentRP = stats.currentRP || 0;
+  // Rank UI (v1.4.5: Prefer Root Field for Hierarchy Source of Truth)
+  const currentRP = s.totalRP || i.totalRP || s.currentRP || i.currentRP || 0;
   const rankData = getRankData(currentRP);
 
   const rankIconEl = document.getElementById("profile-rank-icon");
@@ -653,8 +628,8 @@ function renderProfileStats(stats) {
       typeof nextGoal === "number" ? fmtNumber(nextGoal, 0) : nextGoal;
   }
   if (mRpProgress) mRpProgress.style.width = `${rankData.progress}%`;
-  if (mStreak) mStreak.textContent = stats.currentStreak || 0;
-  if (mDailyPoints) mDailyPoints.textContent = fmtNumber(stats.dailyRP || 0, 3);
+  if (mStreak) mStreak.textContent = s.currentStreak || i.currentStreak || 0;
+  if (mDailyPoints) mDailyPoints.textContent = fmtNumber(s.dailyRP || i.dailyRP || 0, 3);
 
   // 3. Render Calendar
   try {
@@ -975,13 +950,13 @@ async function handleShareStats() {
   // html2canvas is loaded via CDN in index.html, it should be global
   if (typeof html2canvas === "undefined") {
     console.error("html2canvas not loaded");
-    const { showToast } = await import("./ui.js?v=1.2.1");
+    const { showToast } = await import("./ui.js?v=1.4.6");
     showToast(t.err_html2canvas || "Error: html2canvas no está cargado ❌");
     return;
   }
 
   try {
-    const { showToast } = await import("./ui.js?v=1.2.1");
+    const { showToast } = await import("./ui.js?v=1.4.6");
     showToast(t.toast_generating_image || "Generando imagen... ⏳", 2000);
 
     // Ensure everything is translated for the card (in case it was hidden)
@@ -993,7 +968,7 @@ async function handleShareStats() {
     let shareUrl = "https://jigsudo.com";
     if (user && !user.isAnonymous) {
       try {
-        const { fetchLatestUserData } = await import("./db.js?v=1.2.1");
+        const { fetchLatestUserData } = await import("./db.js?v=1.4.6");
         const userData = await fetchLatestUserData(user.uid);
         if (userData && userData.isPublic !== false && userData.username) {
           const encodedName = encodeURIComponent(userData.username);
@@ -1031,56 +1006,20 @@ async function handleShareStats() {
       ? JSON.parse(statsStr)
       : { history: {}, totalPlayed: 0, currentStreak: 0, currentRP: 0 };
 
-    // RECALCULATE averages for the social card to ensure consistency
-    const stageSums = {
-      memory: 0,
-      jigsaw: 0,
-      sudoku: 0,
-      peaks: 0,
-      search: 0,
-      code: 0,
-    };
-    const stageCounts = {
-      memory: 0,
-      jigsaw: 0,
-      sudoku: 0,
-      peaks: 0,
-      search: 0,
-      code: 0,
-    };
-
-    if (stats.history) {
-      Object.values(stats.history).forEach((day) => {
-        if (day.stageTimes && day.status === "won") {
-          for (const [stage, time] of Object.entries(day.stageTimes)) {
-            if (stageSums[stage] !== undefined && time > 0) {
-              stageSums[stage] += time;
-              stageCounts[stage]++;
-            }
-          }
-        }
-      });
-    }
+    // RECALCULATE averages usingaggregates (v1.3.0)
+    const stageSums = stats.stageTimesAccumulated || {};
+    const stageCounts = stats.stageWinsAccumulated || {};
+    
     stats.avgTimesPerStage = {};
     for (const s in stageSums) {
       stats.avgTimesPerStage[s] = {
         sumTime: stageSums[s],
-        count: stageCounts[s],
+        count: stageCounts[s] || 0,
       };
     }
-    // Also need errors for peaks
-    let totalPeaksErrors = 0;
-    let peaksErrorCount = 0;
-    if (stats.history) {
-      Object.values(stats.history).forEach((day) => {
-        if (day.status === "won" && day.peaksErrors !== undefined) {
-          totalPeaksErrors += day.peaksErrors;
-          peaksErrorCount++;
-        }
-      });
-    }
+    
     if (stats.avgTimesPerStage.peaks) {
-      stats.avgTimesPerStage.peaks.sumErrors = totalPeaksErrors;
+      stats.avgTimesPerStage.peaks.sumErrors = stats.totalPeaksErrorsAccumulated || 0;
     }
 
     if (rankEl) {
@@ -1247,7 +1186,7 @@ async function handleShareStats() {
     }, "image/png");
   } catch (err) {
     console.error("Failed to generate social card:", err);
-    const { showToast } = await import("./ui.js?v=1.2.1");
+    const { showToast } = await import("./ui.js?v=1.4.6");
     showToast("Error al generar la imagen ❌");
   }
 }

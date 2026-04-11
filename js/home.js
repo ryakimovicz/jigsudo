@@ -1,18 +1,18 @@
 /* Main Menu Logic */
-import { translations } from "./translations.js?v=1.2.1";
-import { getCurrentLang } from "./i18n.js?v=1.2.1";
-import { showProfile } from "./profile.js?v=1.2.1";
-import { getDailySeed } from "./utils/random.js?v=1.2.1";
-import { gameManager } from "./game-manager.js?v=1.2.1";
-import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.2.1";
-import { getCurrentUser } from "./auth.js?v=1.2.1";
-import { CONFIG } from "./config.js?v=1.2.1";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.2.1";
-import { router } from "./router.js?v=1.2.1";
-import { isPuzzleAvailable } from "./history.js?v=1.2.1";
-import { showAlertModal } from "./ui.js?v=1.2.1";
-import { getJigsudoDate } from "./utils/time.js?v=1.2.1";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.2.1";
+import { translations } from "./translations.js?v=1.4.6";
+import { getCurrentLang } from "./i18n.js?v=1.4.6";
+import { showProfile } from "./profile.js?v=1.4.6";
+import { getDailySeed } from "./utils/random.js?v=1.4.6";
+import { gameManager } from "./game-manager.js?v=1.4.6";
+import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.4.6";
+import { getCurrentUser } from "./auth.js?v=1.4.6";
+import { CONFIG } from "./config.js?v=1.4.6";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.4.6";
+import { router } from "./router.js?v=1.4.6";
+import { isPuzzleAvailable } from "./history.js?v=1.4.6";
+import { showAlertModal } from "./ui.js?v=1.4.6";
+import { getJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.4.6";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.6";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -235,8 +235,8 @@ export function initHome() {
       localStorage.setItem("jigsudo_skip_clear_confirm", shouldSkip ? "true" : "false");
 
       // Sync to cloud if possible
-      const { getCurrentUser } = await import("./auth.js?v=1.2.1");
-      const { updateUserPreference } = await import("./db.js?v=1.2.1");
+      const { getCurrentUser } = await import("./auth.js?v=1.4.6");
+      const { updateUserPreference } = await import("./db.js?v=1.4.6");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
         // DB key: confirmClear (true = Ask, false = Skip)
@@ -466,16 +466,20 @@ export function initHome() {
       const todayStats = stats.history?.[today];
 
       if (todayStats) {
-        // Adapt saved history stats to the format expected by showVictorySummary
+        // v1.4.6: Resilient data extraction (best -> original -> root)
+        const source = todayStats.best || todayStats.original || todayStats;
+        
         const sessionStats = {
-          totalTime: todayStats.totalTime,
-          score: todayStats.score,
+          totalTime: source.totalTime,
+          score: source.score,
           streak: stats.currentStreak,
-          errors: todayStats.peaksErrors || 0,
-          stageTimes: todayStats.stageTimes || {},
+          errors: source.errors || source.peaksErrors || 0,
+          stageTimes: source.stageTimes || {},
+          date: today, // v1.4.6: Pass date for history context
+          isReplay: today !== stats.lastPlayedDate // Infer if replay
         };
 
-        const { showVictorySummary } = await import("./ui.js?v=1.2.1");
+        const { showVictorySummary } = await import("./ui.js?v=1.4.6");
         showVictorySummary(sessionStats, true);
       }
     } catch (e) {
@@ -494,13 +498,15 @@ export function initHome() {
       const seedStr = realTodaySeed.toString();
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
-      const isWon = stats.history?.[today]?.status === "won";
-      console.log(`[Home Debug] Checking Daily Win for ${today}:`, {
-        isWon,
-        historyEntry: stats.history?.[today],
-        seed: realTodaySeed,
-      });
-      return isWon;
+      // v1.4.6: Resilient check for victory across different versions/sync states
+      const historyEntry = stats.history?.[today];
+      const isWon = historyEntry?.original?.won === true || historyEntry?.status === "won";
+      
+      // v1.4.6/7: Optimistic override check (Home local memory & storage)
+      const optimisticWon = localStorage.getItem("jigsudo_just_won_day");
+      const isOptimisticWon = optimisticWon === today || window._jigsudoJustWonToday === today;
+
+      return !!(isWon || isOptimisticWon);
     } catch (e) {
       console.error("[Home Debug] Error checking daily win", e);
       return false;
@@ -509,12 +515,8 @@ export function initHome() {
 
   const refreshStartButton = () => {
     if (!startBtn) return;
+    const lang = getCurrentLang() || "es";
     const isWon = checkDailyWin();
-    console.log(
-      `[Home Debug] refreshStartButton called. isWon=${isWon}, mode=${currentMode}`,
-    );
-    const lang = getCurrentLang();
-
     if (isWon && currentMode === "daily") {
       startBtn.dataset.i18n = "btn_view_results";
       startBtn.textContent =
@@ -552,6 +554,8 @@ export function initHome() {
 
   // 2. Real-time timer: Unlock exactly at 06:00 UTC if user stays on page
   const setupJigsudoDayTimer = () => {
+    if (window.jigsudoDayTimer) clearTimeout(window.jigsudoDayTimer);
+
     const now = new Date();
     const nextReset = new Date(now);
     // Find next 06:00 UTC
@@ -563,35 +567,56 @@ export function initHome() {
     const msUntilReset = nextReset.getTime() - now.getTime();
     console.log(`[Home] Next Jigsudo Day in ${Math.round(msUntilReset / 1000 / 60)} minutes.`);
 
-    setTimeout(async () => {
+    window.jigsudoDayTimer = setTimeout(async () => {
       console.log("Jigsudo Day Cutoff reached! Refreshing state.");
 
-      // Mid-game Safety: Don't auto-refresh the manager if the user is in a game
       const isAtGame = isAtGameRoute();
       if (isAtGame) {
-        console.log(
-          "[Home] 06:00 UTC reached, but user is playing. Refreshing only after return to home.",
-        );
-        // We still schedule the next one, but we don't call prepareDaily yet
-        setupJigsudoDayTimer();
+        console.log("[Home] 06:00 UTC reached, but user is playing. Retrying later.");
+        setupJigsudoDayTimer(); // Retry until user leaves game
         return;
       }
 
-      // Trigger Manager to fetch new puzzle
       await gameManager.prepareDaily();
       refreshAllDayData();
-      // Schedule the next one
       setupJigsudoDayTimer();
-    }, msUntilReset + 1000); // 1s buffer
+    }, msUntilReset + 500); // 500ms safety buffer
   };
   setupJigsudoDayTimer();
+
+  // v1.4.6: Pure JS Visibility API to catch rollover after sleep/tab switch
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      console.log("[Home] Tab focused, checking if day changed...");
+      refreshStartButton();
+      setupJigsudoDayTimer(); // Re-sync timer
+    }
+  });
+
+  // v1.5.9: Consolidated Reactive Sync Listener
+  // Reacts to stats/history updates from the cloud (Sync) to refresh UI
+  window.addEventListener("userStatsUpdated", async (e) => {
+    const isLocked = window._jigsudoLockHomeRefreshes || localStorage.getItem("jigsudo_home_lock") === "true";
+    if (isLocked) {
+      console.log("[Home] Stats update ignored (Refresh Lock active).");
+      return;
+    }
+
+    console.log("[Home] Cloud stats updated. Refreshing UI & Rankings...");
+    refreshStartButton();
+    updateHeaderInfo();
+
+    // v1.5.9: Punch cache and re-render rankings automatically
+    clearRankingCache(); 
+    loadAndRenderAllRankings(true);
+  });
 
   // Home Navigation (Inicio Button)
   const navHome = document.getElementById("nav-home");
   if (navHome) {
     navHome.addEventListener("click", async () => {
       // Use Router instead of reload to preserve cache and go to canonical #home
-      const { router } = await import("./router.js?v=1.2.1");
+      const { router } = await import("./router.js?v=1.4.6");
       router.navigateTo("#home");
     });
   }
@@ -817,6 +842,7 @@ export function initHome() {
       } else {
         // Normal Daily
         gameManager.prepareDaily().then(() => {
+          gameManager.recordStart(); // Proactive history trigger
           startDailyGame();
         });
       }
@@ -827,20 +853,42 @@ export function initHome() {
   });
 
   // Listen for Game Completion to force refresh ranking even if cache is fresh
-  window.addEventListener("gameCompleted", async () => {
+  window.addEventListener("gameCompleted", async (e) => {
     console.log("[Home] Game completed. Refreshing rankings & button state.");
     rankingsInitialized = true; // Mark as initialized so it keeps updating
     
+    // v1.4.6: Optimistic UI - Mark won in local memory instantly
+    const seed = e.detail?.seed || getDailySeed();
+    const seedStr = seed.toString();
+    const todayStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+    window._jigsudoJustWonToday = todayStr;
+    localStorage.setItem("jigsudo_just_won_day", todayStr);
+
     // REDUNDANCY: Ensure cache is dead
-    const { clearRankingCache } = await import("./ranking.js?v=1.2.1");
+    const { clearRankingCache } = await import("./ranking.js?v=1.4.6");
     clearRankingCache();
     
+    // Force button update immediately
+    refreshStartButton();
+
     // Add micro-delay to let Firestore settle (optional but safer for eventual consistency)
     setTimeout(() => {
       loadAndRenderAllRankings(true);
-      refreshStartButton(); // Force button update immediately
+      refreshStartButton(); // Second pass to ensure latest cloud data if index was fast
     }, 500);
+
+    // v1.4.6: Block external refreshes for 4s (expanded) to prevent "gray flicker"
+    window._jigsudoLockHomeRefreshes = true;
+    localStorage.setItem("jigsudo_home_lock", "true");
+    
+    setTimeout(() => { 
+      window._jigsudoLockHomeRefreshes = false; 
+      localStorage.removeItem("jigsudo_home_lock");
+      localStorage.removeItem("jigsudo_just_won_day"); // Cleanup after safety window
+    }, 4000);
   });
+
+  // Consolidated listener moved to top for clarity (Old position 886 removed)
 }
 
 let isStarting = false;
@@ -880,7 +928,7 @@ export async function startDailyGame() {
     // 3. Load Memory/Stage logic
     const state = gameManager.getState();
     const currentStage = state.progress.currentStage || "memory";
-    const module = await import("./memory.js?v=1.2.1");
+    const module = await import("./memory.js?v=1.4.6");
 
     if (currentStage === "memory") {
       module.initMemoryGame();

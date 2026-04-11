@@ -237,21 +237,35 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
 
   const batch = db.batch();
   
-  // Root update (Official Ranking)
-  batch.set(userRef, {
+  // Root update (Official Ranking & Metadata v1.4.5: Atomic Monthly Reset)
+  const rootUpdate = {
     totalRP: admin.firestore.FieldValue.increment(stagePoints),
-    monthlyRP: isNewMonth ? admin.firestore.FieldValue.increment(stagePoints) : admin.firestore.FieldValue.increment(stagePoints),
     dailyRP: admin.firestore.FieldValue.increment(stagePoints),
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    schemaVersion: 7.1
+  };
+  
+  if (isNewMonth) {
+    rootUpdate.monthlyRP = stagePoints; // Start month fresh
+    rootUpdate.lastMonthlyUpdate = nowMonth;
+  } else {
+    rootUpdate.monthlyRP = admin.firestore.FieldValue.increment(stagePoints);
+  }
+  
+  batch.set(userRef, rootUpdate, { merge: true });
 
-  // Stats nested update
-  batch.update(userRef, {
-    "stats.dailyRP": admin.firestore.FieldValue.increment(stagePoints),
-    "stats.totalRP": admin.firestore.FieldValue.increment(stagePoints),
-    "stats.monthlyRP": admin.firestore.FieldValue.increment(stagePoints),
-    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(stagePoints)
-  });
+  // Stats Aggregators (No RP duplicates here anymore)
+  const statsUpdate = {
+    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(stagePoints),
+    [`stats.stageWinsAccumulated.${stage}`]: admin.firestore.FieldValue.increment(1),
+    [`stats.stageTimesAccumulated.${stage}`]: admin.firestore.FieldValue.increment(stageTime),
+  };
+  
+  if (peaksErrors > 0) {
+    statsUpdate["stats.totalPeaksErrorsAccumulated"] = admin.firestore.FieldValue.increment(peaksErrors);
+  }
+
+  batch.update(userRef, statsUpdate);
 
   // Session update
   batch.update(sessionRef, {
@@ -288,9 +302,9 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
     throw new HttpsError("failed-precondition", "Missing stages.");
   }
 
-  // Calculate Time Bonus
-  const serverDurationMs = now - sessionData.startTime;
-  const totalSeconds = serverDurationMs / 1000;
+  // Calculate Active Time Bonus
+  const activeDurationMs = Object.values(stageTimes || {}).reduce((a, b) => a + b, 0);
+  const totalSeconds = activeDurationMs / 1000;
   const decayPerSecond = SCORING.MAX_BONUS / SCORING.BONUS_DECAY_SECONDS;
   const timeBonus = Math.max(0, SCORING.MAX_BONUS - (totalSeconds * decayPerSecond));
   const finalBonus = Number(timeBonus.toFixed(3));
@@ -302,65 +316,114 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const lastUpdate = userData.lastDailyUpdate || "";
   const nowMonth = today.substring(0, 7);
 
-  // Streak Calculation
-  let newStreak = 1;
-  const d = new Date(today + "T12:00:00Z");
-  d.setUTCDate(d.getUTCDate() - 1);
-  const yesterday = d.toISOString().split("T")[0];
+  // 1. Victory & Streak Logic (Original Day Only)
+  const isOriginalDay = seed.toString() === today.replace(/-/g, "");
+  let newStreak = stats.currentStreak || 0;
+  let newWins = stats.wins || 0;
 
-  if (lastUpdate === yesterday) {
-    newStreak = (stats.currentStreak || 0) + 1;
-  } else if (lastUpdate === today) {
-    newStreak = stats.currentStreak || 1;
+  if (isOriginalDay) {
+    const d = new Date(today + "T12:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 1);
+    const yesterday = d.toISOString().split("T")[0];
+
+    if (lastUpdate === yesterday) {
+      newStreak += 1;
+    } else if (lastUpdate !== today) {
+      newStreak = 1;
+    }
+    
+    if (lastUpdate !== today) {
+        newWins += 1;
+    }
   }
 
   const newMaxStreak = Math.max(stats.maxStreak || 0, newStreak);
-  const newWins = (stats.wins || 0) + 1;
-
-  // We need to know the CURRENT dailyRP to save it in history correctly
-  // But wait, it's safer to just add the bonus.
-  // The final score in history should be Total Stage Points + Time Bonus.
-  const baseScore = (userData.dailyRP || 0); // Already includes stage points
+  // v1.4.5: Robust Precision Fix. Summing ACTUAL results from session stages 
+  // instead of trusting potentially stale/dirty accumulated value in user doc.
+  const baseScore = Object.values(sessionData.results || {}).reduce((sum, r) => sum + (r.points || 0), 0);
   const finalScoreResult = Number((baseScore + finalBonus).toFixed(3));
 
   const batch = db.batch();
 
-  batch.set(userRef, {
+  // 2. Root Update (RP & Meta)
+  const rootUpdate = {
     totalRP: admin.firestore.FieldValue.increment(finalBonus),
     monthlyRP: admin.firestore.FieldValue.increment(finalBonus),
-    dailyRP: finalScoreResult, // Set final absolute dailyRP
+    dailyRP: finalScoreResult,
     lastDailyUpdate: today,
-    lastMonthlyUpdate: nowMonth,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    schemaVersion: 7.1
+  };
+  
+  // Set registeredAt if missing (v5 Transition)
+  if (!userData.registeredAt) {
+      rootUpdate.registeredAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  batch.set(userRef, rootUpdate, { merge: true });
+
+  // 3. Stats Global Aggregators
+  const dayOfWeek = new Date(today + "T12:00:00Z").getUTCDay(); // 0-6
+  const totalErrors = peaksErrors || 0;
 
   batch.update(userRef, {
-    "stats.dailyRP": finalScoreResult,
-    "stats.monthlyRP": admin.firestore.FieldValue.increment(finalBonus),
-    "stats.totalRP": admin.firestore.FieldValue.increment(finalBonus),
     "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalBonus),
-    "stats.currentRP": finalScoreResult,
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,
-    "stats.lastDailyUpdate": today,
-    "stats.lastMonthlyUpdate": nowMonth,
-    [`stats.history.${today}`]: {
-        status: "won",
-        score: finalScoreResult,
-        totalTime: serverDurationMs,
-        stageTimes: stageTimes,
-        timestamp: now,
-        originalWin: true
-    }
+    "stats.bestScore": admin.firestore.FieldValue.arrayUnion(finalScoreResult), // Placeholder for min/max logic
+    "stats.totalTimeAccumulated": admin.firestore.FieldValue.increment(activeDurationMs),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.count`]: admin.firestore.FieldValue.increment(1),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumScore`]: admin.firestore.FieldValue.increment(finalScoreResult),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumTime`]: admin.firestore.FieldValue.increment(activeDurationMs),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumErrors`]: admin.firestore.FieldValue.increment(totalErrors),
   });
 
-  batch.update(sessionRef, { 
-    completed: true, 
-    score: finalScoreResult, 
-    timeBonus: finalBonus,
-    durationMs: serverDurationMs 
-  });
+  // 4. History Sub-collection (Original vs Best)
+  const historyRef = userRef.collection("history").doc(seed.toString());
+  const historySnap = await historyRef.get();
+  
+  const historyEntry = {
+    seed: seed,
+    played: true
+  };
+
+  const resultData = {
+    score: finalScoreResult,
+    totalTime: activeDurationMs,
+    stageTimes: stageTimes,
+    errors: totalErrors,
+    timestamp: now,
+    won: true
+  };
+
+  if ((!historySnap.exists || !historySnap.data().original) && isOriginalDay) {
+    historyEntry.original = resultData;
+    historyEntry.best = resultData;
+  } else if (historySnap.exists) {
+    const existingBest = historySnap.data().best || {};
+    // Compare and update Personal Best
+    if (finalScoreResult > (existingBest.score || 0) || 
+        (finalScoreResult === existingBest.score && activeDurationMs < (existingBest.totalTime || Infinity))) {
+      historyEntry.best = resultData;
+    }
+  } else {
+    // Replay of a day that was never won on its original date
+    historyEntry.best = resultData;
+  }
+
+  batch.set(historyRef, historyEntry, { merge: true });
+
+  // 5. Update All-Time Bests (stats.bestScore, stats.bestTime)
+  if (finalScoreResult > (stats.bestScore || 0)) {
+      batch.update(userRef, { "stats.bestScore": finalScoreResult });
+  }
+  if (activeDurationMs < (stats.bestTime || Infinity) && activeDurationMs > 0) {
+      batch.update(userRef, { "stats.bestTime": activeDurationMs });
+  }
+
+  // 6. Session Close (v1.4.5: DELETE session after successful history migration)
+  batch.delete(sessionRef);
 
   await batch.commit();
 

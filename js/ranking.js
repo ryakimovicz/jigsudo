@@ -1,5 +1,5 @@
 /* Ranking Module for Jigsudo */
-import { db } from "./firebase-config.js?v=1.2.1";
+import { db } from "./firebase-config.js?v=1.4.6";
 import {
   collection,
   query,
@@ -8,12 +8,12 @@ import {
   getDocsFromServer,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { translations } from "./translations.js?v=1.2.1";
-import { getCurrentLang } from "./i18n.js?v=1.2.1";
-import { getCurrentUser } from "./auth.js?v=1.2.1";
-import { getRankData, SCORING } from "./ranks.js?v=1.2.1";
-import { gameManager } from "./game-manager.js?v=1.2.1";
-import { getDailySeed } from "./utils/random.js?v=1.2.1";
+import { translations } from "./translations.js?v=1.4.6";
+import { getCurrentLang } from "./i18n.js?v=1.4.6";
+import { getCurrentUser } from "./auth.js?v=1.4.6";
+import { getRankData, SCORING } from "./ranks.js?v=1.4.6";
+import { gameManager } from "./game-manager.js?v=1.4.6";
+import { getDailySeed } from "./utils/random.js?v=1.4.6";
 
 const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -43,8 +43,8 @@ export async function fetchRankings(forceRefresh = false) {
     ? user.uid
     : localStorage.getItem("jigsudo_active_uid") || "guest";
 
-  const seedStr = getDailySeed().toString();
-  const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+  const { getJigsudoDateString } = await import("./utils/time.js?v=1.4.6");
+  const today = getJigsudoDateString();
 
   if (!forceRefresh && cached) {
     const { timestamp, data, userId, cachedToday, isAuthenticated } =
@@ -100,7 +100,7 @@ export async function fetchRankings(forceRefresh = false) {
       "dailyRP",
       10,
       user,
-      (await import("./db.js?v=1.2.1")).getUserRank,
+      (await import("./db.js?v=1.4.6")).getUserRank,
       "lastDailyUpdate",
       today,
     ),
@@ -108,7 +108,7 @@ export async function fetchRankings(forceRefresh = false) {
       "monthlyRP",
       10,
       user,
-      (await import("./db.js?v=1.2.1")).getUserRank,
+      (await import("./db.js?v=1.4.6")).getUserRank,
       "lastMonthlyUpdate",
       currentMonth,
     ),
@@ -116,7 +116,7 @@ export async function fetchRankings(forceRefresh = false) {
       "totalRP",
       10,
       user,
-      (await import("./db.js?v=1.2.1")).getUserRank,
+      (await import("./db.js?v=1.4.6")).getUserRank,
     ),
   };
 
@@ -168,14 +168,20 @@ async function getTopRankings(
       userScore = Math.max(userScore, topEntry.score || 0);
     }
 
-    // If we have a filter (Daily/Monthly) and the local stats date doesn't match the target period,
-    // it means the maintenance script hasn't run or we haven't played yet -> Show 0.
-    if (filterField && stats && stats[filterField] !== filterValue && !topEntry) {
-      userScore = 0;
+    // v1.5.9 UNIFICATION: Today now trusts local scores as much as "Always" does.
+    // If the decay-check (in GameManager) didn't reset it, it is valid for "Hoy".
+    // This eliminates the "0,000" lag caused by stale date markers.
+    if (filterField && userScore > 0 && !topEntry) {
+       // We keep the score because it's the most recent truth in memory.
+       // The cloud query will eventually confirm the rank.
     }
-
-    // NEW ROBUST INJECTION: If user is missing from DB list due to latency/cache, inject them!
-    if (inTop10 === -1 && userScore > 0) {
+    
+    // NEW ROBUST INJECTION: If user is missing from DB list (e.g. latency/cache), inject them!
+    // v1.5.5: ONLY inject into Top 10 if verified. Unverified stay in Personal Row below.
+    // robust check for verification (Email verified OR social provider)
+    const isVerified = user && (user.emailVerified || (user.providerData && user.providerData.some(p => p.providerId !== "password")));
+    
+    if (inTop10 === -1 && userScore > 0 && isVerified) {
       const injectEntry = {
         id: activeUid,
         username: activeUsername || "Usuario",

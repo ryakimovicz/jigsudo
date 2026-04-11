@@ -1,12 +1,12 @@
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.2.1";
-import { translations } from "./translations.js?v=1.2.1";
-import { gameManager } from "./game-manager.js?v=1.2.1";
-import { startDailyGame } from "./home.js?v=1.2.1";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.2.1";
-import { router } from "./router.js?v=1.2.1";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.6";
+import { translations } from "./translations.js?v=1.4.6";
+import { gameManager } from "./game-manager.js?v=1.4.6";
+import { startDailyGame } from "./home.js?v=1.4.6";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.4.6";
+import { router } from "./router.js?v=1.4.6";
 
-import { getJigsudoDate } from "./utils/time.js?v=1.2.1";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.2.1";
+import { getJigsudoDate } from "./utils/time.js?v=1.4.6";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.6";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
@@ -151,25 +151,23 @@ export function hideHistoryUI() {
   }
 }
 
-export async function updateHistoryUI() {
-  const stats = gameManager.stats ||
-    JSON.parse(localStorage.getItem("jigsudo_user_stats")) || { history: {} };
+let historyCache = {}; // { "YYYY-MM": { date: data } }
 
+export async function updateHistoryUI() {
   const year = histViewDate.getUTCFullYear();
   const month = histViewDate.getUTCMonth();
-  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+  
   const now = getJigsudoDate();
 
-  // Pre-fetch the exact list of available puzzles to avoid 404 errors in console
+  // 1. Fetch available puzzles index
   const availableDates = await fetchPuzzleIndex();
-  puzzleExistsCache = {}; // Reset for current view
+  puzzleExistsCache = {};
   
   if (availableDates.length > 0) {
-    // Determine Limits using UTC consistently
     const sorted = availableDates.map(d => new Date(d + "T00:00:00Z")).sort((a,b) => a - b);
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
-    
     minNavMonth = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1));
     maxNavMonth = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), 1));
     
@@ -177,18 +175,55 @@ export async function updateHistoryUI() {
       puzzleExistsCache[date] = true;
     });
 
-    // Normalize current view if it's now out of bounds
     if (histViewDate < minNavMonth) histViewDate = new Date(minNavMonth);
     if (histViewDate > maxNavMonth) histViewDate = new Date(maxNavMonth);
-  } else {
-    // Full fallback
-    const n = getJigsudoDate();
-    minNavMonth = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1));
-    maxNavMonth = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1));
+  }
+
+  // 2. Fetch History for the current month from Sub-collection
+  let monthHistory = historyCache[monthKey];
+  if (!monthHistory) {
+      console.log(`[History] Fetching history for ${monthKey} from Firestore...`);
+      const { auth } = await import("./firebase-config.js?v=1.4.6");
+      const { getFirestore, collection, query, where, getDocs, doc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+      
+      const user = auth.currentUser;
+      if (user) {
+          const db = getFirestore();
+          // Seed range for the month: YYYYMM01 to YYYYMM31
+          const startSeed = parseInt(monthKey.replace(/-/g, "") + "01");
+          const endSeed = parseInt(monthKey.replace(/-/g, "") + "31");
+          
+          const q = query(
+              collection(db, "users", user.uid, "history"),
+              where("seed", ">=", startSeed),
+              where("seed", "<=", endSeed)
+          );
+          
+          const snap = await getDocs(q);
+          monthHistory = {};
+          snap.forEach(d => {
+              const data = d.data();
+              // Map seed back to date string for the calendar logic
+              const s = data.seed.toString();
+              const dateStr = `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
+              
+              // v5: Flatten 'original' and 'best' for the UI to consume
+              monthHistory[dateStr] = {
+                  status: "won",
+                  originalWin: !!data.original,
+                  score: data.best?.score || 0,
+                  totalTime: data.best?.totalTime || 0,
+                  attempts: data.attempts || 1
+              };
+          });
+          historyCache[monthKey] = monthHistory;
+      } else {
+          monthHistory = {};
+      }
   }
 
   updateNavButtonsState();
-  renderHistoryCalendar(stats.history);
+  renderHistoryCalendar(monthHistory);
 }
 
 function updateNavButtonsState() {

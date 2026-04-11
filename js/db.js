@@ -1,8 +1,9 @@
-import { db, functions } from "./firebase-config.js?v=1.2.1";
+import { db, functions } from "./firebase-config.js?v=1.4.6";
 import {
   doc,
   setDoc,
   getDoc,
+  getDocFromServer,
   deleteDoc,
   serverTimestamp,
   deleteField,
@@ -13,10 +14,15 @@ import {
   getDocs,
   addDoc,
   getCountFromServer,
+  updateDoc,
+  writeBatch,
+  increment,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js";
-import { gameManager } from "./game-manager.js?v=1.2.1";
-import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.2.1";
+import { gameManager } from "./game-manager.js?v=1.4.6";
+import { getCurrentUser } from "./auth.js?v=1.4.6";
+import { showAlertModal } from "./ui.js?v=1.4.6";
+import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.4.6";
 
 /**
  * Helper to call a Jigsudo Cloud Function (Referee)
@@ -32,41 +38,67 @@ export async function callJigsudoFunction(name, data) {
   }
 }
 
-// Real-time listener unsubscribe function
+// Real-time listener unsubscribe functions
 let unsubscribeProgress = null;
+let unsubscribeHistory = null;
 
 /**
  * Internal helper to unify legacy stats reconstruction (v1.2.9)
  */
 function _reconstructStats(data) {
-  // If no stats at all, return null
-  if (!data.stats && data.dailyRP === undefined && data.totalRP === undefined) return null;
-
   const s = data.stats || {};
   
-  // v1.2.13: Ghost-Field Scavenging
-  // We check BOTH the proper map AND those literal keys with dots (ghost fields)
-  // because previous versions created them incorrectly.
-  const scavenge = (key, fallback) => {
+  // v1.3.6: Exhaustive scavenger for all 17 fields including legacy names
+  const scavengeNum = (key, fallback) => {
     const ghostKey = `stats.${key}`;
-    return Math.max(fallback || 0, data[ghostKey] || 0);
+    const val = Math.max(parseFloat(fallback) || 0, parseFloat(data[ghostKey]) || 0, parseFloat(data[key]) || 0, parseFloat(s[key]) || 0);
+    return isNaN(val) ? 0 : val;
   };
 
-  // Compare Map vs Root vs Ghost and pick the highest value for each field
+  const scavengeStr = (key, fallback) => {
+     const ghostKey = `stats.${key}`;
+     return data[key] || s[key] || data[ghostKey] || fallback || null;
+  };
+
   const stats = {
-    totalPlayed: scavenge("totalPlayed", Math.max(s.totalPlayed || s.played || 0, data.totalPlayed || data.played || 0)),
-    currentStreak: scavenge("currentStreak", Math.max(s.currentStreak || 0, data.currentStreak || 0)),
-    maxStreak: scavenge("maxStreak", Math.max(s.maxStreak || 0, data.maxStreak || 0)),
-    currentRP: scavenge("currentRP", Math.max(s.currentRP || s.totalRP || 0, data.currentRP || data.totalRP || 0)),
-    totalRP: scavenge("totalRP", Math.max(s.totalRP || 0, data.totalRP || 0)),
-    dailyRP: scavenge("dailyRP", Math.max(s.dailyRP || 0, data.dailyRP || 0)),
-    monthlyRP: scavenge("monthlyRP", Math.max(s.monthlyRP || 0, data.monthlyRP || 0)),
-    bestScore: scavenge("bestScore", Math.max(s.bestScore || 0, data.bestScore || 0)),
-    lastDailyUpdate: s.lastDailyUpdate || data.lastDailyUpdate || data["stats.lastDailyUpdate"] || null,
-    lastMonthlyUpdate: s.lastMonthlyUpdate || data.lastMonthlyUpdate || data["stats.lastMonthlyUpdate"] || null,
+    // 1-6. Root Level / Identity
+    username: scavengeStr("username", data.username || s.username || "Jugador"),
+    username_lc: scavengeStr("username_lc", data.username_lc || s.username_lc || data.username?.toLowerCase() || "jugador"),
+    lastDailyUpdate: scavengeStr("lastDailyUpdate", s.lastDailyUpdate || data.lastDailyUpdate || null),
+    lastMonthlyUpdate: scavengeStr("lastMonthlyUpdate", s.lastMonthlyUpdate || data.lastMonthlyUpdate || null),
+    dailyRP: scavengeNum("dailyRP", s.dailyRP || data.dailyRP || 0),
+    monthlyRP: scavengeNum("monthlyRP", s.monthlyRP || data.monthlyRP || 0),
+
+    // 7-17. Competitive / Metadata
+    totalRP: scavengeNum("totalRP", Math.max(s.totalRP || 0, s.totalScoreAccumulated || 0, s.currentRP || 0, data.totalRP || 0)),
+    wins: scavengeNum("wins", s.wins || 0),
+    currentStreak: scavengeNum("currentStreak", s.currentStreak || 0),
+    maxStreak: scavengeNum("maxStreak", s.maxStreak || 0),
+    totalPlayed: scavengeNum("totalPlayed", Math.max(s.totalPlayed || s.played || 0, data.totalPlayed || 0)),
+    bestScore: scavengeNum("bestScore", s.bestScore || 0),
+    bestTime: scavengeNum("bestTime", s.bestTime || 0),
+    
+    // Maintenance / Decay
+    lastDecayCheck: scavengeStr("lastDecayCheck", s.lastDecayCheck || null),
+    lastPenaltyDate: scavengeStr("lastPenaltyDate", s.lastPenaltyDate || null),
+    lastPlayedDate: scavengeStr("lastPlayedDate", s.lastPlayedDate || null),
+    manualRPAdjustment: scavengeNum("manualRPAdjustment", s.manualRPAdjustment || 0),
+
+    // v1.4.1: Accumulation fields recovery (Targeting Hybrid v7.1)
+    totalTimeAccumulated: scavengeNum("totalTimeAccumulated", s.totalTimeAccumulated || 0),
+    totalScoreAccumulated: scavengeNum("totalScoreAccumulated", s.totalScoreAccumulated || 0),
+    totalPeaksErrorsAccumulated: scavengeNum("totalPeaksErrorsAccumulated", s.totalPeaksErrorsAccumulated || 0),
+    weekdayStatsAccumulated: s.weekdayStatsAccumulated || data.weekdayStatsAccumulated || {},
+
+    // Stage specific summaries
+    stageWinsAccumulated: s.stageWinsAccumulated || data.stageWinsAccumulated || {},
+    stageTimesAccumulated: s.stageTimesAccumulated || data.stageTimesAccumulated || {},
+
     history: s.history || data.history || {},
-    activeSessionId: s.activeSessionId || data.activeSessionId || data["stats.activeSessionId"] || null,
-    integrityChecked: "1.5.0"
+    activeSessionId: scavengeStr("activeSessionId", s.activeSessionId || null),
+    lastLocalUpdate: scavengeNum("lastLocalUpdate", s.lastLocalUpdate || 0),
+    schemaVersion: data.schemaVersion || 0,
+    integrityChecked: "1.4.1"
   };
 
   return stats;
@@ -101,6 +133,30 @@ export function listenToUserProgress(userId) {
       );
     }
   });
+
+  // v1.4.6: Dedicated listener for the history sub-collection
+  // Sub-collections are NOT included in the main document snapshot.
+  const historyRef = collection(db, "users", userId, "history");
+  console.log(`[DB] Starting history listener for ${userId}`);
+  
+  unsubscribeHistory = onSnapshot(historyRef, (querySnap) => {
+    if (querySnap.metadata.hasPendingWrites) return;
+
+    const cloudHistoryMap = {};
+    querySnap.forEach(docSnap => {
+      const seedKey = docSnap.id; // YYYYMMDD string
+      if (seedKey.length === 8) {
+        // Translate format: 20260411 -> 2026-04-11
+        const dateStr = `${seedKey.substring(0, 4)}-${seedKey.substring(4, 6)}-${seedKey.substring(6, 8)}`;
+        cloudHistoryMap[dateStr] = docSnap.data();
+      }
+    });
+
+    console.log(`[DB] History sub-collection synced for ${userId}. Translated items: ${Object.keys(cloudHistoryMap).length}`);
+    
+    // v1.4.6: Merge logic is now inside gameManager to protect local wins
+    gameManager.updateCloudHistory(cloudHistoryMap);
+  });
 }
 
 export async function triggerRemoteSave(userId) {
@@ -122,7 +178,12 @@ export function stopListeningAndCleanup() {
   if (unsubscribeProgress) {
     unsubscribeProgress();
     unsubscribeProgress = null;
-    console.log("[DB] Real-time listener stopped.");
+    console.log("[DB] Real-time Progress listener stopped.");
+  }
+  if (unsubscribeHistory) {
+    unsubscribeHistory();
+    unsubscribeHistory = null;
+    console.log("[DB] Real-time History listener stopped.");
   }
 }
 
@@ -188,20 +249,23 @@ export async function saveUserStats(userId, statsData, username = null, metadata
   try {
     const userRef = doc(db, "users", userId);
 
-    const { auth } = await import("./firebase-config.js?v=1.2.1");
+    const { auth } = await import("./firebase-config.js?v=1.4.6");
     const currentUser = auth.currentUser;
     // v1.3.4: Atomic RP management (Authority is the Server/Functions)
     const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
 
     const updateData = {
       lastUpdated: serverTimestamp(),
-      isPublic: true, // Self-healing: Ensure visibility for ranking
+      isPublic: true, 
+      schemaVersion: 7.1 // v1.4.4: Default to latest hybrid schema
     };
 
     if (username) {
       updateData.username = username;
       updateData.username_lc = username.toLowerCase();
     }
+
+    let statsMap = {};
 
     if (statsData && !metadataOnly) {
       const s = statsData;
@@ -214,21 +278,32 @@ export async function saveUserStats(userId, statsData, username = null, metadata
           const cloudData = docSnap.data();
           const cloudStats = cloudData.stats || {};
           
-          // Compare local against the BEST of either ROOT or MAP
+          // v1.3.5: Robust comparison with safety margin for float precision
           const cloudDaily = Math.max(cloudData.dailyRP || 0, cloudStats.dailyRP || 0);
           const cloudTotal = Math.max(cloudData.totalRP || 0, cloudStats.totalRP || 0);
           
           const localDaily = s.dailyRP || 0;
           const localTotal = s.totalRP || 0;
 
-          // If cloud has more points and it's THE SAME DAY, REJECT the save.
-          const currentDayStr = s.lastDailyUpdate || new Date().toISOString().split('T')[0];
-          const cloudDayStr = cloudData.lastDailyUpdate || (cloudStats.lastDailyUpdate || "");
-          const isSameDay = cloudDayStr === currentDayStr;
+          const isSameDay = (cloudData.lastDailyUpdate || cloudStats.lastDailyUpdate) === (s.lastDailyUpdate);
           
-          if (isSameDay && (cloudDaily > localDaily || cloudTotal > localTotal)) {
+          // --- ANTI-REGRESSION 2.0 (v1.5.4) ---
+          // 1. Virgin State Lock: Protect cloud profile from being wiped by local 'localStorage.clear()'
+          const isLocalVirgin = localTotal === 0 && (s.wins || 0) === 0;
+          const isCloudPopulated = cloudTotal > 0 || (cloudStats.wins || 0) > 0;
+          
+          if (isLocalVirgin && isCloudPopulated && !updateData._isIntentionalReset) {
+            console.error("[DB] VIRGIN LOCK: Preventing empty local state from wiping cloud profile.");
+            return; // ABORT
+          }
+
+          // 2. Total RP Check (Absolute Priority)
+          const isTotalRegression = localTotal < (cloudTotal - 0.01);
+          const isDailyRegression = isSameDay && localDaily < (cloudDaily - 0.01);
+
+          if ((isTotalRegression || isDailyRegression) && !updateData._isConfirmedWin && !updateData._isIntentionalReset) {
             console.error(
-              `[DB] ANTI-REGRESSION TRIGGERED: Aborting save. Cloud has more points (${cloudDaily}p) than local (${localDaily}p).`,
+              `[DB] ANTI-REGRESSION TRIGGERED: Cloud(T:${cloudTotal}, D:${cloudDaily}) > Local(T:${localTotal}, D:${localDaily})`
             );
             return; // ABORT THE SAVE
           }
@@ -237,17 +312,46 @@ export async function saveUserStats(userId, statsData, username = null, metadata
         console.warn("[DB] Anti-regression check failed (Network?), proceeding with caution.", err);
       }
 
-      // Internal stats map (Source of truth for logic)
       const nowDoc = getJigsudoDateString();
       const nowMonth = getJigsudoYearMonth();
 
-      // v1.3.4/v1.4.1: CLIENT NO LONGER OVERWRITES STATS OR RP.
-      // These are managed exclusively by the Cloud Function (Referee).
-      updateData["stats.lastDailyUpdate"] = s.lastDailyUpdate || nowDoc;
-      updateData["stats.lastLocalUpdate"] = Date.now();
-      
-      // Root level fields: We keep only non-competitive maintenance fields
+      // v1.5.0: REPLICA TOTAL 1:1 Schema
+      // 1. Root Identity & Rankings (Used by Ranking tables)
+      updateData.dailyRP = s.dailyRP || 0;
+      updateData.monthlyRP = s.monthlyRP || 0;
+      updateData.totalRP = s.totalRP || 0;
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
+      updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
+      updateData.lastLocalUpdate = Date.now();
+      updateData.schemaVersion = 7.1;
+
+      // 2. Map Stats (Encapsulated technical data)
+      // v1.4.5+: Surgical DOT NOTATION to avoid wiping cloud history/subcollections
+      statsMap = {
+        wins: s.wins || 0,
+        totalPlayed: s.totalPlayed || 0,
+        currentStreak: s.currentStreak || 0,
+        maxStreak: s.maxStreak || 0,
+        bestScore: s.bestScore || 0,
+        bestTime: s.bestTime || 0,
+        totalTimeAccumulated: s.totalTimeAccumulated || 0,
+        totalScoreAccumulated: s.totalScoreAccumulated || 0,
+        totalPeaksErrorsAccumulated: s.totalPeaksErrorsAccumulated || 0,
+        stageWinsAccumulated: s.stageWinsAccumulated || {},
+        stageTimesAccumulated: s.stageTimesAccumulated || {},
+        weekdayStatsAccumulated: s.weekdayStatsAccumulated || {},
+        activeSessionId: (gameManager ? gameManager.localSessionId : null) || s.activeSessionId
+      };
+
+      // Perform atomic update of the stats map if it's a confirmed win to avoid hollow snaps
+      if (updateData._isConfirmedWin) {
+        updateData.stats = statsMap;
+      } else {
+        // Surgical update for periodic saves to keep Firestore throughput low
+        Object.keys(statsMap).forEach(key => {
+          updateData[`stats.${key}`] = statsMap[key];
+        });
+      }
 
       // v1.2.17: Sync Verification bit ONLY if Auth confirms it.
       if (currentUser && currentUser.emailVerified) {
@@ -270,10 +374,11 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       if (e.code === "not-found") {
         console.log("[DB] Profile not found, creating with initial stats...");
         
-        // Convert surgical dots back to nested for initial creation if necessary
-        // or just use a clean creation object.
+        // v1.5.0: For initial creation, we must ensure the 'stats' map exists
         const initialData = { ...updateData };
-        // Clean creation: No competitive fields in initial data from client
+        initialData.stats = statsMap;
+        
+        // Remove surgical dot-keys as they are redundant for a setDoc(merge:true) with the full map
         Object.keys(initialData).forEach(k => { if (k.includes(".")) delete initialData[k]; });
         
         await setDoc(userRef, initialData, { merge: true });
@@ -296,11 +401,17 @@ export async function saveUserProgress(userId, progressData) {
       console.log("[DB] Update blocked: GM is wiping.");
       return;
     }
+
+    // v1.4.5 Saneamiento v7.1: Asegurar que NO enviamos 'stats' dentro del progreso
+    const pClean = { ...progressData };
+    if (pClean.stats) delete pClean.stats;
+
     await setDoc(
       userRef,
       {
-        progress: progressData,
+        progress: pClean,
         lastUpdated: serverTimestamp(),
+        schemaVersion: 7.1 // v1.4.4: Anchored to latest hybrid schema
       },
       { merge: true },
     );
@@ -319,7 +430,21 @@ export async function loadUserProgress(userId) {
 
   try {
     const userRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userRef);
+    
+    // v1.3.8: Reset migration loop counter if we are moving forward
+    if (sessionStorage.getItem("jigsudo_migration_reloads") === "3") {
+       console.log("[DB] Manual reset of migration counter triggered.");
+       sessionStorage.removeItem("jigsudo_migration_reloads");
+    }
+
+    // FORCE fetch from server to avoid infinite reload loop caused by stale cache
+    let docSnap;
+    try {
+      docSnap = await getDocFromServer(userRef);
+    } catch (e) {
+      console.warn("[DB] Server fetch failed, falling back to cache...", e);
+      docSnap = await getDoc(userRef);
+    }
 
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -330,62 +455,148 @@ export async function loadUserProgress(userId) {
       const todayStr = getJigsudoDateString();
       const nowMonth = getJigsudoYearMonth();
       
-      // --- CONSOLIDATION & DUAL-SYNC (v1.2.12) ---
-      // 1. If 'stats' map is missing but root fields exist, create the map.
-      // 2. If 'stats' map exists but root fields are missing/stale, update root.
-      if (remoteStats) {
-        const cloudDaily = data.dailyRP || 0;
-        const cloudMonthly = data.monthlyRP || 0;
-        const cloudTotal = data.totalRP || 0;
-
-        // v1.3.5: Proactive Legacy Seeding. 
-        // If Root fields are missing OR inconsistent with the Stats map, we HEAL immediately.
-        if (!data.stats || (remoteStats.dailyRP > cloudDaily) || (remoteStats.monthlyRP > cloudMonthly) || (remoteStats.totalRP > cloudTotal)) {
-          console.log("[DB] Healing Legacy/Inconsistent Root fields (v1.3.5)...");
-          updates.stats = remoteStats;
-          updates.dailyRP = remoteStats.dailyRP;
-          updates.monthlyRP = remoteStats.monthlyRP;
-          updates.totalRP = remoteStats.totalRP;
-          updates.lastDailyUpdate = remoteStats.lastDailyUpdate || todayStr;
-          updates.lastMonthlyUpdate = remoteStats.lastMonthlyUpdate || nowMonth;
-          
-          // GHOST CLEANUP: Delete fields with literal dots in their names
-          const { deleteField } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
-          const ghostKeys = ["stats.dailyRP", "stats.monthlyRP", "stats.totalRP", "stats.lastDailyUpdate", "stats.lastMonthlyUpdate", "stats.lastLocalUpdate"];
-          ghostKeys.forEach(k => {
-            if (data[k] !== undefined) updates[k] = deleteField();
-          });
-        }
-      }
-
-      // SELF-HEALING: If user has a username but not the lowercase version, fix it now.
-      if (data.username && !data.username_lc) {
-        console.log("[DB] Migrating legacy username to lowercase index...");
-        updates.username_lc = data.username.toLowerCase();
-      }
-
-      // SELF-HEALING: If registeredAt is missing (Legacy users), fix it now.
-      if (!data.registeredAt) {
-        console.log("[DB] Healing missing registeredAt for legacy user...");
-        let firstDateStr = "2026-04-05T00:00:00.000Z"; // Default launch day
-        if (remoteStats && remoteStats.history) {
-          const historyDates = Object.keys(remoteStats.history).sort();
-          if (historyDates.length > 0) {
-            firstDateStr = historyDates[0] + "T09:00:00.000Z"; // Proxy registration date
-          }
-        }
-        updates.registeredAt = new Date(firstDateStr);
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await setDoc(userRef, updates, { merge: true });
+      const cloudSchema = data.schemaVersion || 0;
+      
+      // v1.4.5 Limpieza Reactiva v7.1: Si persiste progress.stats incluso en v7.1, lo borramos quirúrgicamente
+      if (cloudSchema >= 7.1 && data.progress && data.progress.stats) {
+         console.warn("[DB] Residuo 'progress.stats' detectado en v7.1. Lanzando limpieza atómica...");
+         try {
+            const { updateDoc, deleteField: delF } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+            await updateDoc(userRef, { "progress.stats": delF() });
+         } catch (e) { console.error("[DB] Fallo en limpieza reactiva:", e); }
       }
       
+      if (cloudSchema < 7.1 && userId) {
+        console.warn(`[DB] EXECUTING SCHEMA v7.1 HYBRID REFACTOR for ${userId}...`);
+        
+        // 1. ATOMIC RECONSTRUCTION: Capture all 17 fields
+        const recoveredStats = _reconstructStats(data);
+        
+        // Safety check for every critical field
+        const safe = (val, def) => (val === undefined || val === null) ? def : val;
+        
+        const rootUpdate = {
+          // 1. Identity & RP (ROOT)
+          username: safe(recoveredStats.username, "Jugador"),
+          username_lc: safe(recoveredStats.username_lc, "jugador"),
+          totalRP: safe(recoveredStats.totalRP, 0),
+          monthlyRP: safe(recoveredStats.monthlyRP, 0),
+          dailyRP: safe(recoveredStats.dailyRP, 0),
+          lastDailyUpdate: safe(recoveredStats.lastDailyUpdate, todayStr),
+          lastMonthlyUpdate: safe(recoveredStats.lastMonthlyUpdate, nowMonth),
+          
+          registeredAt: data.registeredAt || serverTimestamp(),
+          isPublic: true,
+          schemaVersion: 7.1,
+
+          // 2. Consolidated Competitive Stats (MAP)
+          stats: {
+             wins: safe(recoveredStats.wins, 0),
+             totalPlayed: safe(recoveredStats.totalPlayed, 0),
+             currentStreak: safe(recoveredStats.currentStreak, 0),
+             maxStreak: safe(recoveredStats.maxStreak, 0),
+             bestScore: safe(recoveredStats.bestScore, 0),
+             bestTime: safe(recoveredStats.bestTime, 0),
+             totalTimeAccumulated: safe(recoveredStats.totalTimeAccumulated, 0),
+             totalScoreAccumulated: safe(recoveredStats.totalScoreAccumulated, 0),
+             totalPeaksErrorsAccumulated: safe(recoveredStats.totalPeaksErrorsAccumulated, 0),
+             stageWinsAccumulated: recoveredStats.stageWinsAccumulated || {},
+             stageTimesAccumulated: recoveredStats.stageTimesAccumulated || {},
+             weekdayStatsAccumulated: recoveredStats.weekdayStatsAccumulated || {},
+             activeSessionId: gameManager.localSessionId
+          }
+        };
+
+        // 3. Purge redundant/ghost fields
+        rootUpdate["progress.stats"] = deleteField();
+        
+        // Clean up any loose root fields that should be in stats map
+        const rootToPurge = [
+          "wins", "totalPlayed", "currentStreak", "maxStreak", "bestScore", "bestTime",
+          "totalTimeAccumulated", "totalScoreAccumulated", "totalPeaksErrorsAccumulated",
+          "stageWinsAccumulated", "stageTimesAccumulated", "weekdayStatsAccumulated", "activeSessionId",
+          "lastDecayCheck", "lastPenaltyDate", "lastPlayedDate", "manualRPAdjustment"
+        ];
+        rootToPurge.forEach(k => { if (data[k] !== undefined) rootUpdate[k] = deleteField(); });
+
+        // 4. History Migration (Move to sub-collection)
+        const oldHistory = recoveredStats.history || {};
+        const { writeBatch, collection, doc: fireDoc, deleteField: delF, getDocs } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+        const migBatch = writeBatch(db);
+        
+        for (const [date, entry] of Object.entries(oldHistory)) {
+           const seedStr = date.replace(/-/g, "");
+           const histDocRef = fireDoc(collection(userRef, "history"), seedStr);
+           migBatch.set(histDocRef, {
+             seed: parseInt(seedStr),
+             original: {
+               score: entry.score || 0,
+               totalTime: entry.totalTime || entry.time || 0,
+               stageTimes: entry.stageTimes || {},
+               errors: entry.errors || 0,
+               timestamp: entry.timestamp || serverTimestamp()
+             },
+             best: {
+               score: entry.score || 0,
+               totalTime: entry.totalTime || entry.time || 0,
+               stageTimes: entry.stageTimes || {},
+               errors: entry.errors || 0,
+               timestamp: entry.timestamp || serverTimestamp()
+             },
+             attempts: entry.attempts || 1,
+             lastPlayed: entry.timestamp || serverTimestamp()
+           }, { merge: true });
+        }
+
+        // 5. Cleanup Obsolete Sessions Collection
+        try {
+           const sessionsRef = collection(userRef, "sessions");
+           const sessSnap = await getDocs(sessionsRef);
+           sessSnap.forEach(sDoc => migBatch.delete(sDoc.ref));
+        } catch (e) {
+           console.warn("[DB] Cleanup sessions failed:", e);
+        }
+
+        // 6. Clean up previous ghost fields (dots in names)
+        const ghostFields = [
+          "stats.dailyRP", "stats.monthlyRP", "stats.totalRP", "stats.currentStreak", "stats.wins",
+          "stats.lastDailyUpdate", "stats.lastMonthlyUpdate", "stats.lastLocalUpdate",
+          "stats.history", "stats.registeredAt", "stats.currentRP", "stats.totalScoreAccumulated",
+          "stats.totalTimeAccumulated", "stats.stageWinsAccumulated", "stats.stageTimesAccumulated",
+          "stats.activeSessionId"
+        ];
+        ghostFields.forEach(k => {
+          if (data[k] !== undefined) rootUpdate[k] = deleteField();
+        });
+
+        migBatch.set(userRef, rootUpdate, { merge: true });
+        await migBatch.commit();
+        console.log("[DB] Schema v7.1 Hybrid Refactor SUCCESSFUL. Restarting application...");
+        
+        // Safeguard against infinite reloads
+        const reloadCount = parseInt(sessionStorage.getItem("jigsudo_migration_reloads") || "0");
+        if (reloadCount < 3) {
+           sessionStorage.setItem("jigsudo_migration_reloads", (reloadCount + 1).toString());
+           sessionStorage.setItem("jigsudo_active_session_id", rootUpdate.stats.activeSessionId);
+           setTimeout(() => {
+             window.location.reload();
+           }, 800);
+        } else {
+           console.error("[DB] Migration loop detected. Please refresh manually.");
+           sessionStorage.removeItem("jigsudo_migration_reloads");
+        }
+        return; 
+      }
+      
+      // If we reach here, we are on Schema v7+. Clear the loop counter.
+      sessionStorage.removeItem("jigsudo_migration_reloads");
+      
+      // Post-migration or already v5
       await gameManager.handleCloudSync(
-        remoteProgress,
+        data.progress,
         remoteStats,
         null,
-        data.settings,
+        null, // v1.3.0: Settings are now local only
       );
     } else {
       console.log("No remote progress found. Creating new entry on next save.");
@@ -458,9 +669,36 @@ export async function updateProfilePrivacy(userId, isPublic) {
   try {
     const userRef = doc(db, "users", userId);
     await setDoc(userRef, { isPublic }, { merge: true });
-    showSaveIndicatorWithMessage("Ajuste guardado");
+    console.log(`[DB] Profile privacy updated: ${isPublic ? "Public" : "Private"}`);
   } catch (error) {
     console.error("[DB] Error updating profile privacy:", error);
+  }
+}
+
+/**
+ * v1.4.6: Proactively initializes a history record for a given seed.
+ * Sets 'played: true' at the document root and increments attempt counter.
+ * Schema v7.1 Compliance: No 'best.played' or 'lastPlayed' here.
+ */
+export async function initializeHistoryDocument(userId, seed) {
+  if (!userId || !seed) return;
+  try {
+    const historyRef = doc(db, "users", userId, "history", seed.toString());
+    const historySnap = await getDoc(historyRef);
+
+    const updateData = {
+      seed: seed,
+      played: true
+    };
+
+    if (!historySnap.exists()) {
+      await setDoc(historyRef, updateData);
+    } else {
+      await updateDoc(historyRef, updateData);
+    }
+    console.log(`[DB] History record initialized for ${seed} (played=true, attempts++)`);
+  } catch (error) {
+    console.error("[DB] Error initializing history record:", error);
   }
 }
 
@@ -506,22 +744,56 @@ export async function wipeUserData(userId) {
     const userRef = doc(db, "users", userId);
 
     // 1. Recursive cleanup: Delete sessions subcollection
-    // Firestore deleteDoc does NOT delete subcollections automatically.
-    const sessionsRef = collection(db, "users", userId, "sessions");
-    const sessionsSnap = await getDocs(sessionsRef);
-    
-    if (!sessionsSnap.empty) {
-      console.log(`[DB] Deleting ${sessionsSnap.size} orphan sessions for ${userId}...`);
-      const deletePromises = sessionsSnap.docs.map(sessionDoc => deleteDoc(sessionDoc.ref));
-      await Promise.all(deletePromises);
-    }
+    try {
+      const sessionsRef = collection(db, "users", userId, "sessions");
+      const sessionsSnap = await getDocs(sessionsRef);
+      if (!sessionsSnap.empty) {
+        console.log(`[DB] Deleting ${sessionsSnap.size} orphan sessions for ${userId}...`);
+        const deletePromises = sessionsSnap.docs.map(sessionDoc => deleteDoc(sessionDoc.ref));
+        await Promise.all(deletePromises);
+      }
+    } catch (e) { console.error("[DB] Failed to wipe sessions:", e); }
 
-    // 2. Delete the main user document
+    // 2. Recursive cleanup: Delete history subcollection (v1.4.5: FIX)
+    try {
+      const historyRef = collection(db, "users", userId, "history");
+      const historySnap = await getDocs(historyRef);
+      if (!historySnap.empty) {
+        console.log(`[DB] Deleting ${historySnap.size} orphan history records for ${userId}...`);
+        const deletePromises = historySnap.docs.map(histDoc => deleteDoc(histDoc.ref));
+        await Promise.all(deletePromises);
+      }
+    } catch (e) { console.error("[DB] Failed to wipe history:", e); }
+
+    // 3. Delete the main user document (v1.4.5: Always last to keep rules-auth valid)
     await deleteDoc(userRef);
 
-    console.warn(`🔥 User and all associated data Wiped for ${userId}`);
+    console.warn(`🔥 User and all associated data (Sessions & History) Wiped for ${userId}`);
   } catch (error) {
-    console.error("Error wiping user data:", error);
+    console.error("Critical error during user data wipe:", error);
+  }
+}
+
+/**
+ * v1.4.6: Saves a detailed history record for a given seed.
+ * Stores times, score, and original win status in the subcollection.
+ * userId/history/seed
+ */
+export async function saveHistoryEntry(userId, seed, historyData) {
+  if (!userId || !seed) return;
+  try {
+    const historyRef = doc(db, "users", userId, "history", seed.toString());
+    
+    // Cleanup high-precision numbers or complex objects if necessary
+    const cleanData = {
+      ...historyData,
+      lastUpdated: serverTimestamp()
+    };
+
+    await setDoc(historyRef, cleanData, { merge: true });
+    console.log(`[DB] Detailed history record saved for ${seed}`);
+  } catch (error) {
+    console.error("[DB] Error saving detailed history record:", error);
   }
 }
 

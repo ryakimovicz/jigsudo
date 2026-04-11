@@ -1,9 +1,10 @@
 export const CONFIG = {
-  version: "v1.2.1", // Major.Minor.Patch
+  version: "1.4.6", // Major.Minor.Patch
   fechaUpdate: "2026-04-10",
-  autor: "Román Yakimovicz",
-  debugMode: false, // Toggle to true to see logs
-  betaMode: false, // Toggle to true to enable "Ayuda" button
+  author: "Román Yakimovicz",
+  schemaVersion: 7.1,
+  debugMode: true, // Toggle to true to see logs
+  betaMode: true, // Toggle to true to enable "Ayuda" button
 
   // Feature Flags
   ENABLE_SOUND: true, // Toggle to show sound settings
