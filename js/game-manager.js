@@ -1197,10 +1197,8 @@ export class GameManager {
       JSON.parse(localStorage.getItem("jigsudo_user_stats")) ||
       {};
 
-    // v1.5.18: Consolidate scoring into _recalculateNetStats. 
-    // We only update the raw accumulated counter for technical history, 
-    // but the displayed RP will be derived from session progress.
-    stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + points;
+    // v1.5.52: Removed totalScoreAccumulated += points. 
+    // Lifetime score is now unified in recordWin to ensure net score consistency.
 
     if (!this._processingWin) {
       if (!this.state.progress.stagesCompleted.includes(stage)) {
@@ -2352,8 +2350,6 @@ export class GameManager {
     // v1.4.6: Win Lock - Prevent Cloud Sync from overwritting this win for 10 seconds
     const lockUntil = Date.now() + 10000;
     this._winLockExpires = lockUntil;
-    localStorage.setItem("jigsudo_win_lock", lockUntil.toString());
-
     try {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
       await this._ensureStats();
@@ -2368,12 +2364,15 @@ export class GameManager {
       const seedStr = this.currentSeed.toString();
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
+      // v1.5.52: Stamp integrity immediately to avoid healer re-migration
+      stats.integrityChecked = "1.5.52";
+
       const last = stats.lastPlayedDate;
       const isAlreadyWon = stats.history[today]?.status === "won" || stats.history[today]?.original?.won === true;
 
       if (!this.isReplay && !isAlreadyWon) {
-        stats.totalPlayed = (stats.totalPlayed || 0) + 1;
-        stats.wins = (stats.wins || 0) + 1;
+        // v1.5.52: Consolidating increments further down in the common flow 
+        // to avoid double jumps between early win detection and final sync.
 
         // Handle Streak and RP Resets (Consistent UTC Logic)
         if (last) {
@@ -2459,10 +2458,15 @@ export class GameManager {
       const user = getCurrentUser();
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
 
-      // v1.5.48: SINGLE ENTRY ACCOUNTING. 
-      // Errors are already incremented live in updateProgress.
-      // We only update Time and the Final Stage win here.
-      stats.totalTimeAccumulated = (stats.totalTimeAccumulated || 0) + totalTimeMs;
+      // v1.5.48+: SINGLE ENTRY ACCOUNTING. 
+      // ERRORS: already incremented live in updateProgress.
+      // TIME: only updated once here.
+      if (isOriginalDay) {
+        stats.totalTimeAccumulated = (stats.totalTimeAccumulated || 0) + totalTimeMs;
+        // v1.5.51: Removed redundant totalPeaksErrorsAccumulated += peaksErrors here.
+        stats.totalPlayed = (stats.totalPlayed || 0) + 1;
+        stats.wins = (stats.wins || 0) + 1;
+      }
       
       // Stage Accumulators (For the FINAL stage only? No, recordWin sees the whole game)
       // BUT: stages Completed 1-5 were already handled by awardStagePoints.
@@ -2485,9 +2489,11 @@ export class GameManager {
       stats.dailyWinsAccumulated = Math.max(stats.dailyWinsAccumulated || 0, stagesCountToday);
       stats.monthlyWinsAccumulated = Math.max(stats.monthlyWinsAccumulated || 0, stagesCountToday);
 
-      // Update stage times (This is fine as it's the only place stageTimes is persisted)
-      for (const [stage, time] of Object.entries(st)) {
-        stats.stageTimesAccumulated[stage] = (stats.stageTimesAccumulated[stage] || 0) + time;
+      // Update stage times (Daily only)
+      if (isOriginalDay) {
+        for (const [stage, time] of Object.entries(st)) {
+          stats.stageTimesAccumulated[stage] = (stats.stageTimesAccumulated[stage] || 0) + time;
+        }
       }
 
       // --- 1. POINT ADOPTION (Referee Integration) ---
@@ -2513,7 +2519,11 @@ export class GameManager {
             if (serverResult.status === "success") {
               console.log("[Referee] Game finalized and verified by server:", serverResult);
               if (serverResult.bonus !== undefined) stats.lastBonus = serverResult.bonus;
-              if (serverResult.streak !== undefined) stats.currentStreak = serverResult.streak;
+              
+              // v1.5.51: Streak Fallback (If server returns 0 for a first win, local truth is 1)
+              if (serverResult.streak !== undefined) {
+                stats.currentStreak = serverResult.streak || (isAlreadyWon ? 0 : 1);
+              }
 
               // v1.5.46: ATOMS FIRST. Update bonus counter BEFORE recalculating.
               if (stats.lastBonus > 0) {
@@ -2567,26 +2577,38 @@ export class GameManager {
       if (stats.dailyRP < 0) stats.dailyRP = 0;
       if (stats.monthlyRP < 0) stats.monthlyRP = 0;
 
-      if (stats.bestTime === undefined) stats.bestTime = null;
-      if (totalTimeMs > 0 && (stats.bestTime === null || stats.bestTime === Infinity || totalTimeMs < stats.bestTime)) {
-        stats.bestTime = totalTimeMs;
-      }
-
       const dailyScore = this.stats.dailyRP || 0;
-      stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + dailyScore;
-      
-      // Bonus counters already updated in conditional blocks above (v1.5.46)
+      // v1.5.51: ORGANIC RECORDS & ACCUMULATORS
+      if (isOriginalDay) {
+          // v1.5.52: For the final win, we add the TOTAL net daily score.
+          // This ensures lifetime score matches what the user actually sees (net of penalties).
+          stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + dailyScore;
+          
+          if (dailyScore > (stats.bestScore || 0)) {
+              stats.bestScore = dailyScore;
+          }
+          
+          if (stats.currentStreak > (stats.maxStreak || 0)) {
+              stats.maxStreak = stats.currentStreak;
+          }
 
-      // Weekday Aggregates
-      const dayIdx = new Date(today + "T12:00:00").getDay();
-      if (!stats.weekdayStatsAccumulated[dayIdx]) {
-        stats.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
+          // v1.5.51: Improved bestTime logic (0 means "no record")
+          const currentBestTime = (stats.bestTime === 0 || stats.bestTime === null || stats.bestTime === undefined) ? Infinity : stats.bestTime;
+          if (totalTimeMs > 0 && totalTimeMs < currentBestTime) {
+            stats.bestTime = totalTimeMs;
+          }
+
+          // Weekday Aggregates (Sunday = 0)
+          const dayIdx = new Date(today + "T12:00:00").getDay();
+          if (!stats.weekdayStatsAccumulated[dayIdx]) {
+            stats.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
+          }
+          const w = stats.weekdayStatsAccumulated[dayIdx];
+          w.sumTime += totalTimeMs;
+          w.sumErrors += peaksErrors;
+          w.sumScore += dailyScore;
+          w.count++;
       }
-      const w = stats.weekdayStatsAccumulated[dayIdx];
-      w.sumTime += totalTimeMs;
-      w.sumErrors += peaksErrors;
-      w.sumScore += dailyScore;
-      w.count++;
 
       stats.lastDailyUpdate = today; 
       stats.lastDecayCheck = today;
@@ -2686,11 +2708,11 @@ export class GameManager {
    * Scans history to re-calculate global records and cumulative metrics.
    * This ensures stats are always in sync with the history log (Source of Truth).
    */
-  _recalculateRecords(stats) {
+  _recalculateRecords(stats, forceRebuild = false) {
     if (!stats) return;
     
-    // v1.5.49: Session Preservation
-    // Capture "today's" atoms before the nuclear reset so we don't wipe active progress.
+    // v1.5.49+: Atom & Session Preservation
+    // Capture "today's" atoms so we don't wipe active progress if a rebuild happens.
     const todayStr = getJigsudoDateString();
     const isActiveToday = stats.lastDailyUpdate === todayStr;
     const sessionAtoms = {
@@ -2702,25 +2724,31 @@ export class GameManager {
        swMap: isActiveToday ? { ...(stats.stageWinsAccumulated || {}) } : {}
     };
 
-    // 1. Nuclear Reset of cumulative metrics (preserve configuration but reset counters)
-    stats.maxStreak = 0;
-    stats.currentStreak = 0;
-    stats.bestTime = null;
-    stats.bestScore = 0;
-    stats.totalPlayed = 0;
-    stats.wins = 0;
-    stats.totalScoreAccumulated = 0;
-    stats.totalTimeAccumulated = 0;
-    stats.totalPeaksErrorsAccumulated = 0;
-    stats.stageTimesAccumulated = {};
-    stats.stageWinsAccumulated = {};
-    stats.weekdayStatsAccumulated = {};
-    stats.played = 0; // Reset stale played counter
-    
-    // 2. RE-INITIALIZE Secondary Stats (Ranking Points are now primary/incremental)
-    // v1.5.36: Decoupled Daily/Monthly/Total RP from history reconstruction.
-    // They are managed incrementally by recalculateNetStats and sync adoption.
-    stats.currentRP = 0; // currentRP remains as a career accumulator, but won't shadow totalRP
+    // v1.5.50: INCREMENTAL TRUTH SHIELD
+    // We only perform the 'Nuclear Reset' if specifically forced or if it's a very old account
+    // that needs a full history scan to populate the first atoms.
+    const needsMigration = !stats.integrityChecked || stats.integrityChecked < "1.5.0";
+    if (forceRebuild || needsMigration) {
+      console.log(`[Recalc] Nuclear Reset triggered (Force: ${forceRebuild}, Migration: ${needsMigration})`);
+      
+      // 1. Nuclear Reset of cumulative metrics (preserve configuration but reset counters)
+      stats.maxStreak = 0;
+      stats.currentStreak = 0;
+      stats.bestTime = null;
+      stats.bestScore = 0;
+      stats.totalPlayed = 0;
+      stats.wins = 0;
+      stats.totalScoreAccumulated = 0;
+      stats.totalTimeAccumulated = 0;
+      stats.totalPeaksErrorsAccumulated = 0;
+      stats.stageTimesAccumulated = {};
+      stats.stageWinsAccumulated = {};
+      stats.weekdayStatsAccumulated = {};
+      stats.played = 0; // Reset stale played counter
+      
+      // 2. RE-INITIALIZE Secondary Stats
+      stats.currentRP = 0;
+    }
 
     if (!stats.history) return;
 
@@ -2747,13 +2775,23 @@ export class GameManager {
       const hErrors = Number(h.peaksErrors || 0);
 
       // ONLY sum into official ranking and lifetime stats if it was the ORIGINAL day
-      if (isOriginal) {
+      // v1.5.51: Only sum if we are truly REBUILDING/MIGRATING to avoid double-counting with recordWin()
+      if (isOriginal && (forceRebuild || needsMigration)) {
         stats.totalPlayed++;
         stats.wins++;
         stats.totalTimeAccumulated += hTime;
         // Total Score = Win Points (hScore)
         stats.totalScoreAccumulated += hScore;
         stats.totalPeaksErrorsAccumulated += hErrors;
+
+        // v1.5.52: Monthly Atoms Rebuild Support
+        const hMonth = dateStr.substring(0, 7);
+        const currentMonth = getJigsudoYearMonth();
+        if (hMonth === currentMonth) {
+          stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
+          stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + hErrors;
+          // Note: monthlyRP is handled by recalulateNetStats adoption
+        }
 
         // Rebuild Stage Stats (Wins & Times)
         if (h.stageTimes) {
@@ -2766,8 +2804,8 @@ export class GameManager {
         }
 
         // Rebuild Weekday Aggregates
-        const d = new Date(dateStr + "T12:00:00");
-        const dayIdx = d.getDay();
+        const dWeek = new Date(dateStr + "T12:00:00");
+        const dayIdx = dWeek.getDay();
         if (!stats.weekdayStatsAccumulated[dayIdx]) {
           stats.weekdayStatsAccumulated[dayIdx] = {
             sumTime: 0,
@@ -2789,11 +2827,13 @@ export class GameManager {
 
       const d = new Date(dateStr + "T12:00:00");
 
-      // Update Bests (Even for History)
-      if (hTime > 0 && (stats.bestTime === null || hTime < stats.bestTime)) {
+      // Update Bests (Always verify even if not rebuilding)
+      // v1.5.51: Handle 0 as null for correctly setting the first record
+      const currentBestTime = (stats.bestTime === 0 || stats.bestTime === null) ? Infinity : stats.bestTime;
+      if (hTime > 0 && hTime < currentBestTime) {
         stats.bestTime = hTime;
       }
-      if (hScore > stats.bestScore) {
+      if (hScore > (stats.bestScore || 0)) {
         stats.bestScore = hScore;
       }
 
