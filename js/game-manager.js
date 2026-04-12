@@ -1206,14 +1206,12 @@ export class GameManager {
       if (!this.state.progress.stagesCompleted.includes(stage)) {
         this.state.progress.stagesCompleted.push(stage);
         
-        // v1.5.44: Update Triple-Track Win Atoms
-        if (this.stats) {
-          if (!this.stats.stageWinsAccumulated) this.stats.stageWinsAccumulated = {};
-          this.stats.stageWinsAccumulated[stage] = (this.stats.stageWinsAccumulated[stage] || 0) + 1;
-          
-          this.stats.dailyWinsAccumulated = (this.stats.dailyWinsAccumulated || 0) + 1;
-          this.stats.monthlyWinsAccumulated = (this.stats.monthlyWinsAccumulated || 0) + 1;
-        }
+        // v1.5.44: Update Triple-Track Win Atoms (Surgical consistency check)
+        if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+        stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+        
+        stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
+        stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
 
         // CRITICAL: Persist stage completion immediately to local storage
         this.save();
@@ -1401,28 +1399,33 @@ export class GameManager {
         stats.lastMonthlyUpdate = currentMonth;
     }
 
-    // B. COMPONENT AGGREGATION
-    // 1. Total Scope
-    const totalWins = Object.values(stats.stageWinsAccumulated || {}).reduce((acc, val) => acc + (val || 0), 0);
-    const totalBonuses = stats.totalBonusesAccumulated || 0;
-    const totalErrors = stats.totalPeaksErrorsAccumulated || 0;
-    const totalNet = Number((totalWins + totalBonuses - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+    // B. COMPONENT AGGREGATION (v1.5.47: Track Solidarity)
+    // 0. Live Session Ingredients
+    const sessionWins = (this.state.progress.stagesCompleted || []).length;
+    const sessionErrors = (this.state.stats && this.state.stats.peaksErrors) || 0;
+    
+    // 1. Daily Scope (The 'Game Day' Net)
+    const dailyWins = Math.max(sessionWins, stats.dailyWinsAccumulated || 0);
+    const dailyBonuses = stats.dailyBonusesAccumulated || 0;
+    const dailyErrors = Math.max(sessionErrors, stats.dailyPeaksErrorsAccumulated || 0);
+    const dailyNet = Number((dailyWins + dailyBonuses - (dailyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
 
     // 2. Monthly Scope
-    const monthlyWins = stats.monthlyWinsAccumulated || 0;
-    const monthlyBonuses = stats.monthlyBonusesAccumulated || 0;
-    const monthlyErrors = stats.monthlyPeaksErrorsAccumulated || 0;
+    // Ensure monthly atoms include today's live progress for consistency
+    const monthlyWins = Math.max(stats.monthlyWinsAccumulated || 0, dailyWins);
+    const monthlyBonuses = Math.max(stats.monthlyBonusesAccumulated || 0, dailyBonuses);
+    const monthlyErrors = Math.max(stats.monthlyPeaksErrorsAccumulated || 0, dailyErrors);
     const monthlyNet = Number((monthlyWins + monthlyBonuses - (monthlyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
 
-    // 3. Daily Scope (The 'Game Day' Net)
-    // We trust both the session achievements AND the absolute daily atoms for redundancy
-    const sessionWins = (this.state.progress.stagesCompleted || []).length;
-    const activeWins = Math.max(sessionWins, stats.dailyWinsAccumulated || 0);
-    const dailyBonuses = stats.dailyBonusesAccumulated || 0;
-    const dailyErrors = stats.dailyPeaksErrorsAccumulated || 0;
-    const dailyNet = Number((activeWins + dailyBonuses - (dailyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+    // 3. Total Scope (Absolute World Ranking)
+    // totalWins is Sum(stageWinsAccumulated). We must ensure it includes today's wins.
+    const totalWinsBase = Object.values(stats.stageWinsAccumulated || {}).reduce((acc, val) => acc + (val || 0), 0);
+    const totalWins = Math.max(totalWinsBase, dailyWins); // At least today's progress 
+    const totalBonuses = Math.max(stats.totalBonusesAccumulated || 0, dailyBonuses);
+    const totalErrors = Math.max(stats.totalPeaksErrorsAccumulated || 0, dailyErrors);
+    const totalNet = Number((totalWins + totalBonuses - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
 
-    console.log(`[RP-DEBUG] Direct Atom Trace -> Total: ${totalNet} (W:${totalWins}, B:${totalBonuses}, E:${totalErrors}), Daily: ${dailyNet}`);
+    console.log(`[RP-DEBUG] Direct Atom Trace -> Total: ${totalNet} (W:${totalWins}, B:${totalBonuses}, E:${totalErrors}), Monthly: ${monthlyNet}, Daily: ${dailyNet}`);
     
     if (!this.isReplay) {
       stats.dailyRP = dailyNet;
@@ -1903,6 +1906,17 @@ export class GameManager {
         if (!this.stats || isRemoteNewer || this.isWiping || isMigration) {
           console.log(`[Sync] Adopting remote stats (RemoteTS: ${remoteTS} > LocalTS: ${localTS})`);
           
+          // v1.5.49: ATOM PRESERVATION (Sticky local progress)
+          // Before adopting cloud truth, capture current session atoms to avoid wiped progress.
+          const localAtoms = {
+            dw: this.stats ? (this.stats.dailyWinsAccumulated || 0) : 0,
+            mw: this.stats ? (this.stats.monthlyWinsAccumulated || 0) : 0,
+            de: this.stats ? (this.stats.dailyPeaksErrorsAccumulated || 0) : 0,
+            db: this.stats ? (this.stats.dailyBonusesAccumulated || 0) : 0,
+            mb: this.stats ? (this.stats.monthlyBonusesAccumulated || 0) : 0,
+            swMap: this.stats ? { ...(this.stats.stageWinsAccumulated || {}) } : {}
+          };
+          
           // Unpack nested stats map into flat local object (v1.5.0 Replica Support)
           const newStats = { ...remoteStats };
           if (remoteStats.stats) {
@@ -1916,6 +1930,19 @@ export class GameManager {
             delete newStats.stats;
           }
           
+          // v1.5.49: Re-apply local atoms if they represent more progress than the cloud baseline
+          newStats.dailyWinsAccumulated = Math.max(newStats.dailyWinsAccumulated || 0, localAtoms.dw);
+          newStats.monthlyWinsAccumulated = Math.max(newStats.monthlyWinsAccumulated || 0, localAtoms.mw);
+          newStats.dailyPeaksErrorsAccumulated = Math.max(newStats.dailyPeaksErrorsAccumulated || 0, localAtoms.de);
+          newStats.dailyBonusesAccumulated = Math.max(newStats.dailyBonusesAccumulated || 0, localAtoms.db);
+          newStats.monthlyBonusesAccumulated = Math.max(newStats.monthlyBonusesAccumulated || 0, localAtoms.mb);
+          
+          // Merge Stage Wins Map
+          if (!newStats.stageWinsAccumulated) newStats.stageWinsAccumulated = {};
+          Object.entries(localAtoms.swMap).forEach(([stage, count]) => {
+            newStats.stageWinsAccumulated[stage] = Math.max(newStats.stageWinsAccumulated[stage] || 0, count);
+          });
+          
           this.stats = newStats;
           
           // v1.5.43: Reset anchors when adopting cloud truth to start fresh from the new baseline
@@ -1923,8 +1950,6 @@ export class GameManager {
           this._sessionBaselineMonthly = null;
           
           // v1.5.32 Reconciliation: Re-apply current session achievements on top of cloud baseline
-          // We MUST write back the correction (e.g. 2.5) to the cloud if the server 
-          // naive integer score (e.g. 4.0) differs from our local penalized truth.
           await this._recalculateNetStats(false, false); 
           
           this._recalculateRecords(this.stats);
@@ -2434,17 +2459,35 @@ export class GameManager {
       const user = getCurrentUser();
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
 
-      // v1.5.41: ATOM UPDATE (Counters must be updated BEFORE RP reconstruction)
+      // v1.5.48: SINGLE ENTRY ACCOUNTING. 
+      // Errors are already incremented live in updateProgress.
+      // We only update Time and the Final Stage win here.
       stats.totalTimeAccumulated = (stats.totalTimeAccumulated || 0) + totalTimeMs;
-      stats.totalPeaksErrorsAccumulated = (stats.totalPeaksErrorsAccumulated || 0) + peaksErrors;
       
-      stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
-      stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + peaksErrors;
-      
-      // Stage Accumulators
+      // Stage Accumulators (For the FINAL stage only? No, recordWin sees the whole game)
+      // BUT: stages Completed 1-5 were already handled by awardStagePoints.
+      // ONLY 'code' (final) is missing.
+      // v1.5.49: ATOMIC SOLIDARITY SYNC
+      // Ensure every stage completed in the current session is reflected in the Atoms Map.
+      // This heals any sync-loss that happened during registration.
+      let sessionWinsAdded = 0;
+      this.state.progress.stagesCompleted.forEach(stage => {
+          if (!stats.stageWinsAccumulated[stage]) {
+              stats.stageWinsAccumulated[stage] = 1;
+              sessionWinsAdded++;
+              console.log(`[Solidarity] Restored missing win atom for stage: ${stage}`);
+          }
+      });
+
+      // If 'code' (final stage) was just restored or was already missing, ensure counters reflect it.
+      // We also verify that daily/monthly counters have AT LEAST the number of stages completed today.
+      const stagesCountToday = (this.state.progress.stagesCompleted || []).length;
+      stats.dailyWinsAccumulated = Math.max(stats.dailyWinsAccumulated || 0, stagesCountToday);
+      stats.monthlyWinsAccumulated = Math.max(stats.monthlyWinsAccumulated || 0, stagesCountToday);
+
+      // Update stage times (This is fine as it's the only place stageTimes is persisted)
       for (const [stage, time] of Object.entries(st)) {
         stats.stageTimesAccumulated[stage] = (stats.stageTimesAccumulated[stage] || 0) + time;
-        stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
       }
 
       // --- 1. POINT ADOPTION (Referee Integration) ---
@@ -2472,18 +2515,16 @@ export class GameManager {
               if (serverResult.bonus !== undefined) stats.lastBonus = serverResult.bonus;
               if (serverResult.streak !== undefined) stats.currentStreak = serverResult.streak;
 
-              // v1.5.29: Force win state BEFORE recalculating to ensure bonus is picked up
+              // v1.5.46: ATOMS FIRST. Update bonus counter BEFORE recalculating.
+              if (stats.lastBonus > 0) {
+                stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+                stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+                stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+              }
+
               this.state.progress.won = true;
               this.stats = stats;
               await this._recalculateNetStats();
-              
-              // v1.5.29: If server provided a definitive final score, trust it over local calculation
-              if (serverResult.finalScore !== undefined) {
-                 this.stats.dailyRP = serverResult.finalScore;
-                 // Sync siblings to maintain hierarchy
-                 this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP);
-                 this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP);
-              }
               
               stats = this.stats;
             }
@@ -2491,6 +2532,14 @@ export class GameManager {
             console.error("[Referee] Validation failed! Using local fallback.", err);
             this.state.progress.won = true; // Still mark as won for local scoring
             stats.lastBonus = timeBonus;
+
+            // v1.5.46: ATOMS FIRST (Local path)
+            if (stats.lastBonus > 0) {
+              stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+              stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+              stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+            }
+
             this.stats = stats;
             await this._recalculateNetStats();
             stats = this.stats;
@@ -2499,6 +2548,14 @@ export class GameManager {
           // Guest Flow
           this.state.progress.won = true;
           stats.lastBonus = timeBonus;
+
+          // v1.5.46: ATOMS FIRST (Guest path)
+          if (stats.lastBonus > 0) {
+            stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+            stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+            stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+          }
+
           this.stats = stats;
           await this._recalculateNetStats();
           stats = this.stats;
@@ -2518,12 +2575,7 @@ export class GameManager {
       const dailyScore = this.stats.dailyRP || 0;
       stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + dailyScore;
       
-      // Bonus counters (v1.5.44: Triple Track)
-      if (stats.lastBonus > 0) {
-        stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-        stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-        stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-      }
+      // Bonus counters already updated in conditional blocks above (v1.5.46)
 
       // Weekday Aggregates
       const dayIdx = new Date(today + "T12:00:00").getDay();
@@ -2636,6 +2688,19 @@ export class GameManager {
    */
   _recalculateRecords(stats) {
     if (!stats) return;
+    
+    // v1.5.49: Session Preservation
+    // Capture "today's" atoms before the nuclear reset so we don't wipe active progress.
+    const todayStr = getJigsudoDateString();
+    const isActiveToday = stats.lastDailyUpdate === todayStr;
+    const sessionAtoms = {
+       dw: isActiveToday ? (stats.dailyWinsAccumulated || 0) : 0,
+       mw: isActiveToday ? (stats.monthlyWinsAccumulated || 0) : 0,
+       de: isActiveToday ? (stats.dailyPeaksErrorsAccumulated || 0) : 0,
+       db: isActiveToday ? (stats.dailyBonusesAccumulated || 0) : 0,
+       mb: isActiveToday ? (stats.monthlyBonusesAccumulated || 0) : 0,
+       swMap: isActiveToday ? { ...(stats.stageWinsAccumulated || {}) } : {}
+    };
 
     // 1. Nuclear Reset of cumulative metrics (preserve configuration but reset counters)
     stats.maxStreak = 0;
@@ -2751,6 +2816,21 @@ export class GameManager {
         lastDate = d;
       }
     });
+
+    // v1.5.49: Re-apply session atoms captured at the beginning
+    // This ensures that progress for a game currently in progress (not yet in history) is preserved.
+    if (typeof sessionAtoms !== 'undefined') {
+      stats.dailyWinsAccumulated = Math.max(stats.dailyWinsAccumulated || 0, sessionAtoms.dw);
+      stats.monthlyWinsAccumulated = Math.max(stats.monthlyWinsAccumulated || 0, sessionAtoms.mw);
+      stats.dailyPeaksErrorsAccumulated = Math.max(stats.dailyPeaksErrorsAccumulated || 0, sessionAtoms.de);
+      stats.dailyBonusesAccumulated = Math.max(stats.dailyBonusesAccumulated || 0, sessionAtoms.db);
+      stats.monthlyBonusesAccumulated = Math.max(stats.monthlyBonusesAccumulated || 0, sessionAtoms.mb);
+      
+      if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+      Object.entries(sessionAtoms.swMap).forEach(([stage, count]) => {
+        stats.stageWinsAccumulated[stage] = Math.max(stats.stageWinsAccumulated[stage] || 0, count);
+      });
+    }
 
     stats.lastPlayedDate = dates[dates.length - 1];
 
