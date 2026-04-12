@@ -384,6 +384,11 @@ export async function saveUserStats(userId, statsData, username = null, options 
         monthlyWinsAccumulated: s.monthlyWinsAccumulated || 0,
         monthlyPeaksErrorsAccumulated: s.monthlyPeaksErrorsAccumulated || 0,
         monthlyBonusesAccumulated: s.monthlyBonusesAccumulated || 0,
+        dailyWinsAccumulated: s.dailyWinsAccumulated || 0,
+        dailyBonusesAccumulated: s.dailyBonusesAccumulated || 0,
+        dailyPeaksErrorsAccumulated: s.dailyPeaksErrorsAccumulated || 0,
+        lastBonus: s.lastBonus || 0,
+        lastPenalty: s.lastPenalty || 0,
         stageWinsAccumulated: s.stageWinsAccumulated || {},
         stageTimesAccumulated: s.stageTimesAccumulated || {},
         weekdayStatsAccumulated: s.weekdayStatsAccumulated || {}

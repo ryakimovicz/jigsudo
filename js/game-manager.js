@@ -1138,21 +1138,26 @@ export class GameManager {
       else return;
     }
     
-    // v1.2.16: Detect error increment for live penalty
+    // v1.5.44: Detect error increment for live penalty and TRIPLE-TRACK atoms
     const oldErrors = this.state.stats?.peaksErrors || 0;
     this.state[section] = { ...this.state[section], ...data };
     const newErrors = this.state.stats?.peaksErrors || 0;
 
-    // Ensure timestamp is refreshed for any progress change
-    if (this.state.meta) {
-      this.state.meta.lastPlayed = new Date().toISOString();
-    }
-
-    this.save();
-
-    // If errors increased, recalculate and sync to cloud immediately
+    // If errors increased, update the 3-track atoms and recalculate
     if (section === "stats" && newErrors > oldErrors) {
+      const delta = newErrors - oldErrors;
+      if (this.stats) {
+        this.stats.dailyPeaksErrorsAccumulated = (this.stats.dailyPeaksErrorsAccumulated || 0) + delta;
+        this.stats.monthlyPeaksErrorsAccumulated = (this.stats.monthlyPeaksErrorsAccumulated || 0) + delta;
+        this.stats.totalPeaksErrorsAccumulated = (this.stats.totalPeaksErrorsAccumulated || 0) + delta;
+      }
       this._recalculateNetStats(true);
+    } else {
+        // v1.5.44: Even if no direct error, ensure we save progress changes
+        if (this.state.meta) {
+            this.state.meta.lastPlayed = new Date().toISOString();
+        }
+        this.save();
     }
   }
 
@@ -1201,11 +1206,18 @@ export class GameManager {
       if (!this.state.progress.stagesCompleted.includes(stage)) {
         this.state.progress.stagesCompleted.push(stage);
         
-        // History record is now proactively initialized in recordStart
-
+        // v1.5.44: Update Triple-Track Win Atoms
+        if (this.stats) {
+          if (!this.stats.stageWinsAccumulated) this.stats.stageWinsAccumulated = {};
+          this.stats.stageWinsAccumulated[stage] = (this.stats.stageWinsAccumulated[stage] || 0) + 1;
+          
+          this.stats.dailyWinsAccumulated = (this.stats.dailyWinsAccumulated || 0) + 1;
+          this.stats.monthlyWinsAccumulated = (this.stats.monthlyWinsAccumulated || 0) + 1;
+        }
 
         // CRITICAL: Persist stage completion immediately to local storage
         this.save();
+        this._recalculateNetStats(); // Direct Formula will pick up the new win
       }
     }
     
@@ -1367,53 +1379,50 @@ export class GameManager {
       stats.dailyRP = 0; // Reset today's points
       stats.lastDailyUpdate = today;
     }
+    // v1.5.44: DIRECT ATOMIC TRIPLE-TRACK SCORING
+    // No more anchors or baselines. We sum counters directly for 100% stability.
     
-    // If month changed, reset monthly points
+    // A. SCOPE RESETS (Transition Management)
+    if (stats.lastDailyUpdate && stats.lastDailyUpdate !== today) {
+        console.log(`[Timer] Daily transition: ${stats.lastDailyUpdate} -> ${today}. Resetting daily atoms.`);
+        stats.dailyWinsAccumulated = 0;
+        stats.dailyBonusesAccumulated = 0;
+        stats.dailyPeaksErrorsAccumulated = 0;
+        stats.dailyRP = 0;
+        stats.lastDailyUpdate = today;
+    }
+    
     if (stats.lastMonthlyUpdate && stats.lastMonthlyUpdate !== currentMonth) {
-       console.log(`[Timer] Monthly transition: ${stats.lastMonthlyUpdate} -> ${currentMonth}.`);
-       stats.monthlyRP = 0;
-       stats.lastMonthlyUpdate = currentMonth;
+        console.log(`[Timer] Monthly transition: ${stats.lastMonthlyUpdate} -> ${currentMonth}. Resetting monthly atoms.`);
+        stats.monthlyWinsAccumulated = 0;
+        stats.monthlyBonusesAccumulated = 0;
+        stats.monthlyPeaksErrorsAccumulated = 0;
+        stats.monthlyRP = 0;
+        stats.lastMonthlyUpdate = currentMonth;
     }
 
-    // 1. Calculate Session Components (Today's Achievement)
-    const completedStagesToday = this.state.progress.stagesCompleted || [];
-    const baseAchievementToday = completedStagesToday.length * 1.0;
-    
-    // v1.5.39: Anti-regression for Session Errors
-    const errorsToday = (this.state.stats && this.state.stats.peaksErrors) || 0;
-    let penaltyPointsToday = Math.max(this._lastPenaltyPoints || 0, errorsToday * SCORING.ERROR_PENALTY_RP);
-    this._lastPenaltyPoints = penaltyPointsToday;
+    // B. COMPONENT AGGREGATION
+    // 1. Total Scope
+    const totalWins = Object.values(stats.stageWinsAccumulated || {}).reduce((acc, val) => acc + (val || 0), 0);
+    const totalBonuses = stats.totalBonusesAccumulated || 0;
+    const totalErrors = stats.totalPeaksErrorsAccumulated || 0;
+    const totalNet = Number((totalWins + totalBonuses - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
 
-    let winBonusToday = 0;
-    if (this.state.progress.currentStage === "complete" || this.state.progress.won) {
-       winBonusToday = stats.lastBonus || 0;
-    }
+    // 2. Monthly Scope
+    const monthlyWins = stats.monthlyWinsAccumulated || 0;
+    const monthlyBonuses = stats.monthlyBonusesAccumulated || 0;
+    const monthlyErrors = stats.monthlyPeaksErrorsAccumulated || 0;
+    const monthlyNet = Number((monthlyWins + monthlyBonuses - (monthlyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
 
-    // 2. SESSION ANCHORING: Fixed delta-based math for stability (v1.5.42)
-    // The "Baseline" is everything that happened before TODAY.
-    // We anchor it once per browser session to ensure totalRP = Baseline + dailyNet.
-    
-    const cloudTotal = stats.totalRP || 0;
-    const cloudMonthly = stats.monthlyRP || 0;
-    const cloudDaily = stats.dailyRP || 0;
+    // 3. Daily Scope (The 'Game Day' Net)
+    // We trust both the session achievements AND the absolute daily atoms for redundancy
+    const sessionWins = (this.state.progress.stagesCompleted || []).length;
+    const activeWins = Math.max(sessionWins, stats.dailyWinsAccumulated || 0);
+    const dailyBonuses = stats.dailyBonusesAccumulated || 0;
+    const dailyErrors = stats.dailyPeaksErrorsAccumulated || 0;
+    const dailyNet = Number((activeWins + dailyBonuses - (dailyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
 
-    // Reset baseline if day changed significantly or if we haven't anchored yet
-    if (this._sessionBaselineTotal === undefined || this._sessionBaselineTotal === null || (stats.lastDailyUpdate && stats.lastDailyUpdate !== today)) {
-        // v1.5.42: Surgical Baseline Extraction
-        // If it's a new day, current daily points are 0, so Baseline = Total.
-        // If we are resumed mid-day, Baseline = Total - Daily.
-        const currentDailyPoints = stats.lastDailyUpdate === today ? cloudDaily : 0;
-        this._sessionBaselineTotal = Number((cloudTotal - currentDailyPoints).toFixed(3));
-        this._sessionBaselineMonthly = Number((cloudMonthly - currentDailyPoints).toFixed(3));
-        console.log(`[RP-DEBUG] Session Anchored. BaselineTotal: ${this._sessionBaselineTotal}, BaselineMonthly: ${this._sessionBaselineMonthly}`);
-    }
-
-    // THE UNIFIED INCREMENTAL FORMULA (Authority: Session Base + Current Day Net)
-    const dailyNet = Math.max(0, baseAchievementToday + winBonusToday - penaltyPointsToday);
-    const totalNet = Number((this._sessionBaselineTotal + dailyNet).toFixed(3));
-    const monthlyNet = Number((this._sessionBaselineMonthly + dailyNet).toFixed(3));
-
-    console.log(`[RP-DEBUG] Anchored Trace -> Total RP: ${totalNet} (Base: ${this._sessionBaselineTotal}, Today: ${dailyNet}), Daily: ${dailyNet}`);
+    console.log(`[RP-DEBUG] Direct Atom Trace -> Total: ${totalNet} (W:${totalWins}, B:${totalBonuses}, E:${totalErrors}), Daily: ${dailyNet}`);
     
     if (!this.isReplay) {
       stats.dailyRP = dailyNet;
@@ -1439,7 +1448,7 @@ export class GameManager {
         // v1.5.31: Robust Penalty Detection
         // If there are peaks errors, we MUST treat this as an intentional penalty 
         // to bypass anti-regression guards, even if the caller didn't specify it.
-        const effectivePenalty = isPenalty || penaltyPointsToday > 0;
+        const effectivePenalty = isPenalty || dailyErrors > 0;
         
         await saveUserStats(user.uid, this.stats, user.displayName, { 
           _isIntentionalPenalty: effectivePenalty 
@@ -1908,6 +1917,10 @@ export class GameManager {
           }
           
           this.stats = newStats;
+          
+          // v1.5.43: Reset anchors when adopting cloud truth to start fresh from the new baseline
+          this._sessionBaselineTotal = null;
+          this._sessionBaselineMonthly = null;
           
           // v1.5.32 Reconciliation: Re-apply current session achievements on top of cloud baseline
           // We MUST write back the correction (e.g. 2.5) to the cloud if the server 
@@ -2505,10 +2518,11 @@ export class GameManager {
       const dailyScore = this.stats.dailyRP || 0;
       stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + dailyScore;
       
-      // Bonus counters
+      // Bonus counters (v1.5.44: Triple Track)
       if (stats.lastBonus > 0) {
-        stats.totalBonusesAccumulated = (stats.totalBonusesAccumulated || 0) + stats.lastBonus;
-        stats.monthlyBonusesAccumulated = (stats.monthlyBonusesAccumulated || 0) + stats.lastBonus;
+        stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+        stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+        stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
       }
 
       // Weekday Aggregates
