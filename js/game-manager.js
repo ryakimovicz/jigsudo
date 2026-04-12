@@ -1,13 +1,13 @@
-import { getDailySeed } from "./utils/random.js?v=1.4.6";
+import { getDailySeed } from "./utils/random.js?v=1.5.30";
 // Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
   countSequenceOccurrences,
-} from "./search-gen.js?v=1.4.6";
-import { CONFIG } from "./config.js?v=1.4.6";
-import { calculateRP, SCORING } from "./ranks.js?v=1.4.6";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.6";
-import { getJigsudoDateString } from "./utils/time.js?v=1.4.6";
+} from "./search-gen.js?v=1.5.30";
+import { CONFIG } from "./config.js?v=1.5.30";
+import { calculateRP, SCORING } from "./ranks.js?v=1.5.30";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.5.30";
+import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.5.30";
 
 export class GameManager {
   constructor() {
@@ -26,6 +26,11 @@ export class GameManager {
     }
     this.sessionBlocked = false;
     this._throneShieldExpires = 0; // v1.2.3: Grace period for session claims
+    this._lastLocalWrite = 0;      // v1.5.30: Sync Shield timer
+
+    // v1.5.16: Clock Synchronization (Anti-drift)
+    this.serverTimeOffset = parseInt(localStorage.getItem("jigsudo_server_offset") || "0");
+    if (CONFIG.debugMode) console.log(`[Timer] Initial Server Offset: ${this.serverTimeOffset}ms`);
 
     // Listen for tab focus/visibility to force save or handle day transitions
     document.addEventListener("visibilitychange", async () => {
@@ -142,6 +147,15 @@ export class GameManager {
       if (activeUid && !this.state.meta.userId) {
         this.state.meta.userId = activeUid;
       }
+
+      // v1.5.15: Safe initialization for persistent timer fields
+      if (!this.state.meta.stageStamps) this.state.meta.stageStamps = {};
+      
+      // If we have a persisted stageStartAt from a previous session, restore it to memory
+      if (this.state.meta.stageStartAt && !this.stageStartTime) {
+        this.stageStartTime = this.state.meta.stageStartAt;
+        if (CONFIG.debugMode) console.log(`[Timer] Restored stageStartTime from persistence: ${this.stageStartTime}`);
+      }
       
       // v1.3.0: Removed proactive ensureSessionStarted on load
       // This solves the 'Ghost Session' bug. Session only anchors on Play or Stage Start.
@@ -242,13 +256,13 @@ export class GameManager {
     const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
     // v1.4.2: SERVER AUTHORITY START
-    const { getCurrentUser } = await import("./auth.js?v=1.4.6");
+    const { getCurrentUser } = await import("./auth.js?v=1.5.30");
     const user = getCurrentUser();
 
     if (user && !user.isAnonymous) {
       console.log("[Referee] Registering game start and maintenance check on server...");
       try {
-        const { callJigsudoFunction } = await import("./db.js?v=1.4.6");
+        const { callJigsudoFunction } = await import("./db.js?v=1.5.30");
         const result = await callJigsudoFunction("startJigsudoSession", {
           seed: this.currentSeed,
           sessionId: this.localSessionId // v1.5.0: Claim server throne
@@ -282,7 +296,7 @@ export class GameManager {
 
     // v1.4.6: Proactively initialize History record
     if (user && !user.isAnonymous) {
-      import("./db.js?v=1.4.6").then(m => m.initializeHistoryDocument(user.uid, this.currentSeed));
+      import("./db.js?v=1.5.30").then(m => m.initializeHistoryDocument(user.uid, this.currentSeed));
     } else {
       // Local Guest History
       if (!this.stats.history) this.stats.history = {};
@@ -383,13 +397,9 @@ export class GameManager {
     if (hasBetaData) {
       console.warn("[LaunchCleanup] Beta data detected! Purging and resetting counters for v1.0.0...");
       
-      // Nuclear Reset: If there was beta data, we reset all cumulative stats to 0
-      // because we can't easily know which wins/games were beta vs production.
-      // We will rebuild what we can from the remaining (clean) history.
-      this.stats.played = 0;
-      this.stats.totalPlayed = 0;
-      this.stats.wins = 0;
-      this.stats.currentRP = 0;
+      this.stats.totalRP = 0;
+      this.stats.monthlyRP = 0;
+      this.stats.dailyRP = 0;
       this.stats.totalScoreAccumulated = 0;
       this.stats.totalTimeAccumulated = 0;
       this.stats.totalPeaksErrorsAccumulated = 0;
@@ -525,6 +535,8 @@ export class GameManager {
         seed: meta.seed || this.currentSeed,
         version: meta.version || "unknown",
         startedAt: null,
+        stageStartAt: null, // v1.5.15: Persist current stage start timestamp
+        stageStamps: {},    // v1.5.15: Log of start/end times per stage
         lastPlayed: "1970-01-01T00:00:00.000Z", // Initial state is always stale
         generatedBy: "static-server",
       },
@@ -715,7 +727,7 @@ export class GameManager {
       const seed = this.currentSeed;
 
       // Dynamic import to avoid circular dependencies if any
-      const { generateSearchSequences } = await import("./search-gen.js?v=1.4.6");
+      const { generateSearchSequences } = await import("./search-gen.js?v=1.5.30");
       const sequences = generateSearchSequences(solution, seed);
 
       if (sequences && sequences.length > 0) {
@@ -771,7 +783,7 @@ export class GameManager {
     return this.getTargetSolution();
   }
 
-  async save(syncToCloud = true) {
+  async save(syncToCloud = true, isPenalty = false) {
     if (!this.state || this.isWiping) return;
 
     // --- CRITICAL FIX: Ensure local timestamp is ALWAYS updated before persistence ---
@@ -780,22 +792,19 @@ export class GameManager {
       this.state.meta.lastPlayed = new Date().toISOString();
     }
 
-    // Progress and history initialization is now handled proactively in recordStart
-
-
     localStorage.setItem(this.storageKey, JSON.stringify(this.state));
-    if (syncToCloud) this.saveCloudDebounced();
+    if (syncToCloud) this.saveCloudDebounced(5000, isPenalty);
   }
 
-  saveCloudDebounced(delay = 5000) {
+  saveCloudDebounced(delay = 5000, isPenalty = false) {
     if (this.cloudSaveTimeout) clearTimeout(this.cloudSaveTimeout);
     this.cloudSaveTimeout = setTimeout(() => {
-      this.forceCloudSave();
+      this.forceCloudSave(null, isPenalty);
     }, delay);
   }
 
-  async forceCloudSave(overrideUid = null) {
-    const { getCurrentUser } = await import("./auth.js?v=1.4.6");
+  async forceCloudSave(overrideUid = null, isPenalty = false) {
+    const { getCurrentUser } = await import("./auth.js?v=1.5.30");
     const user = getCurrentUser();
     if (this.isWiping) {
       console.log("[GM] Wiping in progress. Save blocked.");
@@ -806,9 +815,13 @@ export class GameManager {
       this.cloudSaveTimeout = null;
     }
     if (this.conflictBlocked) return;
+    if (this._processingWin) {
+      console.log("[GM] Victory in progress. Debounced save blocked to prevent stale data wipe.");
+      return;
+    }
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.4.6");
-      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.4.6");
+      const { getCurrentUser } = await import("./auth.js?v=1.5.30");
+      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.5.30");
 
       let uid = overrideUid;
       if (!uid) {
@@ -830,16 +843,23 @@ export class GameManager {
           await saveUserProgress(uid, cloudState);
         }
         if (this.stats) {
-          // v1.2.11: ZERO-POINT GUARD (v1.4.8: Expanded for migration safety)
+          // v1.2.11/v1.5.19/v1.5.21: ZERO-POINT GUARD refined.
+          // We only block if stats is truly empty AND has no history AND no stages completed.
+          // But if we have an override (registration) or any progress, we save.
           const hasHistory = this.stats.history && Object.keys(this.stats.history).length > 0;
-          const isZeroStats = (this.stats.dailyRP || 0) === 0 && (this.stats.totalPlayed || 0) === 0 && !hasHistory;
+          const hasProgress = (this.state?.progress?.stagesCompleted?.length || 0) > 0;
           
-          const { isRegistering } = await import("./auth.js?v=1.4.6");
+          const isWonNow = this.state?.progress?.currentStage === "complete" || this.state?.progress?.won;
+          const isTrulyEmpty = (this.stats.dailyRP || 0) === 0 && (this.stats.totalRP || 0) === 0 && !hasHistory && !hasProgress;
           
-          if (isZeroStats && !overrideUid && !isRegistering) {
-            console.warn("[GM] Cloud stats save blocked: Attempting to save zero points to account (and no history found).");
+          if (isTrulyEmpty && !overrideUid && !isWonNow) {
+            console.log("[GM] Cloud stats save skipped: Truly virgin state.");
           } else {
-            await saveUserStats(uid, this.stats, username);
+            // v1.5.22: Pass win flag to allow cloud adoption if this is the final save
+            await saveUserStats(uid, this.stats, username, { 
+              _isConfirmedWin: isWonNow,
+              _isIntentionalPenalty: isPenalty 
+            });
           }
         }
       }
@@ -1010,8 +1030,8 @@ export class GameManager {
 
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.4.6");
-      const { showNotification } = await import("./ui.js?v=1.4.6");
+      const { getCurrentUser } = await import("./auth.js?v=1.5.30");
+      const { showNotification } = await import("./ui.js?v=1.5.30");
       const user = getCurrentUser();
 
       if (user && !user.isAnonymous) {
@@ -1020,7 +1040,7 @@ export class GameManager {
         const freshData = await this.fetchDailyPuzzle();
         const freshState = this.createStateFromJSON(freshData);
         // We await both to ensure they are on the wire before reload
-        const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.4.6");
+        const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.5.30");
         await Promise.all([
           saveUserProgress(user.uid, this._serializeState(freshState)),
           saveUserStats(user.uid, this.stats, user.displayName),
@@ -1132,7 +1152,7 @@ export class GameManager {
 
     // If errors increased, recalculate and sync to cloud immediately
     if (section === "stats" && newErrors > oldErrors) {
-      this._recalculateNetStats();
+      this._recalculateNetStats(true);
     }
   }
 
@@ -1172,13 +1192,9 @@ export class GameManager {
       JSON.parse(localStorage.getItem("jigsudo_user_stats")) ||
       {};
 
-    // v1.2.16: Synchronize ALL points categories including historical totalRP
-    // Note: awardStagePoints only adds 'achievements'. Net calculation happens in _recalculateNetStats.
-    stats.currentRP = (stats.currentRP || 0) + points;
-    stats.dailyRP = (stats.dailyRP || 0) + points;
-    stats.monthlyRP = (stats.monthlyRP || 0) + points;
-    stats.totalRP = (stats.totalRP || 0) + points; // Nomenclature fix for 'Siempre' table
-
+    // v1.5.18: Consolidate scoring into _recalculateNetStats. 
+    // We only update the raw accumulated counter for technical history, 
+    // but the displayed RP will be derived from session progress.
     stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + points;
 
     if (!this._processingWin) {
@@ -1193,13 +1209,11 @@ export class GameManager {
       }
     }
     
-    // v1.3.5/v1.4.1: Internal UI/Stats update
-    // Force a net recalculation to ensure penalties are applied to the new points
+    // v1.3.5/v1.4.1/v1.5.18/v1.5.21: Internal UI/Stats update
     this.stats = stats;
-    this._recalculateNetStats();
+    await this._recalculateNetStats(); // v1.5.21: Ensure points are ready before background syncs
 
     // v1.4.1: ASYNC REFEREE (Background Validation)
-    // We queue the validation and continue immediately.
     this._enqueueValidation(stage, points);
   }
 
@@ -1218,6 +1232,7 @@ export class GameManager {
       stage,
       points,
       stageTime,
+      stamps: this.state.meta?.stageStamps?.[stage] || {}, // v1.5.17: Absolute proof for Referee
       peaksErrors,
       seed: this.currentSeed
     });
@@ -1238,8 +1253,8 @@ export class GameManager {
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js");
     const functions = getFunctions();
     const submitStageResult = httpsCallable(functions, "submitStageResult");
-    const { getCurrentUser } = await import("./auth.js?v=1.4.6");
-    const { saveUserStats } = await import("./db.js?v=1.4.6");
+    const { getCurrentUser } = await import("./auth.js?v=1.5.30");
+    const { saveUserStats } = await import("./db.js?v=1.5.30");
 
     while (this.validationQueue.length > 0) {
       const task = this.validationQueue[0];
@@ -1265,6 +1280,9 @@ export class GameManager {
           console.log(`[Referee] Stage ${task.stage} verified by server! Points awarded.`);
           this.validationQueue.shift(); // Remove from queue only on success
           
+          // v1.5.29: Instant point adoption. Update local stats immediately so ranking updates.
+          await this._recalculateNetStats();
+
           // Trigger a global event so UI components (like Ranking) know they can refresh
           window.dispatchEvent(new CustomEvent("stageVerified", { detail: task }));
         } else {
@@ -1290,9 +1308,9 @@ export class GameManager {
         break; 
       }
 
-      // Sync local progress (board state, levels completed) to cloud as usual
-      // Note: RP fields are now blacklisted in firestore.rules, so db.js will only save progress map.
-      saveUserStats(user.uid, this.stats, user.displayName);
+      // v1.5.31: REDUNDANT SAVE REMOVED. 
+      // RP updates are now handled exclusively by _recalculateNetStats() above.
+      // progressMap updates are handled by standard save() calls during gameplay.
     }
 
     this.isProcessingQueue = false;
@@ -1325,55 +1343,115 @@ export class GameManager {
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
     }
   }
-
   /**
-   * v1.2.16: Live Net Scorer.
-   * Recalculates current ranking points by (Achievements - Penalties).
-   * Ensures Ranking reflects the real state of the game in real-time.
+   * Recalculates Daily, Monthly and Total RP based on the current session progress 
+   * and the historic baseline found in the stats object.
+   * v1.5.30: Consolidated Level-End logic.
+   * 
+   * @param {boolean} isPenalty - Force cloud save even if score drops
+   * @param {boolean} skipPersistence - Skip writing back to the cloud (Sync reconciliation)
    */
-  async _recalculateNetStats() {
-    if (!this.stats) return;
+  async _recalculateNetStats(isPenalty = false, skipPersistence = false) {
+    if (!this.stats) await this._ensureStats();
+    const stats = this.stats;
 
-    // 1. Calculate Base Achievement points
-    let baseAchievementPoints = 0;
-    this.state.progress.stagesCompleted.forEach((stage) => {
-      baseAchievementPoints += SCORING.PARTIAL_RP[stage] || 0;
-    });
+    // 0. Temporal Reconciliation (v1.5.30: Absolute Truth Architecture)
+    const today = getJigsudoDateString();
+    const currentMonth = getJigsudoYearMonth();
 
-    // 2. Calculate Penalty points
-    const errors = this.state.stats?.peaksErrors || 0;
-    const penaltyPoints = errors * SCORING.ERROR_PENALTY_RP;
+    console.log(`[RP-DEBUG] Recalculating. Today: ${today}, stagesCompleted: ${this.state.progress.stagesCompleted.length}`);
 
-    // 3. Update top-level stats (daily/monthly/total) with the net result
-    // We maintain 'totalRP' as the historical baseline + current session net
-    const netSessionPoints = baseAchievementPoints - penaltyPoints;
+    // If day changed, consolidate previous daily points into the historic baseline
+    if (stats.lastDailyUpdate && stats.lastDailyUpdate !== today) {
+      console.log(`[Timer] Daily transition: ${stats.lastDailyUpdate} -> ${today}. Consolidating points.`);
+      stats.dailyRP = 0; // Reset today's points
+      stats.lastDailyUpdate = today;
+    }
     
-    // For Daily: It's just the net session
-    this.stats.dailyRP = Math.max(0, netSessionPoints);
+    // If month changed, reset monthly points
+    if (stats.lastMonthlyUpdate && stats.lastMonthlyUpdate !== currentMonth) {
+       console.log(`[Timer] Monthly transition: ${stats.lastMonthlyUpdate} -> ${currentMonth}.`);
+       stats.monthlyRP = 0;
+       stats.lastMonthlyUpdate = currentMonth;
+    }
+
+    // 1. Calculate Session Components (Today's Achievement)
+    const completedStagesToday = this.state.progress.stagesCompleted || [];
+    const baseAchievementToday = completedStagesToday.length * 1.0;
     
-    if (this.stats.monthlyRP_baseline === undefined) this.stats.monthlyRP_baseline = (this.stats.monthlyRP || 0) - (this.stats.dailyRP || 0);
-    if (this.stats.totalRP_baseline === undefined) this.stats.totalRP_baseline = (this.stats.totalRP || 0) - (this.stats.dailyRP || 0);
+    // v1.5.39: Anti-regression for Session Errors
+    const errorsToday = (this.state.stats && this.state.stats.peaksErrors) || 0;
+    let penaltyPointsToday = Math.max(this._lastPenaltyPoints || 0, errorsToday * SCORING.ERROR_PENALTY_RP);
+    this._lastPenaltyPoints = penaltyPointsToday;
 
-    const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.4.6");
-    this.stats.lastDailyUpdate = getJigsudoDateString();
-    this.stats.lastMonthlyUpdate = getJigsudoYearMonth();
+    let winBonusToday = 0;
+    if (this.state.progress.currentStage === "complete" || this.state.progress.won) {
+       winBonusToday = stats.lastBonus || 0;
+    }
 
-    // v1.3.0: Enforce logical hierarchy (daily <= monthly <= total)
-    this.stats.monthlyRP = Math.max(this.stats.dailyRP, (this.stats.monthlyRP_baseline || 0) + netSessionPoints);
-    this.stats.totalRP = Math.max(this.stats.monthlyRP, (this.stats.totalRP_baseline || 0) + netSessionPoints);
-    this.stats.currentRP = Math.max(this.stats.currentRP || 0, this.stats.totalRP);
+    // 2. SESSION ANCHORING: Fixed delta-based math for stability (v1.5.42)
+    // The "Baseline" is everything that happened before TODAY.
+    // We anchor it once per browser session to ensure totalRP = Baseline + dailyNet.
+    
+    const cloudTotal = stats.totalRP || 0;
+    const cloudMonthly = stats.monthlyRP || 0;
+    const cloudDaily = stats.dailyRP || 0;
 
-    this.stats.lastLocalUpdate = Date.now();
+    // Reset baseline if day changed significantly or if we haven't anchored yet
+    if (this._sessionBaselineTotal === undefined || this._sessionBaselineTotal === null || (stats.lastDailyUpdate && stats.lastDailyUpdate !== today)) {
+        // v1.5.42: Surgical Baseline Extraction
+        // If it's a new day, current daily points are 0, so Baseline = Total.
+        // If we are resumed mid-day, Baseline = Total - Daily.
+        const currentDailyPoints = stats.lastDailyUpdate === today ? cloudDaily : 0;
+        this._sessionBaselineTotal = Number((cloudTotal - currentDailyPoints).toFixed(3));
+        this._sessionBaselineMonthly = Number((cloudMonthly - currentDailyPoints).toFixed(3));
+        console.log(`[RP-DEBUG] Session Anchored. BaselineTotal: ${this._sessionBaselineTotal}, BaselineMonthly: ${this._sessionBaselineMonthly}`);
+    }
+
+    // THE UNIFIED INCREMENTAL FORMULA (Authority: Session Base + Current Day Net)
+    const dailyNet = Math.max(0, baseAchievementToday + winBonusToday - penaltyPointsToday);
+    const totalNet = Number((this._sessionBaselineTotal + dailyNet).toFixed(3));
+    const monthlyNet = Number((this._sessionBaselineMonthly + dailyNet).toFixed(3));
+
+    console.log(`[RP-DEBUG] Anchored Trace -> Total RP: ${totalNet} (Base: ${this._sessionBaselineTotal}, Today: ${dailyNet}), Daily: ${dailyNet}`);
+    
+    if (!this.isReplay) {
+      stats.dailyRP = dailyNet;
+      stats.monthlyRP = monthlyNet;
+      stats.totalRP = totalNet;
+      
+      stats.lastDailyUpdate = today;
+      stats.lastMonthlyUpdate = currentMonth;
+    }
+
+    this.stats = stats;
+    this.stats.lastLocalUpdate = Date.now(); // v1.5.30: Instant Freshness
+    this._lastLocalWrite = Date.now();       // v1.5.30: Shield engagement
     localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
-    // Sync to Cloud immediately if logged in
-    const { getCurrentUser } = await import("./auth.js?v=1.4.6");
-    const user = getCurrentUser();
-    if (user && !user.isAnonymous) {
-      const { saveUserStats } = await import("./db.js?v=1.4.6");
-      saveUserStats(user.uid, this.stats, user.displayName);
+    // 4. Persistence
+    if (!skipPersistence && !this._processingWin) {
+      const { getCurrentUser } = await import("./auth.js?v=1.5.30");
+      const user = getCurrentUser();
+      if (user && !user.isAnonymous) {
+        const { saveUserStats } = await import("./db.js?v=1.5.30");
+        
+        // v1.5.31: Robust Penalty Detection
+        // If there are peaks errors, we MUST treat this as an intentional penalty 
+        // to bypass anti-regression guards, even if the caller didn't specify it.
+        const effectivePenalty = isPenalty || penaltyPointsToday > 0;
+        
+        await saveUserStats(user.uid, this.stats, user.displayName, { 
+          _isIntentionalPenalty: effectivePenalty 
+        });
+      }
     }
+
+    // Notify UI
+    window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
   }
+
+
 
   showCriticalError(message) {
     const overlay = document.createElement("div");
@@ -1472,12 +1550,11 @@ export class GameManager {
       );
       this._recalculateRecords(this.stats);
       
-      // Hierarchy Healing
+      // Hierarchy Healing (v1.5.30: totalRP is the anchor)
       this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
       this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP || 0);
-      this.stats.currentRP = Math.max(this.stats.currentRP || 0, this.stats.totalRP || 0);
 
-      this.stats.integrityChecked = "1.3.0"; // Prevent repeated reconstruction
+      this.stats.integrityChecked = "1.5.30"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       
       // v1.2.11: DECOUPLED CLOUD SAVE.
@@ -1521,6 +1598,9 @@ export class GameManager {
         const lastMonth = lastCheck.substring(0, 7);
         if (currentMonth !== lastMonth && stats.monthlyRP !== 0) {
           stats.monthlyRP = 0;
+          stats.monthlyWinsAccumulated = 0;
+          stats.monthlyPeaksErrorsAccumulated = 0;
+          stats.monthlyBonusesAccumulated = 0;
           changed = true;
         }
 
@@ -1533,8 +1613,8 @@ export class GameManager {
           
           if (intentDiff > 1) {
             const missed = intentDiff - 1;
-            const { getRankData } = await import("./ranks.js?v=1.4.6");
-            let currentSimulatedRP = stats.currentRP || 0;
+            const { getRankData } = await import("./ranks.js?v=1.5.30");
+            let currentSimulatedRP = stats.totalRP || 0;
             
             for (let i = 0; i < missed; i++) {
               const rankInfo = getRankData(currentSimulatedRP);
@@ -1543,12 +1623,11 @@ export class GameManager {
               if (currentSimulatedRP === 0) break;
             }
             
-            const oldRP = stats.currentRP || 0;
-            stats.currentRP = Number(currentSimulatedRP.toFixed(3));
-            
-            if (stats.currentRP !== oldRP) {
-              changed = true;
-              console.log(`[Decay] Applied dynamic decay for ${missed} days of inactivity. Current RP: ${stats.currentRP}`);
+            if ((stats.totalRP || 0) !== currentSimulatedRP) {
+               console.warn(`[Decay] Applied penalty for ${missed} days. RP: ${stats.totalRP} -> ${currentSimulatedRP}`);
+               stats.totalRP = currentSimulatedRP;
+               stats.monthlyRP = Math.min(stats.monthlyRP || 0, stats.totalRP);
+               changed = true;
             }
             
             // Advance the penalty anchor to "yesterday" so we don't penalize these same days again tomorrow
@@ -1591,12 +1670,59 @@ export class GameManager {
     return changed;
   }
 
+  /**
+   * v1.5.16: Returns the current time normalized with the server clock.
+   */
+  _getServerNow() {
+    return Date.now() + (this.serverTimeOffset || 0);
+  }
+
+  updateServerOffset(serverTimeMs) {
+    if (!serverTimeMs) return;
+    const now = Date.now();
+    const newOffset = serverTimeMs - now;
+    
+    // Smooth update: if the difference is significant (> 1s), we update
+    if (Math.abs(newOffset - this.serverTimeOffset) > 1000) {
+      this.serverTimeOffset = newOffset;
+      localStorage.setItem("jigsudo_server_offset", newOffset.toString());
+      if (CONFIG.debugMode) console.log(`[Timer] Synchronized Clock Drift. New Offset: ${newOffset}ms`);
+    }
+  }
+
   startStageTimer(stage) {
     this.currentStage = stage;
-    this.stageStartTime = Date.now();
+    const now = this._getServerNow(); // Normalized
+
+    // v1.5.16: ABSOLUTE STICKY LOGIC
+    // If we already have a START stamp for this stage in meta, WE DO NOT OVERWRITE IT.
+    // This allows the timer to keep running from the original start across devices.
+    if (this.state && this.state.meta) {
+      if (!this.state.meta.stageStamps) this.state.meta.stageStamps = {};
+      
+      const existingStamp = this.state.meta.stageStamps[stage]?.start;
+      
+      if (!existingStamp) {
+        // First time starting this level
+        this.state.meta.stageStamps[stage] = {
+           start: new Date(now).toISOString(),
+           startMs: now // Source of truth for duration math
+        };
+        if (CONFIG.debugMode) console.log(`[Timer] Stage ${stage} started (New): ${this.state.meta.stageStamps[stage].start}`);
+        this.save();
+      } else {
+        // Resuming level
+        if (CONFIG.debugMode) console.log(`[Timer] Stage ${stage} resumed from original start: ${existingStamp}`);
+      }
+      
+      // Memory hook for live duration calculation
+      this.stageStartTime = this.state.meta.stageStamps[stage].startMs || new Date(existingStamp).getTime();
+    } else {
+      // Fallback (redundant)
+      this.stageStartTime = now;
+    }
     
     // Safety: Ensure server knows we are playing today if logged in
-    // This anchors the server-side start time for victory validation
     this.ensureSessionStarted();
   }
 
@@ -1609,7 +1735,7 @@ export class GameManager {
    */
   async checkMaintenance() {
     try {
-      const { callJigsudoFunction } = await import("./db.js?v=1.4.6");
+      const { callJigsudoFunction } = await import("./db.js?v=1.5.30");
       await callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true });
       console.log("[Maintenance] Proactive check triggered successfully.");
     } catch (err) {
@@ -1618,11 +1744,11 @@ export class GameManager {
   }
 
   async ensureSessionStarted() {
-    const { getCurrentUser } = await import("./auth.js?v=1.4.6");
+    const { getCurrentUser } = await import("./auth.js?v=1.5.30");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
         try {
-            const { callJigsudoFunction } = await import("./db.js?v=1.4.6");
+            const { callJigsudoFunction } = await import("./db.js?v=1.5.30");
             const result = await callJigsudoFunction("startJigsudoSession", {
                 sessionId: this.localSessionId
             });
@@ -1637,9 +1763,40 @@ export class GameManager {
   }
 
   stopStageTimer() {
-    if (!this.currentStage || !this.stageStartTime) return;
-    const duration = Date.now() - this.stageStartTime;
-    this.recordStageTime(this.currentStage, duration);
+    // v1.5.16: ELAPSED TIME CALCULATION (End - Sticky Start)
+    if (!this.currentStage) return;
+
+    const startAnchor = (this.state?.meta?.stageStamps?.[this.currentStage]?.startMs) 
+                     || (this.state?.meta?.stageStamps?.[this.currentStage]?.start ? new Date(this.state.meta.stageStamps[this.currentStage].start).getTime() : null)
+                     || this.stageStartTime;
+
+    if (!startAnchor) {
+      console.warn(`[Timer] Cannot stop stage ${this.currentStage}: No start anchor found.`);
+      return;
+    }
+
+    const now = this._getServerNow();
+    const duration = now - startAnchor;
+    
+    // Ensure duration is never negative
+    const safeDuration = Math.max(0, duration);
+
+    // Record end stamp and finalize level persistence
+    if (this.state && this.state.meta) {
+        if (!this.state.meta.stageStamps) this.state.meta.stageStamps = {};
+        if (!this.state.meta.stageStamps[this.currentStage]) this.state.meta.stageStamps[this.currentStage] = {};
+        
+        this.state.meta.stageStamps[this.currentStage].end = new Date(now).toISOString();
+        this.state.meta.stageStamps[this.currentStage].endMs = now;
+        
+        // Remove the live session anchor to prepare for the next stage
+        this.state.meta.stageStartAt = null; 
+        this.save();
+    }
+
+    if (CONFIG.debugMode) console.log(`[Timer] Stage ${this.currentStage} finished. Total Elapsed: ${Math.floor(safeDuration/1000)}s`);
+
+    this.recordStageTime(this.currentStage, safeDuration);
     this.currentStage = null;
     this.stageStartTime = null;
   }
@@ -1719,17 +1876,30 @@ export class GameManager {
         const localTS = this.stats ? (this.stats.lastLocalUpdate || 0) : 0;
         const remoteTS = remoteStats.lastLocalUpdate || 0;
         
-        // Adoption Criteria
+        // Adoption Criteria (v1.5.19: Local Priority)
         const isMigration = (remoteStats.schemaVersion || 0) >= 7 && (this.stats?.schemaVersion || 0) < 7;
+        const isRemoteNewer = remoteTS > localTS;
         
-        if (!this.stats || remoteTS > localTS || this.isWiping || isMigration || hasRankDiscrepancy) {
+        // v1.5.30: Sync Shield (Grace Period)
+        // If we just wrote to the cloud, ignore slightly newer snapshots from the same session
+        // that still have the old score. 8s is usually enough for Firestore propagation.
+        const isWithinGracePeriod = Date.now() - (this._lastLocalWrite || 0) < 8000;
+        const isProtectedSession = remoteSessionId === this.localSessionId;
+        
+        if (isProtectedSession && hasRankDiscrepancy && isWithinGracePeriod) {
+          console.log("[Sync] Shield Active: Ignoring potentially stale cloud snapshot during grace period.");
+          return;
+        }
+
+        if (!this.stats || isRemoteNewer || this.isWiping || isMigration) {
           console.log(`[Sync] Adopting remote stats (RemoteTS: ${remoteTS} > LocalTS: ${localTS})`);
           
           // Unpack nested stats map into flat local object (v1.5.0 Replica Support)
           const newStats = { ...remoteStats };
           if (remoteStats.stats) {
-            // v1.5.2 Protection: Do not let nested stats shadow root ranking fields
-            const protectedKeys = ["dailyRP", "monthlyRP", "totalRP", "lastDailyUpdate", "lastMonthlyUpdate", "schemaVersion"];
+            // v1.5.30 Protection: Do not let nested stats shadow root ranking fields
+            // v1.5.30+: Expanded to include all potential aliases like currentRP and score
+            const protectedKeys = ["dailyRP", "monthlyRP", "totalRP", "currentRP", "score", "lastDailyUpdate", "lastMonthlyUpdate", "isPublic", "schemaVersion"];
             const cleanMap = { ...remoteStats.stats };
             protectedKeys.forEach(k => delete cleanMap[k]);
             
@@ -1738,6 +1908,12 @@ export class GameManager {
           }
           
           this.stats = newStats;
+          
+          // v1.5.32 Reconciliation: Re-apply current session achievements on top of cloud baseline
+          // We MUST write back the correction (e.g. 2.5) to the cloud if the server 
+          // naive integer score (e.g. 4.0) differs from our local penalized truth.
+          await this._recalculateNetStats(false, false); 
+          
           this._recalculateRecords(this.stats);
           localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
           window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
@@ -1749,7 +1925,7 @@ export class GameManager {
 
     // 3. Progress Synchronization Logic (Game State)
     if (remoteProgress) {
-      if (remoteProgress.stats) delete remoteProgress.stats;
+      // v1.5.34: Allow session stats (errors, etc.) to be adopted from the cloud.
       let hydratedProgress = this._deserializeState(remoteProgress);
 
       const remoteSeed = Number(hydratedProgress.meta.seed);
@@ -1777,13 +1953,15 @@ export class GameManager {
         if (this.isWiping || !this.state || remoteTime > localTime + 60000 || victorySyncNeeded) {
           console.log(`[Sync] FORCE ADOPTING cloud progress (Victory Needed: ${victorySyncNeeded}).`);
           
-          // Inject static puzzle data if seeds match
-          if (this.state && this.state.data && !hydratedProgress.data) {
-            if (Number(this.state.meta.seed) === remoteSeed) {
-              hydratedProgress.data = this.state.data;
-            }
+          // v1.5.33: Session Stats Protection
+          // Preserve local errors/peaks progress to avoid RP rebounds during sync.
+          if (this.state && this.state.stats && hydratedProgress.stats) {
+            const localErrors = this.state.stats.peaksErrors || 0;
+            const remoteErrors = hydratedProgress.stats.peaksErrors || 0;
+            hydratedProgress.stats.peaksErrors = Math.max(localErrors, remoteErrors);
+            console.log(`[Sync] Merged Peaks Errors: local=${localErrors}, remote=${remoteErrors} -> Final: ${hydratedProgress.stats.peaksErrors}`);
           }
-          
+
           this.state = hydratedProgress;
           this.save(false); // Silent save
           window.location.reload(); 
@@ -1921,7 +2099,7 @@ export class GameManager {
         // 3. Force Push to Cloud
         await this.forceCloudSave();
         // 4. (Optional) Toast
-        const { showToast } = await import("./ui.js?v=1.4.6");
+        const { showToast } = await import("./ui.js?v=1.5.30");
         showToast("Versión local conservada y subida.");
       };
     }
@@ -1937,8 +2115,8 @@ export class GameManager {
 
         try {
           const { fetchLatestUserData, triggerRemoteSave } =
-            await import("./db.js?v=1.4.6");
-          const { getCurrentUser } = await import("./auth.js?v=1.4.6");
+            await import("./db.js?v=1.5.30");
+          const { getCurrentUser } = await import("./auth.js?v=1.5.30");
           const user = getCurrentUser();
 
           if (user) {
@@ -2094,7 +2272,7 @@ export class GameManager {
 
     try {
       // v1.2.2: Access dynamic translations correctly
-      const { translations: tData } = await import("./translations.js?v=1.4.6");
+      const { translations: tData } = await import("./translations.js?v=1.5.30");
       if (tData && tData[lang]) {
         t = { ...t, ...tData[lang] };
       }
@@ -2169,7 +2347,7 @@ export class GameManager {
 
           if (diffDays === 1) {
             stats.currentStreak = (stats.currentStreak || 0) + 1;
-          } else if (diffDays > 0) {
+          } else if (diffDays > 1) {
             stats.currentStreak = 1;
           }
         } else {
@@ -2187,7 +2365,7 @@ export class GameManager {
           : Date.now();
         const totalTimeMs = Date.now() - startMs;
         const peaksErrors = this.state.stats?.peaksErrors || 0;
-        const { calculateTimeBonus } = await import("./ranks.js?v=1.4.6");
+        const { calculateTimeBonus } = await import("./ranks.js?v=1.5.30");
         const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
         let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
         const potentialDailyScore = Math.max(0, 6.0 + netChange);
@@ -2229,128 +2407,134 @@ export class GameManager {
         }
       }
 
-      const startMs = this.state.meta.startedAt
-        ? new Date(this.state.meta.startedAt).getTime()
-        : Date.now();
-      const totalTimeMs = Date.now() - startMs;
+      // --- PREPARATION (Common for all flows) ---
+      const startMs = this.state.meta.stageStamps?.memory?.startMs || this.state.meta.startedAt;
+      const totalTimeMs = Date.now() - new Date(startMs).getTime();
       const peaksErrors = this.state.stats?.peaksErrors || 0;
-      const { calculateTimeBonus } = await import("./ranks.js?v=1.4.6");
-      const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
-      const netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
-      const dailyScore = Math.max(0, 6.0 + netChange);
-
-      if (!this.isReplay && !isAlreadyWon) {
-        // --- REFEREE INTEGRATION ---
-        const { getCurrentUser } = await import("./auth.js?v=1.4.6");
-        const user = getCurrentUser();
-        
-        if (user && !user.isAnonymous) {
-            console.log("[Referee] Submitting results for validation...");
-            try {
-                const { callJigsudoFunction } = await import("./db.js?v=1.4.6");
-                
-                // v1.4.1: Ensure background queue is empty before final win submission
-                if (this.isProcessingQueue || this.validationQueue.length > 0) {
-                    console.log("[Referee] Waiting for background stage validations to finish...");
-                    let attempts = 0;
-                    // v1.2.1: Add 5s max timeout to prevent UI hang on CORS/Network issues
-                    while ((this.isProcessingQueue || this.validationQueue.length > 0) && attempts < 50) {
-                        await new Promise(r => setTimeout(r, 100));
-                        attempts++;
-                    }
-                    if (this.validationQueue.length > 0) {
-                        console.warn("[Referee] Proceeding with final victory despite pending validations (Network/CORS issues).");
-                    }
-                }
-
-                const serverResult = await callJigsudoFunction("submitDailyWin", {
-                    stageTimes: this.state.meta.stageTimes || {},
-                    peaksErrors: this.state.stats?.peaksErrors || 0,
-                    seed: this.currentSeed
-                });
-                
-                if (serverResult.status === "success") {
-                    console.log("[Referee] Game finalized and verified by server:", serverResult);
-                    // Adopt official server values
-                    stats.dailyRP = serverResult.finalScore;
-                    stats.currentStreak = serverResult.streak;
-
-                    // v1.3.4: Since server is authority, we sync local currentRP/monthlyRP 
-                    // indirectly via the reload or let them be updated next time.
-                    // But for immediate UI, let's update them:
-                    stats.currentRP = serverResult.finalScore; 
-                    // (Actually we might need FetchLatest to be perfect, but this is enough for feedback)
-                }
-            } catch (err) {
-                console.error("[Referee] Validation failed!", err);
-                // Fallback or critical error? For now, we allow local save but it will be rejected by Rules.
-            }
-        } else {
-            // Guest Flow: Maintain legacy local calculation (Not competitive)
-            stats.currentRP = (stats.currentRP || 0) + netChange;
-            stats.monthlyRP = (stats.monthlyRP || 0) + netChange;
-            stats.dailyRP = dailyScore;
-        }
-
-        if (stats.currentRP < 0) stats.currentRP = 0;
-        if (stats.dailyRP < 0) stats.dailyRP = 0;
-        if (stats.monthlyRP < 0) stats.monthlyRP = 0;
-
-        if (stats.bestTime === undefined) stats.bestTime = null;
-        if (
-          totalTimeMs > 0 &&
-          (stats.bestTime === null ||
-            stats.bestTime === Infinity ||
-            totalTimeMs < stats.bestTime)
-        ) {
-          stats.bestTime = totalTimeMs;
-        }
-        if (dailyScore > (stats.bestScore || 0)) stats.bestScore = dailyScore;
-        stats.totalTimeAccumulated =
-          (stats.totalTimeAccumulated || 0) + totalTimeMs;
-        stats.totalScoreAccumulated =
-          (stats.totalScoreAccumulated || 0) + dailyScore;
-        stats.totalPeaksErrorsAccumulated =
-          (stats.totalPeaksErrorsAccumulated || 0) + peaksErrors;
-
-        const st = this.state.meta.stageTimes || {};
-        for (const [stage, time] of Object.entries(st)) {
-          stats.stageTimesAccumulated[stage] =
-            (stats.stageTimesAccumulated[stage] || 0) + time;
-          stats.stageWinsAccumulated[stage] =
-            (stats.stageWinsAccumulated[stage] || 0) + 1;
-        }
-
-        const dayIdx = new Date(today + "T12:00:00").getDay();
-        if (!stats.weekdayStatsAccumulated[dayIdx])
-          stats.weekdayStatsAccumulated[dayIdx] = {
-            sumTime: 0,
-            sumErrors: 0,
-            sumScore: 0,
-            count: 0,
-          };
-        const w = stats.weekdayStatsAccumulated[dayIdx];
-        w.sumTime += totalTimeMs;
-        w.sumErrors += peaksErrors;
-        w.sumScore += dailyScore;
-        w.count++;
-
-        stats.lastPlayedDate = today; 
-        stats.lastDecayCheck = today;
-      }
-
       const st = this.state.meta.stageTimes || {};
-
       const isOriginalDay = !this.isReplay;
 
+      const { getCurrentUser } = await import("./auth.js?v=1.5.30");
+      const { calculateTimeBonus } = await import("./ranks.js?v=1.5.30");
+      const { callJigsudoFunction, saveUserStats, saveHistoryEntry } = await import("./db.js?v=1.5.30");
+      
+      const user = getCurrentUser();
+      const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
+
+      // v1.5.41: ATOM UPDATE (Counters must be updated BEFORE RP reconstruction)
+      stats.totalTimeAccumulated = (stats.totalTimeAccumulated || 0) + totalTimeMs;
+      stats.totalPeaksErrorsAccumulated = (stats.totalPeaksErrorsAccumulated || 0) + peaksErrors;
+      
+      stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
+      stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + peaksErrors;
+      
+      // Stage Accumulators
+      for (const [stage, time] of Object.entries(st)) {
+        stats.stageTimesAccumulated[stage] = (stats.stageTimesAccumulated[stage] || 0) + time;
+        stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+      }
+
+      // --- 1. POINT ADOPTION (Referee Integration) ---
+      if (!this.isReplay && !isAlreadyWon) {
+        if (user && !user.isAnonymous) {
+          console.log("[Referee] Submitting results for validation...");
+          try {
+            // Wait for queue if necessary
+            if (this.isProcessingQueue || this.validationQueue.length > 0) {
+              let attempts = 0;
+              while ((this.isProcessingQueue || this.validationQueue.length > 0) && attempts < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+              }
+            }
+
+            const serverResult = (await callJigsudoFunction("submitDailyWin", {
+              stageTimes: st,
+              peaksErrors: peaksErrors,
+              seed: this.currentSeed
+            })) || {};
+
+            if (serverResult.status === "success") {
+              console.log("[Referee] Game finalized and verified by server:", serverResult);
+              if (serverResult.bonus !== undefined) stats.lastBonus = serverResult.bonus;
+              if (serverResult.streak !== undefined) stats.currentStreak = serverResult.streak;
+
+              // v1.5.29: Force win state BEFORE recalculating to ensure bonus is picked up
+              this.state.progress.won = true;
+              this.stats = stats;
+              await this._recalculateNetStats();
+              
+              // v1.5.29: If server provided a definitive final score, trust it over local calculation
+              if (serverResult.finalScore !== undefined) {
+                 this.stats.dailyRP = serverResult.finalScore;
+                 // Sync siblings to maintain hierarchy
+                 this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP);
+                 this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP);
+              }
+              
+              stats = this.stats;
+            }
+          } catch (err) {
+            console.error("[Referee] Validation failed! Using local fallback.", err);
+            this.state.progress.won = true; // Still mark as won for local scoring
+            stats.lastBonus = timeBonus;
+            this.stats = stats;
+            await this._recalculateNetStats();
+            stats = this.stats;
+          }
+        } else {
+          // Guest Flow
+          this.state.progress.won = true;
+          stats.lastBonus = timeBonus;
+          this.stats = stats;
+          await this._recalculateNetStats();
+          stats = this.stats;
+        }
+      }
+
+      // --- 2. BASIC STATS ENRICHMENT ---
+      if (stats.currentRP < 0) stats.currentRP = 0;
+      if (stats.dailyRP < 0) stats.dailyRP = 0;
+      if (stats.monthlyRP < 0) stats.monthlyRP = 0;
+
+      if (stats.bestTime === undefined) stats.bestTime = null;
+      if (totalTimeMs > 0 && (stats.bestTime === null || stats.bestTime === Infinity || totalTimeMs < stats.bestTime)) {
+        stats.bestTime = totalTimeMs;
+      }
+
+      const dailyScore = this.stats.dailyRP || 0;
+      stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + dailyScore;
+      
+      // Bonus counters
+      if (stats.lastBonus > 0) {
+        stats.totalBonusesAccumulated = (stats.totalBonusesAccumulated || 0) + stats.lastBonus;
+        stats.monthlyBonusesAccumulated = (stats.monthlyBonusesAccumulated || 0) + stats.lastBonus;
+      }
+
+      // Weekday Aggregates
+      const dayIdx = new Date(today + "T12:00:00").getDay();
+      if (!stats.weekdayStatsAccumulated[dayIdx]) {
+        stats.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
+      }
+      const w = stats.weekdayStatsAccumulated[dayIdx];
+      w.sumTime += totalTimeMs;
+      w.sumErrors += peaksErrors;
+      w.sumScore += dailyScore;
+      w.count++;
+
+      stats.lastDailyUpdate = today; 
+      stats.lastDecayCheck = today;
+
+      // --- 3. HISTORY ENRICHMENT ---
       if (!stats.history[today]) {
         stats.history[today] = { seed: this.currentSeed, played: true };
       }
-      
+
       const resultData = {
-        score: dailyScore,
+        score: dailyScore, 
         totalTime: totalTimeMs,
         stageTimes: st,
+        stageStamps: this.state.meta.stageStamps || {},
         errors: peaksErrors,
         timestamp: Date.now(),
         won: true
@@ -2363,84 +2547,67 @@ export class GameManager {
       } else {
         stats.history[today].status = "won";
         const existingBest = stats.history[today].best || {};
-        // Compare and update Personal Best
         if (dailyScore > (existingBest.score || 0) || 
-            (dailyScore === existingBest.score && totalTimeMs < (existingBest.totalTime || Infinity))) {
+           (dailyScore === existingBest.score && totalTimeMs < (existingBest.totalTime || Infinity))) {
           stats.history[today].best = resultData;
         }
       }
 
-      // 4. Cleanup progress for History games
-      // If this was a replay, clear the puzzle state but keep the win record
+      // --- 4. PERSISTENCE ---
       if (this.isReplay) {
-        console.log("[GameManager] Replay win recorded. Wiping progress map...");
-        this.state.progress = {
-          stagesCompleted: [],
-          currentStage: "memory",
-        };
-        // Reset stage-specific maps
+        console.log("[GameManager] Replay win. Cleaning progress...");
+        this.state.progress = { stagesCompleted: [], currentStage: "memory" };
         const sections = ["memory", "jigsaw", "sudoku", "peaks", "search", "simon"];
         sections.forEach(s => { if (this.state[s]) this.state[s] = {}; });
         this.save();
       }
 
-      const sessionStats = {
-        totalTime: totalTimeMs,
-        score: dailyScore,
-        streak: stats.currentStreak,
-        errors: peaksErrors,
-        stageTimes: st,
-        date: today, // YYYY-MM-DD
-        isReplay: this.isReplay,
-      };
-
-      stats.lastLocalUpdate = Date.now(); // Timestamp for conflict resolution
+      stats.lastLocalUpdate = Date.now();
       this.stats = stats;
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
-      const { saveUserStats } = await import("./db.js?v=1.4.6");
-      const { stopTimer } = await import("./timer.js?v=1.4.6");
-      stopTimer();
-
-      const { getCurrentUser } = await import("./auth.js?v=1.4.6");
-      const user = getCurrentUser();
-
+      // --- 5. CLOUD SYNC ---
       if (user && !user.isAnonymous) {
-        const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.4.6");
-        const serverTodayStr = getJigsudoDateString();
-        const currentMonth = getJigsudoYearMonth();
-
-        // Update permanent stats
-        this.stats.lastDailyUpdate = serverTodayStr;
-        this.stats.lastMonthlyUpdate = currentMonth;
-        this.stats._isConfirmedWin = true; // Temporary flag for Anti-Regression bypass
-        localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
-
-        await saveUserStats(user.uid, this.stats, user.displayName);
-        delete this.stats._isConfirmedWin; // Cleanup after save attempt
+        const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.5.30");
+        this.stats.lastDailyUpdate = getJigsudoDateString();
+        this.stats.lastMonthlyUpdate = getJigsudoYearMonth();
+        this.stats._isConfirmedWin = true; 
         
-        // v1.4.6: Deep subcollection persistence for history
-        const { saveHistoryEntry } = await import("./db.js?v=1.4.6");
-        const historyData = this.stats.history[today];
-        if (historyData) {
-           await saveHistoryEntry(user.uid, this.currentSeed, historyData);
+        await saveUserStats(user.uid, this.stats, user.displayName);
+        if (this.stats.history[today]) {
+          await saveHistoryEntry(user.uid, this.currentSeed, this.stats.history[today]);
         }
+        delete this.stats._isConfirmedWin;
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       }
       await this.forceCloudSave();
 
-      const { showToast } = await import("./ui.js?v=1.4.6");
-      const { getCurrentLang } = await import("./i18n.js?v=1.4.6");
-      const { translations } = await import("./translations.js?v=1.4.6");
+      // --- 6. UX & NOTIFICATION ---
+      const { stopTimer } = await import("./timer.js?v=1.5.30");
+      const { showToast } = await import("./ui.js?v=1.5.30");
+      const { getCurrentLang } = await import("./i18n.js?v=1.5.30");
+      const { translations } = await import("./translations.js?v=1.5.30");
+      
+      stopTimer();
       const lang = getCurrentLang() || "es";
       showToast(translations[lang]?.toast_progress_saved || "¡Progreso Guardado! 💾🏆");
 
-      // v1.4.6: Reactivity Trigger
-      // Notify other modules (like Home) that the game is over and stats are saved.
+      const sessionStats = {
+        totalTime: totalTimeMs,
+        score: dailyScore,
+        streak: stats.currentStreak || 1,
+        errors: peaksErrors,
+        stageTimes: st,
+        date: today,
+        isReplay: this.isReplay,
+      };
+
       window.dispatchEvent(new CustomEvent("gameCompleted", { 
         detail: { ...sessionStats, seed: this.currentSeed } 
       }));
 
       return sessionStats;
+ // v1.5.22: UI receives official stats through this object
     } catch (err) {
       console.error("Error saving stats:", err);
       return null;
@@ -2471,10 +2638,10 @@ export class GameManager {
     stats.weekdayStatsAccumulated = {};
     stats.played = 0; // Reset stale played counter
     
-    // RE-INITIALIZE Ranking Points (Source of Truth is History)
-    stats.currentRP = 0;
-    stats.dailyRP = 0;
-    stats.monthlyRP = 0;
+    // 2. RE-INITIALIZE Secondary Stats (Ranking Points are now primary/incremental)
+    // v1.5.36: Decoupled Daily/Monthly/Total RP from history reconstruction.
+    // They are managed incrementally by recalculateNetStats and sync adoption.
+    stats.currentRP = 0; // currentRP remains as a career accumulator, but won't shadow totalRP
 
     if (!stats.history) return;
 
@@ -2536,21 +2703,9 @@ export class GameManager {
         w.sumScore += hScore;
         w.count++;
 
-        // REBUILD Ranking Points (hScore already includes the bonus)
-        const entryPoints = hScore;
-        stats.currentRP = Number((stats.currentRP + entryPoints).toFixed(3));
-
-        // Re-bucket Daily/Monthly RP if the history record matches today/this month
-        const seedStr = this.currentSeed.toString();
-        const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-        const thisMonth = today.substring(0, 7);
-
-        if (dateStr === today) {
-          stats.dailyRP = entryPoints;
-        }
-        if (dateStr.startsWith(thisMonth)) {
-          stats.monthlyRP = Number((stats.monthlyRP + entryPoints).toFixed(3));
-        }
+        // REBUILD Career Accumulator (currentRP)
+        // v1.5.36: Ranking Points (daily/monthly/total) are no longer touched here.
+        stats.currentRP = Number((stats.currentRP + hScore).toFixed(3));
       }
 
       const d = new Date(dateStr + "T12:00:00");
@@ -2621,7 +2776,7 @@ export class GameManager {
 
     // --- ADMINISTRATIVE SHIELD: Apply manual adjustments (admin penalties/bonuses) ---
     stats.currentRP = Number((stats.currentRP + (stats.manualRPAdjustment || 0)).toFixed(3));
-    stats.totalRP = stats.currentRP; // Sync root mirrored field
+    // v1.5.36: REMOVED totalRP = currentRP overwrite to prevent history-based score rebounds.
     
     if (stats.currentRP < 0) stats.currentRP = 0;
     if (stats.totalRP < 0) stats.totalRP = 0;
@@ -2668,7 +2823,8 @@ export class GameManager {
       lastPlayedDate: null,
       lastDecayCheck: null,
       manualRPAdjustment: 0,
-      integrityChecked: "1.1.19"
+      isPublic: true, // v1.5.30: Default to public
+      integrityChecked: "1.5.30"
     };
   }
 }

@@ -1,4 +1,4 @@
-import { db, functions } from "./firebase-config.js?v=1.4.6";
+import { db, functions } from "./firebase-config.js?v=1.5.30";
 import {
   doc,
   setDoc,
@@ -19,10 +19,10 @@ import {
   increment,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js";
-import { gameManager } from "./game-manager.js?v=1.4.6";
-import { getCurrentUser } from "./auth.js?v=1.4.6";
-import { showAlertModal } from "./ui.js?v=1.4.6";
-import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.4.6";
+import { gameManager } from "./game-manager.js?v=1.5.30";
+import { getCurrentUser } from "./auth.js?v=1.5.30";
+import { showAlertModal } from "./ui.js?v=1.5.30";
+import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.5.30";
 
 /**
  * Helper to call a Jigsudo Cloud Function (Referee)
@@ -31,6 +31,12 @@ export async function callJigsudoFunction(name, data) {
   try {
     const fn = httpsCallable(functions, name);
     const result = await fn(data);
+    
+    // v1.5.16: Cross-check server time to avoid clock drift issues
+    if (result.data && result.data.serverTime) {
+      gameManager.updateServerOffset(result.data.serverTime);
+    }
+    
     return result.data;
   } catch (error) {
     console.error(`[Functions] Error calling ${name}:`, error);
@@ -43,9 +49,11 @@ let unsubscribeProgress = null;
 let unsubscribeHistory = null;
 
 /**
- * Internal helper to unify legacy stats reconstruction (v1.2.9)
+ * v1.5.12: Unified Stats Scavenger.
+ * Reconstructs a flat stats object from all possible cloud locations (Root, legacy maps, etc).
  */
-function _reconstructStats(data) {
+export function reconstructStats(data) {
+  if (!data) return {};
   const s = data.stats || {};
   
   // v1.3.6: Exhaustive scavenger for all 17 fields including legacy names
@@ -96,9 +104,10 @@ function _reconstructStats(data) {
 
     history: s.history || data.history || {},
     activeSessionId: scavengeStr("activeSessionId", s.activeSessionId || null),
+    isPublic: data.isPublic !== undefined ? data.isPublic : (s.isPublic !== undefined ? s.isPublic : true),
     lastLocalUpdate: scavengeNum("lastLocalUpdate", s.lastLocalUpdate || 0),
     schemaVersion: data.schemaVersion || 0,
-    integrityChecked: "1.4.1"
+    integrityChecked: "1.5.30"
   };
 
   return stats;
@@ -122,7 +131,7 @@ export function listenToUserProgress(userId) {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      const remoteStats = _reconstructStats(data);
+      const remoteStats = reconstructStats(data);
 
       // Pass data to GameManager for conflict checking
       gameManager.handleCloudSync(
@@ -244,25 +253,42 @@ export async function checkUsernameAvailability(
 }
 
 
-export async function saveUserStats(userId, statsData, username = null, metadataOnly = false) {
+export async function saveUserStats(userId, statsData, username = null, options = {}) {
+  // Support legacy boolean call: if options is boolean, treat as metadataOnly
+  const metadataOnly = typeof options === 'boolean' ? options : (options.metadataOnly || false);
+  const isIntentionalPenalty = options._isIntentionalPenalty || false;
+  const isConfirmedWin = options._isConfirmedWin || false;
+
   if (!userId) return;
   try {
     const userRef = doc(db, "users", userId);
 
-    const { auth } = await import("./firebase-config.js?v=1.4.6");
+    const { auth } = await import("./firebase-config.js?v=1.5.30");
     const currentUser = auth.currentUser;
     // v1.3.4: Atomic RP management (Authority is the Server/Functions)
     const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
 
     const updateData = {
       lastUpdated: serverTimestamp(),
-      isPublic: true, 
       schemaVersion: 7.1 // v1.4.4: Default to latest hybrid schema
     };
+
+    // Propagate options to updateData for internal logic visibility
+    if (isConfirmedWin) updateData._isConfirmedWin = true;
+
+    // v1.5.30: Set isPublic ONLY if provided in statsData or if the document is new.
+    if (statsData && statsData.isPublic !== undefined) {
+      updateData.isPublic = statsData.isPublic;
+    }
 
     if (username) {
       updateData.username = username;
       updateData.username_lc = username.toLowerCase();
+    }
+
+    // v1.5.30: Sync verification status
+    if (currentUser) {
+      updateData.isVerified = currentUser.emailVerified || false;
     }
 
     let statsMap = {};
@@ -281,6 +307,7 @@ export async function saveUserStats(userId, statsData, username = null, metadata
           // v1.3.5: Robust comparison with safety margin for float precision
           const cloudDaily = Math.max(cloudData.dailyRP || 0, cloudStats.dailyRP || 0);
           const cloudTotal = Math.max(cloudData.totalRP || 0, cloudStats.totalRP || 0);
+          const cloudMonth = Math.max(cloudData.monthlyRP || 0, cloudStats.monthlyRP || 0);
           
           const localDaily = s.dailyRP || 0;
           const localTotal = s.totalRP || 0;
@@ -292,20 +319,26 @@ export async function saveUserStats(userId, statsData, username = null, metadata
           const isLocalVirgin = localTotal === 0 && (s.wins || 0) === 0;
           const isCloudPopulated = cloudTotal > 0 || (cloudStats.wins || 0) > 0;
           
-          if (isLocalVirgin && isCloudPopulated && !updateData._isIntentionalReset) {
+          if (isLocalVirgin && isCloudPopulated && !updateData._isIntentionalReset && !isIntentionalPenalty) {
             console.error("[DB] VIRGIN LOCK: Preventing empty local state from wiping cloud profile.");
             return; // ABORT
           }
 
-          // 2. Total RP Check (Absolute Priority)
           const isTotalRegression = localTotal < (cloudTotal - 0.01);
-          const isDailyRegression = isSameDay && localDaily < (cloudDaily - 0.01);
-
-          if ((isTotalRegression || isDailyRegression) && !updateData._isConfirmedWin && !updateData._isIntentionalReset) {
-            console.error(
-              `[DB] ANTI-REGRESSION TRIGGERED: Cloud(T:${cloudTotal}, D:${cloudDaily}) > Local(T:${localTotal}, D:${localDaily})`
-            );
-            return; // ABORT THE SAVE
+          // If this is a confirmed victory or an intentional penalty, we trust the client truth.
+          if (isConfirmedWin || isIntentionalPenalty) {
+            console.log(`[DB] Bypass Guard: win=${isConfirmedWin}, penalty=${isIntentionalPenalty}`);
+          } else if (isTotalRegression) {
+            // Normal safety check for periodic saves
+            console.warn(`[DB] ANTI-REGRESSION TRIGGERED: Cloud(T:${cloudTotal.toFixed(1)}, D:${cloudDaily.toFixed(1)}) > Local(T:${localTotal.toFixed(1)}, D:${localDaily.toFixed(1)})`);
+            
+            // Force Adoption of Remote Truth to heal local state
+            const remoteStats = { ...cloudData.stats, dailyRP: cloudDaily, totalRP: cloudTotal, monthlyRP: cloudMonth };
+            
+            if (gameManager && gameManager.handleCloudSync) {
+              gameManager.handleCloudSync(cloudData.progress, remoteStats, false, cloudData.settings);
+              return false; // ABORT THE SAVE
+            }
           }
         }
       } catch (err) {
@@ -315,18 +348,28 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       const nowDoc = getJigsudoDateString();
       const nowMonth = getJigsudoYearMonth();
 
-      // v1.5.0: REPLICA TOTAL 1:1 Schema
-      // 1. Root Identity & Rankings (Used by Ranking tables)
+      // v1.5.30: LEGACY DELTA CALCULATION REMOVED.
+      // The Referee (Cloud Functions) is now the sole authority for incremental RP updates.
+      // v1.5.30: ROBUST RP PROPAGATION
+      // The client now writes all three RP levels to the root document to ensure
+      // session continuity and backup the cloud functions' authority.
       updateData.dailyRP = s.dailyRP || 0;
       updateData.monthlyRP = s.monthlyRP || 0;
       updateData.totalRP = s.totalRP || 0;
+
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
       updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
       updateData.lastLocalUpdate = Date.now();
       updateData.schemaVersion = 7.1;
 
+      // Ensure activeSessionId is also synced at the root (allowed by rules)
+      if (gameManager?.localSessionId) {
+        updateData.activeSessionId = gameManager.localSessionId;
+      }
+
       // 2. Map Stats (Encapsulated technical data)
       // v1.4.5+: Surgical DOT NOTATION to avoid wiping cloud history/subcollections
+      // v1.5.30: REMOVED all RP/Ranking fields from here to ensure Single Truth in Root.
       statsMap = {
         wins: s.wins || 0,
         totalPlayed: s.totalPlayed || 0,
@@ -337,14 +380,17 @@ export async function saveUserStats(userId, statsData, username = null, metadata
         totalTimeAccumulated: s.totalTimeAccumulated || 0,
         totalScoreAccumulated: s.totalScoreAccumulated || 0,
         totalPeaksErrorsAccumulated: s.totalPeaksErrorsAccumulated || 0,
+        totalBonusesAccumulated: s.totalBonusesAccumulated || 0,
+        monthlyWinsAccumulated: s.monthlyWinsAccumulated || 0,
+        monthlyPeaksErrorsAccumulated: s.monthlyPeaksErrorsAccumulated || 0,
+        monthlyBonusesAccumulated: s.monthlyBonusesAccumulated || 0,
         stageWinsAccumulated: s.stageWinsAccumulated || {},
         stageTimesAccumulated: s.stageTimesAccumulated || {},
-        weekdayStatsAccumulated: s.weekdayStatsAccumulated || {},
-        activeSessionId: (gameManager ? gameManager.localSessionId : null) || s.activeSessionId
+        weekdayStatsAccumulated: s.weekdayStatsAccumulated || {}
       };
 
       // Perform atomic update of the stats map if it's a confirmed win to avoid hollow snaps
-      if (updateData._isConfirmedWin) {
+      if (isConfirmedWin) {
         updateData.stats = statsMap;
       } else {
         // Surgical update for periodic saves to keep Firestore throughput low
@@ -352,6 +398,12 @@ export async function saveUserStats(userId, statsData, username = null, metadata
           updateData[`stats.${key}`] = statsMap[key];
         });
       }
+
+      // v1.5.30: EXORCISM - Force-delete ghost fields from the map
+      const exorcismKeys = ["totalRP", "monthlyRP", "dailyRP", "currentRP", "score"];
+      exorcismKeys.forEach(k => {
+          updateData[`stats.${k}`] = deleteField();
+      });
 
       // v1.2.17: Sync Verification bit ONLY if Auth confirms it.
       if (currentUser && currentUser.emailVerified) {
@@ -363,6 +415,15 @@ export async function saveUserStats(userId, statsData, username = null, metadata
       console.log("[DB] Update blocked: GM is wiping.");
       return;
     }
+
+    // v1.5.30: METADATA PURGE
+    // Firestore rules (affectedKeys().hasOnly) are strict.
+    // We must remove all internal control keys (starting with _) before sending.
+    Object.keys(updateData).forEach(key => {
+        if (key.startsWith("_")) {
+            delete updateData[key];
+        }
+    });
 
     // Surgical Execution Flow
     try {
@@ -402,9 +463,9 @@ export async function saveUserProgress(userId, progressData) {
       return;
     }
 
-    // v1.4.5 Saneamiento v7.1: Asegurar que NO enviamos 'stats' dentro del progreso
+    // v1.5.34: Allow session stats (including peaksErrors) to persist to the cloud.
     const pClean = { ...progressData };
-    if (pClean.stats) delete pClean.stats;
+    // Removed stripping of stats to ensure penalty persistence across devices.
 
     await setDoc(
       userRef,
@@ -449,7 +510,7 @@ export async function loadUserProgress(userId) {
     if (docSnap.exists()) {
       const data = docSnap.data();
       const remoteProgress = data.progress;
-      let remoteStats = _reconstructStats(data);
+      let remoteStats = reconstructStats(data);
 
       const updates = {};
       const todayStr = getJigsudoDateString();

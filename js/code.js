@@ -1,9 +1,9 @@
 /* El Código (The Code) Logic */
-import { gameManager } from "./game-manager.js?v=1.4.6";
-import { translations } from "./translations.js?v=1.4.6";
-import { getCurrentLang } from "./i18n.js?v=1.4.6";
-import { getDailySeed } from "./utils/random.js?v=1.4.6";
-import { stopTimer } from "./timer.js?v=1.4.6";
+import { gameManager } from "./game-manager.js?v=1.5.30";
+import { translations } from "./translations.js?v=1.5.30";
+import { getCurrentLang } from "./i18n.js?v=1.5.30";
+import { getDailySeed } from "./utils/random.js?v=1.5.30";
+import { stopTimer } from "./timer.js?v=1.5.30";
 
 let sequence = []; // The full 5-digit code
 let currentLevel = 3; // Starts at 3
@@ -589,7 +589,7 @@ async function finalizeVictory() {
   console.log("Victory Animation Complete");
   // Ensure we capture the final stage time (Code)
   gameManager.stopStageTimer();
-  await gameManager.awardStagePoints("code"); // Award RP
+  await gameManager.awardStagePoints("code");
 
   // Record Win and capture session stats
   const sessionStats = await gameManager.recordWin();
@@ -599,7 +599,7 @@ async function finalizeVictory() {
 
   // Show Summary after a small delay to let the animation sink in
   setTimeout(async () => {
-    const { showVictorySummary } = await import("./ui.js?v=1.4.6");
+    const { showVictorySummary } = await import("./ui.js?v=1.5.30");
     showVictorySummary(sessionStats, false);
   }, 2000);
 }

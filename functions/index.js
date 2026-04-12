@@ -5,7 +5,7 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
 
-// Set global options to ensure all functions use us-central1
+// v1.5.30: EXORCISM & SYNC SHIELD - Unified Scoring Referee
 setGlobalOptions({ region: "us-central1" });
 
 const SCORING = {
@@ -222,15 +222,31 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
   const minTime = SCORING.MIN_TIME_THRESHOLDS[stage] || 0;
   if (stageTime < minTime) throw new HttpsError("out-of-range", "Stage too fast.");
 
-  // 4. Score Calculation
-  const basePoints = SCORING.PARTIAL_RP[stage] || 0;
-  const penalty = (peaksErrors || 0) * SCORING.ERROR_PENALTY_RP;
-  const stagePoints = Math.max(0, basePoints - penalty);
+  // 4. Score Calculation (Debt System v1.5.23)
+  // We track the total potential points and total errors to calculate the running DailyRP correctly.
+  const stagesDoneCount = (sessionData.stagesCompleted || []).length + 1;
+  const basePointsTotal = stagesDoneCount * 1.0;
+  
+  // Sum errors from previous stages stored in session + current peaksErrors
+  let totalErrorsAccumulated = peaksErrors || 0;
+  if (sessionData.results) {
+    Object.values(sessionData.results).forEach(r => {
+      if (r.errors) totalErrorsAccumulated += r.errors;
+    });
+  }
 
+  const penaltyTotal = totalErrorsAccumulated * SCORING.ERROR_PENALTY_RP;
+  const newDailyRP = Math.max(0, basePointsTotal - penaltyTotal);
+  
   // 5. Atomic Update
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
   const userData = userSnap.data() || {};
+
+  // Calculate Delta for incremental updates (User Doc & Monthly)
+  const currentDailyRP = userData.dailyRP || 0;
+  const stagePoints = Number((newDailyRP - currentDailyRP).toFixed(3));
+
   const lastMonth = userData.lastMonthlyUpdate || "";
   const nowMonth = today.substring(0, 7);
   const isNewMonth = lastMonth !== nowMonth;
@@ -238,10 +254,12 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
   const batch = db.batch();
   
   // Root update (Official Ranking & Metadata v1.4.5: Atomic Monthly Reset)
+  // v1.5.30: DailyRP is now an absolute SET to prevent drift, while Total/Monthly remain incremental.
   const rootUpdate = {
     totalRP: admin.firestore.FieldValue.increment(stagePoints),
-    dailyRP: admin.firestore.FieldValue.increment(stagePoints),
+    dailyRP: newDailyRP, // v1.5.30: Absolute Truth
     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastLocalUpdate: Date.now(), // v1.5.30: Trigger client sync
     schemaVersion: 7.1
   };
   
@@ -267,10 +285,10 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
 
   batch.update(userRef, statsUpdate);
 
-  // Session update
+  // Session update (v1.5.23: Store errors explicitly for debt calculation)
   batch.update(sessionRef, {
     stagesCompleted: admin.firestore.FieldValue.arrayUnion(stage),
-    [`results.${stage}`]: { time: stageTime, points: stagePoints, timestamp: now }
+    [`results.${stage}`]: { time: stageTime, points: stagePoints, errors: peaksErrors || 0, timestamp: now }
   });
 
   await batch.commit();
@@ -338,20 +356,29 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   }
 
   const newMaxStreak = Math.max(stats.maxStreak || 0, newStreak);
-  // v1.4.5: Robust Precision Fix. Summing ACTUAL results from session stages 
-  // instead of trusting potentially stale/dirty accumulated value in user doc.
-  const baseScore = Object.values(sessionData.results || {}).reduce((sum, r) => sum + (r.points || 0), 0);
-  const finalScoreResult = Number((baseScore + finalBonus).toFixed(3));
+  
+  /**
+   * v1.5.23: DEBT SYSTEM IMPLEMENTATION
+   * Calculation: Max(0, 6.0 (Levels) + Bonus - TotalErrors * 0.5)
+   * This ensures the score shown in the UI matches the server truth perfectly.
+   */
+  const totalErrors = peaksErrors || 0;
+  const finalScoreResult = Math.max(0, Number((6.0 + finalBonus - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3)));
+
+  // Calculate the final incremental change for Total/Monthly RP
+  const currentDailyRP = userData.dailyRP || 0;
+  const finalDelta = Number((finalScoreResult - currentDailyRP).toFixed(3));
 
   const batch = db.batch();
 
   // 2. Root Update (RP & Meta)
   const rootUpdate = {
-    totalRP: admin.firestore.FieldValue.increment(finalBonus),
-    monthlyRP: admin.firestore.FieldValue.increment(finalBonus),
+    totalRP: admin.firestore.FieldValue.increment(finalDelta),
+    monthlyRP: admin.firestore.FieldValue.increment(finalDelta),
     dailyRP: finalScoreResult,
     lastDailyUpdate: today,
     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastLocalUpdate: Date.now(), // v1.5.30: Trigger client sync
     schemaVersion: 7.1
   };
   
@@ -364,10 +391,10 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
 
   // 3. Stats Global Aggregators
   const dayOfWeek = new Date(today + "T12:00:00Z").getUTCDay(); // 0-6
-  const totalErrors = peaksErrors || 0;
+  // totalErrors already declared on line 362
 
   batch.update(userRef, {
-    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalBonus),
+    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalDelta),
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,

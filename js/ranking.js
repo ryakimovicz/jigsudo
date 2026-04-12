@@ -1,5 +1,5 @@
 /* Ranking Module for Jigsudo */
-import { db } from "./firebase-config.js?v=1.4.6";
+import { db } from "./firebase-config.js?v=1.5.30";
 import {
   collection,
   query,
@@ -8,12 +8,12 @@ import {
   getDocsFromServer,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { translations } from "./translations.js?v=1.4.6";
-import { getCurrentLang } from "./i18n.js?v=1.4.6";
-import { getCurrentUser } from "./auth.js?v=1.4.6";
-import { getRankData, SCORING } from "./ranks.js?v=1.4.6";
-import { gameManager } from "./game-manager.js?v=1.4.6";
-import { getDailySeed } from "./utils/random.js?v=1.4.6";
+import { translations } from "./translations.js?v=1.5.30";
+import { getCurrentLang } from "./i18n.js?v=1.5.30";
+import { getCurrentUser } from "./auth.js?v=1.5.30";
+import { getRankData, SCORING } from "./ranks.js?v=1.5.30";
+import { gameManager } from "./game-manager.js?v=1.5.30";
+import { getDailySeed } from "./utils/random.js?v=1.5.30";
 
 const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -43,7 +43,7 @@ export async function fetchRankings(forceRefresh = false) {
     ? user.uid
     : localStorage.getItem("jigsudo_active_uid") || "guest";
 
-  const { getJigsudoDateString } = await import("./utils/time.js?v=1.4.6");
+  const { getJigsudoDateString } = await import("./utils/time.js?v=1.5.30");
   const today = getJigsudoDateString();
 
   if (!forceRefresh && cached) {
@@ -100,7 +100,7 @@ export async function fetchRankings(forceRefresh = false) {
       "dailyRP",
       10,
       user,
-      (await import("./db.js?v=1.4.6")).getUserRank,
+      (await import("./db.js?v=1.5.30")).getUserRank,
       "lastDailyUpdate",
       today,
     ),
@@ -108,7 +108,7 @@ export async function fetchRankings(forceRefresh = false) {
       "monthlyRP",
       10,
       user,
-      (await import("./db.js?v=1.4.6")).getUserRank,
+      (await import("./db.js?v=1.5.30")).getUserRank,
       "lastMonthlyUpdate",
       currentMonth,
     ),
@@ -116,7 +116,7 @@ export async function fetchRankings(forceRefresh = false) {
       "totalRP",
       10,
       user,
-      (await import("./db.js?v=1.4.6")).getUserRank,
+      (await import("./db.js?v=1.5.30")).getUserRank,
     ),
   };
 
@@ -163,9 +163,16 @@ async function getTopRankings(
     const stats = gameManager.stats;
     let userScore = (stats && stats[fieldName]) || 0;
 
-    // Trust DB score over local if discrepancy exists while in Top 10
-    if (topEntry) {
-      userScore = Math.max(userScore, topEntry.score || 0);
+    // v1.5.12 Diagnostic: If score is 0 but we are in a session, log for debugging
+    if (userScore === 0 && stats && (stats.monthlyRP > 0 || stats.totalRP > 0)) {
+       console.warn(`[Ranking Debug] Potential ${fieldName} mismatch. Stats:`, stats);
+       // Forced recovery attempt: if dailyRP is 0 but monthly is > 0, we might have a sync delay on the root field
+    }
+
+    // Trust local score as the source of truth for the personal row.
+    // Fallback to DB score only if local is 0 (unloaded).
+    if (topEntry && userScore === 0) {
+      userScore = topEntry.score || 0;
     }
 
     // v1.5.9 UNIFICATION: Today now trusts local scores as much as "Always" does.
@@ -339,15 +346,15 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   // Handle Empty State during Smart Update
   const emptyRow = tbody.querySelector(".empty-row");
   if (data.length === 0) {
-    if (emptyRow) {
+    if (!emptyRow) {
+      tbody.innerHTML = `<tr><td colspan="3" class="empty-row" data-i18n="rank_empty">${t.rank_empty || "No hay datos todavía"}</td></tr>`;
+    } else {
       emptyRow.textContent = t.rank_empty || "No hay datos todavía";
       emptyRow.setAttribute("data-i18n", "rank_empty");
-    } else {
-      tbody.innerHTML = `<tr><td colspan="3" class="empty-row" data-i18n="rank_empty">${t.rank_empty || "No hay datos todavía"}</td></tr>`;
     }
-    return;
+    // v1.5.14: DO NOT RETURN HERE. We must proceed to let the personal row render!
   } else if (emptyRow) {
-    tbody.innerHTML = ""; // Clear empty message to make room for rows
+    emptyRow.remove(); // Remove empty message to make room for rows
   }
 
   const oldRows = Array.from(tbody.querySelectorAll("tr[data-uid]"));

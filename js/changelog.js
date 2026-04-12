@@ -2,7 +2,7 @@
  * Changelog subpage logic
  * Fetches translations and renders the version list.
  */
-import { updateTexts } from "./i18n.js?v=1.4.6";
+import { updateTexts } from "./i18n.js?v=1.5.30";
 
 export function initChangelog() {
     const navChangelog = document.getElementById("nav-changelog");
@@ -31,6 +31,16 @@ function renderChangelog() {
     if (container.children.length > 0) return;
 
     const versions = [
+        {
+            tag: "v1.5.30",
+            titleKey: "changelog_v1530_title",
+            dateKey: "changelog_v1530_date",
+            itemKeys: [
+                "changelog_v1530_item1",
+                "changelog_v1530_item2",
+                "changelog_v1530_item3"
+            ]
+        },
         {
             tag: "v1.2.1",
             titleKey: "changelog_v121_title",
