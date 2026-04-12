@@ -922,7 +922,7 @@ function renderCalendar(history = {}) {
 
       if (history && history[dateStr]) {
         const dayData = history[dateStr];
-        if (dayData.originalWin) {
+        if (dayData.status === "won") {
           dayEl.classList.add("win");
         } else if (dayData.status === "played") {
           dayEl.classList.add("loss");

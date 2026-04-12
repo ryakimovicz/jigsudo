@@ -2767,7 +2767,7 @@ export class GameManager {
 
     dates.forEach((dateStr) => {
       const h = stats.history[dateStr];
-      const isOriginal = h.originalWin === true;
+      const isOriginal = !!h.original;
 
       // Metric Extraction
       const hTime = Number(h.totalTime || 0);
