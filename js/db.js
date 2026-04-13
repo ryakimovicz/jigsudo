@@ -803,10 +803,11 @@ export async function initializeHistoryDocument(userId, seed) {
 
     const updateData = {
       seed: seed,
-      played: true
+      status: historySnap.exists() ? (historySnap.data().status || "played") : "played"
     };
 
     if (!historySnap.exists()) {
+      updateData.original = { won: false };
       await setDoc(historyRef, updateData);
     } else {
       await updateDoc(historyRef, updateData);

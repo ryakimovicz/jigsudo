@@ -66,6 +66,22 @@ export function initHistory() {
     });
   }
 
+  // v1.4.7: Real-time Sync & Initialization Listeners
+  window.addEventListener("authReady", () => {
+    if (window.location.hash.startsWith("#history")) {
+      console.log("[History] Auth ready. Triggering UI update...");
+      updateHistoryUI();
+    }
+  });
+
+  window.addEventListener("userStatsUpdated", () => {
+    if (window.location.hash.startsWith("#history")) {
+      console.log("[History] Stats updated from cloud. Refreshing calendar...");
+      historyCache = {}; // Invalidate cache to force fresh Firestore fetch
+      updateHistoryUI();
+    }
+  });
+
   // Handle Initial Hash - handled by router.js
   // Listen for Router Changes
   window.addEventListener("routeChanged", ({ detail }) => {
@@ -203,17 +219,15 @@ export async function updateHistoryUI() {
           monthHistory = {};
           snap.forEach(d => {
               const data = d.data();
-              // Map seed back to date string for the calendar logic
               const s = data.seed.toString();
               const dateStr = `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
               
-              // v5: Flatten 'original' and 'best' for the UI to consume
               monthHistory[dateStr] = {
-                  status: "won",
-                  originalWin: !!data.original,
+                  status: data.status || "played",
+                  originalWon: data.original?.won === true,
+                  hasOriginal: !!data.original,
                   score: data.best?.score || 0,
-                  totalTime: data.best?.totalTime || 0,
-                  attempts: data.attempts || 1
+                  totalTime: data.best?.totalTime || 0
               };
           });
           historyCache[monthKey] = monthHistory;
@@ -333,12 +347,12 @@ function renderHistoryCalendar(history = {}) {
       // Check History Status
       const dayData = history[dateStr];
       if (dayData) {
-        // BACKGROUND COLORS (Original performance)
-        if (dayData.originalWin) {
+        // 1. BACKGROUND COLORS (Original performance anchor)
+        if (dayData.originalWon) {
+          // Green: Won on the original day
           dayEl.classList.add("win");
-        } else if (dayData.status === "won") {
-          // If it's a win but NOT original, it stays neutral background
-        } else if (dayData.status === "played") {
+        } else if (dayData.hasOriginal && !dayData.originalWon) {
+          // Yellow: Started but not finished on the original day
           dayEl.classList.add("loss");
         }
 

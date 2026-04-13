@@ -61,6 +61,13 @@ export function initProfile() {
     console.log("[Profile] Stats updated from cloud. Refreshing UI...");
     updateProfileData(activeProfileName);
   });
+
+  window.addEventListener("authReady", () => {
+    if (window.location.hash.startsWith("#profile")) {
+      console.log("[Profile] Auth ready. Triggering UI update...");
+      updateProfileData(activeProfileName);
+    }
+  });
 }
 
 // Routing handled by router.js
@@ -922,9 +929,10 @@ function renderCalendar(history = {}) {
 
       if (history && history[dateStr]) {
         const dayData = history[dateStr];
-        if (dayData.status === "won") {
+        // Rules: Green if won on day 1, Yellow if started on day 1 but not won.
+        if (dayData.original && dayData.original.won === true) {
           dayEl.classList.add("win");
-        } else if (dayData.status === "played") {
+        } else if (dayData.original && dayData.original.won !== true) {
           dayEl.classList.add("loss");
         }
       }

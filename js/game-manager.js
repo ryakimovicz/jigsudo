@@ -80,7 +80,9 @@ export class GameManager {
     this.currentSeed = newSeed;
     this.storageKey = newStorageKey;
     this.isReplay = false; // Normal start is never a replay
-    this.state = null;
+    // When switching to Daily, we should NOT wipe the state, as we want to resume.
+    // However, if we were in a Replay, this.state might be dirty.
+    this.state = null; 
     return await this.init();
   }
 
@@ -99,7 +101,7 @@ export class GameManager {
       console.warn("[GameManager] Offline or Fetch Failed:", e);
     }
 
-    const savedStateStr = localStorage.getItem(this.storageKey);
+    const savedStateStr = this.isReplay ? null : localStorage.getItem(this.storageKey);
     let savedState = null;
 
     if (savedStateStr) {
@@ -792,6 +794,10 @@ export class GameManager {
       this.state.meta.lastPlayed = new Date().toISOString();
     }
 
+    // v1.5.57: Session Isolation (Replay Volatility)
+    // We do NOT save the board state locally if we are in a history replay.
+    if (this.isReplay) return;
+
     localStorage.setItem(this.storageKey, JSON.stringify(this.state));
     if (syncToCloud) this.saveCloudDebounced(5000, isPenalty);
   }
@@ -839,8 +845,15 @@ export class GameManager {
         let username = user ? user.displayName : null; // Fix: Pass username to DB
 
         if (this.state) {
-          const cloudState = this._serializeState(this.state);
-          await saveUserProgress(uid, cloudState);
+          // v1.5.57: Session Shielding
+          // We do NOT save the board progress to the cloud if we are in a history replay.
+          // This prevents past games from overwriting the Daily Puzzle state in Firestore.
+          if (!this.isReplay) {
+            const cloudState = this._serializeState(this.state);
+            await saveUserProgress(uid, cloudState);
+          } else {
+            console.log("[GameManager] Replay detected. Skipping Cloud Progress save.");
+          }
         }
         if (this.stats) {
           // v1.2.11/v1.5.19/v1.5.21: ZERO-POINT GUARD refined.
@@ -1169,15 +1182,9 @@ export class GameManager {
     const points = SCORING.PARTIAL_RP[stage] || 0;
     if (points <= 0) return;
 
-    // GUARD 1: Replay Mode (Never award points for non-current games)
-    if (this.isReplay) {
-      console.log(`[RP] Replay mode active. No points for ${stage}.`);
-      return;
-    }
-
     // GUARD 2: Already Completed (Prevent refresh farming)
     if (this.state.progress.stagesCompleted.includes(stage)) {
-      console.log(`[RP] Stage ${stage} already completed. Skipping points.`);
+      console.log(`[RP] Stage ${stage} already completed. Skipping.`);
       return;
     }
 
@@ -1201,32 +1208,35 @@ export class GameManager {
       JSON.parse(localStorage.getItem("jigsudo_user_stats")) ||
       {};
 
-    // v1.5.52: Removed totalScoreAccumulated += points. 
-    // Lifetime score is now unified in recordWin to ensure net score consistency.
-
     if (!this._processingWin) {
       if (!this.state.progress.stagesCompleted.includes(stage)) {
         this.state.progress.stagesCompleted.push(stage);
         
-        // v1.5.44: Update Triple-Track Win Atoms (Surgical consistency check)
-        if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
-        stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
-        
-        stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
-        stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
+        // ONLY mutate user stats if NOT in replay mode
+        if (!this.isReplay) {
+            if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+            stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+            stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
+            stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
+            
+            this._recalculateNetStats(); // Direct Formula will pick up the new win
+        }
 
-        // CRITICAL: Persist stage completion immediately to local storage
+        // Persist stage completion to local storage (save() handles its own replay guard)
         this.save();
-        this._recalculateNetStats(); // Direct Formula will pick up the new win
       }
     }
     
-    // v1.3.5/v1.4.1/v1.5.18/v1.5.21: Internal UI/Stats update
+    // v1.3.5+: Internal UI/Stats update
     this.stats = stats;
-    await this._recalculateNetStats(); // v1.5.21: Ensure points are ready before background syncs
+    if (!this.isReplay) {
+        await this._recalculateNetStats(); 
+    }
 
     // v1.4.1: ASYNC REFEREE (Background Validation)
-    this._enqueueValidation(stage, points);
+    if (!this.isReplay) {
+        this._enqueueValidation(stage, points);
+    }
   }
 
   /**
@@ -2012,6 +2022,13 @@ export class GameManager {
 
     // 3. Progress Synchronization Logic (Game State)
     if (remoteProgress) {
+      // v1.5.57: Cloud Isolation
+      // Only load progress from the cloud if this is NOT a replay session.
+      if (this.isReplay) {
+        console.log("[Sync] Replay detected. Skipping Cloud Progress adoption.");
+        return;
+      }
+
       // v1.5.34: Allow session stats (errors, etc.) to be adopted from the cloud.
       let hydratedProgress = this._deserializeState(remoteProgress);
 
@@ -2413,13 +2430,19 @@ export class GameManager {
       if (!stats.weekdayStatsAccumulated) stats.weekdayStatsAccumulated = {};
 
       const seedStr = this.currentSeed.toString();
-      const puzzleDate = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
-      // v1.5.52: Stamp integrity immediately to avoid healer re-migration
-      stats.integrityChecked = "1.5.62";
-
+      // v1.4.0: Standardized date derivation for consistency across all stats keys
+      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.5.55");
+      const seedDate = getDateStringFromSeed(this.currentSeed);
+      const puzzleDate = seedDate; // Alias used for history-specific keys
+      
       const last = stats.lastPlayedDate;
+      const startMs = this.state.meta.stageStamps?.memory?.startMs || this.state.meta.startedAt;
+      const totalTimeMs = Date.now() - new Date(startMs).getTime();
+      const peaksErrors = this.state.stats?.peaksErrors || 0;
+      const today = getJigsudoDateString();
       const isAlreadyWon = stats.history[puzzleDate]?.status === "won" || stats.history[puzzleDate]?.original?.won === true;
+      const isLateCompletion = seedDate < today;
 
       if (!this.isReplay && !isAlreadyWon) {
         // v1.5.52: Consolidating increments further down in the common flow 
@@ -2448,11 +2471,7 @@ export class GameManager {
         // SELF-HEALING: Check if we have a discrepancy (Local stats missed the win update)
         // If dailyRP is significantly less than the calculated score, forcefully apply the difference.
         // This handles race conditions where 'status: won' was saved but RP failed.
-        const startMs = this.state.meta.startedAt
-          ? new Date(this.state.meta.startedAt).getTime()
-          : Date.now();
-        const totalTimeMs = Date.now() - startMs;
-        const peaksErrors = this.state.stats?.peaksErrors || 0;
+        // (totalTimeMs and peaksErrors are already calculated above)
         const { calculateTimeBonus } = await import("./ranks.js?v=1.5.55");
         const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
         let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
@@ -2495,15 +2514,13 @@ export class GameManager {
         }
       }
       // --- PREPARATION (Common for all flows) ---
-      const startMs = this.state.meta.stageStamps?.memory?.startMs || this.state.meta.startedAt;
-      const totalTimeMs = Date.now() - new Date(startMs).getTime();
-      const peaksErrors = this.state.stats?.peaksErrors || 0;
       const st = this.state.meta.stageTimes || {};
       stats.lastLocalUpdate = Date.now();
-      const today = getJigsudoDateString();
-      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.5.55");
-      const seedDate = getDateStringFromSeed(this.currentSeed);
-      const isLateCompletion = seedDate < today;
+      const historyEntry = stats.history[today] || {};
+      // (isAlreadyWon is already declared at the top)
+
+      // (Variables were defined at the top)
+      const isOriginalDay = !this.isReplay && !isAlreadyWon && !isLateCompletion;
 
       // --- SECTION A: SELF-HEALING / RECOVERY ---
       if (!this.isReplay && isAlreadyWon && today === stats.lastDailyUpdate && !isLateCompletion) {
@@ -2656,7 +2673,21 @@ export class GameManager {
       if (stats.dailyRP < 0) stats.dailyRP = 0;
       if (stats.monthlyRP < 0) stats.monthlyRP = 0;
 
-      const dailyScore = this.stats.dailyRP || 0;
+      // v1.5.57: Session-Specific Score Calculation
+      // Always calculate the score of THIS attempt. 
+      // If it's a replay or late, we ignore the global dailyRP (which belongs to "Today").
+      let sessionScore = 0;
+      const basePoints = (this.state.progress.stagesCompleted || []).length;
+      sessionScore = Number((basePoints + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+      
+      if (!this.isReplay && !isLateCompletion) {
+         // If it's the Official Daily Win, we can sync with stats.dailyRP 
+         // but we prioritize the real session performance.
+         sessionScore = Math.max(sessionScore, stats.dailyRP || 0);
+      }
+
+      if (sessionScore < 0) sessionScore = 0;
+      const dailyScore = sessionScore;
       // v1.5.51: ORGANIC RECORDS & ACCUMULATORS
       if (isOriginalDay) {
           // v1.5.52: For the final win, we add the TOTAL net daily score.
@@ -2682,7 +2713,7 @@ export class GameManager {
           }
 
           // Weekday Aggregates
-          const targetDayDate = isLateCompletion ? seedDate : today;
+          const targetDayDate = (isLateCompletion || this.isReplay) ? puzzleDate : today;
           const dayIdx = new Date(targetDayDate + "T12:00:00").getDay();
           if (!stats.weekdayStatsAccumulated[dayIdx]) {
             stats.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
@@ -2694,13 +2725,13 @@ export class GameManager {
           w.count++;
       }
 
-      if (!isLateCompletion) {
+      if (!isLateCompletion && !this.isReplay) {
         stats.lastDailyUpdate = today; 
         stats.lastDecayCheck = today;
       }
 
       // --- 3. HISTORY ENRICHMENT ---
-      const historyKey = isLateCompletion ? seedDate : today;
+      const historyKey = puzzleDate;
       if (!stats.history[historyKey]) {
         stats.history[historyKey] = { seed: this.currentSeed, played: true };
       }
@@ -2722,8 +2753,9 @@ export class GameManager {
       } else {
         stats.history[historyKey].status = "won";
         const existingBest = stats.history[historyKey].best || {};
-        if (dailyScore > (existingBest.score || 0) || 
-           (dailyScore === existingBest.score && totalTimeMs < (existingBest.totalTime || Infinity))) {
+        // v1.5.57: Strict Score Comparison (requested by user)
+        // Only replace if the new score is strictly better.
+        if (dailyScore > (existingBest.score || 0)) {
           stats.history[historyKey].best = resultData;
         }
       }
@@ -2734,6 +2766,8 @@ export class GameManager {
         this.state.progress = { stagesCompleted: [], currentStage: "memory" };
         const sections = ["memory", "jigsaw", "sudoku", "peaks", "search", "simon"];
         sections.forEach(s => { if (this.state[s]) this.state[s] = {}; });
+        // Restore meta fields that might have been reset but are needed for the UI
+        this.state.meta.userId = localStorage.getItem("jigsudo_active_uid");
         this.save();
       }
 
@@ -2744,13 +2778,18 @@ export class GameManager {
       // --- 5. CLOUD SYNC ---
       if (user && !user.isAnonymous) {
         const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.5.55");
-        this.stats.lastDailyUpdate = getJigsudoDateString();
-        this.stats.lastMonthlyUpdate = getJigsudoYearMonth();
+        
+        // Only mark today as updated if this was a DAILY win.
+        if (!this.isReplay && !isLateCompletion) {
+            this.stats.lastDailyUpdate = getJigsudoDateString();
+            this.stats.lastMonthlyUpdate = getJigsudoYearMonth();
+        }
+        
         this.stats._isConfirmedWin = true; 
         
         await saveUserStats(user.uid, this.stats, user.displayName);
-        if (this.stats.history[today]) {
-          await saveHistoryEntry(user.uid, this.currentSeed, this.stats.history[today]);
+        if (this.stats.history[historyKey]) {
+          await saveHistoryEntry(user.uid, this.currentSeed, this.stats.history[historyKey]);
         }
         delete this.stats._isConfirmedWin;
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
