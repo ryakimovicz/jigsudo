@@ -78,7 +78,13 @@ export function reconstructStats(data) {
     monthlyRP: scavengeNum("monthlyRP", s.monthlyRP || data.monthlyRP || 0),
 
     // 7-17. Competitive / Metadata
-    totalRP: scavengeNum("totalRP", Math.max(s.totalRP || 0, s.totalScoreAccumulated || 0, s.currentRP || 0, data.totalRP || 0)),
+    totalRP: (() => {
+      const rawT = scavengeNum("totalRP", Math.max(s.totalRP || 0, s.currentRP || 0, data.totalRP || 0));
+      const score = scavengeNum("totalScoreAccumulated", s.totalScoreAccumulated || 0);
+      const penalty = scavengeNum("totalPenaltyAccumulated", s.totalPenaltyAccumulated || 0);
+      // v1.6.0: Respect net balance (Score - Penalty) to avoid "healing" lost points
+      return Math.max(rawT, Math.max(0, score - penalty));
+    })(),
     wins: scavengeNum("wins", s.wins || 0),
     currentStreak: scavengeNum("currentStreak", s.currentStreak || 0),
     maxStreak: scavengeNum("maxStreak", s.maxStreak || 0),
@@ -192,6 +198,28 @@ export async function triggerRemoteSave(userId) {
     console.log("[DB] Remote save requested.");
   } catch (e) {
     console.error("Error triggering remote save:", e);
+  }
+}
+
+/**
+ * v1.6.0: Automated Fraud Reporting.
+ * Persists a referee report document to a centralized collection for administrative review.
+ */
+export async function sendRefereeReport(details) {
+  try {
+    const reportsRef = collection(db, "referee_reports");
+    const reportData = {
+      ...details,
+      timestamp: serverTimestamp(),
+      resolved: false // For future admin panel management
+    };
+    
+    const docRef = await addDoc(reportsRef, reportData);
+    console.log(`[Referee] Report persisted: ${docRef.id}`);
+    return { success: true, id: docRef.id };
+  } catch (e) {
+    console.error("[Referee] Failed to send report:", e);
+    return { success: false, error: e.message };
   }
 }
 
@@ -557,7 +585,7 @@ export async function loadUserProgress(userId) {
         console.warn(`[DB] EXECUTING SCHEMA v7.1 HYBRID REFACTOR for ${userId}...`);
         
         // 1. ATOMIC RECONSTRUCTION: Capture all 17 fields
-        const recoveredStats = _reconstructStats(data);
+        const recoveredStats = reconstructStats(data);
         
         // Safety check for every critical field
         const safe = (val, def) => (val === undefined || val === null) ? def : val;

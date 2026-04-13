@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="css/terms.css?v=1.5.55" />
     <link rel="stylesheet" href="css/sidebar.css?v=1.5.55" />
     <link rel="stylesheet" href="css/changelog.css?v=1.5.55" />
+    <link rel="stylesheet" href="css/admin.css?v=1.5.55" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -230,6 +231,15 @@
               >
                 <span class="nav-icon">📜</span>
                 <span class="nav-label" data-i18n="sidebar_changelog">Cambios</span>
+              </li>
+              <li
+                class="nav-item hidden"
+                id="nav-admin"
+                title="Administración"
+                data-i18n-title="sidebar_admin"
+              >
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-label" data-i18n="sidebar_admin">Admin</span>
               </li>
             </ul>
           </nav>
@@ -1560,6 +1570,264 @@
         <div id="memory-timer" class="memory-timer">00:00</div>
       </section>
 
+
+      <!-- Admin Section [v1.6.0] -->
+            <section id="admin-section" class="admin-container hidden">
+        <header class="admin-header">
+           <button id="admin-back-btn" class="header-back-btn" title="Volver al Inicio">←</button>
+           <h2>🛡️ Panel de Administración</h2>
+        </header>
+        
+        <div class="admin-dashboard-grid">
+           <!-- Module Card: Referee Reports -->
+           <div class="admin-module-card glass-panel clickable" id="admin-module-referee">
+              <div class="module-icon">🛡️</div>
+              <div class="module-info">
+                 <h3 data-i18n="admin_referee_title">Reportes del Árbitro</h3>
+                 <p data-i18n="admin_referee_desc">Vigilancia de integridad y alertas de sospecha.</p>
+              </div>
+              <div class="module-badge" id="referee-alert-count">0</div>
+           </div>
+           
+           <!-- Module Card: User Management (v1.6.0) -->
+           <div class="admin-module-card glass-panel clickable" id="admin-module-users">
+              <div class="module-icon">👥</div>
+              <div class="module-info">
+                 <h3>Gestión de Usuarios</h3>
+                 <p>Ver perfiles, ajustar RP y gestionar estados.</p>
+              </div>
+              <div class="module-badge" id="admin-user-count">0</div>
+           </div>
+        </div>
+
+        <!-- Detail View: Referee Audit -->
+        <div id="admin-referee-detail" class="admin-detail-view hidden">
+           <div class="detail-header">
+              <button class="detail-back-btn back-to-dashboard">← Volver</button>
+              <h3>Auditoría del Árbitro</h3>
+              <button id="btn-refresh-reports" class="btn-refresh">🔄</button>
+           </div>
+           <div class="admin-table-container">
+              <table class="admin-table">
+                 <thead>
+                    <tr>
+                       <th id="header-sort-date" class="sortable">Fecha (UTC)</th>
+                       <th id="header-sort-user" class="sortable">Usuario</th>
+                       <th>Semilla</th>
+                       <th>Nivel</th>
+                       <th>Tiempo</th>
+                       <th>Razón</th>
+                    </tr>
+                 </thead>
+                 <tbody id="admin-reports-tbody">
+                    <!-- Dynamic Rows -->
+                 </tbody>
+              </table>
+              <div id="admin-reports-loader" class="loader-small hidden"></div>
+              <div id="admin-reports-empty" class="empty-state">No hay reportes recientes.</div>
+           </div>
+        </div>
+
+        <!-- Detail View: User Management (v1.6.0) -->
+        <div id="admin-users-list" class="admin-detail-view hidden">
+           <div class="detail-header">
+              <button class="detail-back-btn back-to-dashboard">← Volver</button>
+              <h3>Gestión de Usuarios</h3>
+              <div class="header-search">
+                 <input type="text" id="admin-user-search" placeholder="Buscar por nombre...">
+              </div>
+           </div>
+           <div class="admin-table-container">
+              <table class="admin-table">
+                 <thead>
+                    <tr>
+                       <th>Usuario</th>
+                       <th>Total RP</th>
+                       <th>Registrado</th>
+                       <th>Actividad</th>
+                       <th>Acción</th>
+                    </tr>
+                 </thead>
+                 <tbody id="admin-users-tbody">
+                    <!-- Dynamic User Rows -->
+                 </tbody>
+              </table>
+              <div id="admin-users-loader" class="loader-small hidden"></div>
+              <div id="admin-users-empty" class="empty-state hidden">No se encontraron usuarios.</div>
+           </div>
+        </div>
+
+        <!-- View: User Editor (v1.6.0) -->
+        <div id="admin-user-edit" class="admin-detail-view hidden">
+           <div class="detail-header">
+              <button class="detail-back-btn back-to-users">← Lista</button>
+              <h3>Editar Perfil</h3>
+           </div>
+           
+           <div class="user-edit-grid">
+              <div class="edit-card glass-panel">
+                 <h4>Información General</h4>
+                 <div class="admin-input-group">
+                    <label>Username</label>
+                    <input type="text" id="edit-user-name">
+                 </div>
+                 <div class="admin-input-group">
+                    <label>UID (Solo lectura)</label>
+                    <input type="text" id="edit-user-uid" readonly style="opacity: 0.6">
+                 </div>
+                 <div class="admin-input-group">
+                    <label>Privacidad de Perfil</label>
+                    <select id="edit-user-public">
+                       <option value="true">Público</option>
+                       <option value="false">Privado</option>
+                    </select>
+                 </div>
+                 <div class="admin-input-group">
+                    <label>Estado de Cuenta</label>
+                    <select id="edit-user-verified">
+                       <option value="true">Verificado ✅</option>
+                       <option value="false">Sin verificar ⚠️</option>
+                    </select>
+                 </div>
+                 <div class="admin-input-group">
+                    <label>Miembro desde</label>
+                    <input type="text" id="edit-user-reg-date" readonly style="opacity: 0.8">
+                 </div>
+              </div>
+
+              <div class="edit-card glass-panel">
+                 <h4>Estadísticas y RP</h4>
+                 <div class="rp-edit-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                    <div class="admin-input-group">
+                       <label>Victorias Totales</label>
+                       <input type="number" id="edit-user-wins">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Racha Máxima</label>
+                       <input type="number" id="edit-user-max-streak">
+                    </div>
+                 <div class="rp-edit-row" style="display: flex; gap: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                    <div class="admin-input-group">
+                       <label>Mejor Puntaje</label>
+                       <input type="number" step="0.01" id="edit-user-best-score">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Mejor Tiempo <span class="activity-tag">(mm:ss o hh:mm:ss)</span></label>
+                       <input type="text" id="edit-user-best-time" placeholder="01:30">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Última Partida</label>
+                       <input type="text" id="edit-user-last-played" placeholder="YYYY-MM-DD">
+                    </div>
+                 </div>
+                 </div>
+                 <div class="rp-edit-row" style="display: flex; gap: 15px;">
+                    <div class="admin-input-group">
+                       <label>Total RP</label>
+                       <input type="number" step="0.001" id="edit-user-total-rp">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Mensual RP</label>
+                       <input type="number" step="0.001" id="edit-user-monthly-rp">
+                    </div>
+                 </div>
+                 <div class="rp-edit-row" style="display: flex; gap: 15px;">
+                    <div class="admin-input-group">
+                       <label>Daily RP</label>
+                       <input type="number" step="0.001" id="edit-user-daily-rp">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Racha Actual</label>
+                       <input type="number" id="edit-user-streak">
+                    </div>
+                 </div>
+                 <div class="actions-row" style="margin-top: 20px; text-align: right;">
+                     <button id="btn-save-user" class="btn-primary" style="padding: 10px 25px; border-radius: 8px;">Guardar Cambios</button>
+                  </div>
+              </div>
+
+              
+              <!-- Acumulados Globales (v1.7.0) -->
+              <div class="edit-card glass-panel" style="grid-column: span 2;">
+                 <h4>Acumulados Globales</h4>
+                 <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                    <div class="admin-input-group">
+                       <label>Partidas Jugadas</label>
+                       <input type="number" id="edit-user-total-played">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Puntaje Acum.</label>
+                       <input type="number" step="0.01" id="edit-user-total-score">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Tiempo Acumulado <span class="activity-tag">(hh:mm:ss)</span></label>
+                       <input type="text" id="edit-user-total-time" placeholder="100:30:00">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Errores Peaks</label>
+                       <input type="number" id="edit-user-total-peaks">
+                    </div>
+                    <div class="admin-input-group">
+                       <label>Penalizaciones</label>
+                       <input type="number" id="edit-user-total-penalty">
+                    </div>
+                 </div>
+              </div>
+
+              <!-- Mapas de Datos JSON (v1.7.0) -->
+              <div class="edit-card glass-panel">
+                 <h4>Tiempos y Victorias por Etapa</h4>
+                 <div class="admin-input-group">
+                    <label>stageTimesAccumulated (JSON)</label>
+                    <textarea id="edit-user-stage-times" rows="5" class="json-editor"></textarea>
+                 </div>
+                 <div class="admin-input-group">
+                    <label>stageWinsAccumulated (JSON)</label>
+                    <textarea id="edit-user-stage-wins" rows="5" class="json-editor"></textarea>
+                 </div>
+              </div>
+
+              <div class="edit-card glass-panel">
+                 <h4>Estadísticas Semanales</h4>
+                 <div class="admin-input-group">
+                    <label>weekdayStatsAccumulated (JSON)</label>
+                    <textarea id="edit-user-weekday-stats" rows="12" class="json-editor"></textarea>
+                 </div>
+              </div>
+<!-- Partidas Recientes (v1.6.5) -->
+              <div class="edit-card glass-panel full-width" style="grid-column: span 2; margin-top: 20px;">
+                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="margin: 0;">Historial de Partidas (Últimas 15)</h4>
+                    <span id="user-last-online" style="font-size: 0.85rem; color: #a1a1aa;"></span>
+                 </div>
+                 <div class="admin-table-container compact">
+                    <table class="admin-table compact">
+                       <thead>
+                          <tr>
+                             <th>Fecha</th>
+                             <th>Semilla</th>
+                             <th>Score</th>
+                             <th>Errores</th>
+                             <th>Tiempo</th>
+                             <th>Estado</th>
+                          </tr>
+                       </thead>
+                       <tbody id="admin-user-history-tbody">
+                          <!-- Filled by JS -->
+                       </tbody>
+                    </table>
+                    <div id="admin-history-loader" class="loader-small hidden"></div>
+                    <div id="admin-history-empty" class="empty-state hidden">No hay partidas registradas.</div>
+                 </div>
+              </div>
+               <!-- Danger Zone (v1.8.2) -->
+               <div class="edit-card full-width" style="grid-column: span 2; margin-top: 40px; padding-top: 20px; border-top: 1px dashed rgba(239, 68, 68, 0.3); text-align: center;">
+                  <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">Zona de Administración Crítica</p>
+                  <button id="btn-reset-user" class="btn-danger" style="padding: 12px 30px; border-radius: 8px; font-size: 0.9rem;">Resetear Todos los Datos del Usuario</button>
+               </div>
+           </div>
+        </div>
+      </section>
 
       <!-- Footer -->
       <footer class="main-footer">

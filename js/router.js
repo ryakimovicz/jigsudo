@@ -12,6 +12,7 @@ export const router = {
     "#profile": "profile-section",
     "#game": "game-section",
     "#changelog": "changelog-section",
+    "#admin": "admin-section",
   },
 
   // Map Section ID -> Body Class
@@ -21,16 +22,21 @@ export const router = {
     "guide-section": "guide-active",
     "profile-section": "profile-active",
     "changelog-section": "changelog-active",
+    "admin-section": "admin-active",
   },
 
   init() {
     window.addEventListener("hashchange", () => this.handleRoute());
+    // v1.6.0: Refresh admin UI when auth completes
+    window.addEventListener("authReady", () => {
+      if (window.location.hash === "#admin") this.handleRoute();
+    });
     // We call handleRoute immediately to ensure the initial view is correct
     this.handleRoute();
     console.log("[Router] Initialized and Route Handled");
   },
 
-  handleRoute() {
+  async handleRoute() {
     let hash = window.location.hash || "";
 
     // Normalize empty or root to canonical #home
@@ -52,6 +58,17 @@ export const router = {
     const parts = hash.split("/");
     const baseRoute = parts[0];
     const params = parts.slice(1);
+
+    // v1.6.0: ADMIN PROTECTION
+    if (baseRoute === "#admin") {
+      const { isAdmin } = await import("./auth.js?v=1.5.55");
+      if (!isAdmin()) {
+        console.warn("[Router] Unprivileged access to #admin. Redirecting...");
+        history.replaceState(null, null, "#home");
+        this.handleRoute();
+        return;
+      }
+    }
 
     // Canonicalize Profile URLs to Lowercase
     if (baseRoute.toLowerCase() === "#profile" && params.length > 0) {
@@ -178,6 +195,16 @@ export const router = {
       },
     });
     window.dispatchEvent(event);
+
+    // v1.6.0: Admin Init
+    if (activeId === "admin-section") {
+      import("./admin.js?v=1.5.55").then((mod) => {
+        mod.initAdmin();
+        mod.showAdminPanel();
+      });
+    } else {
+      import("./admin.js?v=1.5.55").then((mod) => mod.hideAdminPanel());
+    }
 
     // 4. Update Sidebar
     // Map section IDs to sidebar item IDs

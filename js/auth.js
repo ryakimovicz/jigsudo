@@ -25,6 +25,19 @@ import { translations } from "./translations.js?v=1.5.55";
 import { getCurrentLang } from "./i18n.js?v=1.5.55";
 import { toggleModal, showToast } from "./ui.js?v=1.5.55";
 
+// v1.6.0: Administrative Authorization
+export const ADMIN_UIDS = ["SR5GIs3WdpXl6HkmRxhHh4Slg283"];
+
+/**
+ * Checks if the current or provided user has administrative privileges.
+ * @param {Object} [user] Optional user object to check. Defaults to currentUser.
+ * @returns {boolean}
+ */
+export function isAdmin(user = currentUser) {
+  if (!user || user.isAnonymous) return false;
+  return ADMIN_UIDS.includes(user.uid);
+}
+
 export async function updateUsername(newUsername) {
   const user = auth.currentUser;
   if (!user) return { success: false, error: "No user logged in." };

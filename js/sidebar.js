@@ -146,4 +146,21 @@ export function initSidebar() {
       }
     });
   }
+
+  // v1.6.0: Reactive Admin Access
+  window.addEventListener("authReady", async ({ detail }) => {
+    const { isAdmin } = await import("./auth.js?v=1.5.55");
+    const adminNavItem = document.getElementById("nav-admin");
+    if (adminNavItem) {
+      const show = isAdmin(detail.user);
+      adminNavItem.classList.toggle("hidden", !show);
+      
+      if (show && !adminNavItem.dataset.listenerAttached) {
+        adminNavItem.addEventListener("click", () => {
+          window.location.hash = "admin";
+        });
+        adminNavItem.dataset.listenerAttached = "true";
+      }
+    }
+  });
 }

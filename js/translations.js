@@ -168,6 +168,11 @@ export const translations = {
     sidebar_history: "Historial",
     sidebar_how_to: "Guía",
     sidebar_changelog: "Cambios",
+    sidebar_admin: "Panel Admin",
+
+    admin_panel_title: "Panel Administrativo",
+    admin_referee_title: "Auditoría del Árbitro",
+    admin_referee_desc: "Monitoreo de integridad de partidas.",
     // New Keys
     theme_light: "Claro",
     theme_auto: "Auto",
@@ -807,6 +812,11 @@ export const translations = {
     sidebar_history: "History",
     sidebar_how_to: "Guide",
     sidebar_changelog: "Changelog",
+    sidebar_admin: "Admin Panel",
+
+    admin_panel_title: "Administrative Dashboard",
+    admin_referee_title: "Referee Audit",
+    admin_referee_desc: "Match integrity monitoring.",
     sidebar_info: "Info",
     sidebar_more_games: "More Games",
     sidebar_close: "Close",

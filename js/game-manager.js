@@ -1299,6 +1299,21 @@ export class GameManager {
           window.dispatchEvent(new CustomEvent("stageVerified", { detail: task }));
         } else {
           console.warn("[Referee] Server rejected stage validation:", result.data);
+          
+          // v1.6.0: Automated Fraud Reporting
+          const { sendRefereeReport } = await import("./db.js?v=1.5.55");
+          const { getCurrentUser } = await import("./auth.js?v=1.5.55");
+          const user = getCurrentUser();
+          
+          sendRefereeReport({
+            userId: user?.uid || "anonymous",
+            username: user?.displayName || "Anónimo",
+            seed: task.seed,
+            stage: task.stage,
+            timeMs: task.stageTime,
+            reason: result.data.message || "Rejected by server"
+          });
+
           this.validationQueue.shift(); // Remove anyway to avoid infinite loops, but log it
         }
       } catch (error) {
@@ -1310,6 +1325,21 @@ export class GameManager {
 
         if (isLogicError) {
           console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
+          
+          // v1.6.0: Report Logic Errors too (The "Too Fast" etc)
+          const { sendRefereeReport } = await import("./db.js?v=1.5.55");
+          const { getCurrentUser } = await import("./auth.js?v=1.5.55");
+          const user = getCurrentUser();
+
+          sendRefereeReport({
+            userId: user?.uid || "anonymous",
+            username: user?.displayName || "Anónimo",
+            seed: task.seed,
+            stage: task.stage,
+            timeMs: task.stageTime,
+            reason: error.message || "Logic rejection"
+          });
+
           this.validationQueue.shift(); // Remove permanent failure
           continue; // Proceed with next item
         }
