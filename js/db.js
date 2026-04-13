@@ -95,7 +95,17 @@ export function reconstructStats(data) {
     // v1.4.1: Accumulation fields recovery (Targeting Hybrid v7.1)
     totalTimeAccumulated: scavengeNum("totalTimeAccumulated", s.totalTimeAccumulated || 0),
     totalScoreAccumulated: scavengeNum("totalScoreAccumulated", s.totalScoreAccumulated || 0),
+    totalBonusesAccumulated: scavengeNum("totalBonusesAccumulated", s.totalBonusesAccumulated || 0), // v1.5.56: Missing Bonus Fix
     totalPeaksErrorsAccumulated: scavengeNum("totalPeaksErrorsAccumulated", s.totalPeaksErrorsAccumulated || 0),
+    
+    // v1.5.56: Periodic Atoms (Ensures unified scoring across all ranking tables)
+    dailyWinsAccumulated: scavengeNum("dailyWinsAccumulated", s.dailyWinsAccumulated || 0),
+    monthlyWinsAccumulated: scavengeNum("monthlyWinsAccumulated", s.monthlyWinsAccumulated || 0),
+    dailyPeaksErrorsAccumulated: scavengeNum("dailyPeaksErrorsAccumulated", s.dailyPeaksErrorsAccumulated || 0),
+    monthlyPeaksErrorsAccumulated: scavengeNum("monthlyPeaksErrorsAccumulated", s.monthlyPeaksErrorsAccumulated || 0),
+    dailyBonusesAccumulated: scavengeNum("dailyBonusesAccumulated", s.dailyBonusesAccumulated || 0),
+    monthlyBonusesAccumulated: scavengeNum("monthlyBonusesAccumulated", s.monthlyBonusesAccumulated || 0),
+
     weekdayStatsAccumulated: s.weekdayStatsAccumulated || data.weekdayStatsAccumulated || {},
 
     // Stage specific summaries

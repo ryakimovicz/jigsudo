@@ -1901,22 +1901,31 @@ export class GameManager {
         if (!this.stats || isRemoteNewer || this.isWiping || isMigration) {
           console.log(`[Sync] Adopting remote stats (RemoteTS: ${remoteTS} > LocalTS: ${localTS})`);
           
-          // v1.5.49: ATOM PRESERVATION (Sticky local progress)
-          // Before adopting cloud truth, capture current session atoms to avoid wiped progress.
+          // v1.5.56: EXPANDED ATOM PRESERVATION
+          // Capture ALL accumulated fields to ensure multi-device consistency.
           const localAtoms = {
             dw: this.stats ? (this.stats.dailyWinsAccumulated || 0) : 0,
             mw: this.stats ? (this.stats.monthlyWinsAccumulated || 0) : 0,
             de: this.stats ? (this.stats.dailyPeaksErrorsAccumulated || 0) : 0,
+            me: this.stats ? (this.stats.monthlyPeaksErrorsAccumulated || 0) : 0,
             db: this.stats ? (this.stats.dailyBonusesAccumulated || 0) : 0,
             mb: this.stats ? (this.stats.monthlyBonusesAccumulated || 0) : 0,
-            swMap: this.stats ? { ...(this.stats.stageWinsAccumulated || {}) } : {}
+            
+            // v1.5.56 p2: Total Scope Atoms
+            tb: this.stats ? (this.stats.totalBonusesAccumulated || 0) : 0,
+            ts: this.stats ? (this.stats.totalScoreAccumulated || 0) : 0,
+            tt: this.stats ? (this.stats.totalTimeAccumulated || 0) : 0,
+            te: this.stats ? (this.stats.totalPeaksErrorsAccumulated || 0) : 0,
+            w: this.stats ? (this.stats.wins || 0) : 0,
+            bs: this.stats ? (this.stats.bestScore || 0) : 0,
+
+            swMap: this.stats ? { ...(this.stats.stageWinsAccumulated || {}) } : {},
+            stMap: this.stats ? { ...(this.stats.stageTimesAccumulated || {}) } : {}
           };
           
           // Unpack nested stats map into flat local object (v1.5.0 Replica Support)
           const newStats = { ...remoteStats };
           if (remoteStats.stats) {
-            // v1.5.30 Protection: Do not let nested stats shadow root ranking fields
-            // v1.5.30+: Expanded to include all potential aliases like currentRP and score
             const protectedKeys = ["dailyRP", "monthlyRP", "totalRP", "currentRP", "score", "lastDailyUpdate", "lastMonthlyUpdate", "isPublic", "schemaVersion"];
             const cleanMap = { ...remoteStats.stats };
             protectedKeys.forEach(k => delete cleanMap[k]);
@@ -1925,30 +1934,41 @@ export class GameManager {
             delete newStats.stats;
           }
           
-          // v1.5.49: Re-apply local atoms if they represent more progress than the cloud baseline
+          // Re-apply local atoms using Math.max to ensure progress never goes backward
           newStats.dailyWinsAccumulated = Math.max(newStats.dailyWinsAccumulated || 0, localAtoms.dw);
           newStats.monthlyWinsAccumulated = Math.max(newStats.monthlyWinsAccumulated || 0, localAtoms.mw);
           newStats.dailyPeaksErrorsAccumulated = Math.max(newStats.dailyPeaksErrorsAccumulated || 0, localAtoms.de);
+          newStats.monthlyPeaksErrorsAccumulated = Math.max(newStats.monthlyPeaksErrorsAccumulated || 0, localAtoms.me);
           newStats.dailyBonusesAccumulated = Math.max(newStats.dailyBonusesAccumulated || 0, localAtoms.db);
           newStats.monthlyBonusesAccumulated = Math.max(newStats.monthlyBonusesAccumulated || 0, localAtoms.mb);
+
+          newStats.totalBonusesAccumulated = Math.max(newStats.totalBonusesAccumulated || 0, localAtoms.tb);
+          newStats.totalScoreAccumulated = Math.max(newStats.totalScoreAccumulated || 0, localAtoms.ts);
+          newStats.totalTimeAccumulated = Math.max(newStats.totalTimeAccumulated || 0, localAtoms.tt);
+          newStats.totalPeaksErrorsAccumulated = Math.max(newStats.totalPeaksErrorsAccumulated || 0, localAtoms.te);
+          newStats.wins = Math.max(newStats.wins || 0, localAtoms.w);
+          newStats.bestScore = Math.max(newStats.bestScore || 0, localAtoms.bs);
           
-          // Merge Stage Wins Map
+          // Merge Stage Maps
           if (!newStats.stageWinsAccumulated) newStats.stageWinsAccumulated = {};
           Object.entries(localAtoms.swMap).forEach(([stage, count]) => {
             newStats.stageWinsAccumulated[stage] = Math.max(newStats.stageWinsAccumulated[stage] || 0, count);
           });
+          if (!newStats.stageTimesAccumulated) newStats.stageTimesAccumulated = {};
+          Object.entries(localAtoms.stMap).forEach(([stage, time]) => {
+            newStats.stageTimesAccumulated[stage] = Math.max(newStats.stageTimesAccumulated[stage] || 0, time);
+          });
           
           this.stats = newStats;
           
-          // v1.5.43: Reset anchors when adopting cloud truth to start fresh from the new baseline
+          // v1.5.43: Reset anchors
           this._sessionBaselineTotal = null;
           this._sessionBaselineMonthly = null;
           
-          // v1.5.32 Reconciliation: Re-apply current session achievements on top of cloud baseline
-          await this._recalculateNetStats(false, false); 
+          // v1.5.56: NO MORE AUTO-HEALER. We trust the cloud and the unified atoms.
+          // await this._recalculateNetStats(false, false); 
           
-          // v1.5.55: RecalculateRecords removed to favor pure timestamp-based sync (No more healers).
-          // this._recalculateRecords(this.stats);
+          this._lastLocalWrite = Date.now(); // Shield engagement after adoption
           localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
           window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
         } else {
