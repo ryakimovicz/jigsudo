@@ -252,10 +252,19 @@ export class GameManager {
   async recordStart() {
     if (this.isReplay) return;
 
+    // v1.5.59: SEQUENTIAL SAFETY - Ensure any pending decay from yesterday is processed
+    // before we mark today as "played" (intent).
+    await this._ensureStats();
+
     const seedStr = this.currentSeed.toString();
     const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
-    // v1.4.2: SERVER AUTHORITY START
+    // v1.5.59: Unify intent marking for point decay protection (Server and Guest)
+    this.stats.lastDailyUpdate = dateStr;
+    this.stats.lastDecayCheck = dateStr;
+    this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
+    delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
+
     const { getCurrentUser } = await import("./auth.js?v=1.5.55");
     const user = getCurrentUser();
 
@@ -265,25 +274,16 @@ export class GameManager {
         const { callJigsudoFunction } = await import("./db.js?v=1.5.55");
         const result = await callJigsudoFunction("startJigsudoSession", {
           seed: this.currentSeed,
-          sessionId: this.localSessionId // v1.5.0: Claim server throne
+          sessionId: this.localSessionId
         });
         
         if (result.status === "started" || result.status === "already_started") {
           console.log("[Referee] Session successfully initialized/resumed.");
-          // We trust server applied decay. Local update for UI:
-          this.stats.lastIntentDate = dateStr;
-          this.stats.lastDecayCheck = dateStr;
           this.stats.activeSessionId = this.localSessionId;
         }
       } catch (err) {
         console.error("[Referee] Failed to initialize session on server:", err);
-        // Fallback or Alert?
       }
-    } else {
-      // Guest/Anonymous Flow: Keep client-side decay logic
-      await this._checkRankDecay();
-      this.stats.lastDailyUpdate = dateStr;
-      this.stats.lastDecayCheck = dateStr;
     }
 
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
@@ -1556,7 +1556,7 @@ export class GameManager {
       this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
       this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP || 0);
 
-      this.stats.integrityChecked = "1.5.54"; // Prevent repeated reconstruction
+      this.stats.integrityChecked = "1.5.62"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       
       // v1.2.11: DECOUPLED CLOUD SAVE.
@@ -1626,9 +1626,12 @@ export class GameManager {
             }
             
             if ((stats.totalRP || 0) !== currentSimulatedRP) {
+               const penaltyAmount = (stats.totalRP || 0) - currentSimulatedRP;
                console.warn(`[Decay] Applied penalty for ${missed} days. RP: ${stats.totalRP} -> ${currentSimulatedRP}`);
                stats.totalRP = currentSimulatedRP;
                stats.monthlyRP = Math.min(stats.monthlyRP || 0, stats.totalRP);
+               stats.lastPenalty = penaltyAmount;
+               stats.totalPenaltyAccumulated = (stats.totalPenaltyAccumulated || 0) + penaltyAmount;
                changed = true;
             }
             
@@ -2383,7 +2386,7 @@ export class GameManager {
       const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
       // v1.5.52: Stamp integrity immediately to avoid healer re-migration
-      stats.integrityChecked = "1.5.54";
+      stats.integrityChecked = "1.5.62";
 
       const last = stats.lastPlayedDate;
       const isAlreadyWon = stats.history[today]?.status === "won" || stats.history[today]?.original?.won === true;
@@ -2807,7 +2810,7 @@ export class GameManager {
 
     if (!historyExists) {
       if (forceRebuild || needsMigration) {
-         stats.integrityChecked = "1.5.54";
+         stats.integrityChecked = "1.5.62";
       }
       return;
     }
@@ -2819,7 +2822,7 @@ export class GameManager {
 
     if (dates.length === 0) {
       if (forceRebuild || needsMigration) {
-          stats.integrityChecked = "1.5.54";
+          stats.integrityChecked = "1.5.62";
       }
       return;
     }
@@ -2917,7 +2920,7 @@ export class GameManager {
         stats.monthlyPeaksErrorsAccumulated = rb.monthlyPeaksErrorsAccumulated;
         stats.currentRP = Number(rb.totalScoreAccumulated.toFixed(3));
       }
-      stats.integrityChecked = "1.5.54";
+      stats.integrityChecked = "1.5.62";
     }
 
     // v1.5.49: Re-apply session atoms captured at the beginning
@@ -3020,8 +3023,9 @@ export class GameManager {
       lastPlayedDate: null,
       lastDecayCheck: null,
       manualRPAdjustment: 0,
+      totalPenaltyAccumulated: 0,
       isPublic: true, // v1.5.30: Default to public
-      integrityChecked: "1.5.30"
+      integrityChecked: "1.5.62"
     };
   }
 }

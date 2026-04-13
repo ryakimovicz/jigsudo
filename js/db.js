@@ -89,14 +89,16 @@ export function reconstructStats(data) {
     // Maintenance / Decay
     lastDecayCheck: scavengeStr("lastDecayCheck", s.lastDecayCheck || null),
     lastPenaltyDate: scavengeStr("lastPenaltyDate", s.lastPenaltyDate || null),
-    lastPlayedDate: scavengeStr("lastPlayedDate", s.lastPlayedDate || null),
+    lastPlayedDate: scavengeStr("lastPlayedDate", s.lastPlayedDate || (data.progress?.meta?.lastPlayed ? data.progress.meta.lastPlayed.substring(0, 10) : null)),
     manualRPAdjustment: scavengeNum("manualRPAdjustment", s.manualRPAdjustment || 0),
+    lastPenalty: scavengeNum("lastPenalty", s.lastPenalty || 0), // Added explicit scavenge for the counter
 
     // v1.4.1: Accumulation fields recovery (Targeting Hybrid v7.1)
     totalTimeAccumulated: scavengeNum("totalTimeAccumulated", s.totalTimeAccumulated || 0),
     totalScoreAccumulated: scavengeNum("totalScoreAccumulated", s.totalScoreAccumulated || 0),
     totalBonusesAccumulated: scavengeNum("totalBonusesAccumulated", s.totalBonusesAccumulated || 0), // v1.5.56: Missing Bonus Fix
     totalPeaksErrorsAccumulated: scavengeNum("totalPeaksErrorsAccumulated", s.totalPeaksErrorsAccumulated || 0),
+    totalPenaltyAccumulated: scavengeNum("totalPenaltyAccumulated", s.totalPenaltyAccumulated || 0), // v1.5.61: Decay Tracking
     
     // v1.5.56: Periodic Atoms (Ensures unified scoring across all ranking tables)
     dailyWinsAccumulated: scavengeNum("dailyWinsAccumulated", s.dailyWinsAccumulated || 0),
@@ -117,7 +119,7 @@ export function reconstructStats(data) {
     isPublic: data.isPublic !== undefined ? data.isPublic : (s.isPublic !== undefined ? s.isPublic : true),
     lastLocalUpdate: scavengeNum("lastLocalUpdate", s.lastLocalUpdate || 0),
     schemaVersion: data.schemaVersion || 0,
-    integrityChecked: "1.5.30"
+    integrityChecked: "1.5.62"
   };
 
   return stats;
@@ -404,6 +406,10 @@ export async function saveUserStats(userId, statsData, username = null, options 
         dailyPeaksErrorsAccumulated: s.dailyPeaksErrorsAccumulated || 0,
         lastBonus: s.lastBonus || 0,
         lastPenalty: s.lastPenalty || 0,
+        lastDecayCheck: s.lastDecayCheck || null,
+        lastPenaltyDate: s.lastPenaltyDate || null,
+        lastPlayedDate: s.lastPlayedDate || null,
+        totalPenaltyAccumulated: s.totalPenaltyAccumulated || 0,
         stageWinsAccumulated: s.stageWinsAccumulated || {},
         stageTimesAccumulated: s.stageTimesAccumulated || {},
         weekdayStatsAccumulated: s.weekdayStatsAccumulated || {}
