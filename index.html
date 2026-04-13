@@ -1572,7 +1572,8 @@
 
 
       <!-- Admin Section [v1.6.0] -->
-            <section id="admin-section" class="admin-container hidden">
+            <section id="admin-section" class="hidden">
+        <div class="admin-container">
         <header class="admin-header">
            <button id="admin-back-btn" class="header-back-btn" title="Volver al Inicio">←</button>
            <h2>🛡️ Panel de Administración</h2>
@@ -1712,7 +1713,7 @@
                        <input type="number" step="0.01" id="edit-user-best-score">
                     </div>
                     <div class="admin-input-group">
-                       <label>Mejor Tiempo <span class="activity-tag">(mm:ss o hh:mm:ss)</span></label>
+                       <label>Mejor Tiempo</label>
                        <input type="text" id="edit-user-best-time" placeholder="01:30">
                     </div>
                     <div class="admin-input-group">
@@ -1741,9 +1742,6 @@
                        <input type="number" id="edit-user-streak">
                     </div>
                  </div>
-                 <div class="actions-row" style="margin-top: 20px; text-align: right;">
-                     <button id="btn-save-user" class="btn-primary" style="padding: 10px 25px; border-radius: 8px;">Guardar Cambios</button>
-                  </div>
               </div>
 
               
@@ -1820,6 +1818,13 @@
                     <div id="admin-history-empty" class="empty-state hidden">No hay partidas registradas.</div>
                  </div>
               </div>
+               <!-- Acciones Globales (v1.9.3) -->
+               <div class="admin-global-actions" style="grid-column: span 2; margin-top: 30px; display: flex; justify-content: center; width: 100%;">
+                  <button id="btn-save-user" class="btn-primary" style="padding: 14px 40px; border-radius: 10px; font-size: 1.05rem; font-weight: 600; box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);">
+                     Guardar Todos los Cambios
+                  </button>
+               </div>
+
                <!-- Danger Zone (v1.8.2) -->
                <div class="edit-card full-width" style="grid-column: span 2; margin-top: 40px; padding-top: 20px; border-top: 1px dashed rgba(239, 68, 68, 0.3); text-align: center;">
                   <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">Zona de Administración Crítica</p>

@@ -600,6 +600,11 @@ export function showAdminPanel() {
   if (profile) profile.classList.add("hidden");
   if (footer) footer.classList.add("hidden");
 
+  // v1.9.4: Reset view to main dashboard
+  document.querySelectorAll(".admin-detail-view").forEach(v => v.classList.add("hidden"));
+  const dashboard = document.querySelector(".admin-dashboard-grid");
+  if (dashboard) dashboard.classList.remove("hidden");
+
   document.body.classList.add("admin-active");
   document.body.classList.remove("home-active", "profile-active");
 

@@ -283,6 +283,7 @@ body {
   #about-section,
   #contact-section,
   #changelog-section,
+  #admin-section,
   .main-footer {
     margin-left: var(--sidebar-width);
     transition:
@@ -304,6 +305,7 @@ body {
   body.sidebar-expanded #about-section,
   body.sidebar-expanded #contact-section,
   body.sidebar-expanded #changelog-section,
+  body.sidebar-expanded #admin-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
     width: calc(100% - var(--sidebar-expanded-width));
@@ -327,6 +329,7 @@ body {
   #about-section,
   #contact-section,
   #changelog-section,
+  #admin-section,
   .main-footer,
   .modal-overlay {
     margin-left: 0;
