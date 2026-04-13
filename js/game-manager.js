@@ -2439,10 +2439,11 @@ export class GameManager {
             (stats.totalScoreAccumulated || 0) + diff;
 
           // Force update lastPlayedDate to ensure streaks work tomorrow
-          stats.lastPlayedDate = today;
+          if (!isLateCompletion) stats.lastPlayedDate = today;
 
           // Also heal Weekday Stats if missing count
-          const dayIdx = new Date(today + "T12:00:00").getDay();
+          const targetDayDate = isLateCompletion ? seedDate : today;
+          const dayIdx = new Date(targetDayDate + "T12:00:00").getDay();
           if (!stats.weekdayStatsAccumulated[dayIdx])
             stats.weekdayStatsAccumulated[dayIdx] = {
               sumTime: 0,
@@ -2466,7 +2467,14 @@ export class GameManager {
       const peaksErrors = this.state.stats?.peaksErrors || 0;
       const st = this.state.meta.stageTimes || {};
       stats.lastLocalUpdate = Date.now();
-      const isOriginalDay = !this.isReplay;
+      const today = getJigsudoDateString();
+      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.5.55");
+      const seedDate = getDateStringFromSeed(this.currentSeed);
+      const isLateCompletion = seedDate < today;
+
+      // --- SECTION A: SELF-HEALING / RECOVERY ---
+      if (!this.isReplay && isAlreadyWon && today === stats.lastDailyUpdate && !isLateCompletion) {
+      }
 
       const { getCurrentUser } = await import("./auth.js?v=1.5.55");
       const { calculateTimeBonus } = await import("./ranks.js?v=1.5.55");
@@ -2503,8 +2511,17 @@ export class GameManager {
       // If 'code' (final stage) was just restored or was already missing, ensure counters reflect it.
       // We also verify that daily/monthly counters have AT LEAST the number of stages completed today.
       const stagesCountToday = (this.state.progress.stagesCompleted || []).length;
-      stats.dailyWinsAccumulated = Math.max(stats.dailyWinsAccumulated || 0, stagesCountToday);
-      stats.monthlyWinsAccumulated = Math.max(stats.monthlyWinsAccumulated || 0, stagesCountToday);
+      const seedMonth = seedDate.substring(0,7);
+      const todayMonth = today.substring(0,7);
+      
+      if (!isLateCompletion) {
+        stats.dailyWinsAccumulated = Math.max(stats.dailyWinsAccumulated || 0, stagesCountToday);
+      }
+      
+      // Monthly stats count even for late completions if it's the same month
+      if (seedMonth === todayMonth) {
+        stats.monthlyWinsAccumulated = Math.max(stats.monthlyWinsAccumulated || 0, stagesCountToday);
+      }
 
       // Update stage times (Daily only)
       if (isOriginalDay) {
@@ -2545,8 +2562,12 @@ export class GameManager {
               // v1.5.46: ATOMS FIRST. Update bonus counter BEFORE recalculating.
               if (stats.lastBonus > 0) {
                 stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-                stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-                stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+                if (seedMonth === todayMonth) {
+                  stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+                }
+                if (!isLateCompletion) {
+                  stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+                }
               }
 
               this.state.progress.won = true;
@@ -2563,8 +2584,12 @@ export class GameManager {
             // v1.5.46: ATOMS FIRST (Local path)
             if (stats.lastBonus > 0) {
               stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-              stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-              stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+              if (seedMonth === todayMonth) {
+                stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+              }
+              if (!isLateCompletion) {
+                stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+              }
             }
 
             this.stats = stats;
@@ -2579,8 +2604,12 @@ export class GameManager {
           // v1.5.46: ATOMS FIRST (Guest path)
           if (stats.lastBonus > 0) {
             stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-            stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-            stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+            if (seedMonth === todayMonth) {
+              stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+            }
+            if (!isLateCompletion) {
+              stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
+            }
           }
 
           this.stats = stats;
@@ -2609,14 +2638,19 @@ export class GameManager {
               stats.maxStreak = stats.currentStreak;
           }
 
+          if (isLateCompletion) {
+            console.log("[Referee] lateWin detected. Skipping Today's RP and Streak updates.");
+          }
+
           // v1.5.51: Improved bestTime logic (0 means "no record")
           const currentBestTime = (stats.bestTime === 0 || stats.bestTime === null || stats.bestTime === undefined) ? Infinity : stats.bestTime;
           if (totalTimeMs > 0 && totalTimeMs < currentBestTime) {
             stats.bestTime = totalTimeMs;
           }
 
-          // Weekday Aggregates (Sunday = 0)
-          const dayIdx = new Date(today + "T12:00:00").getDay();
+          // Weekday Aggregates
+          const targetDayDate = isLateCompletion ? seedDate : today;
+          const dayIdx = new Date(targetDayDate + "T12:00:00").getDay();
           if (!stats.weekdayStatsAccumulated[dayIdx]) {
             stats.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
           }
@@ -2627,12 +2661,15 @@ export class GameManager {
           w.count++;
       }
 
-      stats.lastDailyUpdate = today; 
-      stats.lastDecayCheck = today;
+      if (!isLateCompletion) {
+        stats.lastDailyUpdate = today; 
+        stats.lastDecayCheck = today;
+      }
 
       // --- 3. HISTORY ENRICHMENT ---
-      if (!stats.history[today]) {
-        stats.history[today] = { seed: this.currentSeed, played: true };
+      const historyKey = isLateCompletion ? seedDate : today;
+      if (!stats.history[historyKey]) {
+        stats.history[historyKey] = { seed: this.currentSeed, played: true };
       }
 
       const resultData = {
@@ -2645,22 +2682,22 @@ export class GameManager {
         won: true
       };
 
-      if (!stats.history[today].original && isOriginalDay) {
-        stats.history[today].status = "won";
-        stats.history[today].original = resultData;
-        stats.history[today].best = resultData;
+      if (!stats.history[historyKey].original && isOriginalDay) {
+        stats.history[historyKey].status = "won";
+        stats.history[historyKey].original = resultData;
+        stats.history[historyKey].best = resultData;
       } else {
-        stats.history[today].status = "won";
-        const existingBest = stats.history[today].best || {};
+        stats.history[historyKey].status = "won";
+        const existingBest = stats.history[historyKey].best || {};
         if (dailyScore > (existingBest.score || 0) || 
            (dailyScore === existingBest.score && totalTimeMs < (existingBest.totalTime || Infinity))) {
-          stats.history[today].best = resultData;
+          stats.history[historyKey].best = resultData;
         }
       }
 
       // --- 4. PERSISTENCE ---
-      if (this.isReplay) {
-        console.log("[GameManager] Replay win. Cleaning progress...");
+      if (this.isReplay || isLateCompletion) {
+        console.log(`[GameManager] ${isLateCompletion ? "Late win" : "Replay win"}. Cleaning progress...`);
         this.state.progress = { stagesCompleted: [], currentStage: "memory" };
         const sections = ["memory", "jigsaw", "sudoku", "peaks", "search", "simon"];
         sections.forEach(s => { if (this.state[s]) this.state[s] = {}; });

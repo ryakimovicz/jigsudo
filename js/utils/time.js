@@ -68,3 +68,14 @@ export function getJigsudoDateString() {
   const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
+/**
+ * Converts a numeric Jigsudo Seed (YYYYMMDD) into a canonical date string (YYYY-MM-DD).
+ * @param {number|string} seed 
+ * @returns {string} YYYY-MM-DD
+ */
+export function getDateStringFromSeed(seed) {
+  if (!seed) return getJigsudoDateString();
+  const s = String(seed);
+  if (s.length !== 8) return getJigsudoDateString();
+  return `${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}`;
+}
