@@ -2383,13 +2383,13 @@ export class GameManager {
       if (!stats.weekdayStatsAccumulated) stats.weekdayStatsAccumulated = {};
 
       const seedStr = this.currentSeed.toString();
-      const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const puzzleDate = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
 
       // v1.5.52: Stamp integrity immediately to avoid healer re-migration
       stats.integrityChecked = "1.5.62";
 
       const last = stats.lastPlayedDate;
-      const isAlreadyWon = stats.history[today]?.status === "won" || stats.history[today]?.original?.won === true;
+      const isAlreadyWon = stats.history[puzzleDate]?.status === "won" || stats.history[puzzleDate]?.original?.won === true;
 
       if (!this.isReplay && !isAlreadyWon) {
         // v1.5.52: Consolidating increments further down in the common flow 
@@ -2398,7 +2398,7 @@ export class GameManager {
         // Handle Streak and RP Resets (Consistent UTC Logic)
         if (last) {
           const lastDate = new Date(last + "T12:00:00Z");
-          const currDate = new Date(today + "T12:00:00Z");
+          const currDate = new Date(puzzleDate + "T12:00:00Z");
           const diffDays = Math.round(
             (currDate - lastDate) / (1000 * 60 * 60 * 24),
           );
@@ -2442,10 +2442,10 @@ export class GameManager {
             (stats.totalScoreAccumulated || 0) + diff;
 
           // Force update lastPlayedDate to ensure streaks work tomorrow
-          if (!isLateCompletion) stats.lastPlayedDate = today;
+          if (!isLateCompletion) stats.lastPlayedDate = puzzleDate;
 
           // Also heal Weekday Stats if missing count
-          const targetDayDate = isLateCompletion ? seedDate : today;
+          const targetDayDate = isLateCompletion ? seedDate : puzzleDate;
           const dayIdx = new Date(targetDayDate + "T12:00:00").getDay();
           if (!stats.weekdayStatsAccumulated[dayIdx])
             stats.weekdayStatsAccumulated[dayIdx] = {
