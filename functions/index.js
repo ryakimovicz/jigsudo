@@ -4,6 +4,7 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 const db = admin.firestore();
+const { FieldValue } = require("firebase-admin/firestore");
 
 // v1.5.30: EXORCISM & SYNC SHIELD - Unified Scoring Referee
 setGlobalOptions({ region: "us-central1" });
@@ -116,81 +117,98 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
  */
 async function _performUserMaintenance(userRef, userData, today) {
   const stats = userData.stats || {};
-  const lastIntent = stats.lastIntentDate || userData.lastDailyUpdate || userData.lastPlayedDate || today;
-  const lastUpdate = userData.lastDailyUpdate || "";
-  const lastMonth = userData.lastMonthlyUpdate || "";
-  const nowMonth = today.substring(0, 7);
-  const isNewMonth = lastMonth !== nowMonth;
-
-  const updates = {};
   
-  // 1. Reset Daily Points for the new day
-  if (lastUpdate !== today) {
-    updates.dailyRP = 0;
-    updates["stats.dailyRP"] = 0;
-  }
+  // v1.9.1: Correcting anchor dates
+  // lastDecayCheck: The last date we successfully processed.
+  // lastIntentDate: The last date the user actually played (safe date).
+  let lastDecay = stats.lastDecayCheck || userData.lastDailyUpdate || userData.lastPlayedDate || today;
+  const lastIntent = stats.lastIntentDate || userData.lastDailyUpdate || userData.lastPlayedDate || today;
 
-  // 2. Reset Monthly Points if Month changed
-  if (isNewMonth) {
-    updates.monthlyRP = 0;
-    updates["stats.monthlyRP"] = 0;
-  }
-
-  // 3. Dynamic Decay Penalty (5 + Level)
-  const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
+  // Convert to Date objects (Safe comparison)
+  let simDate = new Date(lastDecay + "T12:00:00Z");
   const todayDate = new Date(today + "T12:00:00Z");
-  const intentDiff = Math.round((todayDate - lastIntentDate) / (1000 * 60 * 60 * 24));
+  const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
 
-  if (intentDiff > 1) {
-    const missedCount = intentDiff - 1;
-    let currentTempRP = userData.totalRP || 0;
-    let totalPenalty = 0;
+  // Local state for the simulation
+  let currentTotalRP = userData.totalRP || 0;
+  let currentMonthlyRP = userData.monthlyRP || 0;
+  let currentDailyRP = userData.dailyRP || 0;
+  let currentPenaltyAcc = userData.totalPenaltyAccumulated || 0;
+  let currentStreak = stats.currentStreak || 0;
 
-    for (let i = 0; i < missedCount; i++) {
+  let totalSimulatedDays = 0;
+  let lastProcessedMonth = lastDecay.substring(0, 7);
+
+  // Iterative Simulation: Step through each day missing between lastDecay and Today
+  let safetyBreak = 365; // Prevent hanging on massive gaps
+  while (simDate < todayDate && safetyBreak > 0) {
+    safetyBreak--;
+    totalSimulatedDays++;
+    
+    // Move to next day
+    simDate.setUTCDate(simDate.getUTCDate() + 1);
+    const dStr = simDate.toISOString().substring(0, 10);
+    const dMonth = dStr.substring(0, 7);
+
+    // 1. MONTHLY TRANSITION (Borrón y cuenta nueva)
+    // If this simulated day is a new month, reset monthly counter
+    if (dMonth !== lastProcessedMonth) {
+      console.log(`[Maintenance] Month transition detected at ${dStr}. Resetting MonthlyRP.`);
+      currentMonthlyRP = 0;
+      lastProcessedMonth = dMonth;
+    }
+
+    // 2. DAILY RESET
+    currentDailyRP = 0;
+
+    // 3. DECAY CALCULATION
+    // A day is a "missed day" if the day BEFORE it was already > lastIntentDate
+    // (Jigsudo gives 24h grace: if you play Mon, Tues is safe, Wed is the first penalty)
+    const dayBeforeSim = new Date(simDate.getTime());
+    dayBeforeSim.setUTCDate(dayBeforeSim.getUTCDate() - 1);
+
+    if (dayBeforeSim > lastIntentDate) {
       // Find Rank Level
       let level = 0;
       for (let j = 0; j < SCORING.RANK_THRESHOLDS.length; j++) {
-        if (currentTempRP >= SCORING.RANK_THRESHOLDS[j]) level = j;
+        if (currentTotalRP >= SCORING.RANK_THRESHOLDS[j]) level = j;
         else break;
       }
+      
       const penalty = 5 + level;
-      currentTempRP = Math.max(0, currentTempRP - penalty);
-      totalPenalty += penalty;
-      if (currentTempRP === 0) break;
-    }
-
-    if (totalPenalty > 0) {
-      console.log(`[Maintenance] Applying penalty to ${userData.username || userRef.id}: -${totalPenalty} RP`);
-      const negPenalty = -Number(totalPenalty.toFixed(3));
+      currentTotalRP = Math.max(0, currentTotalRP - penalty);
+      currentMonthlyRP = Math.max(0, currentMonthlyRP - penalty);
+      currentPenaltyAcc += penalty;
       
-      updates.totalRP = admin.firestore.FieldValue.increment(negPenalty);
-      updates.monthlyRP = admin.firestore.FieldValue.increment(negPenalty);
-      updates["stats.currentRP"] = admin.firestore.FieldValue.increment(negPenalty);
-      updates["stats.totalRP"] = admin.firestore.FieldValue.increment(negPenalty);
-      updates["stats.monthlyRP"] = admin.firestore.FieldValue.increment(negPenalty);
+      // Streak Reset
+      currentStreak = 0;
       
-      // Store negative adjustment for auditing
-      updates["stats.manualRPAdjustment"] = admin.firestore.FieldValue.increment(negPenalty);
-      
-      const yesterdayDate = new Date(todayDate.getTime());
-      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-      updates["stats.lastPenaltyDate"] = yesterdayDate.toISOString().substring(0, 10);
+      console.log(`[Maintenance] Day ${dStr}: Applied -${penalty} RP penalty (Inactivity).`);
     }
   }
 
-  // 4. Streak Reset
-  if (lastUpdate) {
-    const lastWinDate = new Date(lastUpdate + "T12:00:00Z");
-    const streakDiff = Math.round((todayDate - lastWinDate) / (1000 * 60 * 60 * 24));
-    if (streakDiff > 1 && (stats.currentStreak || 0) !== 0) {
-      updates["stats.currentStreak"] = 0;
-    }
+  if (totalSimulatedDays > 0) {
+    const updates = {
+      totalRP: Number(currentTotalRP.toFixed(3)),
+      monthlyRP: Number(currentMonthlyRP.toFixed(3)),
+      dailyRP: currentDailyRP,
+      totalPenaltyAccumulated: Number(currentPenaltyAcc.toFixed(3)),
+      "stats.currentStreak": currentStreak,
+      "stats.lastDecayCheck": today,
+      "stats.lastPenaltyDate": currentStreak === 0 ? today : (stats.lastPenaltyDate || null),
+      lastUpdated: FieldValue.serverTimestamp()
+    };
+
+    // Cleanup legacy fields if they exist
+    updates["stats.totalRP"] = FieldValue.delete();
+    updates["stats.monthlyRP"] = FieldValue.delete();
+    updates["stats.dailyRP"] = FieldValue.delete();
+    updates["stats.currentRP"] = FieldValue.delete();
+    updates["stats.manualRPAdjustment"] = FieldValue.delete();
+
+    console.log(`[Maintenance] Finalizing update for ${userData.username || userRef.id}. Simulated days: ${totalSimulatedDays}`);
+    await userRef.update(updates);
   }
-
-  updates["stats.lastDecayCheck"] = today;
-  updates.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
-
-  await userRef.update(updates);
 }
 
 
@@ -256,9 +274,9 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
   // Root update (Official Ranking & Metadata v1.4.5: Atomic Monthly Reset)
   // v1.5.30: DailyRP is now an absolute SET to prevent drift, while Total/Monthly remain incremental.
   const rootUpdate = {
-    totalRP: admin.firestore.FieldValue.increment(stagePoints),
+    totalRP: FieldValue.increment(stagePoints),
     dailyRP: newDailyRP, // v1.5.30: Absolute Truth
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastUpdated: FieldValue.serverTimestamp(),
     lastLocalUpdate: Date.now(), // v1.5.30: Trigger client sync
     schemaVersion: 7.1
   };
@@ -267,27 +285,27 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
     rootUpdate.monthlyRP = stagePoints; // Start month fresh
     rootUpdate.lastMonthlyUpdate = nowMonth;
   } else {
-    rootUpdate.monthlyRP = admin.firestore.FieldValue.increment(stagePoints);
+    rootUpdate.monthlyRP = FieldValue.increment(stagePoints);
   }
   
   batch.set(userRef, rootUpdate, { merge: true });
 
   // Stats Aggregators (No RP duplicates here anymore)
   const statsUpdate = {
-    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(stagePoints),
-    [`stats.stageWinsAccumulated.${stage}`]: admin.firestore.FieldValue.increment(1),
-    [`stats.stageTimesAccumulated.${stage}`]: admin.firestore.FieldValue.increment(stageTime),
+    "stats.totalScoreAccumulated": FieldValue.increment(stagePoints),
+    [`stats.stageWinsAccumulated.${stage}`]: FieldValue.increment(1),
+    [`stats.stageTimesAccumulated.${stage}`]: FieldValue.increment(stageTime),
   };
   
   if (peaksErrors > 0) {
-    statsUpdate["stats.totalPeaksErrorsAccumulated"] = admin.firestore.FieldValue.increment(peaksErrors);
+    statsUpdate["stats.totalPeaksErrorsAccumulated"] = FieldValue.increment(peaksErrors);
   }
 
   batch.update(userRef, statsUpdate);
 
   // Session update (v1.5.23: Store errors explicitly for debt calculation)
   batch.update(sessionRef, {
-    stagesCompleted: admin.firestore.FieldValue.arrayUnion(stage),
+    stagesCompleted: FieldValue.arrayUnion(stage),
     [`results.${stage}`]: { time: stageTime, points: stagePoints, errors: peaksErrors || 0, timestamp: now }
   });
 
@@ -373,18 +391,18 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
 
   // 2. Root Update (RP & Meta)
   const rootUpdate = {
-    totalRP: admin.firestore.FieldValue.increment(finalDelta),
-    monthlyRP: admin.firestore.FieldValue.increment(finalDelta),
+    totalRP: FieldValue.increment(finalDelta),
+    monthlyRP: FieldValue.increment(finalDelta),
     dailyRP: finalScoreResult,
     lastDailyUpdate: today,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastUpdated: FieldValue.serverTimestamp(),
     lastLocalUpdate: Date.now(), // v1.5.30: Trigger client sync
     schemaVersion: 7.1
   };
   
   // Set registeredAt if missing (v5 Transition)
   if (!userData.registeredAt) {
-      rootUpdate.registeredAt = admin.firestore.FieldValue.serverTimestamp();
+      rootUpdate.registeredAt = FieldValue.serverTimestamp();
   }
 
   batch.set(userRef, rootUpdate, { merge: true });
@@ -394,16 +412,15 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   // totalErrors already declared on line 362
 
   batch.update(userRef, {
-    "stats.totalScoreAccumulated": admin.firestore.FieldValue.increment(finalDelta),
+    "stats.totalScoreAccumulated": FieldValue.increment(finalDelta),
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,
-    "stats.bestScore": admin.firestore.FieldValue.arrayUnion(finalScoreResult), // Placeholder for min/max logic
-    "stats.totalTimeAccumulated": admin.firestore.FieldValue.increment(activeDurationMs),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.count`]: admin.firestore.FieldValue.increment(1),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumScore`]: admin.firestore.FieldValue.increment(finalScoreResult),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumTime`]: admin.firestore.FieldValue.increment(activeDurationMs),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumErrors`]: admin.firestore.FieldValue.increment(totalErrors),
+    "stats.totalTimeAccumulated": FieldValue.increment(activeDurationMs),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.count`]: FieldValue.increment(1),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumScore`]: FieldValue.increment(finalScoreResult),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumTime`]: FieldValue.increment(activeDurationMs),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumErrors`]: FieldValue.increment(totalErrors),
   });
 
   // 4. History Sub-collection (Original vs Best)
