@@ -1,5 +1,5 @@
 export const CONFIG = {
-  version: "1.5.30", // Major.Minor.Patch
+  version: "1.5.55", // Major.Minor.Patch
   fechaUpdate: "2026-04-12",
   author: "Román Yakimovicz",
   schemaVersion: 7.1,

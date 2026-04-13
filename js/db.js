@@ -1,4 +1,4 @@
-import { db, functions } from "./firebase-config.js?v=1.5.30";
+import { db, functions } from "./firebase-config.js?v=1.5.55";
 import {
   doc,
   setDoc,
@@ -19,10 +19,10 @@ import {
   increment,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js";
-import { gameManager } from "./game-manager.js?v=1.5.30";
-import { getCurrentUser } from "./auth.js?v=1.5.30";
-import { showAlertModal } from "./ui.js?v=1.5.30";
-import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.5.30";
+import { gameManager } from "./game-manager.js?v=1.5.55";
+import { getCurrentUser } from "./auth.js?v=1.5.55";
+import { showAlertModal } from "./ui.js?v=1.5.55";
+import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.5.55";
 
 /**
  * Helper to call a Jigsudo Cloud Function (Referee)
@@ -263,7 +263,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
   try {
     const userRef = doc(db, "users", userId);
 
-    const { auth } = await import("./firebase-config.js?v=1.5.30");
+    const { auth } = await import("./firebase-config.js?v=1.5.55");
     const currentUser = auth.currentUser;
     // v1.3.4: Atomic RP management (Authority is the Server/Functions)
     const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
@@ -325,8 +325,13 @@ export async function saveUserStats(userId, statsData, username = null, options 
           }
 
           const isTotalRegression = localTotal < (cloudTotal - 0.01);
-          // If this is a confirmed victory or an intentional penalty, we trust the client truth.
+          // v1.5.56: If this is a confirmed victory or an intentional penalty, we usually trust the client truth.
+          // BUT: We NEVER trust a 'Virgin State' (zeros) if the cloud is already populated.
           if (isConfirmedWin || isIntentionalPenalty) {
+            if (isLocalVirgin && isCloudPopulated) {
+               console.error("[DB] BYPASS REJECTED: Preventing uninitialized local state from wiping cloud during victory anchor.");
+               return; // ABORT
+            }
             console.log(`[DB] Bypass Guard: win=${isConfirmedWin}, penalty=${isIntentionalPenalty}`);
           } else if (isTotalRegression) {
             // Normal safety check for periodic saves

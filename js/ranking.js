@@ -1,5 +1,5 @@
 /* Ranking Module for Jigsudo */
-import { db } from "./firebase-config.js?v=1.5.30";
+import { db } from "./firebase-config.js?v=1.5.55";
 import {
   collection,
   query,
@@ -8,12 +8,12 @@ import {
   getDocsFromServer,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { translations } from "./translations.js?v=1.5.30";
-import { getCurrentLang } from "./i18n.js?v=1.5.30";
-import { getCurrentUser } from "./auth.js?v=1.5.30";
-import { getRankData, SCORING } from "./ranks.js?v=1.5.30";
-import { gameManager } from "./game-manager.js?v=1.5.30";
-import { getDailySeed } from "./utils/random.js?v=1.5.30";
+import { translations } from "./translations.js?v=1.5.55";
+import { getCurrentLang } from "./i18n.js?v=1.5.55";
+import { getCurrentUser } from "./auth.js?v=1.5.55";
+import { getRankData, SCORING } from "./ranks.js?v=1.5.55";
+import { gameManager } from "./game-manager.js?v=1.5.55";
+import { getDailySeed } from "./utils/random.js?v=1.5.55";
 
 const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -43,7 +43,7 @@ export async function fetchRankings(forceRefresh = false) {
     ? user.uid
     : localStorage.getItem("jigsudo_active_uid") || "guest";
 
-  const { getJigsudoDateString } = await import("./utils/time.js?v=1.5.30");
+  const { getJigsudoDateString } = await import("./utils/time.js?v=1.5.55");
   const today = getJigsudoDateString();
 
   if (!forceRefresh && cached) {
@@ -100,7 +100,7 @@ export async function fetchRankings(forceRefresh = false) {
       "dailyRP",
       10,
       user,
-      (await import("./db.js?v=1.5.30")).getUserRank,
+      (await import("./db.js?v=1.5.55")).getUserRank,
       "lastDailyUpdate",
       today,
     ),
@@ -108,7 +108,7 @@ export async function fetchRankings(forceRefresh = false) {
       "monthlyRP",
       10,
       user,
-      (await import("./db.js?v=1.5.30")).getUserRank,
+      (await import("./db.js?v=1.5.55")).getUserRank,
       "lastMonthlyUpdate",
       currentMonth,
     ),
@@ -116,7 +116,7 @@ export async function fetchRankings(forceRefresh = false) {
       "totalRP",
       10,
       user,
-      (await import("./db.js?v=1.5.30")).getUserRank,
+      (await import("./db.js?v=1.5.55")).getUserRank,
     ),
   };
 
@@ -307,6 +307,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   const data = categoryData.top || [];
   const personal = categoryData.personal;
   const user = getCurrentUser();
+  const currentUid = user ? user.uid : localStorage.getItem("jigsudo_active_uid");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -320,7 +321,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   if (!container.querySelector("table")) {
     container.innerHTML = generateTableHtml(
       data,
-      user,
+      currentUid,
       t,
       scoreFormat,
       personal,
@@ -392,7 +393,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   // Actually, we must manipulate 'tbody' directly to get the final layout for measurement.
   // We will re-use existing rows to preserve them, and insert new ones.
 
-  const currentUid = user ? user.uid : null;
+  const currentUidCheck = currentUid; // Re-use the robust Uid
 
   // Clear separator if it exists (simplification: rebuild separator/personal if needed)
   const separators = tbody.querySelectorAll(".ranking-separator");
@@ -417,7 +418,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     currentUid,
   ) => {
     const isTop3 = index < 3 && !isPersonal;
-    const isCurrentUser = currentUid && entry.id === currentUid;
+    const isCurrentUser = currentUidCheck && entry.id === currentUidCheck;
     const isPersonalRow = isPersonal; // Explicit flag
     const medal =
       !isPersonal && index === 0
@@ -609,7 +610,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
   }, 600);
 }
 
-function generateTableHtml(data, user, t, scoreFormat, personal) {
+function generateTableHtml(data, currentUid, t, scoreFormat, personal) {
   let html = `
     <table class="ranking-table">
       <thead>
@@ -627,7 +628,7 @@ function generateTableHtml(data, user, t, scoreFormat, personal) {
   } else {
     data.forEach((entry, index) => {
       const isTop3 = index < 3;
-      const isCurrentUser = user && entry.id === user.uid;
+      const isCurrentUser = currentUid && entry.id === currentUid;
       const medal =
         index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "";
 
