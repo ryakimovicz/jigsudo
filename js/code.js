@@ -568,8 +568,7 @@ function startResolving(elements, targetWord, chars) {
 
 async function finalizeVictory() {
   console.log("Victory Animation Complete");
-  // Ensure we capture the final stage time (Code)
-  gameManager.stopStageTimer();
+  // v1.2.3: Removed redundant stopStageTimer() (already stopped in winGame)
   await gameManager.awardStagePoints("code");
 
   // Record Win and capture session stats

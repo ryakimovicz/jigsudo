@@ -50,7 +50,8 @@ export function formatTime(ms) {
     return "--:--";
   }
 
-  const totalSeconds = Math.floor(ms / 1000);
+  // v1.2.5: Rounding to nearest integer, but 0.5 rounds DOWN. Logic: Math.ceil(secs - 0.5)
+  const totalSeconds = Math.ceil(ms / 1000 - 0.5);
   const hrs = Math.floor(totalSeconds / 3600);
   const mins = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;

@@ -1225,7 +1225,13 @@ export class GameManager {
       return;
     }
 
-    // GUARD 3: Game Already Won (Prevent post-win farming)
+    // ENSURE STAGE IS MARKED AS COMPLETED for the current session sum
+    if (!this.state.progress.stagesCompleted.includes(stage)) {
+      this.state.progress.stagesCompleted.push(stage);
+      this.save();
+    }
+
+    // GUARD 3: Game Already Won (Prevent post-win farming for leaderboard stats)
     const seedStr = this.currentSeed.toString();
     const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
     if (
@@ -1234,7 +1240,7 @@ export class GameManager {
       this.stats.history[today] &&
       this.stats.history[today].status === "won"
     ) {
-      console.log(`[RP] Game already won today. No extra points for ${stage}.`);
+      console.log(`[RP] Game already won today. Skipping global RP update for ${stage}.`);
       return;
     }
 
@@ -1246,11 +1252,8 @@ export class GameManager {
       {};
 
     if (!this._processingWin) {
-      if (!this.state.progress.stagesCompleted.includes(stage)) {
-        this.state.progress.stagesCompleted.push(stage);
-        
-        // ONLY mutate user stats if NOT in replay mode
-        if (!this.isReplay) {
+      // ONLY mutate global user stats if NOT in replay mode
+      if (!this.isReplay) {
             if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
             stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
             stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
@@ -1262,7 +1265,6 @@ export class GameManager {
         // Persist stage completion to local storage (save() handles its own replay guard)
         this.save();
       }
-    }
     
     // v1.3.5+: Internal UI/Stats update
     this.stats = stats;
@@ -1899,8 +1901,10 @@ export class GameManager {
   recordStageTime(stage, durationMs) {
     if (!this.state) return;
     if (!this.state.meta.stageTimes) this.state.meta.stageTimes = {};
-    const current = this.state.meta.stageTimes[stage] || 0;
-    this.state.meta.stageTimes[stage] = current + durationMs;
+    
+    // v1.2.3: Overwrite with the latest total duration instead of adding.
+    // This prevents double-counting if a level is resumed or finished multiple times.
+    this.state.meta.stageTimes[stage] = durationMs;
     this.save();
   }
 
@@ -2492,8 +2496,18 @@ export class GameManager {
       const puzzleDate = seedDate; // Alias used for history-specific keys
       
       const last = stats.lastPlayedDate;
-      const startMs = this.state.meta.stageStamps?.memory?.startMs || this.state.meta.startedAt;
-      const totalTimeMs = Date.now() - new Date(startMs).getTime();
+      
+      // v1.2.3: Calculate total time as the strict sum of the 6 game levels
+      // v1.2.4: Summing rounded seconds to ensure UI consistency
+      // v1.2.5: Custom rounding: nearest integer, but .5 rounds DOWN. Logic: Math.ceil(secs - 0.5)
+      const stageTimes = this.state.meta?.stageTimes || {};
+      const levels = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
+      const totalTimeMs = levels.reduce((sum, key) => {
+          const secs = (stageTimes[key] || 0) / 1000;
+          const roundedSecs = Math.ceil(secs - 0.5);
+          return sum + (roundedSecs * 1000);
+      }, 0);
+      
       const peaksErrors = this.state.stats?.peaksErrors || 0;
       const today = getJigsudoDateString();
       const isAlreadyWon = stats.history[puzzleDate]?.status === "won" || stats.history[puzzleDate]?.original?.won === true;
@@ -2569,7 +2583,6 @@ export class GameManager {
         }
       }
       // --- PREPARATION (Common for all flows) ---
-      const st = this.state.meta.stageTimes || {};
       stats.lastLocalUpdate = Date.now();
       const historyEntry = stats.history[today] || {};
       // (isAlreadyWon is already declared at the top)
@@ -2630,7 +2643,7 @@ export class GameManager {
 
       // Update stage times (Daily only)
       if (isOriginalDay) {
-        for (const [stage, time] of Object.entries(st)) {
+        for (const [stage, time] of Object.entries(stageTimes)) {
           stats.stageTimesAccumulated[stage] = (stats.stageTimesAccumulated[stage] || 0) + time;
         }
       }
@@ -2650,7 +2663,7 @@ export class GameManager {
             }
 
             const serverResult = (await callJigsudoFunction("submitDailyWin", {
-              stageTimes: st,
+              stageTimes: stageTimes,
               peaksErrors: peaksErrors,
               seed: this.currentSeed
             })) || {};
@@ -2794,7 +2807,7 @@ export class GameManager {
       const resultData = {
         score: dailyScore, 
         totalTime: totalTimeMs,
-        stageTimes: st,
+        stageTimes: stageTimes,
         stageStamps: this.state.meta.stageStamps || {},
         errors: peaksErrors,
         timestamp: Date.now(),
@@ -2866,7 +2879,7 @@ export class GameManager {
         score: dailyScore,
         streak: stats.currentStreak || 1,
         errors: peaksErrors,
-        stageTimes: st,
+        stageTimes: stageTimes,
         date: today,
         isReplay: this.isReplay,
       };
