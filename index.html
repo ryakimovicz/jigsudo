@@ -674,24 +674,38 @@
           </div>
 
           <div class="ranking-grid">
-            <!-- Daily -->
-            <div class="ranking-panel glass-panel active">
-              <h4 data-i18n="rank_tab_daily">Hoy</h4>
+            <!-- Daily / Yesterday -->
+            <div id="ranking-panel-day" class="ranking-panel glass-panel active swipe-panel" data-category="yesterday" data-options="yesterday,daily">
+              <div class="ranking-subtabs">
+                 <button class="subtab-btn active" data-target="yesterday" data-i18n="rank_tab_yesterday">Ayer</button>
+                 <button class="subtab-btn" data-target="daily" data-i18n="rank_tab_daily">Hoy</button>
+              </div>
               <div id="ranking-daily-wrapper" class="ranking-table-wrapper">
                 <div class="loader-small"></div>
               </div>
+              <div class="ranking-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+              </div>
             </div>
 
-            <!-- Monthly -->
-            <div class="ranking-panel glass-panel active">
-              <h4 id="ranking-month-header">Mes</h4>
+            <!-- Monthly / Last Month -->
+            <div id="ranking-panel-month" class="ranking-panel glass-panel active swipe-panel" data-category="lastMonth" data-options="lastMonth,monthly">
+              <div class="ranking-subtabs">
+                <button id="ranking-prev-month-header" class="subtab-btn active" data-target="lastMonth">Mes Anterior</button>
+                <button id="ranking-month-header" class="subtab-btn" data-target="monthly">Este Mes</button>
+              </div>
               <div id="ranking-monthly-wrapper" class="ranking-table-wrapper">
                 <div class="loader-small"></div>
+              </div>
+              <div class="ranking-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
               </div>
             </div>
 
             <!-- All Time -->
-            <div class="ranking-panel glass-panel active">
+            <div id="ranking-panel-alltime" class="ranking-panel glass-panel active">
               <h4 data-i18n="rank_tab_all">Siempre</h4>
               <div id="ranking-alltime-wrapper" class="ranking-table-wrapper">
                 <div class="loader-small"></div>

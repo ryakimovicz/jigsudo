@@ -57,7 +57,7 @@ export async function fetchRankings(forceRefresh = false) {
 
     // PARADOX DETECTION: If cache says user is OUT of top, but local score is GREATER than top people, it's stale!
     let isParadox = false;
-    const categories = ["daily", "monthly", "allTime"];
+    const categories = ["daily", "yesterday", "monthly", "lastMonth", "allTime"];
     categories.forEach((cat) => {
       const catData = data[cat];
       if (catData && catData.personal && !catData.personal.inTop) {
@@ -104,6 +104,12 @@ export async function fetchRankings(forceRefresh = false) {
       "lastDailyUpdate",
       today,
     ),
+    yesterday: await getTopRankings(
+      "lastDayRP",
+      10,
+      user,
+      (await import("./db.js?v=1.5.55")).getUserRank,
+    ),
     monthly: await getTopRankings(
       "monthlyRP",
       10,
@@ -111,6 +117,12 @@ export async function fetchRankings(forceRefresh = false) {
       (await import("./db.js?v=1.5.55")).getUserRank,
       "lastMonthlyUpdate",
       currentMonth,
+    ),
+    lastMonth: await getTopRankings(
+      "lastMonthRP",
+      10,
+      user,
+      (await import("./db.js?v=1.5.55")).getUserRank,
     ),
     allTime: await getTopRankings(
       "totalRP",

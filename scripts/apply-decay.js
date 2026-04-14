@@ -69,12 +69,20 @@ snapshot.docs.forEach((doc) => {
 
       // 1. Reset Daily Points for the new day
       if (lastUpdate !== todayStr) {
+        // v1.2.2: Archive previous day points before reset
+        updateObj.lastDayRP = data.dailyRP || 0;
+        updateObj["stats.lastDayRP"] = data.dailyRP || 0;
+        
         updateObj.dailyRP = 0;
         updateObj["stats.dailyRP"] = 0;
       }
 
       // 2. Reset Monthly Points if Month changed
       if (isNewMonth) {
+        // v1.2.2: Archive previous month points before reset
+        updateObj.lastMonthRP = data.monthlyRP || 0;
+        updateObj["stats.lastMonthRP"] = data.monthlyRP || 0;
+
         updateObj.monthlyRP = 0;
         updateObj["stats.monthlyRP"] = 0;
       }

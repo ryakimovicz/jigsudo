@@ -434,6 +434,10 @@ export function initHome() {
 
         // 2. Execute Start
         await gameManager.recordStart();
+        
+        // v1.2.2: Instant UI switch to 'Today' ranking
+        updateRankingSmartTabs();
+
         await startDailyGame();
 
         // Note: startDailyGame hides home, so button state reset isn't strictly needed immediately,
@@ -538,9 +542,6 @@ export function initHome() {
     }
   };
 
-  // Initial State
-  refreshStartButton();
-
   // --- Day Transition Logic ---
   const refreshAllDayData = () => {
     console.log("[Home] Day transition detected. Refreshing UI elements...");
@@ -593,6 +594,13 @@ export function initHome() {
     }
   });
 
+  // v1.2.2: Reactive Language Listener for ranking month labels
+  window.addEventListener("languageChanged", () => {
+    console.log("[Home] Language changed, refreshing month labels...");
+    updateMonthLabels();
+    loadAndRenderAllRankings(false); // Re-render to ensure any translation-dependent elements update
+  });
+
   // v1.5.9: Consolidated Reactive Sync Listener
   // Reacts to stats/history updates from the cloud (Sync) to refresh UI
   window.addEventListener("userStatsUpdated", async (e) => {
@@ -608,6 +616,7 @@ export function initHome() {
 
     // v1.5.9: Punch cache and re-render rankings automatically
     clearRankingCache(); 
+    updateRankingSmartTabs();
     loadAndRenderAllRankings(true);
   });
 
@@ -633,41 +642,34 @@ export function initHome() {
   const containerAllTime = document.getElementById("ranking-alltime-wrapper");
   const refreshBtn = document.getElementById("btn-refresh-ranking");
 
-  let currentRankings = null;
-
+  // v1.2.2: State and Loaders (Moved up to avoid ReferenceError during init)
+  let rankingLoading = false;
+  
   // Helper to toggle spinner on headers
   const toggleHeaderSpinner = (wrapper, isLoading) => {
     if (!wrapper) return;
     const header = wrapper.previousElementSibling; // The <h4>
-    if (header && header.tagName === "H4") {
+    if (header && (header.tagName === "H4" || header.classList.contains("ranking-subtabs"))) {
       if (isLoading) header.classList.add("ranking-loading");
       else header.classList.remove("ranking-loading");
     }
   };
 
-  let rankingLoading = false;
   async function loadAndRenderAllRankings(force = false) {
     if (rankingLoading) return;
     rankingLoading = true;
-    // Update Monthly Rank Label dynamically (at the start to avoid "Mes/Month" flash)
-    const monthHeader = document.getElementById("ranking-month-header");
-    if (monthHeader) {
-      const lang = getCurrentLang() || "es";
-      const monthName = new Date().toLocaleDateString(lang, {
-        month: "long",
-      });
-      const capitalized =
-        monthName.charAt(0).toUpperCase() + monthName.slice(1);
-      monthHeader.textContent = capitalized;
-    }
-
+    
     // Only clear if empty (first load) AND no cache available
+    const { getCachedRankings, renderRankings, fetchRankings, clearRankingCache } = await import("./ranking.js?v=1.5.55");
     const cachedRankings = getCachedRankings();
     
     if (cachedRankings) {
       // PRE-RENDER (Stale-While-Revalidate): Show cached table instantly
-      renderRankings(containerDaily, cachedRankings, "daily");
-      renderRankings(containerMonthly, cachedRankings, "monthly");
+      const dayCat = getActiveCategory("ranking-panel-day") || "yesterday";
+      const monthCat = getActiveCategory("ranking-panel-month") || "lastMonth";
+
+      renderRankings(containerDaily, cachedRankings, dayCat);
+      renderRankings(containerMonthly, cachedRankings, monthCat);
       renderRankings(containerAllTime, cachedRankings, "allTime");
       
       toggleHeaderSpinner(containerDaily, true);
@@ -687,30 +689,175 @@ export function initHome() {
       else toggleHeaderSpinner(containerAllTime, true);
     }
 
-    // Also spin the main refresh button
-    if (refreshBtn) refreshBtn.classList.add("spinning");
-
     try {
-      currentRankings = await fetchRankings(force);
+      const currentRankings = await fetchRankings(force);
 
-      // Verify that we still want to render this version (prevent race conditions)
-      // Actually, since we use await, they run sequentially if not careful.
-      // But multiple calls can overlap.
-      renderRankings(containerDaily, currentRankings, "daily");
-      renderRankings(containerMonthly, currentRankings, "monthly");
+      // Category names match the object keys in currentRankings
+      const dayCat = getActiveCategory("ranking-panel-day") || "yesterday"; // v1.2.2: defaults to yesterday
+      const monthCat = getActiveCategory("ranking-panel-month") || "lastMonth";
+
+      renderRankings(containerDaily, currentRankings, dayCat);
+      renderRankings(containerMonthly, currentRankings, monthCat);
       renderRankings(containerAllTime, currentRankings, "allTime");
     } catch (err) {
       console.error("[Home] Error loading rankings:", err);
     } finally {
-      // Create artificial delay if it was too fast, just to show the spinner?
-      // No, fast is good. Just cleanup.
+      rankingLoading = false;
       toggleHeaderSpinner(containerDaily, false);
       toggleHeaderSpinner(containerMonthly, false);
       toggleHeaderSpinner(containerAllTime, false);
       if (refreshBtn) refreshBtn.classList.remove("spinning");
-      rankingLoading = false;
     }
   }
+
+  // v1.2.2: Dynamic Month Naming
+  const updateMonthLabels = () => {
+    const prevBtn = document.getElementById("ranking-prev-month-header");
+    const currentBtn = document.getElementById("ranking-month-header");
+    const lang = getCurrentLang();
+    const date = getJigsudoDate();
+    
+    // Previous Month
+    if (prevBtn) {
+      const prevDate = new Date(date);
+      prevDate.setUTCDate(1);
+      prevDate.setUTCMonth(prevDate.getUTCMonth() - 1);
+      const name = prevDate.toLocaleDateString(lang, { month: 'long' });
+      prevBtn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    }
+
+    // Current Month
+    if (currentBtn) {
+      const name = date.toLocaleDateString(lang, { month: 'long' });
+      currentBtn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    }
+  };
+  updateMonthLabels();
+
+  // v1.2.2: Smart Tab Management
+  const getActiveCategory = (panelId) => {
+    const panel = document.getElementById(panelId);
+    return panel ? panel.dataset.category : null;
+  };
+
+  const setPanelCategory = (panelId, category, animateDirection = null) => {
+    const panel = document.getElementById(panelId);
+    if (!panel || panel.dataset.category === category) return;
+
+    const wrapper = panel.querySelector(".ranking-table-wrapper");
+    
+    // Apply slide animation if requested
+    if (animateDirection && wrapper) {
+      const outClass = animateDirection === "left" ? "slide-out-left" : "slide-out-right";
+      const inClass = animateDirection === "left" ? "slide-in-right" : "slide-in-left";
+      
+      wrapper.classList.add(outClass);
+      setTimeout(() => {
+        panel.dataset.category = category;
+        updatePanelUI(panel);
+        loadAndRenderAllRankings(false);
+        wrapper.classList.remove(outClass);
+        wrapper.classList.add(inClass);
+        setTimeout(() => wrapper.classList.remove(inClass), 300);
+      }, 300);
+    } else {
+      panel.dataset.category = category;
+      updatePanelUI(panel);
+      loadAndRenderAllRankings(false);
+    }
+  };
+
+  const updatePanelUI = (panel) => {
+    const category = panel.dataset.category;
+    // Update Subtabs active state
+    panel.querySelectorAll(".subtab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.target === category);
+    });
+    // Update Dots
+    const options = panel.dataset.options.split(",");
+    const currentIndex = options.indexOf(category);
+    panel.querySelectorAll(".dot").forEach((dot, idx) => {
+      dot.classList.toggle("active", idx === currentIndex);
+    });
+  };
+
+  // Auto-switch logic based on progress
+  const updateRankingSmartTabs = () => {
+    const isWon = checkDailyWin();
+    const hasStarted = (gameManager.state?.progress?.stagesCompleted || []).length > 0 || !!gameManager.state?.meta?.lastPlayed;
+    
+    // Day Panel: Show 'Ayer' if not played, 'Hoy' if started or won
+    if (isWon || hasStarted) {
+      setPanelCategory("ranking-panel-day", "daily");
+    } else {
+      setPanelCategory("ranking-panel-day", "yesterday");
+    }
+
+    // Month Panel: Logic for day 1 (Simple approach: if is day 1 and no monthly points, show last month)
+    const now = getJigsudoDate();
+    if (now.getUTCDate() === 1 && (gameManager.stats?.monthlyRP || 0) <= 0) {
+      setPanelCategory("ranking-panel-month", "lastMonth");
+    } else {
+      setPanelCategory("ranking-panel-month", "monthly");
+    }
+  };
+
+  // Initialize Swipe Detection for Mobile
+  const initRankingSwipes = () => {
+    document.querySelectorAll(".swipe-panel").forEach(panel => {
+      let touchStartX = 0;
+      let touchStartTime = 0;
+
+      panel.addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartTime = Date.now();
+      }, { passive: true });
+
+      panel.addEventListener("touchend", (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndTime = Date.now();
+        const deltaX = touchEndX - touchStartX;
+        const deltaTime = touchEndTime - touchStartTime;
+
+        // Thresholds: >50px movement within <300ms
+        if (Math.abs(deltaX) > 50 && deltaTime < 300) {
+          const options = panel.dataset.options.split(",");
+          const current = panel.dataset.category;
+          const currentIndex = options.indexOf(current);
+          
+          if (deltaX < 0 && currentIndex < options.length - 1) {
+            // Swipe Left -> Show next
+            setPanelCategory(panel.id, options[currentIndex + 1], "left");
+          } else if (deltaX > 0 && currentIndex > 0) {
+            // Swipe Right -> Show previous
+            setPanelCategory(panel.id, options[currentIndex - 1], "right");
+          }
+        }
+      }, { passive: true });
+    });
+  };
+
+  // Initialize Sub-tab Click Listeners
+  document.querySelectorAll(".subtab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const panel = btn.closest(".ranking-panel");
+      const target = btn.dataset.target;
+      const options = panel.dataset.options.split(",");
+      const currentIdx = options.indexOf(panel.dataset.category);
+      const targetIdx = options.indexOf(target);
+      const dir = targetIdx > currentIdx ? "left" : "right";
+      setPanelCategory(panel.id, target, dir);
+    });
+  });
+
+  initRankingSwipes();
+
+  // v1.2.2: Initial Ranking State
+  updateMonthLabels(); // Refresh labels just in case lang changed
+  updateRankingSmartTabs();
+  refreshStartButton();
+
+  let currentRankings = null;
 
   // --- Lazy Loading Rankings ---
   let rankingsInitialized = false;

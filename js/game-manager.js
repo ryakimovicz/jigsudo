@@ -1449,6 +1449,9 @@ export class GameManager {
     
     // A. SCOPE RESETS (Transition Management)
     if (stats.lastDailyUpdate && stats.lastDailyUpdate !== today) {
+        // v1.2.2: Archive before reset
+        stats.lastDayRP = stats.dailyRP || 0;
+        
         stats.dailyWinsAccumulated = 0;
         stats.dailyBonusesAccumulated = 0;
         stats.dailyPeaksErrorsAccumulated = 0;
@@ -1457,6 +1460,9 @@ export class GameManager {
     }
     
     if (stats.lastMonthlyUpdate && stats.lastMonthlyUpdate !== currentMonth) {
+        // v1.2.2: Archive before reset
+        stats.lastMonthRP = stats.monthlyRP || 0;
+
         stats.monthlyWinsAccumulated = 0;
         stats.monthlyBonusesAccumulated = 0;
         stats.monthlyPeaksErrorsAccumulated = 0;
@@ -1665,6 +1671,7 @@ export class GameManager {
       if (diffDays >= 1) {
         // 1. Reset Daily RP
         if (stats.dailyRP !== 0) {
+          stats.lastDayRP = stats.dailyRP || 0; // Archive
           stats.dailyRP = 0;
           changed = true;
         }
@@ -1672,6 +1679,7 @@ export class GameManager {
         // 2. Reset Monthly RP
         const lastMonth = lastCheck.substring(0, 7);
         if (currentMonth !== lastMonth && stats.monthlyRP !== 0) {
+          stats.lastMonthRP = stats.monthlyRP || 0; // Archive
           stats.monthlyRP = 0;
           stats.monthlyWinsAccumulated = 0;
           stats.monthlyPeaksErrorsAccumulated = 0;

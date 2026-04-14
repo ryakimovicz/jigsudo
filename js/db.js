@@ -76,6 +76,8 @@ export function reconstructStats(data) {
     lastMonthlyUpdate: scavengeStr("lastMonthlyUpdate", s.lastMonthlyUpdate || data.lastMonthlyUpdate || null),
     dailyRP: scavengeNum("dailyRP", s.dailyRP || data.dailyRP || 0),
     monthlyRP: scavengeNum("monthlyRP", s.monthlyRP || data.monthlyRP || 0),
+    lastDayRP: scavengeNum("lastDayRP", s.lastDayRP || data.lastDayRP || 0),
+    lastMonthRP: scavengeNum("lastMonthRP", s.lastMonthRP || data.lastMonthRP || 0),
 
     // 7-17. Competitive / Metadata
     totalRP: (() => {
@@ -425,6 +427,8 @@ export async function saveUserStats(userId, statsData, username = null, options 
       updateData.dailyRP = s.dailyRP || 0;
       updateData.monthlyRP = s.monthlyRP || 0;
       updateData.totalRP = s.totalRP || 0;
+      updateData.lastDayRP = s.lastDayRP || 0;
+      updateData.lastMonthRP = s.lastMonthRP || 0;
 
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
       updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
@@ -478,7 +482,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
       }
 
       // v1.5.30: EXORCISM - Force-delete ghost fields from the map
-      const exorcismKeys = ["totalRP", "monthlyRP", "dailyRP", "currentRP", "score"];
+      const exorcismKeys = ["totalRP", "monthlyRP", "dailyRP", "currentRP", "score", "lastDayRP", "lastMonthRP"];
       exorcismKeys.forEach(k => {
           updateData[`stats.${k}`] = deleteField();
       });
