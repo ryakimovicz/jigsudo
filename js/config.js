@@ -3,8 +3,8 @@ export const CONFIG = {
   fechaUpdate: "2026-04-14",
   author: "Román Yakimovicz",
   schemaVersion: 7.1,
-  debugMode: true, // Toggle to true to see logs
-  betaMode: true, // Toggle to true to enable "Ayuda" button
+  debugMode: false, // Toggle to true to see logs
+  betaMode: false, // Toggle to true to enable "Ayuda" button
 
   // Feature Flags
   ENABLE_SOUND: true, // Toggle to show sound settings
