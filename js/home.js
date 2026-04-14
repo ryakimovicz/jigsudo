@@ -1014,12 +1014,20 @@ export function initHome() {
     console.log("[Home] Game completed. Refreshing rankings & button state.");
     rankingsInitialized = true; // Mark as initialized so it keeps updating
     
-    // v1.4.6: Optimistic UI - Mark won in local memory instantly
-    const seed = e.detail?.seed || getDailySeed();
-    const seedStr = seed.toString();
-    const todayStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
-    window._jigsudoJustWonToday = todayStr;
-    localStorage.setItem("jigsudo_just_won_day", todayStr);
+    // v1.4.6: Optimistic UI - Mark won in local memory instantly ONLY IF it's today's puzzle
+    // Crucial: We must only act if a seed was EXPLICITLY provided to avoid context-less victory leaks.
+    const dailySeed = getDailySeed();
+    const targetSeed = e.detail?.seed;
+    
+    if (targetSeed && targetSeed === dailySeed) {
+      console.log("[Home] Daily puzzle won! Updating optimistic flags.");
+      const seedStr = targetSeed.toString();
+      const todayStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      window._jigsudoJustWonToday = todayStr;
+      localStorage.setItem("jigsudo_just_won_day", todayStr);
+    } else if (targetSeed) {
+      console.log("[Home] Historical puzzle won. Skipping optimistic today-flags.");
+    }
 
     // REDUNDANCY: Ensure cache is dead
     const { clearRankingCache } = await import("./ranking.js?v=1.2.2");

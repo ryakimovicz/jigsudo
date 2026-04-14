@@ -2518,6 +2518,8 @@ export class GameManager {
       const isAlreadyWon = stats.history[puzzleDate]?.status === "won" || stats.history[puzzleDate]?.original?.won === true;
       const isLateCompletion = seedDate < today;
 
+      console.log(`[GM recordWin] START. Seed: ${this.currentSeed}, puzzleDate: ${puzzleDate}, today: ${today}, isLate: ${isLateCompletion}`);
+
       if (!this.isReplay && !isAlreadyWon) {
         // v1.5.52: Consolidating increments further down in the common flow 
         // to avoid double jumps between early win detection and final sync.
@@ -2820,10 +2822,12 @@ export class GameManager {
       };
 
       if (!stats.history[historyKey].original && isOriginalDay) {
+        console.log(`[GM recordWin] WRITE ORIGINAL to history[${historyKey}]`);
         stats.history[historyKey].status = "won";
         stats.history[historyKey].original = resultData;
         stats.history[historyKey].best = resultData;
       } else {
+        console.log(`[GM recordWin] WRITE UPDATE to history[${historyKey}]. isOriginalDay: ${isOriginalDay}`);
         stats.history[historyKey].status = "won";
         const existingBest = stats.history[historyKey].best || {};
         // v1.5.57: Strict Score Comparison (requested by user)

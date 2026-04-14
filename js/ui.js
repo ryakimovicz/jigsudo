@@ -257,8 +257,6 @@ export async function showVictorySummary(stats, isHome = false) {
           router.navigateTo("#home");
         }
 
-        // 3. Force global events to let Home.js know it should refresh UI
-        window.dispatchEvent(new CustomEvent("gameCompleted"));
       }
     };
   }
