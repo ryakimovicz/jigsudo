@@ -586,6 +586,13 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v130_title: "Versión 1.3.0 (Temporada 1)",
+    changelog_v130_date: "14/04/2026",
+    changelog_v130_item1: "Temporada 1: Lanzamiento oficial con reseteo de estadísticas y nuevo esquema de datos (v7.2).",
+    changelog_v130_item2: "Cifrado Local: Implementación de ofuscación de datos en el navegador para garantizar la integridad de las soluciones y rankings.",
+    changelog_v130_item3: "Sistema de Bloqueo: Implementación y refinamiento de la animación de los candados en las etapas del juego.",
+    changelog_v130_item4: "Sincronización Crítica: Corrección de bucles de migración y validación de versión en tiempo real con la nube (Auth-Aware).",
+    changelog_v130_item5: "Estabilidad de Tiempos: Optimización en la captura y coherencia de los cronómetros entre etapas del juego.",
     changelog_v122_title: "Versión 1.2.2",
     changelog_v122_date: "14/04/2026",
     changelog_v122_item1: "Sistema de Rango (RP): Implementación del motor de puntos con penalizaciones por inactividad (Decay) y errores en tiempo real.",
@@ -1308,6 +1315,13 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v130_title: "Version 1.3.0 (Season 1)",
+    changelog_v130_date: "04/14/2026",
+    changelog_v130_item1: "Season 1: Official launch with statistics reset and new data schema (v7.2).",
+    changelog_v130_item2: "Local Encryption: Implementation of browser data obfuscation to ensure the integrity of solutions and rankings.",
+    changelog_v130_item3: "Lock System: Implementation and refinement of stage lock animations and smoother transitions.",
+    changelog_v130_item4: "Critical Sync: Fixed migration loops and real-time cloud version validation (Auth-Aware).",
+    changelog_v130_item5: "Timing Stability: Optimization in the capture and consistency of timers between game stages.",
     changelog_v122_title: "Version 1.2.2",
     changelog_v122_date: "04/14/2026",
     changelog_v122_item1: "Rank System (RP): Core scoring engine implementation with inactivity penalties (Decay) and real-time error tracking.",
