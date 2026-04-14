@@ -240,6 +240,55 @@ class MasterLock {
         if (this.overlay) {
             this.overlay.classList.add('disintegrated');
         }
+        const mechanism = document.querySelector('.safe-mechanism');
+        if (mechanism) mechanism.classList.add('disintegrated');
+    }
+
+    /**
+     * v1.2.7: Restores the lock to its original industrial state.
+     * Essential for subsequent games.
+     */
+    reset() {
+        this.hasCompletedVictory = false; // Allow showing for new games
+        if (this.overlay) {
+            this.overlay.classList.remove('disintegrated');
+            this.overlay.classList.remove('active');
+            this.overlay.style.background = '';
+            this.overlay.style.backdropFilter = '';
+            this.overlay.style.opacity = '';
+            this.overlay.style.transform = '';
+        }
+        
+        const mechanism = document.querySelector('.safe-mechanism');
+        if (mechanism) {
+            mechanism.classList.remove('disintegrated');
+            // Remove any accumulated victory trays
+            const tray = mechanism.querySelector('.victory-tray');
+            if (tray) tray.remove();
+        }
+
+        // v1.2.7: Physical Reset of the Wheels
+        this.wheels.forEach(w => {
+            w.classList.remove('unlocked');
+            const strip = w.querySelector('.wheel-strip');
+            if (strip) {
+                strip.style.transition = 'none';
+                strip.style.transform = 'translateY(0)';
+            }
+            // Restore visibility to all digits
+            const digits = w.querySelectorAll('.wheel-digit');
+            digits.forEach(d => {
+                d.style.opacity = '';
+                d.style.visibility = '';
+            });
+        });
+
+        if (this.icon) {
+            this.icon.classList.remove('expanding');
+            this.icon.classList.remove('visible');
+            this.icon.style.transform = '';
+            this.icon.style.opacity = '';
+        }
     }
 
     async close() {

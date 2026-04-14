@@ -3,6 +3,7 @@ import { getCurrentLang, updateTexts } from "./i18n.js?v=1.2.2";
 import { getCurrentUser } from "./auth.js?v=1.2.2";
 import { getRankData } from "./ranks.js?v=1.2.2";
 import { formatJigsudoDate } from "./utils/time.js?v=1.2.2";
+import { masterLock } from "./lock.js?v=1.2.2";
  
 let lastVictoryStats = null;
 let lastVictoryIsHome = false;
@@ -349,10 +350,23 @@ export function cleanupVictoryUI() {
     toggleModal(victoryModal, false);
   }
 
-  // 2. Remove Flying Digits Container
-  const victoryContainer = document.querySelector(".victory-code-container");
-  if (victoryContainer) {
-    victoryContainer.remove();
+  // v1.2.7: Restoration of Master Lock State
+  try {
+    masterLock.reset();
+  } catch (e) {
+    console.warn("[UI] Could not reset masterLock:", e);
+  }
+
+  // 2. Remove New Victory Tray (Labels)
+  const tray = document.querySelector(".victory-tray");
+  if (tray) {
+    tray.remove();
+  }
+
+  // Legacy Cleanup (Still looking for floating digits just in case)
+  const legacyContainer = document.querySelector(".victory-code-container");
+  if (legacyContainer) {
+    legacyContainer.remove();
   }
 
   // 3. Restore Header Title
