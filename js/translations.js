@@ -263,6 +263,9 @@ export const translations = {
     hist_legend_yellow: "Jigsudo iniciado pero no terminado en su día.",
     hist_legend_green: "Jigsudo terminado en su día original.",
     hist_legend_crown: "Jigsudo terminado (en su día o posteriormente).",
+    history_no_stat: "Sin estadísticas registradas",
+    stats_original: "Desempeño Original",
+    stats_best: "Mejor Histórico",
 
     // Memory Game Help
     memory_help_title: "Cómo jugar",
@@ -894,6 +897,9 @@ export const translations = {
     hist_legend_yellow: "Jigsudo started but not finished on its day.",
     hist_legend_green: "Jigsudo finished on its original day.",
     hist_legend_crown: "Jigsudo finished (on its day or later).",
+    history_no_stat: "No stats recorded",
+    stats_original: "Original Performance",
+    stats_best: "Personal Best",
 
     // Memory Game Help
     memory_help_title: "How to play",

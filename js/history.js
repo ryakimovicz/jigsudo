@@ -227,7 +227,9 @@ export async function updateHistoryUI() {
                   originalWon: data.original?.won === true,
                   hasOriginal: !!data.original,
                   score: data.best?.score || 0,
-                  totalTime: data.best?.totalTime || 0
+                  totalTime: data.best?.totalTime || 0,
+                  original: data.original || null,
+                  best: data.best || null
               };
           });
           historyCache[monthKey] = monthHistory;
@@ -344,11 +346,17 @@ function renderHistoryCalendar(history = {}) {
     const dayData = history[dateStr];
     const isCompleted = dayData?.status === "won";
 
-    if (isFuture || !exists || (isToday && !isCompleted)) {
+    if (isFuture || !exists) {
       dayEl.classList.add("disabled");
       dayEl.style.opacity = "0.3";
       dayEl.style.pointerEvents = "none";
     } else {
+      // Past or Today (Available puzzles)
+      if (isToday && !isCompleted) {
+        dayEl.classList.add("disabled");
+        dayEl.style.opacity = "0.3";
+        // REMOVED pointerEvents = "none" to allow today's tooltip
+      }
       // Check History Status
       if (dayData) {
         // 1. BACKGROUND COLORS (Original performance anchor)
@@ -368,6 +376,9 @@ function renderHistoryCalendar(history = {}) {
           dayEl.appendChild(dot);
         }
       }
+
+      // v1.5.62: Attach dynamic tooltips
+      attachCalendarTooltip(dayEl, dayData, dateStr);
 
       dayEl.addEventListener("click", () => {
         const isToday = dateStr === todayStr;
@@ -389,4 +400,125 @@ function renderHistoryCalendar(history = {}) {
 
     grid.appendChild(dayEl);
   }
+}
+
+/**
+ * v1.5.62: Floating Tooltip Logic
+ */
+export function attachCalendarTooltip(el, dayData, dateStr) {
+  // Always attach if day existed in the past
+
+  el.addEventListener("mouseenter", (e) => {
+    showHistoryTooltip(e, dayData, dateStr);
+  });
+
+  el.addEventListener("mousemove", (e) => {
+    updateHistoryTooltipPosition(e);
+  });
+
+  el.addEventListener("mouseleave", () => {
+    hideHistoryTooltip();
+  });
+}
+
+function showHistoryTooltip(e, data, dateStr) {
+  const tooltip = document.getElementById("history-tooltip");
+  if (!tooltip) return;
+
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+
+  // Format Date for Title
+  const dateObj = new Date(dateStr + "T12:00:00Z");
+  const dateTitle = dateObj.toLocaleDateString(lang, { day: "numeric", month: "long" });
+
+  // v1.5.62: Dynamic title color matching the day status
+  let titleColor = "#94a3b8"; // Gray (Sin jugar)
+  if (data) {
+    if (data.originalWon) titleColor = "#22c55e"; // Green
+    else if (data.hasOriginal) titleColor = "#eab308"; // Yellow
+    else if (data.status === "won") titleColor = "#4ade80"; // Aqua/Crown
+  }
+
+  let html = `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
+    <span>${dateTitle}</span>
+    ${data?.status === "won" ? "<span>👑</span>" : ""}
+  </div>`;
+
+  // Helper for formatting time
+  const fmt = (ms) => {
+    if (!ms || ms < 0) return "--:--";
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // 0. Empty Fallback
+  if (!data || (!data.original && !data.best)) {
+    html += `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 10px 0; text-align: center;">
+      ${t.history_no_stat || "Sin estadísticas registradas"}
+    </div>`;
+  } else {
+    // 1. Original Section
+    if (data.original) {
+      const o = data.original;
+      html += `<div class="tooltip-section">
+        <span class="tooltip-section-title">${t.stats_original || "Desempeño Original"}</span>
+        <div class="tooltip-grid">
+          <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
+          <span class="tooltip-value highlight">${(o.score || 0).toFixed(3)} RP</span>
+          <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
+          <span class="tooltip-value">${fmt(o.totalTime)}</span>
+          <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
+          <span class="tooltip-value">${o.peaksErrors || 0}</span>
+        </div>
+      </div>`;
+    }
+
+    // 2. Best Section
+    if (data.best) {
+      const b = data.best;
+      html += `<div class="tooltip-section">
+        <span class="tooltip-section-title">${t.stats_best || "Mejor Histórico"}</span>
+        <div class="tooltip-grid">
+          <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
+          <span class="tooltip-value highlight">${(b.score || 0).toFixed(3)} RP</span>
+          <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
+          <span class="tooltip-value">${fmt(b.totalTime)}</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  tooltip.innerHTML = html;
+  tooltip.classList.remove("hidden");
+  updateHistoryTooltipPosition(e);
+}
+
+function updateHistoryTooltipPosition(e) {
+  const tooltip = document.getElementById("history-tooltip");
+  if (!tooltip || tooltip.classList.contains("hidden")) return;
+
+  const xOffset = 20;
+  const yOffset = 20;
+  let left = e.clientX + xOffset;
+  let top = e.clientY + yOffset;
+
+  // Screen overflow protection
+  const rect = tooltip.getBoundingClientRect();
+  if (left + rect.width > window.innerWidth) {
+    left = e.clientX - rect.width - xOffset;
+  }
+  if (top + rect.height > window.innerHeight) {
+    top = e.clientY - rect.height - yOffset;
+  }
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hideHistoryTooltip() {
+  const tooltip = document.getElementById("history-tooltip");
+  if (tooltip) tooltip.classList.add("hidden");
 }

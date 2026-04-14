@@ -937,7 +937,7 @@ function renderCalendar(history = {}) {
       if (isToday && !isCompleted) {
         dayEl.classList.add("disabled");
         dayEl.style.opacity = "0.3";
-        dayEl.style.pointerEvents = "none";
+        // REMOVED pointerEvents = "none" to allow today's tooltip
       } else if (dayData) {
         // Rules: Green if won on day 1, Yellow if started on day 1 but not won.
         if (dayData.original && dayData.original.won === true) {
@@ -946,6 +946,11 @@ function renderCalendar(history = {}) {
           dayEl.classList.add("loss");
         }
       }
+
+      // v1.5.62: Attach dynamic tooltips
+      import("./history.js?v=1.5.55").then(mod => {
+          mod.attachCalendarTooltip(dayEl, dayData, dateStr);
+      });
 
       grid.appendChild(dayEl);
     }
