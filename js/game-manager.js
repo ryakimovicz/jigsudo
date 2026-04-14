@@ -1081,6 +1081,11 @@ export class GameManager {
 
     // 2. Wipe local execution state for this seed
     localStorage.removeItem(this.storageKey);
+    
+    // v1.2.7: Clear optimistic win locks used by Home UI
+    localStorage.removeItem("jigsudo_just_won_day");
+    localStorage.removeItem("jigsudo_win_lock");
+    window._jigsudoJustWonToday = null;
 
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {

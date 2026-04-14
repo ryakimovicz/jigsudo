@@ -267,49 +267,44 @@
   }
 }
 
-/* Central Overlay for the Final Code */
 .victory-code-container {
-  position: absolute;
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 2px;
   z-index: 1000;
   pointer-events: none;
 }
 
-.victory-code-cell {
-  width: 60px;
+/* Use a shared class for both the old flying cells and the new in-place wheels */
+.victory-code-cell, .wheel-digit.victory-digit {
+  width: 100%; /* v1.2.7: Use 100% to fit the safe-wheel container */
+  max-width: 60px;
   height: 60px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 2rem;
   font-weight: 800;
-  color: var(--accent-color); /* Orange default */
+  color: var(--accent-color); 
   background: transparent;
-  text-shadow: 0 0 5px var(--accent-color); /* Reduced from 10px */
-  font-family: "Courier New", monospace; /* Matrix style */
-  /* Remove transform transition to avoid conflict with animation */
+  text-shadow: 0 0 5px var(--accent-color);
+  font-family: "Courier New", monospace; 
   transition:
     color 0.3s ease,
-    text-shadow 0.3s ease;
+    text-shadow 0.3s ease,
+    transform 0.3s ease;
+  
+  /* Reset wheel specific styles if needed */
+  border: none !important;
+  box-shadow: none !important;
 
-  /* Hardware Acceleration Hints */
-  will-change: transform; /* Removed text-shadow from will-change */
+  will-change: transform;
   backface-visibility: hidden;
   transform: translateZ(0);
 
-  /* Text Rendering Optimization for Scaling */
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Flash White on Lock-in */
-/* Set specific locked state with strong shadow static */
-.victory-code-cell.locked {
+.victory-code-cell.locked, .wheel-digit.victory-digit.locked {
   color: var(--accent-color);
   /* Base static shadow (doesn't animate) */
   /* Base static shadow (doesn't animate) */
@@ -320,7 +315,7 @@
 
   animation:
     lock-flash 0.4s ease-out forwards,
-    pulse-scale-only 2s infinite alternate 0.4s;
+    pulse-glow-direct 2s infinite alternate 0.4s;
 }
 
 .dark-mode .victory-code-cell.locked {
@@ -329,33 +324,17 @@
     0 0 5px var(--accent-color); /* More subtle definition */
 }
 
-/* The Pulsing Glow Layer - GPU Optimized */
-.victory-code-cell.locked::before {
-  content: attr(data-content);
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
 
-  /* Center the Content (Glow Text) to match Parent */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  /* The Glow Itself */
-  color: transparent;
-  text-shadow:
-    0 0 20px var(--accent-color),
-    0 0 40px var(--accent-color); /* Slightly reduced from 30/50 */
-
-  opacity: 0; /* Start invisible */
-  pointer-events: none;
-  z-index: -1; /* Behind or mixed? Text shadow usually on top for 'glow'. Let's try z-1 or top. */
-  /* If z-1, it might be behind background if any. Here bg is transparent so it works. */
-
-  will-change: opacity;
-  animation: pulse-glow-opacity 2s infinite alternate 0.4s;
+/***** Victory Pulse Animation *****/
+@keyframes pulse-glow-direct {
+  from {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 5px var(--accent-color);
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-color), 0 0 40px var(--accent-color);
+    transform: scale3d(1.1, 1.1, 1);
+  }
 }
 
 @keyframes lock-flash {
@@ -449,7 +428,7 @@
 }
 
 /* Final Victory Text State */
-.victory-final {
+.victory-final, .wheel-digit.victory-digit.victory-final {
   /* Animation handled by .locked combined class now for better entrance */
   font-family: "Montserrat", sans-serif; /* Back to clean font */
 }

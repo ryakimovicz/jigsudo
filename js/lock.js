@@ -104,6 +104,20 @@ class MasterLock {
             strip.style.transition = 'none';
             strip.style.transform = 'translateY(0)';
         });
+
+        // v1.2.7: Clear inline expansion/opacity styles used during victory
+        if (this.icon) {
+            this.icon.style.transform = '';
+            this.icon.style.opacity = '';
+        }
+        this.wheels.forEach(w => {
+            w.style.overflow = ''; // Restore clipping
+            const digits = w.querySelectorAll('.wheel-digit');
+            digits.forEach(d => d.style.opacity = ''); // Show all digits again
+        });
+        if (this.overlay) {
+            this.overlay.classList.remove('disintegrated');
+        }
     }
 
     showIcon() {
@@ -140,6 +154,8 @@ class MasterLock {
 
         // 2. Open Safe Modal
         this.overlay.classList.add('active');
+        this.overlay.style.background = 'transparent'; // Ensure transparent per user request
+        this.overlay.style.backdropFilter = 'none';
         
         // Immediate cross-fade: the icon vanishes as the modal finishes entering
         setTimeout(() => {
@@ -165,6 +181,9 @@ class MasterLock {
             const randomExtra = Math.floor(Math.random() * 3) + 2; // 2-4 full loops
             const targetY = -(randomExtra * 9 * this.digitHeight);
             strip.style.transform = `translateY(${targetY}px)`;
+            
+            // v1.2.7: Ensure digits are visible for transformation
+            w.style.overflow = 'hidden'; 
         });
 
         await new Promise(r => setTimeout(r, 1500));
@@ -195,16 +214,32 @@ class MasterLock {
         // 4. Final Unlock Pause
         await new Promise(r => setTimeout(r, 800));
         
-        // Return the positions of the winning digits for the "flying" animation
-        return this.wheels.map(w => {
-            const digitEl = w.querySelector('.wheel-digit'); // This is dummy, we need the actual visible one
-            // Calculating the center of the wheel is more robust
-            const rect = w.getBoundingClientRect();
-            return {
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2
-            };
+        // v1.2.7: Return the actual elements for in-place transformation
+        // We find the active digit element at the target translation
+        return this.wheels.map((w, i) => {
+            const targetDigit = code[i] || 1;
+            const targetIndex = 27 + (targetDigit - 1);
+            const digits = w.querySelectorAll('.wheel-digit');
+            
+            // Set target digit to fully opaque and siblings to 0
+            digits.forEach((d, idx) => {
+                d.style.opacity = (idx === targetIndex) ? '1' : '0';
+            });
+
+            const el = digits[targetIndex];
+            return el; 
         });
+    }
+
+
+    /**
+     * v1.2.7: Hides the physical boxes and borders of the wheels
+     * while keeping the digits visible for the victory transformation.
+     */
+    disintegrate() {
+        if (this.overlay) {
+            this.overlay.classList.add('disintegrated');
+        }
     }
 
     async close() {

@@ -20,6 +20,7 @@ let penaltyMode = false; // New state
 let maxUnlockedLevel = 3; // Tracks the highest level shown to player
 let isMultipressBlocked = false; // Prevent debug overlapping
 let glitchInterval = null; // Track victory glitch interval
+let victoryPromise = null; // v1.2.6: Track background saving
 
 // ... (In initCode or reset)
 export function initCode() {
@@ -361,6 +362,22 @@ async function winGame() {
   gameManager.stopStageTimer(); // End Code Stage
   stopAnimation();
   clearIdleTimer();
+  
+  // v1.2.6: PRE-SAVING (Parallel to animation)
+  // We trigger the compute-heavy recordWin now so it doesn't block the UI later.
+  victoryPromise = (async () => {
+    await gameManager.awardStagePoints("code");
+    return await gameManager.recordWin();
+  })();
+
+  // v1.2.7: IMPROVEMENT: Instantly hide Timer and Sudoku board background
+  // to focus on the spinning number wheels animation.
+  const timer = document.getElementById("memory-timer");
+  if (timer) timer.style.display = "none";
+  
+  // Hide the entire game grid (board + collected pieces)
+  const grid = document.querySelector(".memory-grid-layout");
+  if (grid) grid.style.opacity = "0";
 
   // 2. HIDE HEADER UI (Title & Info)
   const gameHeader = document.querySelector(".game-header");
@@ -379,126 +396,77 @@ async function winGame() {
     debugBtn.onclick = null;
   }
 
-  const values = sequence.slice(0, 7); // Use up to 7, or all
-  const gameSection = document.getElementById("game-section");
-  const board = document.getElementById("memory-board");
-
-  // 1.5. NEW: Master Lock Sequence
-  const sourcePositions = await masterLock.showVictorySequence(values);
-
-  // Create Animation Container (Centered)
-  const animContainer = document.createElement("div");
-  animContainer.className = "victory-code-container";
-  gameSection.appendChild(animContainer);
-
-  // Create 7 digit cells (Now guaranteed to be 7 for the Lock)
-  const digitEls = values.map((val) => {
-    const el = document.createElement("div");
-    el.className = "victory-code-cell";
-    el.textContent = val;
-    el.style.opacity = "0";
-    animContainer.appendChild(el);
-    return el;
-  });
-
-  // Force Layout to ensure everything is positioned correctly
-  const _forceLayout = animContainer.offsetHeight;
-
-  // Now calculate positions based on STABLE layout
-  digitEls.forEach((el, index) => {
-    const val = values[index];
-    const sourcePos = sourcePositions[index];
-
-    if (sourcePos) {
-      // 1. Get positions
-      const targetRect = el.getBoundingClientRect(); // Stable final position
-
-      // 2. Calculate Delta (Center to Center)
-      const targetCenterX = targetRect.left + targetRect.width / 2;
-      const targetCenterY = targetRect.top + targetRect.height / 2;
-
-      // Delta from Lock Wheel to Final Target
-      const deltaX = sourcePos.x - targetCenterX;
-      const deltaY = sourcePos.y - targetCenterY;
-
-      // 3. Apply Transform to put it back at source (the lock wheel)
-      el.style.transition = "none";
-      el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-      el.style.opacity = "1";
-
-      el.offsetHeight; // Force reflow
-
-      // 4. Animate to Center (0,0)
-      el.style.transition = "transform 1.0s cubic-bezier(0.16, 1, 0.3, 1)";
-      el.style.transform = "translate(0, 0)";
-    } else {
-      el.style.opacity = "1";
-    }
-  });
-
-  // 2. Close Lock and Disintegrate Board
-  masterLock.close();
-
-  // 2. Disintegrate Board
-  if (board) {
-    // Delay disintegration slightly so we see the lift off
-    setTimeout(() => {
-      board.classList.add("disintegrate");
-    }, 200);
+  // v1.2.7: Use 7 digits for Bypass (Match cracked code length)
+  const values = [];
+  for (let i = 0; i < 7; i++) {
+    // Take from sequence (cracked code)
+    values.push(sequence[i] !== undefined ? sequence[i] : Math.floor(Math.random() * 9) + 1);
   }
 
-  // 3. Glitch Effect Loop begins after flight arrives (1.0s)
+  // v1.2.7: Master Lock Sequence (returns the actual wheel digit elements)
+  const digitEls = await masterLock.showVictorySequence(values);
+  // v1.2.7: NEW: Unified Victory Tray
+  // We move the digits from their individual wheels into a shared container
+  // to avoid DOM parenting crashes and fix the "panel" layout issues.
+  const mechanism = document.querySelector(".safe-mechanism");
+  const tray = document.createElement("div");
+  tray.className = "victory-tray";
+  
+  // Convert NodeList to Array to safely migrate elements
+  const finalDigits = [];
+  digitEls.forEach(el => {
+      // Clone text content into a clean new cell to avoid wheel-strip styles
+      const cell = document.createElement("div");
+      cell.className = "victory-code-cell victory-digit glitching";
+      cell.textContent = el.textContent;
+      cell.setAttribute('data-content', el.textContent);
+      tray.appendChild(cell);
+      finalDigits.push(cell);
+  });
+  
+  if (mechanism) mechanism.appendChild(tray);
+
+  // v1.2.7: NEW: Disintegrate the Lock Mechanism UI (Physical wheels)
+  masterLock.disintegrate();
+
+  // 2. Disintegrate Board
+  const board = document.getElementById("memory-board");
+  if (board) {
+    // v1.2.7: Disintegrate effect still runs but starts at 0 opacity
+    board.classList.add("disintegrate");
+  }
+
+  // 3. Glitch Effect Loop starts using the UNIFIED elements
+  // v1.2.7: Faster start (400ms instead of 1200ms) for direct transition
   setTimeout(() => {
-    startGlitchEffect(digitEls);
-  }, 1200);
+    startGlitchEffect(finalDigits, tray);
+  }, 400);
 }
 
-function startGlitchEffect(elements) {
+function startGlitchEffect(elements, container) {
   const lang = getCurrentLang();
   const targetWord = lang === "es" ? "VICTORIA" : "VICTORY";
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
 
-  // 1. Start glitching the EXISTING 5 digits first (chaotic phase)
-  elements.forEach((el) => el.classList.add("glitching"));
-
-  // 2. Wait a moment, THEN Spawn the extra characters needed, INTERSPERSED
+  // v1.2.7: Faster spawn (400ms instead of 800ms)
   setTimeout(() => {
-    // We have 5 elements. We need 7 or 8 total.
-    // Target: [E, N, E, N, E, N, E, E] (Example)
-    // Strategy: Insert 3 times at odd indices (1, 3, 5) or spread them out.
-    // Simpler: Just random insertion in the middle range.
-
     let needed = targetWord.length - elements.length;
-    const container = elements[0].parentNode;
-
-    while (needed > 0) {
-      // Pick a random index between 1 and elements.length (avoid 0 and end if possible for style)
-      // Or just distributed.
-      // Let's deterministically insert at indices 1, 3, 5 to look balanced.
-      // Current Length starts at 5.
-      // Insert at 1 -> Length 6.
-      // Insert at 3 -> Length 7.
-      // Insert at 5 -> Length 8.
-
-      // We need to pick index based on CURRENT elements array state.
-      // Use a modulo or simply random in range [1, length-1].
-      const insertIndex = 1 + Math.floor(Math.random() * (elements.length - 1));
-
-      const el = document.createElement("div");
-      el.className = "victory-code-cell glitching spawn-in";
-      el.textContent = chars[Math.floor(Math.random() * chars.length)];
-
-      // Insert into DOM
-      const refNode = elements[insertIndex];
-      container.insertBefore(el, refNode);
-
-      // Update Array
-      elements.splice(insertIndex, 0, el);
-
-      needed--;
+    
+    if (needed > 0 && container) {
+      while (needed > 0) {
+        // v1.2.7: APPEND to the end instead of inserting in middle
+        // to keep the 7 digits perfectly static during expansion.
+        const el = document.createElement("div");
+        el.className = "victory-code-cell victory-digit glitching spawn-in";
+        el.textContent = chars[Math.floor(Math.random() * chars.length)];
+        
+        container.appendChild(el);
+        elements.push(el);
+        needed--;
+      }
     }
 
-    // 3. Start resolving sequence shortly after spawn
+    // 2. Start resolving sequence shortly after spawn
     startResolving(elements, targetWord, chars);
   }, 800);
 }
@@ -520,11 +488,22 @@ export function stopVictoryAnimations() {
   stopAnimation();
   clearIdleTimer();
 
-  // 3. Remove board disintegration
+  // 3. Restore visibility of game elements
+  const grid = document.querySelector(".memory-grid-layout");
+  if (grid) grid.style.opacity = "";
+
   const board = document.getElementById("memory-board");
   if (board) {
     board.classList.remove("disintegrate");
+    board.style.opacity = ""; 
   }
+
+  const timer = document.getElementById("memory-timer");
+  if (timer) timer.style.display = ""; 
+
+  // v1.2.7: Reset Master Lock state
+  masterLock.reset();
+  masterLock.showIcon();
 }
 
 function startResolving(elements, targetWord, chars) {
@@ -549,6 +528,10 @@ function startResolving(elements, targetWord, chars) {
         // Or just add 'locked' now.
         requestAnimationFrame(() => el.classList.add("locked"));
 
+        // v1.2.7: STABILIZE - Mark this letter as finished/golden
+        el.classList.remove("glitching");
+        el.classList.add("locked");
+
         el.textContent = targetWord[indexToResolve];
         el.setAttribute("data-content", targetWord[indexToResolve]); // For CSS Glow Overlay
 
@@ -568,20 +551,25 @@ function startResolving(elements, targetWord, chars) {
 
 async function finalizeVictory() {
   console.log("Victory Animation Complete");
-  // v1.2.3: Removed redundant stopStageTimer() (already stopped in winGame)
-  await gameManager.awardStagePoints("code");
 
-  // Record Win and capture session stats
-  const sessionStats = await gameManager.recordWin();
+  // 1. Wait for the background save started in winGame
+  // While we wait, "VICTORIA" stays on screen in its golden state.
+  const sessionStats = await victoryPromise;
 
-  // Ensure "Game Complete" state is saved
+  // 2. Ensure "Game Complete" state is saved
   gameManager.updateProgress("code", { completed: true });
 
-  // Show Summary after a small delay to let the animation sink in
+  // 3. Show Summary after a small delay (v1.2.7: Added 1s per user request)
   setTimeout(async () => {
     const { showVictorySummary } = await import("./ui.js?v=1.2.2");
     showVictorySummary(sessionStats, false);
-  }, 2000);
+  }, 1000);
+
+  // 4. Close the master lock now that the results are showing
+  // Increased delay to 1300ms to stay behind the result modal
+  setTimeout(() => {
+    masterLock.close();
+  }, 1300);
 }
 
 function updateStatusDisplay() {

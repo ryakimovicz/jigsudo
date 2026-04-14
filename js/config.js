@@ -9,3 +9,4 @@ export const CONFIG = {
   // Feature Flags
   ENABLE_SOUND: true, // Toggle to show sound settings
 };
+
