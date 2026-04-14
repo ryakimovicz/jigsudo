@@ -1,6 +1,6 @@
 export const CONFIG = {
-  version: "1.5.55", // Major.Minor.Patch
-  fechaUpdate: "2026-04-12",
+  version: "1.2.2", // Major.Minor.Patch
+  fechaUpdate: "2026-04-14",
   author: "Román Yakimovicz",
   schemaVersion: 7.1,
   debugMode: true, // Toggle to true to see logs
