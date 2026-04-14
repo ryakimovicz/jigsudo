@@ -416,6 +416,8 @@ function openUserEditor(user) {
   document.getElementById("edit-user-total-rp").value = user.totalRP || 0;
   document.getElementById("edit-user-monthly-rp").value = user.monthlyRP || 0;
   document.getElementById("edit-user-daily-rp").value = user.dailyRP || 0;
+  document.getElementById("edit-user-last-day-rp").value = user.lastDayRP || 0;
+  document.getElementById("edit-user-last-month-rp").value = user.lastMonthRP || 0;
   
   const stats = user.stats || {};
   document.getElementById("edit-user-streak").value = stats.currentStreak || 0;
@@ -525,6 +527,8 @@ async function saveUserChanges() {
     totalRP: parseFloat(document.getElementById("edit-user-total-rp").value) || 0,
     monthlyRP: parseFloat(document.getElementById("edit-user-monthly-rp").value) || 0,
     dailyRP: parseFloat(document.getElementById("edit-user-daily-rp").value) || 0,
+    lastDayRP: parseFloat(document.getElementById("edit-user-last-day-rp").value) || 0,
+    lastMonthRP: parseFloat(document.getElementById("edit-user-last-month-rp").value) || 0,
     
     // v1.7.0 New Fields (Saved into 'stats' map via dot notation)
     "stats.currentStreak": parseInt(document.getElementById("edit-user-streak").value) || 0,
@@ -625,6 +629,8 @@ async function resetUser(userId) {
       totalRP: 0,
       monthlyRP: 0,
       dailyRP: 0,
+      lastDayRP: 0,
+      lastMonthRP: 0,
       isPublic: true,
       isVerified: oldData.isVerified || false,
       
