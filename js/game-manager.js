@@ -32,6 +32,9 @@ export class GameManager {
     this.serverTimeOffset = parseInt(localStorage.getItem("jigsudo_server_offset") || "0");
     if (CONFIG.debugMode) console.log(`[Timer] Initial Server Offset: ${this.serverTimeOffset}ms`);
 
+    // v1.9.0: Persistent Reset Acknowledgement (Prevents reload loops)
+    this._lastProcessedWipe = parseInt(localStorage.getItem("jigsudo_last_wipe_ack") || "0");
+
     // Listen for tab focus/visibility to force save or handle day transitions
     document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "hidden") {
@@ -164,6 +167,7 @@ export class GameManager {
       if (activeUid) {
         if (CONFIG.debugMode) console.log("[GameManager] Session resumed, waiting for intent to anchor.");
       }
+      
       if (CONFIG.debugMode)
         console.log(
           `[GameManager] Loading existing game for seed ${this.currentSeed}`,
@@ -583,6 +587,35 @@ export class GameManager {
         maxUnlockedLevel: 3,
       },
     };
+  }
+
+  /**
+   * v1.9.0: Hard Reset Orchestrator.
+   * Clears all local game data, sets the wipe acknowledgement, and reloads the application.
+   */
+  async wipeAccountData(wipeTimestamp) {
+    console.warn("[GameManager] Wiping all local data due to administrative reset...");
+    
+    // 1. Mark as wiping to block any incoming save attempts
+    this.isWiping = true;
+    
+    // 2. Clear all jigsudo-related keys from localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+        if (key.startsWith("jigsudo_")) {
+            localStorage.removeItem(key);
+        }
+    });
+    
+    // 3. Persist the acknowledgement so we don't wipe again on next load
+    localStorage.setItem("jigsudo_last_wipe_ack", wipeTimestamp.toString());
+    
+    // 4. Clear memory
+    this.state = null;
+    this.stats = null;
+    
+    // 5. Hard Reload to clean up all modules and state
+    window.location.reload();
   }
 
   async setJigsawVariation(variationKey) {
@@ -1939,6 +1972,16 @@ export class GameManager {
         if (isProtectedSession && hasRankDiscrepancy && isWithinGracePeriod) {
           console.log("[Sync] Shield Active: Ignoring potentially stale cloud snapshot during grace period.");
           return;
+        }
+
+        // v1.9.0: FORCED RESET DETECTION
+        // If the cloud document has a forceWipeAt timestamp newer than our last processed one,
+        // we MUST wipe local data and restart. This is the only way to effectively handle administrative resets.
+        const remoteWipe = remoteStats.forceWipeAt || 0;
+        if (remoteWipe > (this._lastProcessedWipe || 0)) {
+          console.warn(`[Sync] FORCED RESET DETECTED (${remoteWipe} > ${this._lastProcessedWipe}). Executing local wipe...`);
+          await this.wipeAccountData(remoteWipe);
+          return; // Stop here, page will reload
         }
 
         if (!this.stats || isRemoteNewer || this.isWiping || isMigration) {

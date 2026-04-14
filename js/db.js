@@ -124,6 +124,7 @@ export function reconstructStats(data) {
     activeSessionId: scavengeStr("activeSessionId", s.activeSessionId || null),
     isPublic: data.isPublic !== undefined ? data.isPublic : (s.isPublic !== undefined ? s.isPublic : true),
     lastLocalUpdate: scavengeNum("lastLocalUpdate", s.lastLocalUpdate || 0),
+    forceWipeAt: scavengeNum("forceWipeAt", s.forceWipeAt || data.forceWipeAt || 0),
     schemaVersion: data.schemaVersion || 0,
     integrityChecked: "1.5.62"
   };
@@ -351,6 +352,9 @@ export async function saveUserStats(userId, statsData, username = null, options 
           
           const localDaily = s.dailyRP || 0;
           const localTotal = s.totalRP || 0;
+          
+          // Reconstruct stats for proper reset detection
+          const remoteStats = reconstructStats(cloudData);
 
           const isSameDay = (cloudData.lastDailyUpdate || cloudStats.lastDailyUpdate) === (s.lastDailyUpdate);
           
@@ -360,8 +364,30 @@ export async function saveUserStats(userId, statsData, username = null, options 
           const isCloudPopulated = cloudTotal > 0 || (cloudStats.wins || 0) > 0;
           
           if (isLocalVirgin && isCloudPopulated && !updateData._isIntentionalReset && !isIntentionalPenalty) {
-            console.error("[DB] VIRGIN LOCK: Preventing empty local state from wiping cloud profile.");
-            return; // ABORT
+            // v1.9.0: ALLOW reset if cloud has an active forceWipeAt that is newer than what we processed
+            const remoteWipe = remoteStats.forceWipeAt || 0;
+            if (remoteWipe > 0) {
+               console.log("[DB] Reset in progress... allowing local virgin state.");
+            } else {
+               console.error("[DB] VIRGIN LOCK: Preventing empty local state from wiping cloud profile.");
+               return; // ABORT
+            }
+          }
+
+          // v1.9.0: RESET GUARD (Legacy/Ghost Protection)
+          // If the cloud has a forceWipeAt that we haven't acknowledged yet, we MUST block any up-sync.
+          // This prevents old client versions from 'undoing' a reset by pushing their high local RP.
+          const cloudWipeTS = remoteStats.forceWipeAt || 0;
+          const localWipeAck = parseInt(localStorage.getItem("jigsudo_last_wipe_ack") || "0");
+          if (cloudWipeTS > localWipeAck) {
+            console.warn(`[DB] RESET GUARD: Cloud reset (${cloudWipeTS}) is newer than local ACK (${localWipeAck}). Blocking up-sync.`);
+            
+            // Force adoption of empty cloud state to trigger local wipe in GameManager
+            if (gameManager && gameManager.handleCloudSync) {
+               const emptyStats = { ...cloudData.stats, dailyRP: 0, totalRP: 0, monthlyRP: 0, forceWipeAt: cloudWipeTS };
+               gameManager.handleCloudSync(cloudData.progress, emptyStats, false, cloudData.settings);
+            }
+            return; // ABORT THE SAVE
           }
 
           const isTotalRegression = localTotal < (cloudTotal - 0.01);
@@ -378,8 +404,6 @@ export async function saveUserStats(userId, statsData, username = null, options 
             console.warn(`[DB] ANTI-REGRESSION TRIGGERED: Cloud(T:${cloudTotal.toFixed(1)}, D:${cloudDaily.toFixed(1)}) > Local(T:${localTotal.toFixed(1)}, D:${localDaily.toFixed(1)})`);
             
             // Force Adoption of Remote Truth to heal local state
-            const remoteStats = { ...cloudData.stats, dailyRP: cloudDaily, totalRP: cloudTotal, monthlyRP: cloudMonth };
-            
             if (gameManager && gameManager.handleCloudSync) {
               gameManager.handleCloudSync(cloudData.progress, remoteStats, false, cloudData.settings);
               return false; // ABORT THE SAVE

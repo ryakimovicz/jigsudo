@@ -628,9 +628,10 @@ async function resetUser(userId) {
       isPublic: true,
       isVerified: oldData.isVerified || false,
       
-      // SYNC: Forcing client pull
+      // SYNC: Forcing client pull and local cache self-destruction
       lastUpdated: new Date(),
-      lastLocalUpdate: Date.now()
+      lastLocalUpdate: Date.now(),
+      forceWipeAt: Date.now()
     };
 
     // Only add email if it existed in the original doc
