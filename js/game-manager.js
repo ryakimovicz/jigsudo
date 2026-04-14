@@ -7,6 +7,7 @@ import {
 import { CONFIG } from "./config.js?v=1.2.2";
 import { calculateRP, SCORING } from "./ranks.js?v=1.2.2";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.2.2";
+import { encryptData, decryptData } from "./utils/crypto.js?v=1.0.0";
 import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.2.2";
 import { masterLock } from "./lock.js?v=1.2.2";
 
@@ -107,12 +108,24 @@ export class GameManager {
       console.warn("[GameManager] Offline or Fetch Failed:", e);
     }
 
-    const savedStateStr = this.isReplay ? null : localStorage.getItem(this.storageKey);
+    const cachedState = this.isReplay ? null : localStorage.getItem(this.storageKey);
     let savedState = null;
 
-    if (savedStateStr) {
+    if (cachedState) {
+       // Try to decrypt 
+       savedState = decryptData(cachedState);
+       
+       // Fallback for legacy (non-encrypted) sessions during transition
+       if (!savedState) {
+         try {
+           savedState = JSON.parse(cachedState);
+           if (savedState) console.log("[GameManager] Legacy state detected. Migrating to encrypted format on next save.");
+         } catch(e) { /* corrupted */ }
+       }
+    }
+
+    if (savedState) {
       try {
-        savedState = JSON.parse(savedStateStr);
         if (dailyData && savedState) {
           const savedVer = savedState.meta?.version || "unknown";
           const newVer = dailyData.meta?.version || "unknown";
@@ -835,7 +848,7 @@ export class GameManager {
     // We do NOT save the board state locally if we are in a history replay.
     if (this.isReplay) return;
 
-    localStorage.setItem(this.storageKey, JSON.stringify(this.state));
+    localStorage.setItem(this.storageKey, encryptData(this.state));
     if (syncToCloud) this.saveCloudDebounced(5000, isPenalty);
   }
 
@@ -1435,8 +1448,9 @@ export class GameManager {
     if (currentScore > (this.stats.bestScore || 0)) {
       console.log(`[Score] New Best Score (Partial): ${currentScore}`);
       this.stats.bestScore = currentScore;
-      this.save();
-      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      if (this.state) {
+        localStorage.setItem(this.storageKey, encryptData(this.state));
+      }
     }
   }
   /**

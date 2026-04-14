@@ -190,7 +190,7 @@ export function listenToUserProgress(userId) {
 }
 
 export async function triggerRemoteSave(userId) {
-  if (!userId) return;
+  if (!userId || window._jigsudo_migration_freeze) return;
   try {
     const userRef = doc(db, "users", userId);
     await setDoc(
@@ -302,18 +302,20 @@ export async function saveUserStats(userId, statsData, username = null, options 
   const isIntentionalPenalty = options._isIntentionalPenalty || false;
   const isConfirmedWin = options._isConfirmedWin || false;
 
-  if (!userId) return;
+  if (!userId || window._jigsudo_migration_freeze) return;
+
   try {
     const userRef = doc(db, "users", userId);
-
-    const { auth } = await import("./firebase-config.js?v=1.2.2");
-    const currentUser = auth.currentUser;
+    
     // v1.3.4: Atomic RP management (Authority is the Server/Functions)
     const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    
+    const { auth } = await import("./firebase-config.js?v=1.2.2");
+    const currentUser = auth.currentUser;
 
     const updateData = {
       lastUpdated: serverTimestamp(),
-      schemaVersion: 7.1 // v1.4.4: Default to latest hybrid schema
+      schemaVersion: 7.2 // v1.4.4: Default to latest hybrid schema
     };
 
     // Propagate options to updateData for internal logic visibility
@@ -433,7 +435,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
       updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
       updateData.lastLocalUpdate = Date.now();
-      updateData.schemaVersion = 7.1;
+      updateData.schemaVersion = 7.2;
 
       // Ensure activeSessionId is also synced at the root (allowed by rules)
       if (gameManager?.localSessionId) {
@@ -540,8 +542,8 @@ export async function saveUserProgress(userId, progressData) {
 
   try {
     const userRef = doc(db, "users", userId);
-    if (gameManager.isWiping) {
-      console.log("[DB] Update blocked: GM is wiping.");
+    if (gameManager.isWiping || window._jigsudo_migration_freeze) {
+      console.log("[DB] Update blocked: GM is wiping or Migration Freeze active.");
       return;
     }
 
@@ -554,7 +556,7 @@ export async function saveUserProgress(userId, progressData) {
       {
         progress: pClean,
         lastUpdated: serverTimestamp(),
-        schemaVersion: 7.1 // v1.4.4: Anchored to latest hybrid schema
+        schemaVersion: 7.2 // v1.4.4: Anchored to latest hybrid schema
       },
       { merge: true },
     );
@@ -630,7 +632,7 @@ export async function loadUserProgress(userId) {
           
           registeredAt: data.registeredAt || serverTimestamp(),
           isPublic: true,
-          schemaVersion: 7.1,
+          schemaVersion: 7.2,
 
           // 2. Consolidated Competitive Stats (MAP)
           stats: {
@@ -761,6 +763,89 @@ export async function fetchLatestUserData(userId) {
   } catch (error) {
     console.error("Error fetching latest user data:", error);
     return null;
+  }
+}
+
+/**
+ * v1.3.0: Season Transition 1 Hard Reset.
+ * Performs a deep remote wipe of history and stats while preserving identity.
+ */
+export async function performSeasonReset(userId) {
+  if (!userId) return { success: false, error: "No user ID provided" };
+  
+  try {
+    const userRef = doc(db, "users", userId);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) return { success: false, error: "User profile not found" };
+    
+    const oldData = docSnap.data();
+    console.warn(`[Season Migration] Wiping remote data for ${userId}...`);
+
+    // 1. Delete History Sub-collection (Batch)
+    const historyRef = collection(db, "users", userId, "history");
+    const historySnap = await getDocs(historyRef);
+    
+    if (!historySnap.empty) {
+      const batch = writeBatch(db);
+      historySnap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      console.log(`[Season Migration] Deleted ${historySnap.size} history records.`);
+    }
+
+    // 2. Perform Hard Reset on Document (Preserving Identity)
+    // We use setDoc (no merge) or careful selective data to ensure 0-stats
+    const cleanData = {
+      // IDENTITY (Preserved)
+      username: oldData.username || "Jugador",
+      username_lc: oldData.username_lc || "jugador",
+      registeredAt: oldData.registeredAt || serverTimestamp(),
+      isVerified: oldData.isVerified || false,
+      isPublic: true,
+      
+      // RESET STATS
+      totalRP: 0,
+      monthlyRP: 0,
+      dailyRP: 0,
+      lastDayRP: 0,
+      lastMonthRP: 0,
+      lastDailyUpdate: getJigsudoDateString(),
+      lastMonthlyUpdate: getJigsudoYearMonth(),
+      
+      // VERSION & SYNC
+      schemaVersion: 7.2,
+      lastUpdated: serverTimestamp(),
+      lastLocalUpdate: Date.now(),
+      forceWipeAt: Date.now(),
+      
+      // EMPTY STATS MAP
+      stats: {
+        wins: 0,
+        totalPlayed: 0,
+        currentStreak: 0,
+        maxStreak: 0,
+        bestScore: 0,
+        bestTime: 0,
+        totalTimeAccumulated: 0,
+        totalScoreAccumulated: 0,
+        totalPeaksErrorsAccumulated: 0,
+        totalPenaltyAccumulated: 0,
+        stageWinsAccumulated: {},
+        stageTimesAccumulated: {},
+        weekdayStatsAccumulated: {}
+      }
+    };
+
+    // Use setDoc WITHOUT {merge: true} to ensure legacy/ghost fields are purged
+    await setDoc(userRef, cleanData);
+    
+    // 3. Reset Progress Document (If needed)
+    // The main document contains progress in v7+, we already cleared it by calling setDoc without merge.
+    
+    console.log("[Season Migration] Remote wipe complete.");
+    return { success: true };
+  } catch (e) {
+    console.error("[Season Migration] Remote wipe FAILED:", e);
+    return { success: false, error: e.message };
   }
 }
 

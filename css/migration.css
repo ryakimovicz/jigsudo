@@ -1,0 +1,155 @@
+/* Season Migration Styles (Schema 7.2) */
+.migration-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.migration-card {
+  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(15, 15, 20, 0.98));
+  border: 1px solid rgba(243, 120, 37, 0.3);
+  border-radius: 24px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(243, 120, 37, 0.1);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.migration-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #f37825, #ff9d5c);
+}
+
+.migration-icon {
+  font-size: 5rem;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 15px rgba(243, 120, 37, 0.4));
+  animation: bounceScale 2s infinite ease-in-out;
+}
+
+.migration-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, #ffffff, #f37825);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.migration-date {
+  font-size: 1rem;
+  color: #f37825;
+  text-transform: capitalize;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  opacity: 0.9;
+}
+
+.migration-divider {
+  width: 60px;
+  height: 2px;
+  background: rgba(243, 120, 37, 0.4);
+  margin: 0 auto 24px;
+}
+
+.migration-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 32px;
+}
+
+.migration-btn {
+  background: linear-gradient(135deg, #f37825, #e06714);
+  color: white;
+  border: none;
+  padding: 18px 48px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 20px rgba(243, 120, 37, 0.3), 0 0 0 0 rgba(243, 120, 37, 0.4);
+  letter-spacing: 1px;
+}
+
+.migration-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(243, 120, 37, 0.4);
+}
+
+.migration-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.migration-btn:disabled {
+  background: #444;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loader Styles */
+.migration-loader {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(243, 120, 37, 0.1);
+  border-top-color: #f37825;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bounceScale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+body.migration-active {
+  overflow: hidden !important;
+}

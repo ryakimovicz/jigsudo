@@ -10,6 +10,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { translations } from "./translations.js?v=1.2.2";
 import { getCurrentLang } from "./i18n.js?v=1.2.2";
+import { encryptData, decryptData } from "./utils/crypto.js?v=1.0.0";
+
+const dbMod = await import("./db.js?v=1.2.2");
 import { getCurrentUser } from "./auth.js?v=1.2.2";
 import { getRankData, SCORING } from "./ranks.js?v=1.2.2";
 import { gameManager } from "./game-manager.js?v=1.2.2";
@@ -19,15 +22,37 @@ const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 export function getCachedRankings() {
-  const cached = localStorage.getItem(CACHE_KEY);
-  if (cached) {
+  const cache = localStorage.getItem(CACHE_KEY);
+  if (cache) {
     try {
-      return JSON.parse(cached).data;
+      // Try to decrypt 
+      let data = decryptData(cache);
+      
+      // Fallback for legacy (non-encrypted) cache
+      if (!data) {
+         data = JSON.parse(cache);
+         if (data) console.log("[Ranking] Legacy cache detected. Will be encrypted on next update.");
+      }
+      
+      if (data && data.timestamp && Date.now() - data.timestamp < CACHE_TTL) {
+        return data.rankings || data.data;
+      }
     } catch (e) {
-      return null;
+      localStorage.removeItem(CACHE_KEY);
     }
   }
   return null;
+}
+
+function saveRankingsToCache(rankings, userId, today, isAuthenticated) {
+  const data = {
+    timestamp: Date.now(),
+    rankings: rankings,
+    userId: userId,
+    cachedToday: today,
+    isAuthenticated: isAuthenticated
+  };
+  localStorage.setItem(CACHE_KEY, encryptData(data));
 }
 
 export async function fetchRankings(forceRefresh = false) {

@@ -424,7 +424,7 @@ function openUserEditor(user) {
   document.getElementById("edit-user-max-streak").value = stats.maxStreak || 0;
   document.getElementById("edit-user-wins").value = stats.wins || 0;
 
-  // v1.7.0 New Fields (Corrected to check inside 'stats' map)
+  // v1.7.0 Saneamiento v7.1: El progreso local ya no debe contener 'stats' map
   document.getElementById("edit-user-best-score").value = stats.bestScore || user.bestScore || 0;
   document.getElementById("edit-user-best-time").value = formatTime(stats.bestTime || user.bestTime || 0);
 
@@ -478,7 +478,7 @@ async function loadUserHistory(userId) {
     console.error("[Admin] Error loading history:", e);
     loader.classList.add("hidden");
     empty.textContent = "Error al cargar historial.";
-    empty.classList.remove("hidden");
+    empty.classList.add("hidden");
   }
 }
 
@@ -530,7 +530,7 @@ async function saveUserChanges() {
     lastDayRP: parseFloat(document.getElementById("edit-user-last-day-rp").value) || 0,
     lastMonthRP: parseFloat(document.getElementById("edit-user-last-month-rp").value) || 0,
     
-    // v1.7.0 New Fields (Saved into 'stats' map via dot notation)
+    // v1.4.5: Robust Hybrid Detection. Root fields (v7.1) vs Inner Map (Legacy/Partial)
     "stats.currentStreak": parseInt(document.getElementById("edit-user-streak").value) || 0,
     "stats.maxStreak": parseInt(document.getElementById("edit-user-max-streak").value) || 0,
     "stats.wins": parseInt(document.getElementById("edit-user-wins").value) || 0,
@@ -639,11 +639,6 @@ async function resetUser(userId) {
       lastLocalUpdate: Date.now(),
       forceWipeAt: Date.now()
     };
-
-    // Only add email if it existed in the original doc
-    if (oldData.email !== undefined) {
-      cleanData.email = oldData.email;
-    }
 
     // This completely REPLACES the document, purging any legacy fields
     await setDoc(userRef, cleanData);

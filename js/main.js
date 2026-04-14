@@ -20,6 +20,12 @@ import { closeSidebar, initSidebar } from "./sidebar.js?v=1.2.2";
 import { initChangelog } from "./changelog.js?v=1.2.2";
 import { toggleModal } from "./ui.js?v=1.2.2";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.2.2";
+import { checkSeasonMigration } from "./migration.js?v=1.3.0";
+
+// v1.3.0: Season Transition Barrier (Absolute Blocking)
+// We check this at the top level BEFORE ANY initialization to prevent 
+// "Cloud Echo" saves from background modules like GameManager.
+checkSeasonMigration();
 
 // Boot Sequence
 // Capture native logging before suppression
