@@ -415,23 +415,70 @@ function renderHistoryCalendar(history = {}) {
  * v1.5.62: Floating Tooltip Logic
  */
 export function attachCalendarTooltip(el, dayData, dateStr) {
-  // Always attach if day existed in the past
-
+  // Desktop hover
   el.addEventListener("mouseenter", (e) => {
+    if (window.matchMedia("(max-width: 768px)").matches) return;
     showHistoryTooltip(e, dayData, dateStr);
   });
 
   el.addEventListener("mousemove", (e) => {
+    if (window.matchMedia("(max-width: 768px)").matches) return;
     updateHistoryTooltipPosition(e);
   });
 
   el.addEventListener("mouseleave", () => {
+    if (window.matchMedia("(max-width: 768px)").matches) return;
     hideHistoryTooltip();
+  });
+
+  // Mobile Long Press
+  let touchTimer = null;
+  el.addEventListener("touchstart", (e) => {
+    touchTimer = setTimeout(() => {
+        showHistoryTooltip(e, dayData, dateStr, true);
+    }, 500);
+  }, { passive: true });
+
+  el.addEventListener("touchend", () => {
+    if (touchTimer) clearTimeout(touchTimer);
+  });
+
+  el.addEventListener("touchmove", () => {
+    if (touchTimer) clearTimeout(touchTimer);
   });
 }
 
-function showHistoryTooltip(e, data, dateStr) {
+function hideHistoryTooltip(isExplicitClose = false) {
   const tooltip = document.getElementById("history-tooltip");
+  const container = document.getElementById("history-tooltip-container");
+  if (!tooltip) return;
+
+  tooltip.classList.add("hidden");
+  tooltip.classList.remove("mobile-mode");
+  if (container) container.classList.remove("visible");
+  
+  // v1.9.0: Restore scroll
+  document.documentElement.classList.remove("no-scroll");
+  document.body.classList.remove("no-scroll");
+
+  // If this was an explicit close (button or back), we might need to handle history
+  if (isExplicitClose && window.history.state?.tooltipOpen) {
+      window.history.back();
+  }
+}
+
+// v1.9.0: Global listener for Back Button
+window.addEventListener("popstate", (e) => {
+    const tooltip = document.getElementById("history-tooltip");
+    if (tooltip && !tooltip.classList.contains("hidden")) {
+        // Close it quietly (don't call history.back again)
+        hideHistoryTooltip(false);
+    }
+});
+
+function showHistoryTooltip(e, data, dateStr, isMobile = false) {
+  const tooltip = document.getElementById("history-tooltip");
+  const container = document.getElementById("history-tooltip-container");
   if (!tooltip) return;
 
   const lang = getCurrentLang() || "es";
@@ -449,7 +496,14 @@ function showHistoryTooltip(e, data, dateStr) {
     else if (data.hasOriginal) titleColor = "#eab308"; // Yellow (Empezado original)
   }
 
-  let html = `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
+  let html = "";
+  
+  // Close Button for mobile
+  if (isMobile) {
+      html += `<button class="tooltip-close" id="hist-tooltip-close">×</button>`;
+  }
+
+  html += `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
     <span>${dateTitle}</span>
     ${data?.status === "won" ? "<span>👑</span>" : ""}
   </div>`;
@@ -504,7 +558,38 @@ function showHistoryTooltip(e, data, dateStr) {
 
   tooltip.innerHTML = html;
   tooltip.classList.remove("hidden");
-  updateHistoryTooltipPosition(e);
+
+  if (isMobile) {
+      // v1.9.0: Clear any manual styles from hovering to avoid conflicts
+      tooltip.style.left = "";
+      tooltip.style.top = "";
+      
+      tooltip.classList.add("mobile-mode");
+      if (container) container.classList.add("visible");
+      
+      // v1.9.0: Block scroll
+      document.documentElement.classList.add("no-scroll");
+      document.body.classList.add("no-scroll");
+
+      // Navigation support
+      window.history.pushState({ tooltipOpen: true }, "");
+
+      // Event for close button
+      const closeBtn = document.getElementById("hist-tooltip-close");
+      if (closeBtn) {
+          closeBtn.onclick = (ev) => {
+              ev.stopPropagation();
+              hideHistoryTooltip(true);
+          };
+      }
+      
+      // Close on backdrop click
+      if (container) {
+          container.onclick = () => hideHistoryTooltip(true);
+      }
+  } else {
+      updateHistoryTooltipPosition(e);
+  }
 }
 
 function updateHistoryTooltipPosition(e) {
@@ -529,7 +614,4 @@ function updateHistoryTooltipPosition(e) {
   tooltip.style.top = `${top}px`;
 }
 
-function hideHistoryTooltip() {
-  const tooltip = document.getElementById("history-tooltip");
-  if (tooltip) tooltip.classList.add("hidden");
-}
+
