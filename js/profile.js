@@ -935,10 +935,13 @@ function renderCalendar(history = {}) {
       const isToday = dateStr === todayStr;
 
       if (isToday && !isCompleted) {
-        dayEl.classList.add("disabled");
-        dayEl.style.opacity = "0.3";
-        // REMOVED pointerEvents = "none" to allow today's tooltip
-      } else if (dayData) {
+        // v1.9.5: Look "dimmed/off" because it is unclickable, but show color if played
+        dayEl.style.opacity = "0.6"; 
+        dayEl.style.filter = "saturate(0.6)";
+        dayEl.style.cursor = "default";
+      }
+      
+      if (dayData) {
         // Rules: Green if won on day 1, Yellow if started on day 1 but not won.
         if (dayData.original && dayData.original.won === true) {
           dayEl.classList.add("win");

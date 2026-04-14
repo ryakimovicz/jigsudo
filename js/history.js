@@ -361,10 +361,12 @@ function renderHistoryCalendar(history = {}) {
       dayEl.style.pointerEvents = "none";
     } else {
       // Past or Today (Available puzzles)
+      // Today restriction: Only allow clicking Today if already won or if we want to allow re-entry
       if (isToday && !isCompleted) {
-        dayEl.classList.add("disabled");
-        dayEl.style.opacity = "0.3";
-        // REMOVED pointerEvents = "none" to allow today's tooltip
+        // v1.9.5: Look "dimmed/off" because it is unclickable, but show color
+        dayEl.style.opacity = "0.6"; 
+        dayEl.style.filter = "saturate(0.6)";
+        dayEl.style.cursor = "default";
       }
       // Check History Status
       if (dayData) {
@@ -394,16 +396,23 @@ function renderHistoryCalendar(history = {}) {
         const isCompleted = dayData && dayData.status === "won";
 
         // Per user request:
-        // game should be #game only if it is today AND not completed.
-        // Otherwise, use deep-link with date.
-        if (isToday && !isCompleted) {
-          window.location.hash = "#game";
-        } else {
-          const y = dateObj.getUTCFullYear();
-          const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
-          const dStr = String(dateObj.getUTCDate()).padStart(2, "0");
-          window.location.hash = `#history/${y}/${m}/${dStr}`;
+        // Today is NOT clickable from history until won.
+        if (isToday) {
+            if (isCompleted) {
+                // Allow deep link if won (v1.9.4)
+                const y = dateObj.getUTCFullYear();
+                const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+                const dStr = String(dateObj.getUTCDate()).padStart(2, "0");
+                window.location.hash = `#history/${y}/${m}/${dStr}`;
+            }
+            return; // Do nothing for today if not completed
         }
+        
+        // Otherwise, use deep-link with date.
+        const y = dateObj.getUTCFullYear();
+        const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+        const dStr = String(dateObj.getUTCDate()).padStart(2, "0");
+        window.location.hash = `#history/${y}/${m}/${dStr}`;
       });
     }
 

@@ -137,11 +137,22 @@ body.dark-mode #history-grid-container .calendar-day:hover {
 
 #history-grid-container .calendar-day.win {
   background: #22c55e !important;
-  color: white !important;
+  color: #064e3b !important; /* Dark Green Text for Light Mode */
 }
 
 #history-grid-container .calendar-day.loss {
   background: #eab308 !important;
+  color: #1e293b !important; /* Dark Slate Text for Light Mode */
+}
+
+/* Dark Mode Overrides for History Colors */
+body.dark-mode #history-grid-container .calendar-day.win {
+  background: #22c55e !important;
+  color: white !important;
+}
+
+body.dark-mode #history-grid-container .calendar-day.loss {
+  background: #ca8a04 !important; /* Darker Gold for Dark Mode */
   color: white !important;
 }
 
