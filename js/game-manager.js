@@ -8,6 +8,7 @@ import { CONFIG } from "./config.js?v=1.2.2";
 import { calculateRP, SCORING } from "./ranks.js?v=1.2.2";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.2.2";
 import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.2.2";
+import { masterLock } from "./lock.js?v=1.2.2";
 
 export class GameManager {
   constructor() {
@@ -94,6 +95,8 @@ export class GameManager {
     // after a reload or migration. 
     this._throneShieldExpires = Date.now() + 45000; 
     console.log("[GameManager] Throne Shield activated for 45s.");
+    masterLock.init();
+    masterLock.reset();
 
     let dailyData = null;
     try {
@@ -141,6 +144,7 @@ export class GameManager {
       this.stats =
         JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
       const decayOccurred = await this._ensureStats();
+      masterLock.showIcon();
       const activeUid = localStorage.getItem("jigsudo_active_uid");
 
       if (decayOccurred && !activeUid) {

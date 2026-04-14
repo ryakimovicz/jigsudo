@@ -1,0 +1,195 @@
+/* MASTER LOCK - Mechanical Safe Esthetics */
+
+:root {
+  --lock-gold: #fbbf24; /* Amber 400 */
+  --lock-gold-dark: #b45309; /* Amber 700 */
+  --lock-steel: #94a3b8; /* Slate 400 */
+  --lock-steel-dark: #334155; /* Slate 700 */
+}
+
+/* 1. Lock Icon (Top Right of Game Area) */
+#master-lock-icon {
+  position: absolute;
+  top: 25px; /* Moved up from 75px */
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#master-lock-icon.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Expansion state for victory */
+#master-lock-icon.expanding {
+  z-index: 60000;
+  filter: none;
+}
+
+#master-lock-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 2. Lock Modal / Safe Overlay */
+#master-lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.95); /* Deeper than standard modal */
+  backdrop-filter: blur(8px);
+  z-index: 50000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: visibility 0s, opacity 0.4s ease;
+}
+
+#master-lock-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 3. Safe Box UI */
+.safe-mechanism {
+  position: relative;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  padding: 40px;
+  border-radius: 20px;
+  border: 4px solid #334155;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  transform: scale(0.3);
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#master-lock-overlay.active .safe-mechanism {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.safe-header {
+  color: #94a3b8;
+  font-family: var(--font-paper);
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 4. The 7 Wheels Group */
+.wheels-wrapper {
+  display: flex;
+  gap: 12px;
+  background: #020617;
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px solid #1e293b;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
+}
+
+/* 5. Individual Wheel */
+.safe-wheel {
+  position: relative;
+  width: 40px;
+  height: 60px;
+  background: #1e293b;
+  border-radius: 6px;
+  overflow: hidden; /* Hide the scrolling strip */
+  box-shadow: 
+    inset 0 4px 8px rgba(0,0,0,0.4),
+    0 2px 0 rgba(255,255,255,0.05);
+  border: 1px solid #334155;
+}
+
+.wheel-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0s linear; /* Default for chaotic spin */
+}
+
+/* Each digit cell */
+.wheel-digit {
+  width: 40px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--font-main);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #64748b;
+  text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Animation State: Unlocking (Stopped at target) */
+.safe-wheel.unlocked .wheel-digit {
+  color: var(--lock-gold);
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+}
+
+/* 6. Mechanical Details */
+.safe-rivet {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #475569;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.1);
+}
+.rivet-tl { top: 10px; left: 10px; }
+.rivet-tr { top: 10px; right: 10px; }
+.rivet-bl { bottom: 10px; left: 10px; }
+.rivet-br { bottom: 10px; right: 10px; }
+
+/* 7. Keyframes for Spinning */
+@keyframes wheel-pulse {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+  100% { filter: brightness(1); }
+}
+
+/* Responsive Scaling */
+@media (max-width: 480px) {
+  .wheels-wrapper {
+    gap: 6px;
+    padding: 10px;
+  }
+  .safe-wheel {
+    width: 32px;
+    height: 48px;
+  }
+  .wheel-digit {
+    width: 32px;
+    height: 48px;
+    font-size: 1.4rem;
+  }
+  .safe-mechanism {
+    padding: 25px;
+  }
+}

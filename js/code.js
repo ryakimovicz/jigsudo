@@ -4,6 +4,7 @@ import { translations } from "./translations.js?v=1.2.2";
 import { getCurrentLang } from "./i18n.js?v=1.2.2";
 import { getDailySeed } from "./utils/random.js?v=1.2.2";
 import { stopTimer } from "./timer.js?v=1.2.2";
+import { masterLock } from "./lock.js?v=1.2.2";
 
 let sequence = []; // The full 5-digit code
 let currentLevel = 3; // Starts at 3
@@ -352,7 +353,7 @@ function handleError(cell) {
   }, 1000);
 }
 
-function winGame() {
+async function winGame() {
   console.log("CODE CRACKED! Starting Victory Animation...");
 
   // 1. STOP TIMER & ANIMATIONS IMMEDIATELY
@@ -382,23 +383,19 @@ function winGame() {
   const gameSection = document.getElementById("game-section");
   const board = document.getElementById("memory-board");
 
+  // 1.5. NEW: Master Lock Sequence
+  const sourcePositions = await masterLock.showVictorySequence(values);
+
   // Create Animation Container (Centered)
   const animContainer = document.createElement("div");
   animContainer.className = "victory-code-container";
   gameSection.appendChild(animContainer);
 
-  // We need to map each SEQUENCE value to a physical board cell.
-  // simonData holds { value, element }.
-  // There might be duplicates in sequence. We need to pick available cells.
-  // Strategy: For each digit in sequence, pick a matching cell from simonData.
-  // Reuse cells if we have to (creates overlapping flying clones).
-
-  // Create 5 digit cells first to establish final layout
+  // Create 7 digit cells (Now guaranteed to be 7 for the Lock)
   const digitEls = values.map((val) => {
     const el = document.createElement("div");
     el.className = "victory-code-cell";
     el.textContent = val;
-    // Hide initially until we position it
     el.style.opacity = "0";
     animContainer.appendChild(el);
     return el;
@@ -410,53 +407,37 @@ function winGame() {
   // Now calculate positions based on STABLE layout
   digitEls.forEach((el, index) => {
     const val = values[index];
+    const sourcePos = sourcePositions[index];
 
-    // Robustly find matching cell
-    const matchingData = simonData.find((d) => d.value === val);
-    let sourceEl = matchingData ? matchingData.element : null;
-
-    // Fallback search
-    if (!sourceEl) {
-      const allCells = Array.from(board.querySelectorAll(".mini-cell"));
-      const fallback = allCells.find(
-        (c) =>
-          parseInt(c.textContent.trim()) === val &&
-          !c.classList.contains("victory-code-cell"),
-      );
-      if (fallback) sourceEl = fallback;
-    }
-
-    if (sourceEl) {
+    if (sourcePos) {
       // 1. Get positions
-      const sourceRect = sourceEl.getBoundingClientRect();
       const targetRect = el.getBoundingClientRect(); // Stable final position
 
       // 2. Calculate Delta (Center to Center)
-      const sourceCenterX = sourceRect.left + sourceRect.width / 2;
-      const sourceCenterY = sourceRect.top + sourceRect.height / 2;
-
       const targetCenterX = targetRect.left + targetRect.width / 2;
       const targetCenterY = targetRect.top + targetRect.height / 2;
 
-      const deltaX = sourceCenterX - targetCenterX;
-      const deltaY = sourceCenterY - targetCenterY;
+      // Delta from Lock Wheel to Final Target
+      const deltaX = sourcePos.x - targetCenterX;
+      const deltaY = sourcePos.y - targetCenterY;
 
-      // 3. Apply Transform to put it back at source
-      el.style.transition = "none"; // IMPORTANT: Disable CSS transition for instant placement
+      // 3. Apply Transform to put it back at source (the lock wheel)
+      el.style.transition = "none";
       el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-      el.style.opacity = "1"; // Make visible now that it's in source pos
+      el.style.opacity = "1";
 
-      // 4. Force Reflow per element to ensure transition works
-      // (Or we can do a global reflow, but per-element is safer for transition trigger)
-      el.offsetHeight;
+      el.offsetHeight; // Force reflow
 
-      // 5. Animate to Center (0,0)
+      // 4. Animate to Center (0,0)
       el.style.transition = "transform 1.0s cubic-bezier(0.16, 1, 0.3, 1)";
       el.style.transform = "translate(0, 0)";
     } else {
       el.style.opacity = "1";
     }
   });
+
+  // 2. Close Lock and Disintegrate Board
+  masterLock.close();
 
   // 2. Disintegrate Board
   if (board) {
