@@ -470,8 +470,9 @@ export function initHome() {
       const todayStats = stats.history?.[today];
 
       if (todayStats) {
-        // v1.4.6: Resilient data extraction (best -> original -> root)
-        const source = todayStats.best || todayStats.original || todayStats;
+        // v1.4.6: Resilient data extraction (original -> best -> root)
+        // v1.5.0: Home page PRIORITIZES the original daily game over history replays.
+        const source = todayStats.original || todayStats.best || todayStats;
         
         const sessionStats = {
           totalTime: source.totalTime,
@@ -479,8 +480,8 @@ export function initHome() {
           streak: stats.currentStreak,
           errors: source.errors || source.peaksErrors || 0,
           stageTimes: source.stageTimes || {},
-          date: today, // v1.4.6: Pass date for history context
-          isReplay: today !== stats.lastPlayedDate // Infer if replay
+          date: today, 
+          isReplay: false // Home view always represents the primary daily result
         };
 
         const { showVictorySummary } = await import("./ui.js?v=1.2.2");
