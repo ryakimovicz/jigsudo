@@ -15,7 +15,8 @@ import {
   deleteField,
   writeBatch,
   getDoc,
-  setDoc
+  setDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
 /**
@@ -110,6 +111,11 @@ export async function initAdmin() {
     btnReset.onclick = () => {
       if (currentEditingUserId) resetUser(currentEditingUserId);
     };
+  }
+  // Delete All Button
+  const btnDeleteAll = document.getElementById("btn-delete-all-reports");
+  if (btnDeleteAll) {
+    btnDeleteAll.onclick = () => deleteAllReports();
   }
 }
 
@@ -237,9 +243,70 @@ function createReportRow(data) {
     <td>${data.stage || "---"}</td>
     <td>${timeStr}</td>
     <td class="reason-cell">${data.reason || "Sospechoso"}</td>
+    <td>
+      <button class="btn-delete-report" data-id="${data.id}" title="Eliminar reporte">🗑️</button>
+    </td>
   `;
 
+  const deleteBtn = tr.querySelector(".btn-delete-report");
+  if (deleteBtn) {
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteReport(data.id);
+    };
+  }
+
   return tr;
+}
+
+async function deleteReport(reportId) {
+  if (!confirm("¿Seguro que quieres eliminar este reporte?")) return;
+
+  try {
+    const reportRef = doc(db, "referee_reports", reportId);
+    await deleteDoc(reportRef);
+    
+    // Update local data and UI
+    reportsData = reportsData.filter(r => r.id !== reportId);
+    renderReports();
+    updateAdminBadges();
+  } catch (e) {
+    console.error("[Admin] Error deleting report:", e);
+    alert("Error al eliminar el reporte.");
+  }
+}
+
+async function deleteAllReports() {
+  const count = reportsData.length;
+  if (count === 0) return;
+  if (!confirm(`⚠️ ¿ESTÁS SEGURO? Se eliminarán los ${count} reportes visibles permanentemente.`)) return;
+
+  const btn = document.getElementById("btn-delete-all-reports");
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Borrando...";
+  btn.disabled = true;
+
+  try {
+    const batch = writeBatch(db);
+    // Firestore batch limit is 500, we are loading 50, so it's safe.
+    reportsData.forEach(r => {
+      const ref = doc(db, "referee_reports", r.id);
+      batch.delete(ref);
+    });
+
+    await batch.commit();
+    
+    reportsData = [];
+    renderReports();
+    updateAdminBadges();
+    alert("¡Todos los reportes han sido eliminados!");
+  } catch (e) {
+    console.error("[Admin] Error deleting all reports:", e);
+    alert("Error al eliminar los reportes.");
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
 }
 
 /**

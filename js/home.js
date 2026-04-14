@@ -813,6 +813,16 @@ export function initHome() {
         // Replay/History Mode
         const [y, m, d] = detail.params;
         const dateStr = `${y}-${m}-${d}`;
+
+        // v1.5.62: Today Protection - Block history access for today if not won
+        const now = getJigsudoDate();
+        const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+
+        if (dateStr === todayStr && !checkDailyWin()) {
+          console.warn("[Home] Blocking history access for Today (not won). Redirecting to Home.");
+          window.location.hash = "#home";
+          return;
+        }
         
         // Puzzle existence validation
         if (!isPuzzleAvailable(dateStr)) {

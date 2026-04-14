@@ -339,13 +339,17 @@ function renderHistoryCalendar(history = {}) {
     const isFuture = dateObj.getTime() > now.getTime();
     const exists = puzzleExistsCache[dateStr];
 
-    if (isFuture || !exists) {
+    // Today restriction: Only allow Today if already won
+    const isToday = dateStr === todayStr;
+    const dayData = history[dateStr];
+    const isCompleted = dayData?.status === "won";
+
+    if (isFuture || !exists || (isToday && !isCompleted)) {
       dayEl.classList.add("disabled");
       dayEl.style.opacity = "0.3";
       dayEl.style.pointerEvents = "none";
     } else {
       // Check History Status
-      const dayData = history[dateStr];
       if (dayData) {
         // 1. BACKGROUND COLORS (Original performance anchor)
         if (dayData.originalWon) {

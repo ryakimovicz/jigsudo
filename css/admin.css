@@ -91,7 +91,16 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-family: var(--font-paper);
+    color: var(--text-color);
 }
 
 .detail-back-btn {
@@ -202,9 +211,16 @@
 
 .user-edit-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
     margin-top: 20px;
+}
+
+/* v1.5.62: Desktop 3-column layout for precise card spans */
+@media (min-width: 1200px) {
+    .user-edit-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .edit-card {
@@ -219,6 +235,22 @@
 
 .admin-input-group {
     margin-bottom: 20px;
+    flex: 1; /* Allow growing in flex rows */
+    min-width: 140px; /* Prevent being too small */
+}
+
+.rp-edit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 5px;
+}
+
+.rp-edit-row.divider-top {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .admin-input-group label {
@@ -228,6 +260,9 @@
     margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .admin-input-group input, 
@@ -391,3 +426,80 @@
    padding: 8px;
    font-size: 0.9rem;
 }
+
+/* v1.5.62: Report Management Styles */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-delete-all {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-delete-all:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.btn-delete-report {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    font-size: 1.1rem;
+    padding: 4px;
+    line-height: 1;
+}
+
+.btn-delete-report:hover {
+    opacity: 1;
+    transform: scale(1.2);
+    color: #ef4444;
+}
+
+.dark-mode .btn-delete-all {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.admin-flex-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.admin-flex-row > * {
+    flex: 1;
+    min-width: 250px;
+}
+
+@media (min-width: 1200px) {
+    .info-general-card {
+        grid-column: span 1;
+    }
+    .rp-stats-card {
+        grid-column: span 2;
+    }
+    .stage-stats-card {
+        grid-column: span 2;
+    }
+}
+
+
+
+

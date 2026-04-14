@@ -917,6 +917,10 @@ function renderCalendar(history = {}) {
       grid.appendChild(empty);
     }
 
+    // Today for limit (using UTC methods)
+    const now = getJigsudoDate();
+    const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+
     // Real Days
     for (let d = 1; d <= daysInMonth; d++) {
       const dayEl = document.createElement("div");
@@ -926,9 +930,15 @@ function renderCalendar(history = {}) {
       // Check Status
       // Format YYYY-MM-DD
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const dayData = history[dateStr];
+      const isCompleted = dayData?.status === "won";
+      const isToday = dateStr === todayStr;
 
-      if (history && history[dateStr]) {
-        const dayData = history[dateStr];
+      if (isToday && !isCompleted) {
+        dayEl.classList.add("disabled");
+        dayEl.style.opacity = "0.3";
+        dayEl.style.pointerEvents = "none";
+      } else if (dayData) {
         // Rules: Green if won on day 1, Yellow if started on day 1 but not won.
         if (dayData.original && dayData.original.won === true) {
           dayEl.classList.add("win");

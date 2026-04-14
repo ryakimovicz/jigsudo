@@ -1606,7 +1606,8 @@
            <div class="detail-header">
               <button class="detail-back-btn back-to-dashboard">← Volver</button>
               <h3>Auditoría del Árbitro</h3>
-              <button id="btn-refresh-reports" class="btn-refresh">🔄</button>
+              <button id="btn-refresh-reports" class="btn-refresh" title="Refrescar">🔄</button>
+                  <button id="btn-delete-all-reports" class="btn-delete-all" title="Eliminar Todos los Reportes">🗑️ Borrar Todo</button>
            </div>
            <div class="admin-table-container">
               <table class="admin-table">
@@ -1618,6 +1619,7 @@
                        <th>Nivel</th>
                        <th>Tiempo</th>
                        <th>Razón</th>
+                        <th>Acción</th>
                     </tr>
                  </thead>
                  <tbody id="admin-reports-tbody">
@@ -1666,7 +1668,7 @@
            </div>
            
            <div class="user-edit-grid">
-              <div class="edit-card glass-panel">
+              <div class="edit-card glass-panel info-general-card">
                  <h4>Información General</h4>
                  <div class="admin-input-group">
                     <label>Username</label>
@@ -1696,57 +1698,57 @@
                  </div>
               </div>
 
-              <div class="edit-card glass-panel">
-                 <h4>Estadísticas y RP</h4>
-                 <div class="rp-edit-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
-                    <div class="admin-input-group">
-                       <label>Victorias Totales</label>
-                       <input type="number" id="edit-user-wins">
-                    </div>
-                    <div class="admin-input-group">
-                       <label>Racha Máxima</label>
-                       <input type="number" id="edit-user-max-streak">
-                    </div>
-                 <div class="rp-edit-row" style="display: flex; gap: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
-                    <div class="admin-input-group">
-                       <label>Mejor Puntaje</label>
-                       <input type="number" step="0.01" id="edit-user-best-score">
-                    </div>
-                    <div class="admin-input-group">
-                       <label>Mejor Tiempo</label>
-                       <input type="text" id="edit-user-best-time" placeholder="01:30">
-                    </div>
-                    <div class="admin-input-group">
-                       <label>Última Partida</label>
-                       <input type="text" id="edit-user-last-played" placeholder="YYYY-MM-DD">
-                    </div>
-                 </div>
-                 </div>
-                 <div class="rp-edit-row" style="display: flex; gap: 15px;">
-                    <div class="admin-input-group">
-                       <label>Total RP</label>
-                       <input type="number" step="0.001" id="edit-user-total-rp">
-                    </div>
-                    <div class="admin-input-group">
-                       <label>Mensual RP</label>
-                       <input type="number" step="0.001" id="edit-user-monthly-rp">
-                    </div>
-                 </div>
-                 <div class="rp-edit-row" style="display: flex; gap: 15px;">
-                    <div class="admin-input-group">
-                       <label>Daily RP</label>
-                       <input type="number" step="0.001" id="edit-user-daily-rp">
-                    </div>
-                    <div class="admin-input-group">
-                       <label>Racha Actual</label>
-                       <input type="number" id="edit-user-streak">
-                    </div>
-                 </div>
-              </div>
+               <div class="edit-card glass-panel rp-stats-card">
+                  <h4>Estadísticas y RP</h4>
+                  <div class="rp-edit-row">
+                     <div class="admin-input-group">
+                        <label>Victorias Totales</label>
+                        <input type="number" id="edit-user-wins">
+                     </div>
+                     <div class="admin-input-group">
+                        <label>Racha Máxima</label>
+                        <input type="number" id="edit-user-max-streak">
+                     </div>
+                  </div>
+                  <div class="rp-edit-row divider-top">
+                     <div class="admin-input-group">
+                        <label>Mejor Puntaje</label>
+                        <input type="number" step="0.01" id="edit-user-best-score">
+                     </div>
+                     <div class="admin-input-group">
+                        <label>Mejor Tiempo</label>
+                        <input type="text" id="edit-user-best-time" placeholder="01:30">
+                     </div>
+                     <div class="admin-input-group">
+                        <label>Última Partida</label>
+                        <input type="text" id="edit-user-last-played" placeholder="YYYY-MM-DD">
+                     </div>
+                  </div>
+                  <div class="rp-edit-row">
+                     <div class="admin-input-group">
+                        <label>Total RP</label>
+                        <input type="number" step="0.001" id="edit-user-total-rp">
+                     </div>
+                     <div class="admin-input-group">
+                        <label>Mensual RP</label>
+                        <input type="number" step="0.001" id="edit-user-monthly-rp">
+                     </div>
+                  </div>
+                  <div class="rp-edit-row">
+                     <div class="admin-input-group">
+                        <label>Daily RP</label>
+                        <input type="number" step="0.001" id="edit-user-daily-rp">
+                     </div>
+                     <div class="admin-input-group">
+                        <label>Racha Actual</label>
+                        <input type="number" id="edit-user-streak">
+                     </div>
+                  </div>
+               </div>
 
               
               <!-- Acumulados Globales (v1.7.0) -->
-              <div class="edit-card glass-panel" style="grid-column: span 2;">
+              <div class="edit-card glass-panel" style="grid-column: 1 / -1;">
                  <h4>Acumulados Globales</h4>
                  <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
                     <div class="admin-input-group">
@@ -1773,27 +1775,29 @@
               </div>
 
               <!-- Mapas de Datos JSON (v1.7.0) -->
-              <div class="edit-card glass-panel">
+              <div class="edit-card glass-panel stage-stats-card">
                  <h4>Tiempos y Victorias por Etapa</h4>
-                 <div class="admin-input-group">
-                    <label>stageTimesAccumulated (JSON)</label>
-                    <textarea id="edit-user-stage-times" rows="5" class="json-editor"></textarea>
-                 </div>
-                 <div class="admin-input-group">
-                    <label>stageWinsAccumulated (JSON)</label>
-                    <textarea id="edit-user-stage-wins" rows="5" class="json-editor"></textarea>
+                 <div class="admin-flex-row">
+                    <div class="admin-input-group">
+                       <label>stageTimesAccumulated (JSON)</label>
+                       <textarea id="edit-user-stage-times" rows="12" class="json-editor" style="width: 100%;"></textarea>
+                    </div>
+                    <div class="admin-input-group">
+                       <label>stageWinsAccumulated (JSON)</label>
+                       <textarea id="edit-user-stage-wins" rows="12" class="json-editor" style="width: 100%;"></textarea>
+                    </div>
                  </div>
               </div>
 
-              <div class="edit-card glass-panel">
+              <div class="edit-card glass-panel weekly-stats-card">
                  <h4>Estadísticas Semanales</h4>
                  <div class="admin-input-group">
                     <label>weekdayStatsAccumulated (JSON)</label>
-                    <textarea id="edit-user-weekday-stats" rows="12" class="json-editor"></textarea>
+                    <textarea id="edit-user-weekday-stats" rows="25" class="json-editor" style="width: 100%;"></textarea>
                  </div>
               </div>
 <!-- Partidas Recientes (v1.6.5) -->
-              <div class="edit-card glass-panel full-width" style="grid-column: span 2; margin-top: 20px;">
+              <div class="edit-card glass-panel full-width" style="grid-column: 1 / -1; margin-top: 20px;">
                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h4 style="margin: 0;">Historial de Partidas (Últimas 15)</h4>
                     <span id="user-last-online" style="font-size: 0.85rem; color: #a1a1aa;"></span>
