@@ -8,10 +8,34 @@
     animation: fadeIn 0.4s ease-out;
 }
 
+@media (max-width: 768px) {
+    .admin-container {
+        margin: 60px auto 20px auto;
+        padding: 12px;
+        width: 100%;
+    }
+}
+
 .admin-header {
-    margin-bottom: 30px;
+    margin-bottom: 25px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.admin-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+@media (max-width: 480px) {
+    .admin-header h2 {
+        font-size: 1.2rem;
+    }
 }
 
 .header-breadcrumb {
@@ -87,13 +111,16 @@
     animation: slideUp 0.3s ease-out;
 }
 
+/* Detail View Header */
 .detail-header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 30px;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
 }
 
 .detail-header h3 {
@@ -111,6 +138,7 @@
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9rem;
+    flex-shrink: 0; /* Prevent shrinking on mobile */
 }
 
 /* Admin Table */
@@ -119,6 +147,7 @@
     background: var(--bg-panel);
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    -webkit-overflow-scrolling: touch; /* Smooth scroll for iOS */
 }
 
 .admin-table {
@@ -211,9 +240,15 @@
 
 .user-edit-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr;
     gap: 20px;
     margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+    .user-edit-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* v1.5.62: Desktop 3-column layout for precise card spans */
@@ -236,7 +271,14 @@
 .admin-input-group {
     margin-bottom: 20px;
     flex: 1; /* Allow growing in flex rows */
-    min-width: 140px; /* Prevent being too small */
+    min-width: 180px; /* Prevent being too small */
+}
+
+@media (max-width: 480px) {
+    .admin-input-group {
+        min-width: 100%;
+        margin-bottom: 15px;
+    }
 }
 
 .rp-edit-row {
@@ -497,6 +539,66 @@
     }
     .stage-stats-card {
         grid-column: span 2;
+    }
+}
+
+/* ---------------------------------------------------------
+   GLOBAL TABLE RESPONSIVENESS (v1.5.62)
+--------------------------------------------------------- */
+
+@media (max-width: 600px) {
+    /* Audit Table: Hide less critical info */
+    #admin-reports-tbody td:nth-child(3), /* Semilla */
+    #admin-reports-tbody td:nth-child(4), /* Nivel */
+    #admin-referee-detail thead th:nth-child(3),
+    #admin-referee-detail thead th:nth-child(4) {
+        display: none;
+    }
+
+    /* User List: Hide registration date */
+    #admin-users-tbody td:nth-child(3),
+    #admin-users-list thead th:nth-child(3) {
+        display: none;
+    }
+
+    @media (max-width: 480px) {
+        /* User List: Hide online activity status on very small mobile */
+        #admin-users-tbody td:nth-child(4),
+        #admin-users-list thead th:nth-child(4) {
+            display: none;
+        }
+    }
+
+    /* Smaller spacing for compact tables on mobile */
+    .admin-table.compact th, 
+    .admin-table.compact td {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+
+    .edit-card {
+        padding: 15px;
+    }
+
+    .admin-module-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .module-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.8rem;
+    }
+
+    .header-search {
+        width: 100%;
+        order: 3; /* Push to bottom on wrap */
+    }
+
+    .header-search input {
+        width: 100%;
     }
 }
 
