@@ -437,10 +437,10 @@ async function winGame() {
   }
 
   // 3. Glitch Effect Loop starts using the UNIFIED elements
-  // v1.2.7: Faster start (400ms instead of 1200ms) for direct transition
+  // v1.2.9: Adjusted to 0.5s total (100ms here + 400ms in startGlitchEffect)
   setTimeout(() => {
     startGlitchEffect(finalDigits, tray);
-  }, 400);
+  }, 100);
 }
 
 function startGlitchEffect(elements, container) {
@@ -448,27 +448,29 @@ function startGlitchEffect(elements, container) {
   const targetWord = lang === "es" ? "VICTORIA" : "VICTORY";
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
 
-  // v1.2.7: Faster spawn (400ms instead of 800ms)
+  // v1.2.9: 0.4s of intense vibration before spawning/resolving
   setTimeout(() => {
     let needed = targetWord.length - elements.length;
     
     if (needed > 0 && container) {
       while (needed > 0) {
-        // v1.2.7: APPEND to the end instead of inserting in middle
-        // to keep the 7 digits perfectly static during expansion.
+        // v1.2.8: INSERT in the middle to expand from center (e.g. for VICTORIA)
+        const middleIndex = Math.floor(elements.length / 2);
         const el = document.createElement("div");
         el.className = "victory-code-cell victory-digit glitching spawn-in";
         el.textContent = chars[Math.floor(Math.random() * chars.length)];
         
-        container.appendChild(el);
-        elements.push(el);
+        // Insert in middle of DOM and array to maintain resolve order
+        container.insertBefore(el, container.children[middleIndex + 1] || null);
+        elements.splice(middleIndex + 1, 0, el);
+        
         needed--;
       }
     }
 
     // 2. Start resolving sequence shortly after spawn
     startResolving(elements, targetWord, chars);
-  }, 800);
+  }, 100);
 }
 
 /**
