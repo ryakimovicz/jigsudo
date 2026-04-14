@@ -1,12 +1,7 @@
 import { CONFIG } from "./config.js?v=1.3.0";
 import { performSeasonReset } from "./db.js?v=1.3.0";
 import { getCurrentUser } from "./auth.js?v=1.3.0";
-
-function getTodayDateSpanish() {
-  const options = { day: "numeric", month: "long", year: "numeric" };
-  const date = new Date().toLocaleDateString("es-ES", options);
-  return date.toLowerCase();
-}
+import { updateTexts, setLanguage } from "./i18n.js?v=1.3.0";
 
 export async function checkSeasonMigration() {
   const stats = JSON.parse(localStorage.getItem("jigsudo_user_stats") || "{}");
@@ -15,7 +10,7 @@ export async function checkSeasonMigration() {
   // If local is already up to date, we are safe.
   if (localSchema >= CONFIG.schemaVersion) return;
 
-  // v1.3.2: Wait for Auth to settle before blocking the UI. 
+  // Wait for Auth to settle before blocking the UI.
   // Maybe the cloud already has the correct version but LocalStorage was cleared.
   console.log("[Migration] Checking cloud schema before blocking...");
   const user = await waitForUser();
@@ -27,7 +22,6 @@ export async function checkSeasonMigration() {
      
      if (cloudSchema >= CONFIG.schemaVersion) {
         console.log("[Migration] Cloud is already up to date. Syncing local schema version.");
-        // Update local marker to prevent future redundant checks
         const currentStats = JSON.parse(localStorage.getItem("jigsudo_user_stats") || "{}");
         currentStats.schemaVersion = cloudSchema;
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(currentStats));
@@ -38,7 +32,7 @@ export async function checkSeasonMigration() {
   // If we reach here, we REALLY need to migrate
   console.warn(`[Season Migration] Triggered! Local: ${localSchema}, Required: ${CONFIG.schemaVersion}`);
   
-  // v1.3.0: Inject styles
+  // Inject styles
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = "./css/migration.css?v=1.3.0";
@@ -71,29 +65,44 @@ function showSeasonOverlay() {
   overlay.id = "season-migration-overlay";
   overlay.className = "migration-overlay";
   
-  const today = getTodayDateSpanish();
-  
+  // All text uses data-i18n / data-i18n-html so updateTexts() handles both
+  // the initial render and any real-time language switches.
   overlay.innerHTML = `
     <div class="migration-card">
       <div class="migration-icon">🏆</div>
-      <h1 class="migration-title">Temporada 1</h1>
-      <p class="migration-date">${today}</p>
+      <h1 class="migration-title" data-i18n="migration_title">Temporada 1</h1>
+      <p class="migration-date" data-i18n="migration_launch_date">14 de abril de 2026</p>
       <div class="migration-divider"></div>
-      <p class="migration-text">
+      <p class="migration-text" data-i18n-html="migration_body_html">
         Gracias por jugar en la <strong>Temporada 0</strong>.<br><br>
         Ahora empieza la <strong>Temporada 1</strong>, se resetearán todos los stats para dar paso a un nuevo comienzo.<br><br>
         Disculpa las molestias. Tu identidad y cuenta permanecen protegidas.
       </p>
-      <button id="btn-update-season" class="migration-btn">ACTUALIZAR</button>
+      <button id="btn-update-season" class="migration-btn" data-i18n="btn_update_season">ACTUALIZAR</button>
       <div id="migration-loader" class="migration-loader hidden">
          <div class="spinner"></div>
-         <p>Sincronizando temporada...</p>
+         <p data-i18n="migration_syncing">Sincronizando temporada...</p>
       </div>
     </div>
   `;
 
   document.body.appendChild(overlay);
-  document.body.classList.add("migration-active");
+
+  // Lock scroll on both html and body (required for iOS Safari)
+  const scrollY = window.scrollY;
+  document.documentElement.classList.add("migration-active");
+  document.body.classList.add("migration-active", "no-scroll");
+  document.body.style.top = `-${scrollY}px`;
+
+  // The migration modal can appear BEFORE initLanguage() runs in main.js.
+  // So we manually read and apply the stored language preference here.
+  const storedLang = localStorage.getItem("jigsudo_lang");
+  if (storedLang) setLanguage(storedLang);
+  else updateTexts(); // fallback: apply default (es)
+
+  // Re-translate in real time if user switches language while overlay is open
+  const onLangChange = () => updateTexts();
+  window.addEventListener("languageChanged", onLangChange);
 
   const btn = document.getElementById("btn-update-season");
   btn.onclick = async () => {
@@ -102,7 +111,6 @@ function showSeasonOverlay() {
     document.getElementById("migration-loader").classList.remove("hidden");
 
     try {
-      // v1.3.1: Wait for Auth to settle to avoid race conditions
       console.log("[Migration] Awaiting Auth state...");
       const user = await waitForUser();
       

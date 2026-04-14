@@ -649,6 +649,13 @@ export const translations = {
     sync_exclusive_desc: "Jigsudo se ha abierto en otro dispositivo o pestaña. Solo puedes tener una sesión activa para evitar pérdida de datos.",
     sync_btn_continue: "Continuar aquí 🔄",
 
+    // Season Migration
+    migration_title: "Temporada 1",
+    migration_launch_date: "14 de abril de 2026",
+    migration_body_html: "Gracias por jugar en la <strong>Temporada 0</strong>.<br><br>Ahora empieza la <strong>Temporada 1</strong>, se resetearán todos los stats para dar paso a un nuevo comienzo.<br><br>Disculpa las molestias. Tu identidad y cuenta permanecen protegidas.",
+    btn_update_season: "ACTUALIZAR",
+    migration_syncing: "Sincronizando temporada...",
+
     changelog_v1117_title: "Versión 1.1.17",
     changelog_v1117_date: "09/04/2026",
     changelog_v1117_item1: "Carga SWR Automática: Las tablas de ranking ahora cargan instantáneamente rescatando la última visualización de la caché. Unos indicadores circulares en las cabeceras te avisan que se está haciendo una actualización suave en segundo plano y las filas se acomodan inteligentemente (Técnica Stale-While-Revalidate).",
@@ -1460,5 +1467,12 @@ export const translations = {
     sync_exclusive_title: "Account in use",
     sync_exclusive_desc: "Jigsudo is open on another device or tab. You can only have one active session to prevent data loss.",
     sync_btn_continue: "Continue here 🔄",
+
+    // Season Migration
+    migration_title: "Season 1",
+    migration_launch_date: "April 14, 2026",
+    migration_body_html: "Thank you for playing in <strong>Season 0</strong>.<br><br>Now <strong>Season 1</strong> begins, and all stats will be reset to make way for a fresh start.<br><br>We apologize for any inconvenience. Your identity and account remain protected.",
+    btn_update_season: "UPDATE",
+    migration_syncing: "Syncing season...",
   },
 };
