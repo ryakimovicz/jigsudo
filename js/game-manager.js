@@ -2544,50 +2544,12 @@ export class GameManager {
         if (stats.currentStreak > (stats.maxStreak || 0))
           stats.maxStreak = stats.currentStreak;
       } else if (!this.isReplay && isAlreadyWon) {
-        // SELF-HEALING: Check if we have a discrepancy (Local stats missed the win update)
-        // If dailyRP is significantly less than the calculated score, forcefully apply the difference.
-        // This handles race conditions where 'status: won' was saved but RP failed.
-        // (totalTimeMs and peaksErrors are already calculated above)
-        const { calculateTimeBonus } = await import("./ranks.js?v=1.2.2");
-        const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
-        let netChange = timeBonus - peaksErrors * SCORING.ERROR_PENALTY_RP;
-        const potentialDailyScore = Math.max(0, 6.0 + netChange);
-
-        const currentDaily = stats.dailyRP || 0;
-        // Tolerance of 0.1 rp
-        if (currentDaily < potentialDailyScore - 0.1) {
-          console.warn(
-            `[RP] Discrepancy detected! Stored: ${currentDaily}, Actual: ${potentialDailyScore}. Healing...`,
-          );
-          const diff = potentialDailyScore - currentDaily;
-          stats.dailyRP = (stats.dailyRP || 0) + diff;
-          stats.currentRP = (stats.currentRP || 0) + diff;
-          stats.monthlyRP = (stats.monthlyRP || 0) + diff;
-          stats.totalScoreAccumulated =
-            (stats.totalScoreAccumulated || 0) + diff;
-
-          // Force update lastPlayedDate to ensure streaks work tomorrow
-          if (!isLateCompletion) stats.lastPlayedDate = puzzleDate;
-
-          // Also heal Weekday Stats if missing count
-          const targetDayDate = isLateCompletion ? seedDate : puzzleDate;
-          const dayIdx = new Date(targetDayDate + "T12:00:00").getDay();
-          if (!stats.weekdayStatsAccumulated[dayIdx])
-            stats.weekdayStatsAccumulated[dayIdx] = {
-              sumTime: 0,
-              sumErrors: 0,
-              sumScore: 0,
-              count: 0,
-            };
-          const w = stats.weekdayStatsAccumulated[dayIdx];
-          // If count is 0 but we won, add stats
-          if (w.count === 0) {
-            w.sumTime += totalTimeMs;
-            w.sumErrors += peaksErrors;
-            w.sumScore += potentialDailyScore;
-            w.count++;
-          }
-        }
+        // v1.2.7: Strict Isolation - Replays (re-wins) should NEVER update competitive rankings or accumulators.
+        // They only exist to update the 'Best' score in the history map (handled later in recordWin).
+        console.log("[Referee] Already won today. Skipping account RP and accumulator updates for this session.");
+        
+        // We only allow healing of the maintenance date if this is NOT a replay AND it's today's puzzle
+        // but since isAlreadyWon is true, the server session already handled the maintenance.
       }
       // --- PREPARATION (Common for all flows) ---
       stats.lastLocalUpdate = Date.now();
@@ -2856,8 +2818,8 @@ export class GameManager {
       if (user && !user.isAnonymous) {
         const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.2.2");
         
-        // Only mark today as updated if this was a DAILY win.
-        if (!this.isReplay && !isLateCompletion) {
+        // Only mark today as updated if this was the ORIGINAL Daily win of the session.
+        if (isOriginalDay) {
             this.stats.lastDailyUpdate = getJigsudoDateString();
             this.stats.lastMonthlyUpdate = getJigsudoYearMonth();
         }
