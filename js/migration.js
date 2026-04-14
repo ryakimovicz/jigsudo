@@ -10,27 +10,24 @@ export async function checkSeasonMigration() {
   // If local is already up to date, we are safe.
   if (localSchema >= CONFIG.schemaVersion) return;
 
+  // v1.3.4: IMMEDIATE FREEZE to prevent any sync logic from running
+  // while we decide whether to show the modal or wipe silently.
+  window._jigsudo_migration_freeze = true;
+  console.warn("[Migration] System frozen for safety check.");
+
   // Wait for Auth to settle before blocking the UI.
-  // Maybe the cloud already has the correct version but LocalStorage was cleared.
-  console.log("[Migration] Checking cloud schema before blocking...");
+  console.log("[Migration] Checking cloud schema...");
   const user = await waitForUser();
   
   if (user && !user.isAnonymous) {
      const { fetchLatestUserData } = await import("./db.js?v=1.3.0");
      const cloudData = await fetchLatestUserData(user.uid);
      const cloudSchema = cloudData?.schemaVersion || 0;
-     
-     if (cloudSchema >= CONFIG.schemaVersion) {
-        console.log("[Migration] Cloud is already up to date. Syncing local schema version.");
-        const currentStats = JSON.parse(localStorage.getItem("jigsudo_user_stats") || "{}");
-        currentStats.schemaVersion = cloudSchema;
-        localStorage.setItem("jigsudo_user_stats", JSON.stringify(currentStats));
-        return; 
-     }
+     console.log(`[Migration] Cloud Schema: ${cloudSchema} | Local Schema: ${localSchema}`);
   }
 
-  // If we reach here, we REALLY need to migrate
-  console.warn(`[Season Migration] Triggered! Local: ${localSchema}, Required: ${CONFIG.schemaVersion}`);
+  // If local is old, we ALWAYS show the modal (user likes the announcement)
+  console.warn(`[Season Migration] Showing Season Modal for Local: ${localSchema}`);
   
   // Inject styles
   const link = document.createElement("link");
@@ -38,11 +35,6 @@ export async function checkSeasonMigration() {
   link.href = "./css/migration.css?v=1.3.0";
   document.head.appendChild(link);
   
-  // HALT: Prevent any background saves while modal is active
-  window._jigsudo_migration_freeze = true;
-  console.warn("[Migration] System frozen to prevent cloud-echo saves.");
-
-  // Block the UI
   showSeasonOverlay();
 }
 
@@ -125,6 +117,9 @@ function showSeasonOverlay() {
       if (lang) localStorage.setItem("jigsudo_lang", lang);
       if (theme) localStorage.setItem("jigsudo_theme", theme);
       if (uid) localStorage.setItem("jigsudo_uid", uid);
+
+      // v1.3.5: MARK LOCAL AS MIGRATED (prevents infinite loop on reload)
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify({ schemaVersion: CONFIG.schemaVersion }));
 
       if (user && !user.isAnonymous) {
         console.log(`[Migration] Executing remote wipe for ${user.uid}...`);

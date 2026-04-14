@@ -25,7 +25,7 @@ import { checkSeasonMigration } from "./migration.js?v=1.3.0";
 // v1.3.0: Season Transition Barrier (Absolute Blocking)
 // We check this at the top level BEFORE ANY initialization to prevent 
 // "Cloud Echo" saves from background modules like GameManager.
-checkSeasonMigration();
+await checkSeasonMigration();
 
 // Boot Sequence
 // Capture native logging before suppression

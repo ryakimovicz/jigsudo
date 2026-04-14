@@ -1,5 +1,5 @@
 export const CONFIG = {
-  version: "1.3.0", // Season 1 Release
+  version: "1.2.2", // Season 1 Release
   fechaUpdate: "2026-04-14",
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
