@@ -292,14 +292,14 @@ body.dark-mode .legend-box.gray {
     position: fixed;
     z-index: 99999;
     pointer-events: none;
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--bg-paper);
+    border: 1px solid var(--glass-border);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 12px;
     padding: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-    color: white;
+    box-shadow: var(--paper-shadow);
+    color: var(--text-main);
     font-size: 0.85rem;
     min-width: 220px;
     transition: opacity 0.1s ease, transform 0.1s ease;
@@ -322,7 +322,7 @@ body.dark-mode .legend-box.gray {
     color: #4ade80;
     margin-bottom: 8px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--glass-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -349,7 +349,7 @@ body.dark-mode .legend-box.gray {
 }
 
 .tooltip-label {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
     font-size: 0.75rem;
 }
 

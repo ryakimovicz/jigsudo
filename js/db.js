@@ -932,6 +932,9 @@ export async function saveHistoryEntry(userId, seed, historyData) {
 
     await setDoc(historyRef, cleanData, { merge: true });
     console.log(`[DB] Detailed history record saved for ${seed}`);
+    
+    // v1.9.0: Dispatch event to notify history UI
+    window.dispatchEvent(new CustomEvent("jigsudoHistoryUpdated", { detail: { seed, data: cleanData } }));
   } catch (error) {
     console.error("[DB] Error saving detailed history record:", error);
   }

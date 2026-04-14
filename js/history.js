@@ -82,6 +82,15 @@ export function initHistory() {
     }
   });
 
+  // v1.9.0: Listen for history-specific updates (e.g., winning a game from history)
+  window.addEventListener("jigsudoHistoryUpdated", () => {
+    console.log("[History] History record updated. Refreshing...");
+    historyCache = {}; 
+    if (window.location.hash.startsWith("#history")) {
+      updateHistoryUI();
+    }
+  });
+
   // Handle Initial Hash - handled by router.js
   // Listen for Router Changes
   window.addEventListener("routeChanged", ({ detail }) => {
@@ -433,11 +442,11 @@ function showHistoryTooltip(e, data, dateStr) {
   const dateTitle = dateObj.toLocaleDateString(lang, { day: "numeric", month: "long" });
 
   // v1.5.62: Dynamic title color matching the day status
-  let titleColor = "#94a3b8"; // Gray (Sin jugar)
+  // v1.5.62: Dynamic title color matching the day's base circle color
+  let titleColor = "var(--text-muted)"; // Gray (Sin jugar original)
   if (data) {
-    if (data.originalWon) titleColor = "#22c55e"; // Green
-    else if (data.hasOriginal) titleColor = "#eab308"; // Yellow
-    else if (data.status === "won") titleColor = "#4ade80"; // Aqua/Crown
+    if (data.originalWon) titleColor = "#22c55e"; // Green (Ganado original)
+    else if (data.hasOriginal) titleColor = "#eab308"; // Yellow (Empezado original)
   }
 
   let html = `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
@@ -486,6 +495,8 @@ function showHistoryTooltip(e, data, dateStr) {
           <span class="tooltip-value highlight">${(b.score || 0).toFixed(3)} RP</span>
           <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
           <span class="tooltip-value">${fmt(b.totalTime)}</span>
+          <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
+          <span class="tooltip-value">${b.peaksErrors || b.errors || 0}</span>
         </div>
       </div>`;
     }
