@@ -348,6 +348,8 @@ export const translations = {
       "Memoriza la secuencia numérica y repítela en las celdas correctas.<br>La secuencia crece en cada turno.",
     code_level_local: "Nivel",
     code_win: "¡CÓDIGO DESCIFRADO!",
+    label_security_bypass: "Código Maestro",
+
 
     // Authentication
     login_title: "Cuenta Jigsudo",
@@ -1035,6 +1037,8 @@ export const translations = {
       "Memorize the number sequence and repeat it on the correct cells.<br>The sequence grows each turn.",
     code_level_local: "Level",
     code_win: "CODE CRACKED!",
+    label_security_bypass: "Master Code",
+
     sudoku_key_completed: "This number has already been used 9 times.",
 
     // Guide Scoring (English)

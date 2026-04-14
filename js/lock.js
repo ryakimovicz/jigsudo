@@ -2,7 +2,11 @@
  * MASTER LOCK - Logic for the 7-wheel industrial lock sequence.
  */
 
+import { translations } from "./translations.js?v=1.2.2";
+import { getCurrentLang } from "./i18n.js?v=1.2.2";
+
 class MasterLock {
+
     constructor() {
         this.overlay = null;
         this.icon = null;
@@ -65,7 +69,7 @@ class MasterLock {
                 <div class="safe-rivet rivet-bl"></div>
                 <div class="safe-rivet rivet-br"></div>
                 
-                <h2 class="safe-header">Security Bypass</h2>
+                <h2 class="safe-header" data-i18n="label_security_bypass">${translations[getCurrentLang()].label_security_bypass || 'Security Bypass'}</h2>
                 
                 <div class="wheels-wrapper">
                     ${Array(7).fill(0).map((_, i) => `

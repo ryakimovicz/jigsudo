@@ -374,14 +374,9 @@
   }
 }
 
-/* Glitch Effect */
-.glitching {
-  animation: glitch-anim 0.2s infinite;
-  color: #0f0 !important; /* Matrix Green during glitch */
-  text-shadow:
-    2px 0 #f00,
-    -2px 0 #00f;
-}
+/* Glitch Effect - Refined for themes */
+
+/* Victory glitch animation is now consolidated in lock.css for theme-awareness */
 
 @keyframes glitch-anim {
   0% {
