@@ -7,6 +7,6 @@ export const CONFIG = {
   betaMode: false, // Toggle to true to enable "Ayuda" button
 
   // Configuración de sincronización del servidor
-  serverTimeSyncInterval: 300000, // 5 minutos
-  maxClockSkew: 60000, // 1 minuto
+  serverTimeSyncInterval: 1800000, // 30 minutos
+  maxClockSkew: 300000, // 5 minutos
 };
