@@ -89,7 +89,7 @@ export async function checkSeasonMigration() {
  * @returns {Promise<Object|null>}
  */
 async function waitForUser() {
-  const { auth } = await import("./firebase-config.js?v=1.2.2");
+  const { auth } = await import("./firebase-config.js?v=1.3.0");
   return new Promise((resolve) => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       unsubscribe();
