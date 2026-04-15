@@ -24,6 +24,7 @@ import { router } from "./router.js?v=1.2.2";
 import { translations } from "./translations.js?v=1.2.2";
 import { getCurrentLang } from "./i18n.js?v=1.2.2";
 import { toggleModal, showToast } from "./ui.js?v=1.2.2";
+import { checkSeasonMigration } from "./migration.js?v=1.3.0";
 
 // v1.6.0: Administrative Authorization
 export const ADMIN_UIDS = ["SR5GIs3WdpXl6HkmRxhHh4Slg283"];
@@ -139,6 +140,9 @@ export function initAuth() {
         await gameManager.clearAllData(false);
         gameManager.setUserId(user.uid);
       }
+
+      // v1.3.6: Season Migration Check on Identity Switch
+      await checkSeasonMigration();
 
       const wasPlaying = !document.body.classList.contains("home-active");
       updateUIForLogin(user);

@@ -4,30 +4,69 @@ import { getCurrentUser } from "./auth.js?v=1.3.0";
 import { updateTexts, setLanguage } from "./i18n.js?v=1.3.0";
 
 export async function checkSeasonMigration() {
-  const stats = JSON.parse(localStorage.getItem("jigsudo_user_stats") || "{}");
-  const localSchema = stats.schemaVersion || 0;
-  
-  // If local is already up to date, we are safe.
-  if (localSchema >= CONFIG.schemaVersion) return;
-
   // v1.3.4: IMMEDIATE FREEZE to prevent any sync logic from running
   // while we decide whether to show the modal or wipe silently.
   window._jigsudo_migration_freeze = true;
-  console.warn("[Migration] System frozen for safety check.");
 
-  // Wait for Auth to settle before blocking the UI.
-  console.log("[Migration] Checking cloud schema...");
-  const user = await waitForUser();
+  const stats = JSON.parse(localStorage.getItem("jigsudo_user_stats") || "{}");
+  const localSchema = stats.schemaVersion || 0;
   
+  // Wait for Auth to settle before blocking the UI.
+  console.log("[Migration] Checking auth state...");
+  const user = await waitForUser();
+  const isGuest = !user || user.isAnonymous;
+
+  // v1.3.10: Fresh Guest Auto-Migration
+  // If this is a new device (localSchema 0) and it's a guest with 0 RP,
+  // we silently promote them to 7.2 to avoid showing the modal to new players.
+  // CRITICAL: Only do this if we ARE a guest AFTER auth settles.
+  const isFreshGuest = isGuest && localSchema === 0 && (stats.totalRP || 0) === 0 && (stats.wins || 0) === 0;
+  if (isFreshGuest) {
+     console.log("[Migration] Fresh guest detected. Auto-migrating local schema to Season 1.");
+     localStorage.setItem("jigsudo_user_stats", JSON.stringify({ ...stats, schemaVersion: CONFIG.schemaVersion }));
+     window._jigsudo_migration_freeze = false;
+     return;
+  }
+
+  // If NO user (Guest) and local is already up to date, we are safe.
+  if (isGuest && localSchema >= CONFIG.schemaVersion) {
+     window._jigsudo_migration_freeze = false;
+     return;
+  }
+
+  // If there IS a user, checking cloud schema...
+  let cloudSchema = 0;
   if (user && !user.isAnonymous) {
      const { fetchLatestUserData } = await import("./db.js?v=1.3.0");
      const cloudData = await fetchLatestUserData(user.uid);
-     const cloudSchema = cloudData?.schemaVersion || 0;
+     cloudSchema = cloudData?.schemaVersion || 0;
      console.log(`[Migration] Cloud Schema: ${cloudSchema} | Local Schema: ${localSchema}`);
+
+     // v1.3.9: SILENT MIGRATE for already updated accounts
+     // If the cloud is already 7.2, this user has already migrated on some device.
+     // We just need to mark this local device as 7.2 too and proceed.
+     if (cloudSchema >= CONFIG.schemaVersion) {
+        if (localSchema < CONFIG.schemaVersion) {
+           console.log("[Migration] Cloud is 7.2. Silently updating local schema...");
+           localStorage.setItem("jigsudo_user_stats", JSON.stringify({ ...stats, schemaVersion: CONFIG.schemaVersion }));
+        }
+        window._jigsudo_migration_freeze = false;
+        return;
+     }
   }
 
-  // If local is old, we ALWAYS show the modal (user likes the announcement)
-  console.warn(`[Season Migration] Showing Season Modal for Local: ${localSchema}`);
+  // v1.3.9: FINAL CHECK - Show modal only if ACTUAL migration is needed
+  // For guests: localSchema < 7.2
+  // For users: cloudSchema < 7.2 (checked above)
+  const needsMigration = isGuest ? (localSchema < CONFIG.schemaVersion) : (cloudSchema < CONFIG.schemaVersion);
+  
+  if (!needsMigration) {
+     window._jigsudo_migration_freeze = false;
+     return;
+  }
+
+  // If we reach here, we REALLY need to show the modal
+  console.warn(`[Season Migration] Showing Season Modal. Local: ${localSchema}, Cloud: ${cloudSchema}`);
   
   // Inject styles
   const link = document.createElement("link");
@@ -36,6 +75,13 @@ export async function checkSeasonMigration() {
   document.head.appendChild(link);
   
   showSeasonOverlay();
+
+  // v1.3.8: SYSTEM HALT - Return a promise that never resolves.
+  // This effectively blocks 'main.js' or 'auth.js' from continuing app boot
+  // while the migration modal is visible.
+  return new Promise(() => {
+     console.log("[Migration] Promise yielded - Application boot frozen by modal.");
+  });
 }
 
 /**
@@ -98,15 +144,19 @@ function showSeasonOverlay() {
 
   const btn = document.getElementById("btn-update-season");
   btn.onclick = async () => {
-    btn.disabled = true;
-    btn.classList.add("hidden");
-    document.getElementById("migration-loader").classList.remove("hidden");
-
     try {
+      console.log("[Migration] BUTTON CLICKED: Starting migration sequence...");
+      btn.disabled = true;
+      btn.classList.add("hidden");
+      document.getElementById("migration-loader").classList.remove("hidden");
+
       console.log("[Migration] Awaiting Auth state...");
       const user = await waitForUser();
       
-      // Safety: Clear local storage FIRST (except identity)
+      const dbPath = "./db.js?v=1.3.0";
+      console.log(`[Migration] Importing DB logic from ${dbPath}...`);
+      const { performSeasonReset } = await import(dbPath);
+      
       const lang = localStorage.getItem("jigsudo_lang");
       const theme = localStorage.getItem("jigsudo_theme");
       const uid = localStorage.getItem("jigsudo_uid"); 
@@ -118,24 +168,24 @@ function showSeasonOverlay() {
       if (theme) localStorage.setItem("jigsudo_theme", theme);
       if (uid) localStorage.setItem("jigsudo_uid", uid);
 
-      // v1.3.5: MARK LOCAL AS MIGRATED (prevents infinite loop on reload)
       localStorage.setItem("jigsudo_user_stats", JSON.stringify({ schemaVersion: CONFIG.schemaVersion }));
 
       if (user && !user.isAnonymous) {
-        console.log(`[Migration] Executing remote wipe for ${user.uid}...`);
-        await performSeasonReset(user.uid);
-      } else {
-        console.log("[Migration] No authenticated user detected, skipped remote wipe.");
+        console.log(`[Migration] Calling performSeasonReset for ${user.uid}...`);
+        const result = await performSeasonReset(user.uid);
+        if (result && result.success) {
+           console.log("[Migration] Cloud remote wipe logic finished successfully.");
+        } else {
+           throw new Error(result ? result.error : "Unknown error in performSeasonReset");
+        }
       }
 
-      // Final lock
       localStorage.setItem("jigsudo_last_wipe_ack", Date.now().toString());
-
-      console.log("[Migration] Success. Reloading...");
+      console.log("[Migration] ALL SUCCESSFUL. Reloading page now.");
       window.location.reload();
     } catch (err) {
-      console.error("[Migration] Error during reset:", err);
-      alert("Hubo un error al actualizar la temporada. Por favor, intenta recargar la página.");
+      console.error("[Migration] CRITICAL ERROR IN BUTTON HANDLER:", err);
+      alert("Error al actualizar la temporada: " + err.message);
       btn.disabled = false;
       btn.classList.remove("hidden");
       document.getElementById("migration-loader").classList.add("hidden");

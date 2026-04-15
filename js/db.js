@@ -772,6 +772,7 @@ export async function fetchLatestUserData(userId) {
  */
 export async function performSeasonReset(userId) {
   if (!userId) return { success: false, error: "No user ID provided" };
+  console.log(`[DB] performSeasonReset STARTED for ${userId}`);
   
   try {
     const userRef = doc(db, "users", userId);
@@ -792,17 +793,11 @@ export async function performSeasonReset(userId) {
       console.log(`[Season Migration] Deleted ${historySnap.size} history records.`);
     }
 
-    // 2. Perform Hard Reset on Document (Preserving Identity)
-    // We use setDoc (no merge) or careful selective data to ensure 0-stats
-    const cleanData = {
-      // IDENTITY (Preserved)
-      username: oldData.username || "Jugador",
-      username_lc: oldData.username_lc || "jugador",
-      registeredAt: oldData.registeredAt || serverTimestamp(),
-      isVerified: oldData.isVerified || false,
-      isPublic: true,
-      
-      // RESET STATS
+    // 2. Perform Surgical Hard Reset (Respecting Security Rules)
+    const { updateDoc, deleteField } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    
+    const resetUpdate = {
+      // RESET STATS (Root)
       totalRP: 0,
       monthlyRP: 0,
       dailyRP: 0,
@@ -817,7 +812,10 @@ export async function performSeasonReset(userId) {
       lastLocalUpdate: Date.now(),
       forceWipeAt: Date.now(),
       
-      // EMPTY STATS MAP
+      // PURGE PROGRESS & GHOSTS
+      progress: deleteField(),
+      
+      // RESET STATS MAP
       stats: {
         wins: 0,
         totalPlayed: 0,
@@ -835,8 +833,7 @@ export async function performSeasonReset(userId) {
       }
     };
 
-    // Use setDoc WITHOUT {merge: true} to ensure legacy/ghost fields are purged
-    await setDoc(userRef, cleanData);
+    await updateDoc(userRef, resetUpdate);
     
     // 3. Reset Progress Document (If needed)
     // The main document contains progress in v7+, we already cleared it by calling setDoc without merge.
@@ -844,7 +841,7 @@ export async function performSeasonReset(userId) {
     console.log("[Season Migration] Remote wipe complete.");
     return { success: true };
   } catch (e) {
-    console.error("[Season Migration] Remote wipe FAILED:", e);
+    console.error(`[DB] performSeasonReset FAILED for ${userId}:`, e);
     return { success: false, error: e.message };
   }
 }
