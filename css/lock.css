@@ -44,7 +44,7 @@ body.dark-mode {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 #master-lock-icon.visible {

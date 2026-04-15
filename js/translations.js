@@ -349,6 +349,7 @@ export const translations = {
     code_level_local: "Nivel",
     code_win: "¡CÓDIGO DESCIFRADO!",
     label_security_bypass: "Código Maestro",
+    lock_need_all_levels: "Necesitas completar los 6 niveles para descubrir el código maestro.",
 
 
     // Authentication
@@ -1052,6 +1053,7 @@ export const translations = {
     code_level_local: "Level",
     code_win: "CODE CRACKED!",
     label_security_bypass: "Master Code",
+    lock_need_all_levels: "You need to complete all 6 levels to discover the master code.",
 
     sudoku_key_completed: "This number has already been used 9 times.",
 

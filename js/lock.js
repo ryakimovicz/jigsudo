@@ -4,6 +4,7 @@
 
 import { translations } from "./translations.js?v=1.3.0";
 import { getCurrentLang } from "./i18n.js?v=1.3.0";
+import { showToast } from "./ui.js?v=1.3.0";
 
 class MasterLock {
 
@@ -43,6 +44,14 @@ class MasterLock {
             </svg>
         `;
         gameSection.appendChild(this.icon);
+        
+        // Clic notification
+        this.icon.addEventListener('click', () => {
+            if (this.icon.classList.contains('expanding') || this.hasCompletedVictory) return;
+            const lang = getCurrentLang();
+            const msg = translations[lang].lock_need_all_levels || translations['es'].lock_need_all_levels;
+            showToast(msg, 4000);
+        });
 
         // Auto-visibility based on route
         window.addEventListener('routeChanged', (e) => {
