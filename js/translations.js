@@ -587,6 +587,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v131_title: "Versión 1.3.1",
+    changelog_v131_date: "15/04/2026",
+    changelog_v131_item1: "Interactividad del Candado: Implementación de aviso informativo al hacer clic en el candado maestro durante los niveles.",
+    changelog_v131_item2: "Centrado de UI Adaptativo: Centrado horizontal inteligente de avisos (toasts) y animaciones de victoria (candado expandido y código) respecto al área de contenido, según el estado de la barra lateral.",
+    changelog_v131_item3: "Lógica de Victoria: Desactivación automática del aviso informativo del candado al completarse el último nivel.",
     changelog_v130_title: "Versión 1.3.0 (Temporada 1)",
     changelog_v130_date: "14/04/2026",
     changelog_v130_item1: "Temporada 1: Lanzamiento oficial con reseteo de estadísticas y nuevo esquema de datos (v7.2).",
@@ -1324,6 +1329,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v131_title: "Version 1.3.1 (Sidebar Center & Lock Interaction)",
+    changelog_v131_date: "04/15/2026",
+    changelog_v131_item1: "Lock Interactivity: Implementation of informational toast when clicking the master lock during gameplay.",
+    changelog_v131_item2: "Adaptive UI Centering: Intelligent horizontal centering for toasts and victory animations (expanded lock and master code) relative to the game area, accounting for sidebar state.",
+    changelog_v131_item3: "Victory Logic: Automatic disabling of the lock informational toast once the final level is completed.",
     changelog_v130_title: "Version 1.3.0 (Season 1)",
     changelog_v130_date: "04/14/2026",
     changelog_v130_item1: "Season 1: Official launch with statistics reset and new data schema (v7.2).",
@@ -1433,6 +1443,11 @@ export const translations = {
     changelog_v111_title: "Version 1.1.1",
     changelog_v111_date: "04/07/2026",
     changelog_v111_item1: "Fixed a visual bug where the game board leaked onto the changelog page.",
+    changelog_v131_title: "Version 1.3.1",
+    changelog_v131_date: "04/15/2026",
+    changelog_v131_item1: "Lock Interactivity: Implementation of informational toast when clicking the master lock during gameplay.",
+    changelog_v131_item2: "Adaptive UI Centering: Intelligent horizontal centering for toasts and victory animations (expanded lock and master code) relative to the game area, accounting for sidebar state.",
+    changelog_v131_item3: "Victory Logic: Automatic disabling of the lock informational toast once the final level is completed.",
     changelog_v110_title: "Version 1.1.0",
     changelog_v110_date: "04/07/2026",
     changelog_v121_title: "Version 1.2.1",
