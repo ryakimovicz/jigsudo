@@ -316,29 +316,6 @@ body {
   }
 }
 
-@media (max-width: 768px) {
-  .main-header,
-  #menu-content,
-  #profile-section,
-  #history-section,
-  #guide-section,
-  #info-section,
-  #game-section,
-  #privacy-section,
-  #terms-section,
-  #about-section,
-  #contact-section,
-  #changelog-section,
-  #admin-section,
-  .main-footer,
-  .modal-overlay,
-  #toast-container {
-    margin-left: 0;
-    left: 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
-}
 
 /* Reduced padding for very narrow mobile screens */
 @media (max-width: 360px) {
@@ -564,8 +541,9 @@ body.dark-mode .debug-btn {
 #toast-container {
   position: fixed;
   bottom: 20px;
-  left: var(--sidebar-current-width, 0);
-  width: calc(100% - var(--sidebar-current-width, 0));
+  left: calc(50% + (var(--sidebar-current-width, 0) / 2));
+  transform: translateX(-50%);
+  width: auto;
   display: flex;
   flex-direction: column;
   align-items: center; /* PERFECT CENTERING WITHIN CONTENT AREA */
@@ -574,7 +552,7 @@ body.dark-mode .debug-btn {
   pointer-events: none;
   transition: 
     left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toast-notification {
@@ -668,7 +646,6 @@ body.dark-mode .toast-success {
   transform: scale(0.95);
 }
 
-/* Beta Mode Visibility Control */
 body:not(.beta-mode) #debug-help-btn,
 body:not(.in-game) #debug-help-btn {
   display: none !important;
@@ -677,4 +654,39 @@ body:not(.in-game) #debug-help-btn {
 /* Ensure wand is on top of everything including game elements */
 .debug-fab {
   z-index: 10005 !important;
+}
+
+/* Mobile Media Query Overrides (at end to ensure highest priority) */
+@media (max-width: 768px) {
+  .main-header,
+  #menu-content,
+  #profile-section,
+  #history-section,
+  #guide-section,
+  #info-section,
+  #game-section,
+  #privacy-section,
+  #terms-section,
+  #about-section,
+  #contact-section,
+  #changelog-section,
+  #admin-section,
+  .main-footer,
+  .modal-overlay {
+    margin-left: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #toast-container {
+    --sidebar-current-width: 0px; /* Force 0 for centering calc only */
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+  }
 }
