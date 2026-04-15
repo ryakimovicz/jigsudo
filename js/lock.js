@@ -151,13 +151,21 @@ class MasterLock {
         // 1. Initial State: Center and Expand Icon
         this.icon.classList.add('expanding');
         
-        // Calculate Translation to Center of viewport
+        // Calculate Translation to Center of available space (viewport minus sidebar)
         const iconRect = this.icon.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
-        const deltaX = (viewportWidth / 2) - (iconRect.left + iconRect.width / 2);
-        const deltaY = (viewportHeight / 2) - (iconRect.top + iconRect.height / 2);
+        // v1.3.1: Account for sidebar width in centering
+        const sidebarWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-current-width')) || 0;
+        const isMobile = window.innerWidth <= 768;
+        const currentSidebar = isMobile ? 0 : sidebarWidth;
+
+        const targetCenterX = currentSidebar + (viewportWidth - currentSidebar) / 2;
+        const targetCenterY = viewportHeight / 2;
+
+        const deltaX = targetCenterX - (iconRect.left + iconRect.width / 2);
+        const deltaY = targetCenterY - (iconRect.top + iconRect.height / 2);
         
         // Move to center and scale up (Calculated to match safe box approx size)
         this.icon.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(8)`;
