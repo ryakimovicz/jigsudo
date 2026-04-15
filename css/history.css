@@ -377,7 +377,6 @@ body.dark-mode .legend-box.gray {
     transition: background 0.2s;
     z-index: 300002;
 }
-}
 
 .tooltip-close:hover {
     background: rgba(255, 255, 255, 0.2);
