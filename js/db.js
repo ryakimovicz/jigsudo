@@ -97,7 +97,7 @@ export function reconstructStats(data) {
     // Maintenance / Decay
     lastDecayCheck: scavengeStr("lastDecayCheck", s.lastDecayCheck || null),
     lastPenaltyDate: scavengeStr("lastPenaltyDate", s.lastPenaltyDate || null),
-    lastPlayedDate: scavengeStr("lastPlayedDate", s.lastPlayedDate || (data.progress?.meta?.lastPlayed ? data.progress.meta.lastPlayed.substring(0, 10) : null)),
+    lastPlayedDate: scavengeStr("lastPlayedDate", s.lastPlayedDate || null),
     manualRPAdjustment: scavengeNum("manualRPAdjustment", s.manualRPAdjustment || 0),
     lastPenalty: scavengeNum("lastPenalty", s.lastPenalty || 0), // Added explicit scavenge for the counter
 

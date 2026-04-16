@@ -2548,8 +2548,23 @@ export class GameManager {
         // to avoid double jumps between early win detection and final sync.
 
         // Handle Streak and RP Resets (Consistent UTC Logic)
-        if (last) {
-          const lastDate = new Date(last + "T12:00:00Z");
+        let lastWinAnchor = last;
+        
+        // v1.6.2: Streak Healer - If lastPlayedDate is null, look into history 
+        // to find the actual last win date. This repairs broken streaks from 
+        // older sessions where lastPlayedDate wasn't being saved.
+        if (!lastWinAnchor && stats.history) {
+           const historyWins = Object.keys(stats.history)
+             .filter(d => (stats.history[d].status === "won" || stats.history[d].original?.won === true) && d !== puzzleDate)
+             .sort();
+           if (historyWins.length > 0) {
+              lastWinAnchor = historyWins[historyWins.length - 1];
+              console.log(`[Streak] Found last win in history: ${lastWinAnchor}`);
+           }
+        }
+
+        if (lastWinAnchor) {
+          const lastDate = new Date(lastWinAnchor + "T12:00:00Z");
           const currDate = new Date(puzzleDate + "T12:00:00Z");
           const diffDays = Math.round(
             (currDate - lastDate) / (1000 * 60 * 60 * 24),
@@ -2560,8 +2575,15 @@ export class GameManager {
           } else if (diffDays > 1) {
             stats.currentStreak = 1;
           }
+          // Note: diffDays == 0 (replay) is handled by the outer !isAlreadyWon check.
         } else {
           stats.currentStreak = 1;
+        }
+
+        // v1.3.2: Ensure lastPlayedDate is updated for future streak tracking
+        // (Only update if the current puzzleDate is newer than the recorded one)
+        if (puzzleDate > (stats.lastPlayedDate || "")) {
+           stats.lastPlayedDate = puzzleDate;
         }
 
         if (stats.currentStreak > (stats.maxStreak || 0))
@@ -2666,7 +2688,14 @@ export class GameManager {
               
               // v1.5.51: Streak Fallback (If server returns 0 for a first win, local truth is 1)
               if (serverResult.streak !== undefined) {
-                stats.currentStreak = serverResult.streak || (isAlreadyWon ? 0 : 1);
+                // v1.6.2: Protect local streak - Only accept server streak if it's superior
+                // or if we are confident the server has the full history.
+                const localStreak = stats.currentStreak || 0;
+                if (serverResult.streak > localStreak) {
+                  stats.currentStreak = serverResult.streak;
+                } else {
+                  console.log(`[Streak] Local streak (${localStreak}) is higher or equal to server (${serverResult.streak}). Keeping local.`);
+                }
               }
 
               // v1.5.46: ATOMS FIRST. Update bonus counter BEFORE recalculating.
