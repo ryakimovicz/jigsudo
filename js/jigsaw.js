@@ -86,17 +86,16 @@ function createPlaceholder(container, index) {
 }
 
 export function placeInPanel(chunkIndex) {
-  const allPlaceholders = document.querySelectorAll(
-    ".collected-piece.placeholder",
-  );
+  const leftPlaceholders = Array.from(collectedLeft.querySelectorAll(".collected-piece.placeholder"));
+  const rightPlaceholders = Array.from(collectedRight.querySelectorAll(".collected-piece.placeholder"));
+  const allPlaceholders = [...leftPlaceholders, ...rightPlaceholders];
 
   // IDEMPOTENCY CHECK: Don't spawn if already exists in panel or board
-  // We use a more specific selector to avoid matching pieces currently visible on Memory Cards
-  const exists = Array.from(
-    document.querySelectorAll(
-      ".sudoku-chunk-slot .mini-sudoku-grid, .collected-piece .mini-sudoku-grid",
-    ),
-  ).some((el) => el.dataset.chunkIndex == chunkIndex);
+  const boardGrids = Array.from(boardContainer.querySelectorAll(".mini-sudoku-grid"));
+  const panelGrids = Array.from(collectedLeft.querySelectorAll(".mini-sudoku-grid")).concat(Array.from(collectedRight.querySelectorAll(".mini-sudoku-grid")));
+  const allGrids = [...boardGrids, ...panelGrids];
+
+  const exists = allGrids.some((el) => el.dataset.chunkIndex == chunkIndex);
 
   if (exists) {
     console.log(`[Jigsaw] Piece ${chunkIndex} already exists. Skipping spawn.`);
@@ -130,7 +129,7 @@ export function placeInPanel(chunkIndex) {
 export function fitCollectedPieces() {
   if (!memorySection || memorySection.classList.contains("hidden")) return;
   const wrapper = document.querySelector(".collected-wrapper");
-  const pieces = document.querySelectorAll(".collected-piece");
+  const pieces = [...collectedLeft.querySelectorAll(".collected-piece"), ...collectedRight.querySelectorAll(".collected-piece")];
   if (!wrapper || !collectedLeft || !collectedRight) return;
 
   // DESKTOP RESET: Trust CSS > 768px (except for laptop specific override handled in CSS)
@@ -542,6 +541,20 @@ export function transitionToJigsaw() {
     }, 500);
   }
 
+  // 1.5 Update Tooltip with Fade
+  const tooltipTitle = document.querySelector(".info-tooltip h3");
+  const tooltipDesc = document.querySelector(".info-tooltip p");
+  if (tooltipTitle && tooltipDesc) {
+    tooltipTitle.style.transition = "opacity 0.5s ease";
+    tooltipDesc.style.opacity = "0";
+    setTimeout(() => {
+      tooltipTitle.textContent = t.jigsaw_help_title || "Rompecabezas";
+      tooltipDesc.innerHTML = t.jigsaw_help_desc || "Arma el tablero.";
+      tooltipTitle.style.opacity = "1";
+      tooltipDesc.style.opacity = "1";
+    }, 500);
+  }
+
   // 2. Add Jigsaw Mode Class
   if (memorySection) {
     if (document.startViewTransition) {
@@ -638,24 +651,6 @@ export function transitionToJigsaw() {
       deselectPiece(); // Ensure clear state
       fitCollectedPieces(); // Force layout update
     }
-  }
-
-  // 3. Update Tooltip Info
-  const tooltipTitle = document.querySelector(".info-tooltip h3");
-  const tooltipDesc = document.querySelector(".info-tooltip p");
-
-  if (tooltipTitle && tooltipDesc) {
-    tooltipTitle.style.transition = "opacity 0.5s ease";
-    tooltipDesc.style.transition = "opacity 0.5s ease";
-    tooltipTitle.style.opacity = "0";
-    tooltipDesc.style.opacity = "0";
-
-    setTimeout(() => {
-      tooltipTitle.textContent = t.jigsaw_help_title;
-      tooltipDesc.innerHTML = t.jigsaw_help_desc;
-      tooltipTitle.style.opacity = "1";
-      tooltipDesc.style.opacity = "1";
-    }, 500);
   }
 }
 
@@ -906,9 +901,13 @@ export function debugJigsawPlace() {
       console.log(`Debug: Fixing slot ${i}...`);
 
       // 1. Find the Correct Piece
-      const correctGrid = Array.from(
-        document.querySelectorAll(".mini-sudoku-grid"),
-      ).find((el) => el.dataset.chunkIndex == i);
+      const allGrids = [
+        ...boardContainer.querySelectorAll(".mini-sudoku-grid"),
+        ...collectedLeft.querySelectorAll(".mini-sudoku-grid"),
+        ...collectedRight.querySelectorAll(".mini-sudoku-grid")
+      ];
+      
+      const correctGrid = allGrids.find((el) => el.dataset.chunkIndex == i);
 
       if (!correctGrid) {
         console.error("Debug: Correct piece not found!");
@@ -975,12 +974,12 @@ export async function checkBoardCompletion() {
 
   // 1. Clear previous errors first
   clearBoardErrors();
-  document
+  boardContainer
     .querySelectorAll(".error-slot")
     .forEach((el) => el.classList.remove("error-slot"));
 
-  const slots = document.querySelectorAll(".sudoku-chunk-slot");
-  const filledCount = document.querySelectorAll(
+  const slots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
+  const filledCount = boardContainer.querySelectorAll(
     ".sudoku-chunk-slot.filled",
   ).length;
 
@@ -1169,9 +1168,12 @@ export function resumeJigsawState() {
     const slot = boardContainer.querySelector(
       `[data-slot-index="${slotIndex}"]`,
     );
-    const panelItem = Array.from(
-      document.querySelectorAll(".mini-sudoku-grid"),
-    ).find((el) => parseInt(el.dataset.chunkIndex) === chunkIndex);
+    const allGrids = [
+      ...boardContainer.querySelectorAll(".mini-sudoku-grid"),
+      ...collectedLeft.querySelectorAll(".mini-sudoku-grid"),
+      ...collectedRight.querySelectorAll(".mini-sudoku-grid")
+    ];
+    const panelItem = allGrids.find((el) => parseInt(el.dataset.chunkIndex) === chunkIndex);
 
     if (slot && panelItem) {
       // Move from panel to slot
@@ -1189,8 +1191,9 @@ export function resumeJigsawState() {
 }
 
 function clearBoardErrors() {
-  if (boardContainer) boardContainer.classList.remove("board-error");
-  document
-    .querySelectorAll(".error-number")
-    .forEach((el) => el.classList.remove("error-number"));
+  if (boardContainer) {
+    boardContainer.classList.remove("board-error");
+    boardContainer.querySelectorAll(".error-number")
+      .forEach((el) => el.classList.remove("error-number"));
+  }
 }

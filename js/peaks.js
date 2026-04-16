@@ -94,6 +94,8 @@ export async function transitionToPeaks() {
     tooltipTitle.style.transition = "opacity 0.5s ease";
     tooltipDesc.style.opacity = "0";
     setTimeout(() => {
+      tooltipTitle.textContent = t.peaks_help_title || "Picos y Valles";
+      tooltipDesc.innerHTML = t.peaks_help_desc || "Encuentra los puntos más altos y bajos.";
       tooltipTitle.style.opacity = "1";
       tooltipDesc.style.opacity = "1";
       // Unlock

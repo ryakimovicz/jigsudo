@@ -1,0 +1,321 @@
+/* MASTER LOCK - Mechanical Safe Aesthetics refined for Jigsudo Design System */
+
+:root {
+  /* Site Accents handled via global variables: --accent-color and --accent-rgb */
+  --lock-gold-dark: #b45309; 
+  
+  /* DEFAULT: Light Theme (Nordic Paper) */
+  --lock-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --lock-border: #ccd6e0; 
+  --lock-panel: #fdfbf7; 
+  --lock-inner: #f1f5f9; 
+  --lock-text: #475569; 
+  --lock-header: #334155; 
+  --lock-rivet: #94a3b8;
+  --lock-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.12);
+  --lock-ring-glow: rgba(0,0,0,0.03);
+}
+
+/* Midnight Paper Theme (Dark Mode) */
+body.dark-mode {
+  --lock-bg: linear-gradient(135deg, #1e2329 0%, #0d1117 100%); /* SITES OFFICIAL DARK PALETTE */
+  --lock-border: #30363d; /* Matches var(--bg-tertiary) approx */
+  --lock-panel: #0d1117; /* SITES SECONDARY BG */
+  --lock-inner: #1e2329; /* SITES MAIN BG */
+  --lock-text: #768390;
+  --lock-header: #cdd9e5; /* Pearl Grey */
+  --lock-rivet: #444c56; /* Matches var(--glass-border) */
+  --lock-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --lock-ring-glow: rgba(255, 255, 255, 0.05);
+}
+
+/* 1. Lock Icon (Top Right of Game Area) */
+#master-lock-icon {
+  position: absolute;
+  top: 25px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: auto;
+}
+
+#master-lock-icon.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+#master-lock-icon.expanding {
+  z-index: 60000;
+  filter: none;
+}
+
+#master-lock-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 2. Lock Modal / Safe Overlay */
+#master-lock-overlay {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-current-width, 0);
+  width: calc(100% - var(--sidebar-current-width, 0));
+  height: 100%;
+  background: transparent;
+  z-index: 25000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: 
+    visibility 0s, 
+    opacity 0.4s ease,
+    left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#master-lock-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 3. Safe Box UI */
+.safe-mechanism {
+  position: relative;
+  background: var(--lock-bg);
+  padding: 40px;
+  border-radius: 20px;
+  border: 4px solid var(--lock-border);
+  box-shadow: 
+    var(--lock-shadow),
+    inset 0 2px 4px var(--lock-ring-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  transform: scale(0.3);
+  opacity: 0;
+  transition: 
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.5s ease,
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+#master-lock-overlay.active .safe-mechanism {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.safe-header {
+  color: var(--lock-header);
+  font-family: var(--font-paper);
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-weight: 700;
+  margin: 0;
+  transition: color 0.3s ease;
+}
+
+/* 4. The 7 Wheels Group */
+.wheels-wrapper {
+  display: flex;
+  gap: 12px;
+  background: var(--lock-inner);
+  padding: 24px;
+  border-radius: 16px;
+  border: 2px solid var(--lock-border);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .wheels-wrapper {
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+}
+
+/* Glitch Effect - Refined for themes */
+.glitching {
+  animation: glitch-anim 0.25s infinite;
+  /* Light Mode: Elegant chromatic shift using site palette (Slate Blue + Accent Orange) */
+  text-shadow:
+    1.5px 0 var(--primary-color),
+    -1.5px 0 var(--accent-color);
+}
+
+.dark-mode .glitching {
+  animation: glitch-anim 0.15s infinite !important;
+  color: #0f0 !important; /* Matrix Green neon */
+  text-shadow:
+    2px 0 #f00,
+    -2px 0 #00f;
+}
+
+@keyframes glitch-anim {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+/* 5. Individual Wheel */
+.safe-wheel {
+  position: relative;
+  width: 44px; /* Increased slightly for better visual balance */
+  height: 64px;
+  background: var(--lock-panel);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 4px 8px rgba(0,0,0,0.1),
+    0 2px 4px rgba(0,0,0,0.05);
+  border: 1px solid var(--lock-border);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .safe-wheel {
+  box-shadow: 
+    inset 0 4px 8px rgba(0,0,0,0.4),
+    0 2px 0 rgba(255,255,255,0.05);
+}
+
+.wheel-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0s linear; 
+}
+
+/* Each digit cell */
+.wheel-digit {
+  width: 44px;
+  height: 64px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--font-main);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--lock-text);
+  /* Engraved effect: light shadow on dark text for light mode */
+  text-shadow: 
+    1px 1px 0px rgba(255,255,255,0.5),
+    -1px -1px 1px rgba(0,0,0,0.1);
+  transition: color 0.3s ease;
+}
+
+body.dark-mode .wheel-digit {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Animation State: Unlocking (Stopped at target) */
+.safe-wheel.unlocked .wheel-digit {
+  color: var(--accent-color);
+  text-shadow: 0 0 15px rgba(var(--accent-rgb), 0.6);
+}
+
+/* 6. Mechanical Details */
+.safe-rivet {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--lock-rivet);
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.1);
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  transition: all 0.8s ease;
+}
+
+body.dark-mode .safe-rivet {
+  border-color: rgba(255,255,255,0.1);
+}
+
+.rivet-tl { top: 12px; left: 12px; }
+.rivet-tr { top: 12px; right: 12px; }
+.rivet-bl { bottom: 12px; left: 12px; }
+.rivet-br { bottom: 12px; right: 12px; }
+
+/* v1.2.7: Victory Disintegration - Total removal of "industrial" elements */
+#master-lock-overlay.disintegrated .safe-mechanism,
+#master-lock-overlay.disintegrated .wheels-wrapper {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+#master-lock-overlay.disintegrated .safe-header,
+#master-lock-overlay.disintegrated .safe-rivet,
+#master-lock-overlay.disintegrated .safe-wheel {
+    display: none !important;
+}
+
+/* v1.2.7: Clean Victory Tray - replaces wheels-wrapper during transition */
+.victory-tray {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
+}
+
+#master-lock-overlay.disintegrated .victory-tray .victory-code-cell {
+    width: 44px;
+    height: 64px;
+    font-size: 2.2rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive Scaling */
+@media (max-width: 480px) {
+  .wheels-wrapper {
+    gap: 8px;
+    padding: 12px;
+  }
+  .safe-wheel {
+    width: 36px;
+    height: 52px;
+  }
+  .wheel-digit {
+    width: 36px;
+    height: 52px;
+    font-size: 1.4rem;
+  }
+  .safe-mechanism {
+    padding: 25px;
+    gap: 20px;
+  }
+}
+
+/* Mobile Alignment Resets */
+@media (max-width: 768px) {
+  #master-lock-overlay {
+    left: 0;
+    width: 100%;
+  }
+
+  #master-lock-icon {
+    width: 34px;
+    height: 34px;
+    top: 52px; /* Clear header (45px) + 7px margin */
+    right: 15px;
+  }
+}

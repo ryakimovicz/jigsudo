@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:grid x="0" y="0" width="166.718" height="166.718"/>
+    <bx:export>
+      <bx:file format="svg" href="#object-0" path="Sin título.svg"/>
+      <bx:file format="svg" href="#object-1" path="Sin título 2.svg"/>
+      <bx:file format="svg" href="#object-2" path="Sin título 3.svg"/>
+      <bx:file format="svg" href="#object-3" path="Sin título 4.svg"/>
+      <bx:file format="svg" href="#object-4" path="Sin título 5.svg"/>
+      <bx:file format="svg" href="#object-5" path="Sin título 6.svg"/>
+      <bx:file format="svg" href="#object-6" path="Sin título 7.svg"/>
+      <bx:file format="svg" href="#object-7" path="Sin título 8.svg" excluded="true"/>
+    </bx:export>
+  </defs>
+  <text style="fill: rgb(252, 116, 44); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; white-space: pre;" x="216.831" y="128.255">1</text>
+  <line style="fill: none; stroke-width: 30px; stroke: rgb(30, 35, 41);" x1="166.576" y1="-1.106" x2="166.718" y2="500.154" id="object-0"/>
+  <line style="fill: none; stroke-width: 30px; stroke: rgb(30, 35, 41);" x1="333.588" y1="-1.106" x2="333.436" y2="500.154" id="object-1"/>
+  <line style="fill: none; stroke-width: 30px; stroke: rgb(30, 35, 41);" x1="0" y1="167.339" x2="500.154" y2="166.718" id="object-2"/>
+  <line style="fill: none; stroke-width: 30px; stroke: rgb(30, 35, 41);" x1="0" y1="333.479" x2="500.154" y2="333.436" id="object-3"/>
+  <text style="fill: rgb(24, 91, 147); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; white-space: pre;" x="49.191" y="125.381">J</text>
+  <text style="fill: rgb(252, 116, 44); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; white-space: pre;" x="381.02" y="125.859">6</text>
+  <text style="fill: rgb(252, 116, 44); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; white-space: pre;" id="object-4" x="31.317" y="302.394">5</text>
+  <text style="fill: rgb(24, 91, 147); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; white-space: pre;" id="object-5" x="204.759" y="302.394">U</text>
+  <text style="fill: rgb(24, 91, 147); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; stroke-width: 2px; white-space: pre;" id="object-6" x="198.205" y="479.26">D</text>
+  <text style="fill: rgb(252, 116, 44); font-family: &quot;Century Gothic&quot;; font-size: 140px; font-weight: 700; stroke-width: 2px; white-space: pre;" id="object-7" x="381.95" y="479.26">0</text>
+</svg>
