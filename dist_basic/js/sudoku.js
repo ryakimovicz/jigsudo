@@ -4,6 +4,7 @@ import { getCurrentLang } from "./i18n.js?v=1.3.1";
 import { transitionToPeaks } from "./peaks.js?v=1.3.1";
 import { createMiniGrid, getChunksFromBoard } from "./memory.js?v=1.3.1";
 import { showToast } from "./ui.js?v=1.3.1";
+import { CONFIG } from "./config.js?v=1.3.1";
 // State
 let selectedCell = null;
 let pencilMode = false;
@@ -49,7 +50,7 @@ export function transitionToSudoku() {
   const sudokuControls = document.getElementById("sudoku-controls");
 
   if (gameSection) {
-    if (document.startViewTransition) {
+    if (document.startViewTransition && !CONFIG.isBasicEdition) {
       document.startViewTransition(() => {
         gameSection.classList.remove("jigsaw-mode");
         gameSection.classList.add("sudoku-mode");

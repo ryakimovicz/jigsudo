@@ -557,7 +557,7 @@ export function transitionToJigsaw() {
 
   // 2. Add Jigsaw Mode Class
   if (memorySection) {
-    if (document.startViewTransition) {
+    if (document.startViewTransition && !CONFIG.isBasicEdition) {
       const leftPieces = collectedLeft.querySelectorAll(".collected-piece");
       const rightPieces = collectedRight.querySelectorAll(".collected-piece");
 
