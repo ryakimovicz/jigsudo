@@ -118,7 +118,11 @@ export function initHome() {
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     });
 
-    dateEl.textContent = formattedDate;
+    if (CONFIG.isBasicEdition) {
+      dateEl.textContent = lang === "en" ? "Basic Edition" : "Edición Básica";
+    } else {
+      dateEl.textContent = formattedDate;
+    }
 
     const todayZero = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const startZero = new Date(Date.UTC(2026, 3, 5));

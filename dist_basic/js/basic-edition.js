@@ -62,9 +62,6 @@ export function initBasicEdition() {
 
   // 2. Inject Promotion Banners
   injectPromotionBanners();
-  
-  // 2.5 Inject Basic Badge
-  injectBasicBadge();
 
   // 3. Inject CSS fixes
   injectStyles();
@@ -100,33 +97,6 @@ function updateTexts() {
     const footerLink = document.querySelector('.footer-links a[href="https://jigsudo.com"]');
     if (footerLink) {
         footerLink.innerHTML = `<span class="promo-badge">${t.promo_full_version_badge || "Full Version"}</span> ${t.nav_home || "Ir a Jigsudo.com"}`;
-    }
-}
-
-/**
- * Injects a small "Edición Básica" badge in the main header
- */
-function injectBasicBadge() {
-    const headerTitle = document.querySelector(".app-title");
-    if (headerTitle && !document.querySelector(".demo-header-badge")) {
-        const badge = document.createElement("span");
-        badge.className = "demo-header-badge";
-        const lang = getCurrentLang() || "es";
-        badge.textContent = lang === "en" ? "Basic Edition" : "Edición Básica";
-        
-        // Inline styles for absolute safety across theme switches
-        badge.style.backgroundColor = "var(--primary-color)";
-        badge.style.color = "var(--bg-primary, #ffffff)";
-        badge.style.padding = "2px 6px";
-        badge.style.borderRadius = "4px";
-        badge.style.fontSize = "0.75rem";
-        badge.style.marginLeft = "8px";
-        badge.style.verticalAlign = "middle";
-        badge.style.fontWeight = "bold";
-        badge.style.textTransform = "uppercase";
-        badge.style.letterSpacing = "0.5px";
-        
-        headerTitle.appendChild(badge);
     }
 }
 
