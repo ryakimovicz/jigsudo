@@ -26,6 +26,11 @@ export function initBasicEdition() {
     "#password-confirm-modal",
     "#password-reset-modal",
     "#logout-confirm-modal",
+    // Hide Privacy/Terms in footer
+    '[data-i18n="footer_privacy"]',
+    '[data-i18n="footer_terms"]',
+    // Targeted suppression for the guide ranks section
+    '.info-card:has([data-i18n="guide_ranks_title"])' 
   ];
 
   elementsToHide.forEach((selector) => {
@@ -33,9 +38,14 @@ export function initBasicEdition() {
       const elements = document.querySelectorAll(selector);
       elements.forEach((el) => {
         el.classList.add("hidden-basic");
-        // Force hide non-essential sections to prevent white space/layout shift
-        if (selector.includes("-section")) {
-          el.style.display = "none";
+        el.style.display = "none";
+
+        // Hide the separator after Privacy/Terms if it exists
+        if (selector.includes("footer_privacy") || selector.includes("footer_terms")) {
+            const separator = el.nextElementSibling;
+            if (separator && separator.classList.contains("footer-sep")) {
+                separator.style.display = "none";
+            }
         }
       });
     } catch (e) {
@@ -49,35 +59,23 @@ export function initBasicEdition() {
   // 3. Inject CSS fixes
   injectStyles();
 
-  // 4. Update Header branding (Optional)
-  const headerLogo = document.querySelector(".header-logo span");
-  if (headerLogo) {
-     // headerLogo.textContent = "Jigsudo Basic";
-  }
-
-  // 5. Landing text adjustments
-  const homeTitle = document.querySelector(".home-title");
-  if (homeTitle) {
-      // homeTitle.textContent = "Jigsudo: Basic Edition";
-  }
-
-  // 6. Disable Sidebar buttons that point to hidden sections
-  const sidebarLinks = document.querySelectorAll(".nav-item");
-  sidebarLinks.forEach(link => {
+  // 4. Disable Sidebar buttons that point to hidden sections
+  document.querySelectorAll(".nav-item").forEach(link => {
       if (link.id === "nav-changelog" || link.id === "nav-admin") {
           link.style.display = "none";
       }
   });
 
-  // 7. Update localized strings for Basic Edition specific UI (e.g. FAQ)
+  // 5. Update localized strings
   updateTexts();
 
-  // 8. Swap FAQ containers
+  // 6. Swap FAQ containers and ensure visibility
   const faqGeneric = document.getElementById("faq-generic-container");
   const faqDemo = document.getElementById("faq-demo-container");
   if (faqGeneric && faqDemo) {
       faqGeneric.classList.add("hidden");
-      faqDemo.classList.remove("hidden");
+      faqDemo.classList.remove("hidden", "hidden-basic");
+      faqDemo.style.display = "block"; // Force override
   }
 
   console.log("[BasicEdition] UI transformation complete.");
@@ -97,16 +95,15 @@ function updateTexts() {
 
 /**
  * Injects a promotion banner into specific sections (History, Guide, etc.)
- * to nudge users towards the full version.
  */
 function injectPromotionBanners() {
     const lang = getCurrentLang() || "es";
     const t = translations[lang];
     if (!t) return;
 
-    const createBanner = () => {
+    const createBanner = (isHome = false) => {
         const div = document.createElement("div");
-        div.className = "basic-promo-banner";
+        div.className = "basic-promo-banner" + (isHome ? " home-promo" : "");
         div.innerHTML = `
             <h3 class="promo-title">${t.promo_banner_title || "¡Juega la Experiencia Completa!"}</h3>
             <p class="promo-desc">${t.promo_banner_desc || "Disfruta de perfiles, ranking global, historial completo y desafíos ilimitados."}</p>
@@ -117,82 +114,101 @@ function injectPromotionBanners() {
         return div;
     };
 
-    // 1. HOME: Below the start button area
-    const homeContent = document.getElementById("menu-content");
-    if (homeContent) {
-        // We inject it before the footer links
-        const footerLinks = homeContent.querySelector(".footer-links");
-        if (footerLinks) {
-            footerLinks.before(createBanner());
-        }
+    // 1. HOME: Below the SEO content article
+    const seoContent = document.getElementById("seo-home-content");
+    if (seoContent && !document.querySelector(".home-promo")) {
+        seoContent.after(createBanner(true));
     }
 
     // 2. HISTORY: Below the legend card
     const historyLegend = document.querySelector("#history-section .history-legend-card");
-    if (historyLegend) {
+    if (historyLegend && !historyLegend.nextElementSibling?.classList.contains("basic-promo-banner")) {
         historyLegend.after(createBanner());
     }
 
     // 3. GUIDE: Below the tutorial intro
     const guideIntro = document.querySelector(".guide-intro-section");
-    if (guideIntro) {
+    if (guideIntro && !guideIntro.nextElementSibling?.classList.contains("basic-promo-banner")) {
         guideIntro.after(createBanner());
     }
 }
 
 function injectStyles() {
+    if (document.getElementById("basic-edition-styles")) return;
+
     const style = document.createElement("style");
     style.id = "basic-edition-styles";
     style.textContent = `
         .hidden-basic { display: none !important; }
+        
         .basic-promo-banner {
-            padding: 24px 16px;
+            padding: 32px 20px;
             margin: 24px 0;
-            background: rgba(var(--accent-rgb), 0.05);
+            background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
             border: 1px solid rgba(var(--accent-rgb), 0.2);
-            border-radius: 20px;
+            border-radius: 24px;
             text-align: center;
-            animation: fadeInPromo 0.5s ease-out;
+            animation: fadeInPromo 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        .home-promo {
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+
         @keyframes fadeInPromo {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
         .promo-title {
-            font-size: 1.25rem;
+            font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 12px;
             color: var(--text-color);
         }
+
         .promo-desc {
-            font-size: 0.95rem;
+            font-size: 1rem;
             color: var(--text-color);
-            opacity: 0.85;
-            margin-bottom: 20px;
-            line-height: 1.5;
+            opacity: 0.8;
+            margin-bottom: 24px;
+            line-height: 1.6;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
+
         .promo-link-btn {
             display: inline-block;
-            padding: 12px 24px;
-            background: var(--accent-color, var(--primary));
+            padding: 14px 28px;
+            background: var(--accent-color, #2a9d8f);
             color: white !important;
             text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: none;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(var(--accent-rgb, 42, 157, 143), 0.3);
         }
+
         .promo-link-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
-            opacity: 0.95;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(var(--accent-rgb, 42, 157, 143), 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* Ensure FAQ is visible in Basic */
+        #faq-demo-container { 
+            display: block !important; 
+            margin-bottom: 24px;
         }
     `;
     document.head.appendChild(style);
 }
 
 // ---------------------------------------------------------
-// AUTO-INITIALIZATION
+// AUTO-INITIALIZATION REMOVED - Handled by main.js
 // ---------------------------------------------------------
-window.addEventListener("DOMContentLoaded", initBasicEdition);
