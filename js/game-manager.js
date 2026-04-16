@@ -158,9 +158,12 @@ export class GameManager {
         JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
       
       // v1.3.3: Basic Edition Safety - Always ensure statistics exist
-      if (CONFIG.isBasicEdition && !this.stats) {
-          this.stats = { history: {}, totalRP: 0, currentStreak: 0 };
-          localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      if (CONFIG.isBasicEdition) {
+          if (!this.stats || this.stats.totalRP === undefined) {
+              if (CONFIG.debugMode) console.log("[GameManager] Basic Edition: Forcing statistics reset for stability.");
+              this.stats = { history: {}, totalRP: 0, currentStreak: 0 };
+              localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+          }
       }
 
       const decayOccurred = await this._ensureStats();

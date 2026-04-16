@@ -1,11 +1,11 @@
-import { CONFIG } from "./config.js?v=1.3.1";
-import { updateTexts } from "./i18n.js?v=1.3.1";
-import { translations } from "./translations.js?v=1.3.1";
-
 /**
  * Jigsudo Basic Edition Controller
- * Handles UI isolation and promotional links for the itch.io standalone version.
+ * Handles UI suppression and promotion for the Standalone Demo.
  */
+import { CONFIG } from "./config.js?v=1.3.1";
+import { translations } from "./translations.js?v=1.3.1";
+import { getCurrentLang } from "./i18n.js?v=1.3.1";
+
 export function initBasicEdition() {
   if (!CONFIG.isBasicEdition) return;
 
@@ -19,132 +19,112 @@ export function initBasicEdition() {
     "#nav-changelog",
     "#nav-admin",
     "#changelog-section",
-    "#admin-section",  // Now that we don't purge HTML
-    ".home-tabs",      // Hide "Custom" tab, keep only daily
-    "#panel-custom",   // Ensure custom panel is gone
-
-    // Auth Modals (Now that we don't purge HTML)
+    "#admin-section",
+    ".home-tabs",
+    "#panel-custom",
     "#login-modal",
     "#password-confirm-modal",
     "#password-reset-modal",
     "#logout-confirm-modal",
-    "#delete-account-confirm-modal",
-
-    // History navigation
-    "#hist-prev-btn",
-    "#hist-next-btn",
-    
-    // Hide Ranking, Streaks, and RP mentions in SEO/Faq on HOME
-    '[data-i18n="seo_ranking"]',
-    '[data-i18n="seo_ranking_text"]',
-    '.seo-faq-item:has([data-i18n="seo_faq_1_q"])', // Updates/RP
-    '.seo-faq-item:has([data-i18n="seo_faq_4_q"])', // Account advantages (Cloud/Ranking)
-    '.seo-faq-item:has([data-i18n="seo_faq_5_q"])', // Streaks
-    '.seo-faq-item:has([data-i18n="seo_faq_6_q"])', // How RP is calculated
-    
-    // Support & Donations
-    ".victory-support",
-
-    // Streaks (Rachas) Removal
-    ".stat-box:has([data-i18n='stat_streak'])",
-    ".stat-box:has([data-i18n='stat_max_streak'])",
-    ".victory-stat-card:has([data-i18n='victory_stat_streak'])",
-    ".sc-stat-item:has([data-i18n='victory_stat_streak'])",
-    ".sc-stat-item:has([data-i18n='stat_streak'])",
-    
-    // Legal Links & Profiles
-    ".sc-user-box",
-    '[data-i18n="footer_privacy"]',
-    '[data-i18n="footer_terms"]',
-    '.footer-sep'
   ];
 
-  elementsToHide.forEach(selector => {
-     try {
-         const elements = document.querySelectorAll(selector);
-         elements.forEach(el => el.classList.add("hidden-basic"));
-     } catch(e) {}
+  elementsToHide.forEach((selector) => {
+    try {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach((el) => {
+        el.classList.add("hidden-basic");
+        // Force hide non-essential sections to prevent white space/layout shift
+        if (selector.includes("-section")) {
+          el.style.display = "none";
+        }
+      });
+    } catch (e) {
+      console.warn(`[BasicEdition] Failed to hide element: ${selector}`, e);
+    }
   });
 
-  // 2. Specialized Guide Hiding (if :has isn't fully supported or selectors differ)
-  hideGuideIrrelevantSections();
-
-  // 3. Inject Promotion Banners
+  // 2. Inject Promotion Banners
   injectPromotionBanners();
 
-  // 4. Inject global Basic Edition styles
+  // 3. Inject CSS fixes
   injectStyles();
-  
-  // 5. Force Daily tab if somehow not active
-  const dailyTab = document.querySelector('[data-tab="daily"]');
-  if (dailyTab) dailyTab.click();
 
-  // 6. Header Override: Show "Basic Edition" and hide the puzzle number
-  overrideHeader();
-
-  // 7. Update Tagline for Demo
-  const tagline = document.querySelector('.tagline');
-  if (tagline) {
-      tagline.dataset.i18n = "menu_tagline_demo";
+  // 4. Update Header branding (Optional)
+  const headerLogo = document.querySelector(".header-logo span");
+  if (headerLogo) {
+     // headerLogo.textContent = "Jigsudo Basic";
   }
-  
+
+  // 5. Landing text adjustments
+  const homeTitle = document.querySelector(".home-title");
+  if (homeTitle) {
+      // homeTitle.textContent = "Jigsudo: Basic Edition";
+  }
+
+  // 6. Disable Sidebar buttons that point to hidden sections
+  const sidebarLinks = document.querySelectorAll(".nav-item");
+  sidebarLinks.forEach(link => {
+      if (link.id === "nav-changelog" || link.id === "nav-admin") {
+          link.style.display = "none";
+      }
+  });
+
+  // 7. Update localized strings for Basic Edition specific UI (e.g. FAQ)
   updateTexts();
 
   // 8. Swap FAQ containers
   const faqGeneric = document.getElementById("faq-generic-container");
   const faqDemo = document.getElementById("faq-demo-container");
-  if (faqGeneric) faqGeneric.style.display = "none";
-  if (faqDemo) faqDemo.classList.remove("hidden-basic");
+  if (faqGeneric && faqDemo) {
+      faqGeneric.classList.add("hidden");
+      faqDemo.classList.remove("hidden");
+  }
 
   console.log("[BasicEdition] UI transformation complete.");
 }
 
-function overrideHeader() {
-    const dateEl = document.getElementById("current-date");
-    const numEl = document.getElementById("challenge-num");
-    
-    if (dateEl) {
-        dateEl.dataset.i18n = "header_basic_edition";
-    }
-    
-    if (numEl) {
-        numEl.style.display = "none";
+function updateTexts() {
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang];
+    if (!t) return;
+
+    // Update footer promotion button
+    const footerLink = document.querySelector('.footer-links a[href="https://jigsudo.com"]');
+    if (footerLink) {
+        footerLink.innerHTML = `<span class="promo-badge">${t.promo_full_version_badge || "Full Version"}</span> ${t.nav_home || "Ir a Jigsudo.com"}`;
     }
 }
 
-function hideGuideIrrelevantSections() {
-    // Specifically target the Scoring and Ranks sections in the Guide
-    const guideHeaders = document.querySelectorAll('#guide-section h3');
-    guideHeaders.forEach(h => {
-        const key = h.dataset.i18n;
-        // Restore Scoring section visibility, keep only Ranks hidden
-        if (key === 'guide_ranks_title' || h.textContent.includes('Rank') || h.textContent.includes('Rango')) {
-            const card = h.closest('.info-card') || h.parentElement;
-            if (card) card.classList.add("hidden-basic");
-        }
-    });
-}
-
+/**
+ * Injects a promotion banner into specific sections (History, Guide, etc.)
+ * to nudge users towards the full version.
+ */
 function injectPromotionBanners() {
-    // Shared Banner Template - REORDERED: Text first, then Link/Button
+    const lang = getCurrentLang() || "es";
+    const t = translations[lang];
+    if (!t) return;
+
     const createBanner = () => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "basic-promo-banner";
-        wrapper.innerHTML = `
-            <p class="promo-text" data-i18n="basic_edition_invite">
-                Disfruta el puzzle de hoy. ¡Juega la experiencia completa en Jigsudo.com!
-            </p>
+        const div = document.createElement("div");
+        div.className = "basic-promo-banner";
+        div.innerHTML = `
+            <h3 class="promo-title">${t.promo_banner_title || "¡Juega la Experiencia Completa!"}</h3>
+            <p class="promo-desc">${t.promo_banner_desc || "Disfruta de perfiles, ranking global, historial completo y desafíos ilimitados."}</p>
             <a href="https://jigsudo.com" target="_blank" class="promo-link-btn">
-                <span class="promo-label" data-i18n="sidebar_play_full">Jugar Versión Completa</span>
+                ${t.btn_view_full_version || "Ver Versión Completa"}
             </a>
         `;
-        return wrapper;
+        return div;
     };
 
-    // 1. HOME: Below the start button
-    const startBtn = document.getElementById("start-btn");
-    if (startBtn) {
-        startBtn.after(createBanner());
+    // 1. HOME: Below the start button area
+    const homeContent = document.getElementById("menu-content");
+    if (homeContent) {
+        // We inject it before the footer links
+        const footerLinks = homeContent.querySelector(".footer-links");
+        if (footerLinks) {
+            footerLinks.before(createBanner());
+        }
     }
 
     // 2. HISTORY: Below the legend card
@@ -162,6 +142,7 @@ function injectPromotionBanners() {
 
 function injectStyles() {
     const style = document.createElement("style");
+    style.id = "basic-edition-styles";
     style.textContent = `
         .hidden-basic { display: none !important; }
         .basic-promo-banner {
@@ -172,54 +153,46 @@ function injectStyles() {
             border-radius: 20px;
             text-align: center;
             animation: fadeInPromo 0.5s ease-out;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
         }
         @keyframes fadeInPromo {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        .promo-link-btn {
-            text-decoration: none;
-            background: linear-gradient(135deg, var(--accent-color), #f43f5e);
-            color: white !important;
-            padding: 12px 28px;
-            border-radius: 50px;
+        .promo-title {
+            font-size: 1.25rem;
             font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.05rem;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
-        }
-        
-        .promo-link-btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(var(--accent-rgb), 0.4);
-            filter: brightness(1.1);
-        }
-        
-        .promo-link-btn:active {
-            transform: translateY(-1px);
-        }
-
-        .promo-text {
-            font-size: 1rem;
-            line-height: 1.6;
+            margin-bottom: 12px;
             color: var(--text-color);
-            margin: 0;
-            max-width: 480px;
-            opacity: 0.9;
         }
-        
-        /* Specific tweaks to clean up after hiding */
-        #history-section .history-page-wrapper {
-            padding-bottom: 40px;
+        .promo-desc {
+            font-size: 0.95rem;
+            color: var(--text-color);
+            opacity: 0.85;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .promo-link-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--accent-color, var(--primary));
+            color: white !important;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+        }
+        .promo-link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
+            opacity: 0.95;
         }
     `;
     document.head.appendChild(style);
 }
+
+// ---------------------------------------------------------
+// AUTO-INITIALIZATION
+// ---------------------------------------------------------
+window.addEventListener("DOMContentLoaded", initBasicEdition);
