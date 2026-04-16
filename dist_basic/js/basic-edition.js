@@ -26,6 +26,7 @@ export function initBasicEdition() {
     "#password-confirm-modal",
     "#password-reset-modal",
     "#logout-confirm-modal",
+    "#setting-sound-container-modal",
     // Hide Privacy/Terms in footer
     '[data-i18n="footer_privacy"]',
     '[data-i18n="footer_terms"]',
