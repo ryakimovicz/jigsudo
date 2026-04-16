@@ -38,7 +38,8 @@ export function initBasicEdition() {
     "#vsc-streak-card",
     "#victory-social-card .sc-user-box",
     "#support-container-about",
-    "#about-contact-card"
+    "#about-contact-card",
+    "#challenge-num"
   ];
 
   elementsToHide.forEach((selector) => {
