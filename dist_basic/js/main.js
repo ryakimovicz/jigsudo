@@ -31,8 +31,6 @@ async function startApp() {
   if (CONFIG.debugMode) {
     document.body.classList.add("debug-mode");
     systemLog("DEBUG MODE ACTIVE");
-  } else {
-    console.log = function () {};
   }
 
   if (CONFIG.betaMode) {
