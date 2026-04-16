@@ -756,7 +756,12 @@ function handleMatchSuccess(chunkIndex) {
     pairsFound: [...new Set(state.memory.matchedIndices)].length,
     matchedIndices: state.memory.matchedIndices,
   });
-  gameManager.save();
+  
+  // v1.3.2: Only save if we haven't won yet. If we won, awardStagePoints will handle the final save.
+  const TOTAL_PAIRS = 9;
+  if (matchesFound < TOTAL_PAIRS) {
+    gameManager.save();
+  }
 
   console.log(`Matched Pair for Chunk ${chunkIndex}!`);
 
