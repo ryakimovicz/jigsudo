@@ -209,6 +209,10 @@ function injectStyles() {
             filter: brightness(1.1);
         }
 
+        body.dark-mode .promo-link-btn {
+            color: #1e293b !important;
+        }
+
         /* Ensure FAQ is visible in Basic */
         #faq-demo-container { 
             display: block !important; 
