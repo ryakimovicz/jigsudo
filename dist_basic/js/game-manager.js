@@ -1,0 +1,2796 @@
+import { getDailySeed } from "./utils/random.js?v=1.3.1";
+// Local generation removed per user request (Cloud Only)
+import {
+  generateSearchSequences,
+  countSequenceOccurrences,
+} from "./search-gen.js?v=1.3.1";
+import { CONFIG } from "./config.js?v=1.3.1";
+import { calculateRP, SCORING } from "./ranks.js?v=1.3.1";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.1";
+import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.1";
+import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.3.1";
+import { masterLock } from "./lock.js?v=1.3.1";
+
+export class GameManager {
+  constructor() {
+    this.currentSeed = getDailySeed();
+    this.ready = this.prepareDaily(); // Initial Load
+    this.cloudSaveTimeout = null;
+    this.isWiping = false;
+    this.isReplay = false;
+    this.validationQueue = [];
+    this.isProcessingQueue = false;
+    // v1.3.8: Unified Session Continuity (survives refreshes for migration windows)
+    const storedSession = sessionStorage.getItem("jigsudo_active_session_id");
+    this.localSessionId = storedSession || Math.random().toString(36).substring(7);
+    if (!storedSession) {
+      sessionStorage.setItem("jigsudo_active_session_id", this.localSessionId);
+    }
+    this.sessionBlocked = false;
+    this._throneShieldExpires = 0; // v1.2.3: Grace period for session claims
+    this._lastLocalWrite = 0;      // v1.5.30: Sync Shield timer
+
+    // v1.5.16: Clock Synchronization (Anti-drift)
+    this.serverTimeOffset = parseInt(localStorage.getItem("jigsudo_server_offset") || "0");
+    if (CONFIG.debugMode) console.log(`[Timer] Initial Server Offset: ${this.serverTimeOffset}ms`);
+
+    // v1.9.0: Persistent Reset Acknowledgement (Prevents reload loops)
+    this._lastProcessedWipe = parseInt(localStorage.getItem("jigsudo_last_wipe_ack") || "0");
+
+    // Listen for tab focus/visibility to force save or handle day transitions
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "hidden") {
+        this.forceCloudSave();
+      } else if (document.visibilityState === "visible") {
+        // Handle Day Transition: Check if the puzzle has expired while the tab was backgrounded
+        const newSeed = getDailySeed();
+        if (this.currentSeed !== newSeed && !this.isReplay) {
+          // Mid-game Safety: Don't auto-refresh if the user is currently in a game session
+          const isAtGame = isAtGameRoute();
+          const hasActiveProgress =
+            this.state &&
+            this.state.progress &&
+            this.state.progress.currentStage !== "complete";
+
+          if (isAtGame && hasActiveProgress) {
+            console.log(
+              "[GameManager] Day transition detected, but user is in a game. Delaying refresh.",
+            );
+            return;
+          }
+
+          console.log("[GameManager] Day transition detected. Refreshing puzzle...");
+          const success = await this.prepareDaily();
+          if (success) {
+            window.dispatchEvent(
+              new CustomEvent("jigsudoDayChanged", {
+                detail: { oldSeed: this.currentSeed, newSeed: newSeed },
+              }),
+            );
+          }
+        }
+      }
+    });
+  }
+
+  async prepareDaily() {
+    const newSeed = getDailySeed();
+    const newStorageKey = `jigsudo_state_${newSeed}`;
+
+    if (this.currentSeed === newSeed && this.state) {
+      console.log("[GameManager] Same seed, keeping existing state.");
+      return true;
+    }
+
+    this.currentSeed = newSeed;
+    this.storageKey = newStorageKey;
+    this.isReplay = false; // Normal start is never a replay
+    // When switching to Daily, we should NOT wipe the state, as we want to resume.
+    // However, if we were in a Replay, this.state might be dirty.
+    this.state = null; 
+    return await this.init();
+  }
+
+  async init(isSilent = false) {
+    // v1.4.0: Throne Shield - Grace period to claim the session without conflict 
+    // after a reload or migration. 
+    this._throneShieldExpires = Date.now() + 45000; 
+    console.log("[GameManager] Throne Shield activated for 45s.");
+    masterLock.init();
+    masterLock.reset();
+
+    let dailyData = null;
+    try {
+      if (CONFIG.debugMode)
+        console.log("[GameManager] Fetching daily puzzle...");
+      dailyData = await this.fetchDailyPuzzle();
+    } catch (e) {
+      console.warn("[GameManager] Offline or Fetch Failed:", e);
+    }
+
+    const cachedState = this.isReplay ? null : localStorage.getItem(this.storageKey);
+    let savedState = null;
+
+    if (cachedState) {
+       // Try to decrypt 
+       savedState = decryptData(cachedState);
+       
+       // Fallback for legacy (non-encrypted) sessions during transition
+       if (!savedState) {
+         try {
+           savedState = JSON.parse(cachedState);
+           if (savedState) console.log("[GameManager] Legacy state detected. Migrating to encrypted format on next save.");
+         } catch(e) { /* corrupted */ }
+       }
+    }
+
+    if (savedState) {
+      try {
+        if (dailyData && savedState) {
+          const savedVer = savedState.meta?.version || "unknown";
+          const newVer = dailyData.meta?.version || "unknown";
+
+          if (savedVer !== newVer) {
+            console.warn(
+              `Version mismatch! Saved: ${savedVer} vs New: ${newVer}. Wiping old save.`,
+            );
+            localStorage.removeItem(this.storageKey);
+            savedState = null;
+          }
+        }
+      } catch (err) {
+        console.error("Error parsing save, wiping:", err);
+        localStorage.removeItem(this.storageKey);
+        savedState = null;
+      }
+    }
+
+    if (savedState) {
+      this.state = savedState;
+      
+      // v1.4.5 Saneamiento v7.1: El progreso local ya no debe contener 'stats'
+      if (this.state && this.state.stats) {
+        delete this.state.stats;
+        if (CONFIG.debugMode) console.log("[GameManager] Residuo local 'progress.stats' purgado.");
+      }
+      // Proactively load stats to ensure this.stats is populated before syncs
+      this.stats =
+        JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
+      const decayOccurred = await this._ensureStats();
+      masterLock.showIcon();
+      const activeUid = localStorage.getItem("jigsudo_active_uid");
+
+      if (decayOccurred && !activeUid) {
+        console.log(
+          "[GameManager] Local self-healing detected. Syncing guest data to storage...",
+        );
+        this.save(); // Save locally, but don't forceCloudSave yet if we are logged in
+      }
+      if (activeUid && !this.state.meta.userId) {
+        this.state.meta.userId = activeUid;
+      }
+
+      // v1.5.15: Safe initialization for persistent timer fields
+      if (!this.state.meta.stageStamps) this.state.meta.stageStamps = {};
+      
+      // If we have a persisted stageStartAt from a previous session, restore it to memory
+      if (this.state.meta.stageStartAt && !this.stageStartTime) {
+        this.stageStartTime = this.state.meta.stageStartAt;
+        if (CONFIG.debugMode) console.log(`[Timer] Restored stageStartTime from persistence: ${this.stageStartTime}`);
+      }
+      
+      // v1.3.0: Removed proactive ensureSessionStarted on load
+      // This solves the 'Ghost Session' bug. Session only anchors on Play or Stage Start.
+      if (activeUid) {
+        if (CONFIG.debugMode) console.log("[GameManager] Session resumed, waiting for intent to anchor.");
+      }
+      
+      if (CONFIG.debugMode)
+        console.log(
+          `[GameManager] Loading existing game for seed ${this.currentSeed}`,
+        );
+
+      // --- SELF-HEALING: Ensure 'data' branch exists even if local save was corrupted ---
+      if (dailyData && (!this.state.data || !this.state.data.chunks)) {
+        console.warn("[GameManager] Saved state missing 'data' (puzzle definition). Self-healing from Daily data...");
+        
+        // Re-inject static puzzle data from the server while preserving user progress
+        this.state.data = {
+          solution: dailyData.solution,
+          initialPuzzle: dailyData.puzzle,
+          chunks: dailyData.chunks,
+          searchTargetsMap: dailyData.searchTargets,
+          simonValues: dailyData.simonValues || [],
+          codeSequence: dailyData.codeSequence || [],
+        };
+      }
+
+      this.save();
+      // Purge invalid history once per load
+      this._healHistoryProgress();
+    } else if (dailyData) {
+      this.state = this.createStateFromJSON(dailyData);
+      const activeUid = localStorage.getItem("jigsudo_active_uid");
+      if (activeUid) {
+        this.state.meta.userId = activeUid;
+        // Anchor the server session for victory validation
+        this.ensureSessionStarted();
+      }
+
+      // Record as played in history ONLY if it's the original day
+      const seedStr = this.currentSeed.toString();
+      const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const decayOccurred = await this._ensureStats();
+      if (decayOccurred && !activeUid) {
+        console.log("[GameManager] Self-healing detected on fresh start. Syncing locally...");
+        this.save();
+      }
+      this.save();
+    } else {
+      console.error("[GameManager] CRITICAL: No Save & No Network.");
+      if (!isSilent) {
+        this.showCriticalError(
+          "Error loading daily puzzle. Check connection & refresh.",
+        );
+      }
+      return false;
+    }
+
+    if (CONFIG.debugMode) {
+      console.log("Game Initialized:", this.state);
+    }
+
+    // SELF-HEALING: Ensure search targets are populated if variation exists
+    if (
+      this.state.jigsaw.variation &&
+      (!this.state.search.targets || this.state.search.targets.length === 0)
+    ) {
+      console.warn(
+        "[GameManager] Variation exists but search targets empty. Healing...",
+      );
+      await this._populateSearchTargets(this.state.jigsaw.variation);
+    }
+
+    // DEBUG: Check loaded state
+    if (CONFIG.debugMode) {
+      console.log(
+        `[GameManager] Loaded Variation: ${this.state.jigsaw.variation}`,
+      );
+      console.log(
+        `[GameManager] Loaded InitialPuzzle Row 0:`,
+        JSON.stringify(this.state.data.initialPuzzle[0]),
+      );
+    }
+
+    return true;
+  }
+
+  /**
+   * Explicitly record that the user has started the current daily puzzle.
+   * This is called when the user clicks the "EMPEZAR" (START) button.
+   */
+
+
+
+  async recordStart() {
+    if (this.isReplay) return;
+
+    // v1.5.59: SEQUENTIAL SAFETY - Ensure any pending decay from yesterday is processed
+    // before we mark today as "played" (intent).
+    await this._ensureStats();
+
+    const seedStr = this.currentSeed.toString();
+    const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+
+    // v1.5.59: Unify intent marking for point decay protection (Server and Guest)
+    this.stats.lastDailyUpdate = dateStr;
+    this.stats.lastDecayCheck = dateStr;
+    this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
+    delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
+
+    /* Cloud session anchoring removed for Standalone Demo */
+    /*
+    const { getCurrentUser } = await import("./auth.js?v=1.3.1");
+    const user = getCurrentUser();
+    ...
+    */
+
+    this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
+    delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
+    
+    // v1.4.6: Update lastPlayed upon hitting the "Play" button
+    if (this.state && this.state.meta) {
+      this.state.meta.lastPlayed = new Date().toISOString();
+    }
+
+    /* Proactive History initialization removed for server-side; kept local fallback */
+    // Local Guest History
+    if (!this.stats.history) this.stats.history = {};
+    if (!this.stats.history[dateStr]) {
+      this.stats.history[dateStr] = { seed: this.currentSeed, played: true };
+    } else {
+      this.stats.history[dateStr].played = true;
+    }
+    
+    this.save(); 
+    
+    // v1.9.8: Mandatory local persistence for standalone demo
+    // Cloud save is disabled, so we must write stats to disk immediately.
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+  }
+
+  // _ensureHistoryRecord removed in favor of proactive initialization in recordStart.
+
+  /**
+   * Internal migration/cleanup: Distinguish between "fake" yellow days (bug)
+   * and real unfinished games. Permanently DELETE fake ones from the account.
+   */
+  _healHistoryProgress() {
+    if (!this.stats || !this.stats.history) return;
+
+    let changed = false;
+    for (const [dateStr, entry] of Object.entries(this.stats.history)) {
+      if (entry.status === "played") {
+        // Check if we have a saved state for this day
+        const parts = dateStr.split("-");
+        const seed = parseInt(parts[0] + parts[1] + parts[2]);
+        const stateStr = localStorage.getItem(`jigsudo_state_${seed}`);
+
+        let shouldPurge = false;
+        if (stateStr) {
+          try {
+            const state = JSON.parse(stateStr);
+            const stagesCount = state.progress?.stagesCompleted?.length || 0;
+            const moves = (state.memory?.pairsFound > 0) || 
+                          (state.jigsaw?.placedChunks?.length > 0) ||
+                          (state.sudoku?.movesCount > 0);
+
+            if (stagesCount === 0 && !moves) {
+              shouldPurge = true;
+            }
+          } catch (e) {
+            // If it's corrupted, we also purge it (unlikely to be a real game)
+            shouldPurge = true; 
+          }
+        }
+
+        // If it's confirmed empty (but exists!), PURGE it.
+        // If stateStr is null, we DON'T purge (it might be a new device or device B).
+        if (shouldPurge) {
+          console.log(`[GameManager] Purging invalid history entry: ${dateStr}`);
+          delete this.stats.history[dateStr];
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      console.log("[GameManager] Account History Purged (Invalid entries removed).");
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      // Sincronizar inmediatamente para limpiar otros dispositivos
+      this.forceCloudSave();
+    }
+  }
+
+  /**
+   * Internal migration/cleanup: Purge ALL history entries and statistics
+   * from before the v1.0.0 launch (2026-04-05).
+   */
+  _runLaunchCleanup() {
+    if (!this.stats) return false;
+    
+    // Explicit Launch Date: April 5th, 2026
+    const LAUNCH_DATE = "2026-04-05";
+    
+    // If we've already done this (on this device), skip.
+    if (this.stats.launchCleanupV1) return false;
+
+    if (!this.stats.history) {
+      this.stats.launchCleanupV1 = true;
+      return true; 
+    }
+
+    let hasBetaData = false;
+    for (const dateStr of Object.keys(this.stats.history)) {
+      if (dateStr < LAUNCH_DATE) {
+        hasBetaData = true;
+        delete this.stats.history[dateStr];
+      }
+    }
+
+    if (hasBetaData) {
+      console.warn("[LaunchCleanup] Beta data detected! Purging and resetting counters for v1.0.0...");
+      
+      this.stats.totalRP = 0;
+      this.stats.monthlyRP = 0;
+      this.stats.dailyRP = 0;
+      this.stats.totalScoreAccumulated = 0;
+      this.stats.totalTimeAccumulated = 0;
+      this.stats.totalPeaksErrorsAccumulated = 0;
+      
+      // Reset nested counters
+      this.stats.stageTimesAccumulated = {};
+      this.stats.stageWinsAccumulated = {};
+      this.stats.weekdayStatsAccumulated = {};
+
+      // Rebuild what's left (e.g. if they already played on launch day)
+      this._recalculateRecords(this.stats);
+      
+      this.stats.launchCleanupV1 = true;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      return true;
+    }
+
+    // No beta data, just mark as checked
+    this.stats.launchCleanupV1 = true;
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    return false;
+  }
+
+  async loadSpecificDay(dateStr) {
+    // Check if this is the current live day
+    const liveSeed = getDailySeed(); // Real Today Seed
+    const parts = dateStr.split("-");
+    const requestedSeed = parseInt(parts[0] + parts[1] + parts[2]);
+
+    console.log(
+      `[GameManager] Loading specific day: ${dateStr}, seed: ${requestedSeed}`,
+    );
+
+    this.storageKey = `jigsudo_state_${requestedSeed}`;
+    this.currentSeed = requestedSeed;
+    this.isReplay = requestedSeed !== liveSeed;
+
+    if (this.isReplay) {
+      console.log(
+        "[GameManager] Replay Mode Active: Stats and RP will NOT be updated.",
+      );
+      // User requested that History games always start from 0
+      console.log(
+        "[GameManager] Replay detected: Wiping local progress for a fresh start.",
+      );
+      localStorage.removeItem(this.storageKey);
+    } else {
+      // Current live day logic
+      this._ensureStats();
+      const dateStrToday = `${parts[0]}-${parts[1]}-${parts[2]}`;
+      const isAlreadyWon = this.stats.history[dateStrToday]?.status === "won";
+
+      if (isAlreadyWon) {
+        console.log(
+          "[GameManager] Today already won: Wiping progress for a fresh replay.",
+        );
+        localStorage.removeItem(this.storageKey);
+      } else {
+        console.log(
+          "[GameManager] Today in progress: Preserving state for resume.",
+        );
+      }
+    }
+
+    this.ready = this.init(true); // Silent re-init for history/replay
+    const success = await this.ready;
+
+    if (success) {
+      // Return to home view ONLY if we are not already in a specific route (like history deep link)
+      const currentHash = window.location.hash;
+      const isHistoryDeepLink = currentHash.startsWith("#history/") && currentHash.split("/").length === 4;
+      
+      if (!isHistoryDeepLink) {
+        window.location.hash = ""; 
+      }
+      window.scrollTo(0, 0);
+    }
+    return success;
+  }
+
+  async fetchDailyPuzzle() {
+    const seed = this.currentSeed;
+    const year = Math.floor(seed / 10000);
+    const month = Math.floor((seed % 10000) / 100);
+    const day = seed % 100;
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    
+    // Check if we are in a subfolder (like /about/)
+    let prefix = "";
+    const subpages = ["/about", "/contact", "/privacy", "/terms"];
+    const currentPath = window.location.pathname.toLowerCase();
+    if (subpages.some(p => currentPath.includes(p))) {
+      prefix = "../";
+    }
+    
+    const url = `${prefix}public/puzzles/daily-${dateStr}.json`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  createStateFromJSON(json) {
+    const { meta } = json;
+    let data;
+
+    // Decrypt Payload if present, otherwise fallback to legacy plaintext data
+    if (json.payload) {
+      try {
+        const payloadStr = atob(json.payload);
+        const key = String(meta.seed || this.currentSeed);
+        let decrypted = "";
+        for (let i = 0; i < payloadStr.length; i++) {
+          decrypted += String.fromCharCode(
+            payloadStr.charCodeAt(i) ^ key.charCodeAt(i % key.length),
+          );
+        }
+        data = JSON.parse(decrypted);
+      } catch (err) {
+        console.error("Failed to decrypt puzzle payload:", err);
+        data = {}; // Fallback empty state
+      }
+    } else {
+      data = json.data || {};
+    }
+
+    return {
+      meta: {
+        seed: meta.seed || this.currentSeed,
+        version: meta.version || "unknown",
+        startedAt: null,
+        stageStartAt: null, // v1.5.15: Persist current stage start timestamp
+        stageStamps: {},    // v1.5.15: Log of start/end times per stage
+        lastPlayed: "1970-01-01T00:00:00.000Z", // Initial state is always stale
+        generatedBy: "static-server",
+      },
+      progress: {
+        currentStage: "memory",
+        stagesCompleted: [],
+      },
+      data: {
+        solution: data.solution,
+        initialPuzzle: data.puzzle,
+        chunks: data.chunks,
+        searchTargetsMap: data.searchTargets,
+        simonValues: data.simonValues || [],
+        codeSequence: data.codeSequence || [],
+      },
+      memory: {
+        pairsFound: 0,
+        matchedIndices: [],
+        cards: [],
+      },
+      jigsaw: {
+        placedChunks: [],
+        variation: null,
+      },
+      sudoku: {
+        currentBoard: data.puzzle,
+      },
+      search: {
+        targets: [],
+        found: [],
+        version: 14,
+      },
+      simon: {
+        values: data.simonValues || [],
+        coordinates: [],
+      },
+      peaks: {
+        foundCoords: [],
+      },
+      code: {
+        completed: false,
+        maxUnlockedLevel: 3,
+      },
+    };
+  }
+
+  /**
+   * v1.9.0: Hard Reset Orchestrator.
+   * Clears all local game data, sets the wipe acknowledgement, and reloads the application.
+   */
+  async wipeAccountData(wipeTimestamp) {
+    console.warn("[GameManager] Wiping all local data due to administrative reset...");
+    
+    // 1. Mark as wiping to block any incoming save attempts
+    this.isWiping = true;
+    
+    // 2. Clear all jigsudo-related keys from localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+        if (key.startsWith("jigsudo_")) {
+            localStorage.removeItem(key);
+        }
+    });
+    
+    // 3. Persist the acknowledgement so we don't wipe again on next load
+    localStorage.setItem("jigsudo_last_wipe_ack", wipeTimestamp.toString());
+    
+    // 4. Clear memory
+    this.state = null;
+    this.stats = null;
+    
+    // 5. Hard Reload to clean up all modules and state
+    window.location.reload();
+  }
+
+  async setJigsawVariation(variationKey) {
+    if (!this.state) return;
+
+    const oldVariation = this.state.jigsaw.variation || "0";
+    const newVariation = variationKey || "0";
+
+    // GUARD: If same variation AND targets exist, do nothing
+    if (
+      oldVariation === newVariation &&
+      this.state.search.targets &&
+      this.state.search.targets.length > 0
+    )
+      return;
+
+    console.log(`[GM] Switch Variation: ${oldVariation} -> ${newVariation}`);
+    if (this.state.data && this.state.data.initialPuzzle) {
+      console.log(
+        `[GM] Pre-Transform InitialPuzzle (0,0): ${this.state.data.initialPuzzle[0][0]}`,
+      );
+    }
+
+    // 1. REVERT OLD (Inverse of Mirror is Mirror)
+    if (oldVariation !== "0") {
+      this.state.data.initialPuzzle = this._transformMatrix(
+        this.state.data.initialPuzzle,
+        oldVariation,
+      );
+      this.state.data.solution = this._transformMatrix(
+        this.state.data.solution,
+        oldVariation,
+      );
+
+      // Ensure Sudoku State Exists
+      if (!this.state.sudoku) this.state.sudoku = {};
+
+      if (!this.state.sudoku.currentBoard) {
+        // Init from ALREADY REVERTED initialPuzzle -> No need to transform
+        console.warn(
+          "[GM] CurrentBoard missing during revert. Initializing from reverted puzzle.",
+        );
+        this.state.sudoku.currentBoard = JSON.parse(
+          JSON.stringify(this.state.data.initialPuzzle),
+        );
+      } else {
+        // Transform existing board
+        this.state.sudoku.currentBoard = this._transformMatrix(
+          this.state.sudoku.currentBoard,
+          oldVariation,
+        );
+      }
+    }
+
+    // 2. APPLY NEW
+    if (newVariation !== "0") {
+      this.state.data.initialPuzzle = this._transformMatrix(
+        this.state.data.initialPuzzle,
+        newVariation,
+      );
+      this.state.data.solution = this._transformMatrix(
+        this.state.data.solution,
+        newVariation,
+      );
+
+      // Ensure Sudoku State Exists
+      if (!this.state.sudoku) this.state.sudoku = {};
+
+      if (!this.state.sudoku.currentBoard) {
+        // Init from ALREADY TRANSFORMED initialPuzzle -> No need to transform
+        console.warn(
+          "[GM] CurrentBoard missing during apply. Initializing from transformed puzzle.",
+        );
+        this.state.sudoku.currentBoard = JSON.parse(
+          JSON.stringify(this.state.data.initialPuzzle),
+        );
+      } else {
+        // Transform existing board
+        this.state.sudoku.currentBoard = this._transformMatrix(
+          this.state.sudoku.currentBoard,
+          newVariation,
+        );
+      }
+    }
+
+    this.state.jigsaw.variation = newVariation;
+    await this._populateSearchTargets(newVariation);
+
+    if (this.state.data && this.state.data.initialPuzzle) {
+      console.log(
+        `[GM] Post-Transform InitialPuzzle Row 0:`,
+        JSON.stringify(this.state.data.initialPuzzle[0]),
+      );
+    }
+    if (this.state.sudoku && this.state.sudoku.currentBoard) {
+      console.log(
+        `[GM] Post-Transform CurrentBoard Row 0:`,
+        JSON.stringify(this.state.sudoku.currentBoard[0]),
+      );
+    }
+
+    this.save();
+  }
+
+  /**
+   * Internal helper to populate search targets based on the current variation and map.
+   */
+  async _populateSearchTargets(variationKey) {
+    const map = this.state.data.searchTargetsMap;
+    let variationData = null;
+
+    if (map && !Array.isArray(map)) {
+      variationData = map[variationKey];
+    } else if (Array.isArray(map)) {
+      variationData = { targets: map, simon: [] };
+    }
+
+    if (variationData) {
+      // getTargetSolution now returns the already transformed solution
+      const solvedBoard = this.getTargetSolution();
+      this.state.search.targets = variationData.targets.map((snake, idx) => {
+        if (!Array.isArray(snake) && snake.path && snake.numbers) return snake;
+        if (!Array.isArray(snake)) return { id: idx, numbers: [], path: [] };
+        const numbers = snake.map((pos) => solvedBoard[pos.r][pos.c]);
+        return { id: idx, path: snake, numbers: numbers };
+      });
+      this.state.simon.coordinates = variationData.simon || [];
+    } else {
+      // FALLBACK: Local Generation (Async)
+      await this.ensureSearchTargets();
+    }
+  }
+
+  /**
+   * Fallback to generate search targets locally if missing from the puzzle data.
+   */
+  async ensureSearchTargets() {
+    if (this.state.search.targets && this.state.search.targets.length > 0)
+      return;
+
+    console.log("[GameManager] Fallback: Generating Search Targets locally...");
+    try {
+      const solution = this.getTargetSolution();
+      const seed = this.currentSeed;
+
+      // Dynamic import to avoid circular dependencies if any
+      const { generateSearchSequences } = await import("./search-gen.js?v=1.3.1");
+      const sequences = generateSearchSequences(solution, seed);
+
+      if (sequences && sequences.length > 0) {
+        this.state.search.targets = sequences;
+        console.log(
+          `[GameManager] Generated ${sequences.length} targets locally.`,
+        );
+        this.save();
+        // Dispatch event to notify UI if it's already in search mode
+        window.dispatchEvent(new CustomEvent("search-targets-ready"));
+      }
+    } catch (err) {
+      console.error("[GameManager] Local Generation failed:", err);
+    }
+  }
+
+  // Internal helper to transform a 9x9 matrix based on variation
+  _transformMatrix(matrix, variation) {
+    if (!matrix || variation === "0") return matrix;
+
+    // Deep clone to avoid mutating original unintendedly (though here we want mutation)
+    const newBoard = JSON.parse(JSON.stringify(matrix));
+
+    if (variation === "LR" || variation === "HV") {
+      // Mirror Horizontal (Left-Right)
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 3; c++) {
+          const temp = newBoard[r][c];
+          newBoard[r][c] = newBoard[r][c + 6];
+          newBoard[r][c + 6] = temp;
+        }
+      }
+    }
+
+    if (variation === "TB" || variation === "HV") {
+      // Mirror Vertical (Top-Bottom)
+      for (let offset = 0; offset < 3; offset++) {
+        const tempRow = newBoard[offset];
+        newBoard[offset] = newBoard[offset + 6];
+        newBoard[offset + 6] = tempRow;
+      }
+    }
+
+    return newBoard;
+  }
+
+  getTargetSolution() {
+    return this.state?.data?.solution || [];
+  }
+
+  // DEPRECATED: Variations are now handled by transforming the base matrices in setJigsawVariation
+  getTargetSolutionWithVariation(variationKey) {
+    return this.getTargetSolution();
+  }
+
+  async save(syncToCloud = true, isPenalty = false) {
+    if (!this.state || this.isWiping) return;
+
+    // --- CRITICAL FIX: Ensure local timestamp is ALWAYS updated before persistence ---
+    // This marks the local progress as newer than the cloud, preventing 'Cloud Echo' loops.
+    if (this.state.meta) {
+      this.state.meta.lastPlayed = new Date().toISOString();
+    }
+
+    // v1.5.57: Session Isolation (Replay Volatility)
+    // We do NOT save the board state locally if we are in a history replay.
+    if (this.isReplay) return;
+
+    localStorage.setItem(this.storageKey, encryptData(this.state));
+    if (syncToCloud) this.saveCloudDebounced(5000, isPenalty);
+  }
+
+  saveCloudDebounced(delay = 5000, isPenalty = false) {
+    if (this.cloudSaveTimeout) clearTimeout(this.cloudSaveTimeout);
+    this.cloudSaveTimeout = setTimeout(() => {
+      this.forceCloudSave(null, isPenalty);
+    }, delay);
+  }
+
+  async forceCloudSave(overrideUid = null, isPenalty = false) {
+    // Standalone Demo: No cloud save
+    return;
+  }
+
+  async clearAllData(autoReinit = true) {
+    const activeUid = localStorage.getItem("jigsudo_active_uid");
+    const reason = autoReinit ? "Manual Logout" : "Auth Context Switch (Login)";
+    console.warn(
+      `[GameManager] Wiping local data! Reason: ${reason}, Previous UID: ${activeUid}`,
+    );
+
+    this.isWiping = true;
+
+    if (this.cloudSaveTimeout) {
+      clearTimeout(this.cloudSaveTimeout);
+      this.cloudSaveTimeout = null;
+    }
+
+    // Direct removals
+    localStorage.removeItem("jigsudo_user_stats");
+    localStorage.removeItem("jigsudo_active_uid");
+    localStorage.removeItem("jigsudo_active_username");
+    localStorage.removeItem("jigsudo_ranking_cache_v3");
+    
+    // Safety: Reset to default stats instead of null to prevent downstream crashes
+    this.stats = this._getDefaultStats();
+
+    // Pattern-based removals (clear private state/history/toggles, preserve settings)
+    const keys = Object.keys(localStorage);
+    keys.forEach((key) => {
+      if (
+        key.startsWith("jigsudo_state_") ||
+        key.startsWith("jigsudo_isPublic_") ||
+        key.startsWith("jigsudo_history_")
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    this.state = null;
+    if (autoReinit) {
+      this.ready = this.prepareDaily();
+      const res = await this.ready;
+      this.isWiping = false;
+      return res;
+    }
+    // Note: if !autoReinit, we leave isWiping=true so the auth flow
+    // can finish its sync before releasing the lock.
+  }
+
+  /**
+   * Surgical Reset: Only wipes progress for the current day/seed.
+   * Preserves global stats, rank, and history from previous days.
+   */
+  async resetCurrentGame() {
+    console.warn(`[GameManager] Surgical Reset for seed: ${this.currentSeed}`);
+
+    // 1. Load Stats to revert RP and history
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+
+    let stats =
+      this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+
+    if (stats) {
+      // A. Revert PARTIAL RP earned during this session (awardStagePoints)
+      if (
+        this.state &&
+        this.state.progress &&
+        this.state.progress.stagesCompleted
+      ) {
+        this.state.progress.stagesCompleted.forEach((stage) => {
+          const p = SCORING.PARTIAL_RP[stage] || 0;
+          stats.currentRP = Math.max(0, (stats.currentRP || 0) - p);
+          stats.dailyRP = Math.max(0, (stats.dailyRP || 0) - p);
+          stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - p);
+          stats.totalScoreAccumulated = Math.max(
+            0,
+            (stats.totalScoreAccumulated || 0) - p,
+          );
+        });
+      }
+
+      // B. Revert records from recordWin (if already won)
+      if (stats.history && stats.history[today]) {
+        const h = stats.history[today];
+        if (h.status === "won") {
+          // netChange = score - 6.0 (bonus added to currentRP etc.)
+          const netChange = (h.score || 0) - 6.0;
+          stats.currentRP = Math.max(0, (stats.currentRP || 0) - netChange);
+          stats.dailyRP = Math.max(0, (stats.dailyRP || 0) - netChange);
+          stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - netChange);
+          stats.totalScoreAccumulated = Math.max(
+            0,
+            (stats.totalScoreAccumulated || 0) - netChange,
+          );
+
+          // Cumulative stats
+          stats.totalTimeAccumulated = Math.max(
+            0,
+            (stats.totalTimeAccumulated || 0) - (h.totalTime || 0),
+          );
+          stats.totalPeaksErrorsAccumulated = Math.max(
+            0,
+            (stats.totalPeaksErrorsAccumulated || 0) - (h.peaksErrors || 0),
+          );
+
+          // Deep Reversion of Stage Stats
+          if (stats.stageTimesAccumulated && h.stageTimes) {
+            for (const [stage, time] of Object.entries(h.stageTimes)) {
+              stats.stageTimesAccumulated[stage] = Math.max(
+                0,
+                (stats.stageTimesAccumulated[stage] || 0) - time,
+              );
+              if (stats.stageWinsAccumulated) {
+                stats.stageWinsAccumulated[stage] = Math.max(
+                  0,
+                  (stats.stageWinsAccumulated[stage] || 0) - 1,
+                );
+              }
+            }
+          }
+
+          // Weekday Stats Reversion
+          const dayIdx = new Date(today + "T12:00:00").getDay();
+          if (
+            stats.weekdayStatsAccumulated &&
+            stats.weekdayStatsAccumulated[dayIdx]
+          ) {
+            const w = stats.weekdayStatsAccumulated[dayIdx];
+            w.sumTime = Math.max(0, w.sumTime - (h.totalTime || 0));
+            w.sumErrors = Math.max(0, w.sumErrors - (h.peaksErrors || 0));
+            w.sumScore = Math.max(0, w.sumScore - (h.score || 0));
+            w.count = Math.max(0, w.count - 1);
+          }
+
+          // Streak and Win Count
+          stats.wins = Math.max(0, (stats.wins || 0) - 1);
+          stats.totalPlayed = Math.max(0, (stats.totalPlayed || 0) - 1);
+        }
+
+
+        // ALWAYS delete the history entry for today on reset,
+        // whether it was "won" or just "played".
+        delete stats.history[today];
+      }
+
+      // AGGRESSIVE: Always recalculate records to ensure consistency
+      // This is now OUTSIDE the history check to ensure ghost records are cleared even if history is empty
+      this._recalculateRecords(stats);
+
+      // Final Sanity Clamps
+      stats.currentRP = Math.max(0, stats.currentRP);
+      stats.dailyRP = Math.max(0, stats.dailyRP);
+      stats.monthlyRP = Math.max(0, stats.monthlyRP);
+
+      this.stats = stats;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+      console.log("[GM] Stats after resetToday:", stats);
+    }
+
+    // 2. Wipe local execution state for this seed
+    localStorage.removeItem(this.storageKey);
+    
+    // v1.2.7: Clear optimistic win locks used by Home UI
+    localStorage.removeItem("jigsudo_just_won_day");
+    localStorage.removeItem("jigsudo_win_lock");
+    window._jigsudoJustWonToday = null;
+
+    // 3. Re-sync with cloud (Awaited to avoid race condition on reload)    // No-op for standalone demo
+    return Promise.resolve();
+    
+    // 4. Reload
+    console.log("Reset complete. Reloading...");
+    window.location.reload();
+  }
+
+  _serializeState(state) {
+    const clone = JSON.parse(JSON.stringify(state));
+    if (clone.data) {
+      if (Array.isArray(clone.data.solution))
+        clone.data.solution = JSON.stringify(clone.data.solution);
+      if (Array.isArray(clone.data.initialPuzzle))
+        clone.data.initialPuzzle = JSON.stringify(clone.data.initialPuzzle);
+      if (Array.isArray(clone.data.chunks))
+        clone.data.chunks = JSON.stringify(clone.data.chunks);
+      if (clone.data.searchTargetsMap)
+        clone.data.searchTargetsMap = JSON.stringify(
+          clone.data.searchTargetsMap,
+        );
+    }
+    if (clone.sudoku && Array.isArray(clone.sudoku.currentBoard))
+      clone.sudoku.currentBoard = JSON.stringify(clone.sudoku.currentBoard);
+    return clone;
+  }
+
+  _deserializeState(cloudState) {
+    const clone = JSON.parse(JSON.stringify(cloudState));
+    if (clone.data) {
+      if (typeof clone.data.solution === "string")
+        clone.data.solution = JSON.parse(clone.data.solution);
+      if (typeof clone.data.initialPuzzle === "string")
+        clone.data.initialPuzzle = JSON.parse(clone.data.initialPuzzle);
+      if (typeof clone.data.chunks === "string")
+        clone.data.chunks = JSON.parse(clone.data.chunks);
+      if (typeof clone.data.searchTargetsMap === "string")
+        clone.data.searchTargetsMap = JSON.parse(clone.data.searchTargetsMap);
+    }
+    if (clone.sudoku && typeof clone.sudoku.currentBoard === "string")
+      clone.sudoku.currentBoard = JSON.parse(clone.sudoku.currentBoard);
+    return clone;
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  getUserId() {
+    if (this.state?.meta?.userId) return this.state.meta.userId;
+    return localStorage.getItem("jigsudo_active_uid");
+  }
+
+  setUserId(uid) {
+    if (uid) localStorage.setItem("jigsudo_active_uid", uid);
+    else localStorage.removeItem("jigsudo_active_uid");
+    
+    // Pattern: During a wipe/login transition, we update the UID in memory
+    // but we MUST NOT save yet, as the cloud sync will fulfill the state.
+    if (this.state && this.state.meta) {
+      this.state.meta.userId = uid;
+      if (!this.isWiping) this.save();
+      else console.log("[GameManager] setUserId: Wipe lock active, skipping save.");
+    }
+  }
+
+  async advanceStage() {
+    const stages = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
+    const currentIdx = stages.indexOf(this.state.progress.currentStage);
+    if (currentIdx >= 0 && currentIdx < stages.length - 1) {
+      const nextStage = stages[currentIdx + 1];
+      const currentStage = this.state.progress.currentStage;
+      this.state.progress.currentStage = nextStage;
+      if (!this.state.progress.stagesCompleted.includes(currentStage)) {
+        this.state.progress.stagesCompleted.push(currentStage);
+        await this.awardStagePoints(currentStage);
+      }
+      this.forceCloudSave();
+      window.dispatchEvent(
+        new CustomEvent("stage-changed", { detail: nextStage }),
+      );
+    }
+  }
+
+  updateProgress(section, data) {
+    if (!this.state || !this.state[section]) {
+      if (section === "stats") this.state.stats = {};
+      else return;
+    }
+    
+    // v1.5.44: Detect error increment for live penalty and TRIPLE-TRACK atoms
+    const oldErrors = this.state.stats?.peaksErrors || 0;
+    this.state[section] = { ...this.state[section], ...data };
+    const newErrors = this.state.stats?.peaksErrors || 0;
+
+    // If errors increased, update the 3-track atoms and recalculate
+    if (section === "stats" && newErrors > oldErrors) {
+      const delta = newErrors - oldErrors;
+      if (this.stats) {
+        this.stats.dailyPeaksErrorsAccumulated = (this.stats.dailyPeaksErrorsAccumulated || 0) + delta;
+        this.stats.monthlyPeaksErrorsAccumulated = (this.stats.monthlyPeaksErrorsAccumulated || 0) + delta;
+        this.stats.totalPeaksErrorsAccumulated = (this.stats.totalPeaksErrorsAccumulated || 0) + delta;
+      }
+      this._recalculateNetStats(true);
+    } else {
+        // v1.5.44: Even if no direct error, ensure we save progress changes
+        if (this.state.meta) {
+            this.state.meta.lastPlayed = new Date().toISOString();
+        }
+        this.save();
+    }
+  }
+
+  async awardStagePoints(stage) {
+    const points = SCORING.PARTIAL_RP[stage] || 0;
+    if (points <= 0) return;
+
+    // GUARD 2: Already Completed (Prevent refresh farming)
+    if (this.state.progress.stagesCompleted.includes(stage)) {
+      console.log(`[RP] Stage ${stage} already completed. Skipping.`);
+      return;
+    }
+
+    // ENSURE STAGE IS MARKED AS COMPLETED for the current session sum
+    if (!this.state.progress.stagesCompleted.includes(stage)) {
+      this.state.progress.stagesCompleted.push(stage);
+      this.save();
+    }
+
+    // GUARD 3: Game Already Won (Prevent post-win farming for leaderboard stats)
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+    if (
+      this.stats &&
+      this.stats.history &&
+      this.stats.history[today] &&
+      this.stats.history[today].status === "won"
+    ) {
+      console.log(`[RP] Game already won today. Skipping global RP update for ${stage}.`);
+      return;
+    }
+
+    if (this._processingWin) return;
+
+    let stats =
+      this.stats ||
+      JSON.parse(localStorage.getItem("jigsudo_user_stats")) ||
+      {};
+
+    if (!this._processingWin) {
+      // ONLY mutate global user stats if NOT in replay mode
+      if (!this.isReplay) {
+            if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+            stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+            stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
+            stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
+            
+            this._recalculateNetStats(); // Direct Formula will pick up the new win
+        }
+
+        // Persist stage completion to local storage (save() handles its own replay guard)
+        this.save();
+      }
+    
+    // v1.3.5+: Internal UI/Stats update
+    this.stats = stats;
+    if (!this.isReplay) {
+        await this._recalculateNetStats(); 
+    }
+
+    // v1.4.1: ASYNC REFEREE (Background Validation)
+    if (!this.isReplay) {
+        this._enqueueValidation(stage, points);
+    }
+  }
+
+  /**
+   * Adds a stage result to the background processing queue.
+   */
+  _enqueueValidation(stage, points) {
+    // v1.2.6: Fix stageTime retrieval (pull from meta.stageTimes converted to seconds)
+    const stageTimeMs = this.state.meta?.stageTimes?.[stage] || 0;
+    const stageTime = Math.floor(stageTimeMs / 1000);
+    
+    // Safety check for peaksErrors (ensure we pull from the live session)
+    const peaksErrors = (this.state.stats && this.state.stats.peaksErrors) || 0;
+    
+    this.validationQueue.push({
+      stage,
+      points,
+      stageTime,
+      stamps: this.state.meta?.stageStamps?.[stage] || {}, // v1.5.17: Absolute proof for Referee
+      peaksErrors,
+      seed: this.currentSeed
+    });
+
+    console.log(`[Referee] Stage ${stage} queued for background validation.`);
+    this._processValidationQueue();
+  }
+
+  /**
+   * Background processor for the validation queue.
+   * Ensures sequential delivery to the server to avoid race conditions.
+   */
+  async _processValidationQueue() {
+    // Standalone Demo: No background validation
+    this.validationQueue = [];
+    this.isProcessingQueue = false;
+  }
+
+  /**
+   * Updates bestScore immediately if current partial progress exceeds it.
+   * Does NOT include Time Bonus (only applied on Win).
+   */
+  _updateBestScore() {
+    // 1. Sum Points from Completed Stages
+    let currentScore = 0;
+    this.state.progress.stagesCompleted.forEach((stage) => {
+      currentScore += SCORING.PARTIAL_RP[stage] || 0;
+    });
+
+    // 2. Subtract Penalties (Peaks Errors)
+    const peaksErrors = this.state.stats?.peaksErrors || 0;
+    currentScore -= peaksErrors * SCORING.ERROR_PENALTY_RP;
+
+    // 3. Update Best Score if exceeded
+    currentScore = Math.max(0, currentScore); // No negative scores
+
+    if (!this.stats) this._ensureStats();
+
+    if (currentScore > (this.stats.bestScore || 0)) {
+      console.log(`[Score] New Best Score (Partial): ${currentScore}`);
+      this.stats.bestScore = currentScore;
+      if (this.state) {
+        localStorage.setItem(this.storageKey, encryptData(this.state));
+      }
+    }
+  }
+  /**
+   * Recalculates Daily, Monthly and Total RP based on the current session progress 
+   * and the historic baseline found in the stats object.
+   * v1.5.30: Consolidated Level-End logic.
+   * 
+   * @param {boolean} isPenalty - Force cloud save even if score drops
+   * @param {boolean} skipPersistence - Skip writing back to the cloud (Sync reconciliation)
+   */
+  async _recalculateNetStats(isPenalty = false, skipPersistence = false) {
+    if (!this.stats) await this._ensureStats();
+    const stats = this.stats;
+
+    // 0. Temporal Reconciliation (v1.5.30: Absolute Truth Architecture)
+    const today = getJigsudoDateString();
+    const currentMonth = getJigsudoYearMonth();
+
+    // v1.5.44: DIRECT ATOMIC TRIPLE-TRACK SCORING
+    // No more anchors or baselines. We sum counters directly for 100% stability.
+    
+    // A. SCOPE RESETS (Transition Management)
+    if (stats.lastDailyUpdate && stats.lastDailyUpdate !== today) {
+        // v1.2.2: Archive before reset
+        stats.lastDayRP = stats.dailyRP || 0;
+        
+        stats.dailyWinsAccumulated = 0;
+        stats.dailyBonusesAccumulated = 0;
+        stats.dailyPeaksErrorsAccumulated = 0;
+        stats.dailyRP = 0;
+        stats.lastDailyUpdate = today;
+    }
+    
+    if (stats.lastMonthlyUpdate && stats.lastMonthlyUpdate !== currentMonth) {
+        // v1.2.2: Archive before reset
+        stats.lastMonthRP = stats.monthlyRP || 0;
+
+        stats.monthlyWinsAccumulated = 0;
+        stats.monthlyBonusesAccumulated = 0;
+        stats.monthlyPeaksErrorsAccumulated = 0;
+        stats.monthlyRP = 0;
+        stats.lastMonthlyUpdate = currentMonth;
+    }
+
+    // B. COMPONENT AGGREGATION (v1.5.47: Track Solidarity)
+    // 0. Live Session Ingredients
+    const sessionWins = (this.state.progress.stagesCompleted || []).length;
+    const sessionErrors = (this.state.stats && this.state.stats.peaksErrors) || 0;
+    
+    // 1. Daily Scope (The 'Game Day' Net)
+    const dailyWins = Math.max(sessionWins, stats.dailyWinsAccumulated || 0);
+    const dailyBonuses = stats.dailyBonusesAccumulated || 0;
+    const dailyErrors = Math.max(sessionErrors, stats.dailyPeaksErrorsAccumulated || 0);
+    const dailyNet = Number((dailyWins + dailyBonuses - (dailyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(2));
+
+    // 2. Monthly Scope
+    // Ensure monthly atoms include today's live progress for consistency
+    const monthlyWins = Math.max(stats.monthlyWinsAccumulated || 0, dailyWins);
+    const monthlyBonuses = Math.max(stats.monthlyBonusesAccumulated || 0, dailyBonuses);
+    const monthlyErrors = Math.max(stats.monthlyPeaksErrorsAccumulated || 0, dailyErrors);
+    const monthlyNet = Number((monthlyWins + monthlyBonuses - (monthlyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(2));
+
+    // 3. Total Scope (Absolute World Ranking)
+    // totalWins is Sum(stageWinsAccumulated). We must ensure it includes today's wins.
+    const totalWinsBase = Object.values(stats.stageWinsAccumulated || {}).reduce((acc, val) => acc + (val || 0), 0);
+    const totalWins = Math.max(totalWinsBase, dailyWins); // At least today's progress 
+    const totalBonuses = Math.max(stats.totalBonusesAccumulated || 0, dailyBonuses);
+    const totalErrors = Math.max(stats.totalPeaksErrorsAccumulated || 0, dailyErrors);
+    const totalNet = Number((totalWins + totalBonuses - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(2));
+    
+    if (!this.isReplay) {
+      stats.dailyRP = dailyNet;
+      stats.monthlyRP = monthlyNet;
+      stats.totalRP = totalNet;
+      
+      stats.lastDailyUpdate = today;
+      stats.lastMonthlyUpdate = currentMonth;
+    }
+
+    this.stats = stats;
+    this.stats.lastLocalUpdate = Date.now(); // v1.5.30: Instant Freshness
+    this._lastLocalWrite = Date.now();       // v1.5.30: Shield engagement
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+
+    // Finalization (No cloud sync in Standalone Demo)
+    this.stats = stats;
+    this.stats.lastLocalUpdate = Date.now();
+    this._lastLocalWrite = Date.now();
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+
+    // Notify UI
+    window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
+  }
+
+
+
+  showCriticalError(message) {
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.background = "rgba(0,0,0,0.9)";
+    overlay.style.color = "white";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.zIndex = "9999";
+    overlay.style.fontFamily = "sans-serif";
+    overlay.style.textAlign = "center";
+    overlay.style.padding = "20px";
+    overlay.innerHTML = `
+        <h2 style="color: #ff5555; margin-bottom: 20px;">!! Status Error detected</h2>
+        <p style="font-size: 1.2rem; margin-bottom: 30px;">${message}</p>
+        <button onclick="window.location.reload()" style="background: #4a90e2; color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 8px; cursor: pointer;">Reload App</button>
+      `;
+    document.body.appendChild(overlay);
+  }
+
+  async _ensureStats() {
+    // Ensure stats object exists
+    if (!this.stats) {
+      this.stats = JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+    }
+
+    // Initialize stats if null or missing critical fields
+    if (!this.stats) {
+      this.stats = this._getDefaultStats();
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+    }
+
+    // Ensure critical nested objects exist
+    if (!this.stats.history) this.stats.history = {};
+    if (!this.stats.stageTimesAccumulated)
+      this.stats.stageTimesAccumulated = {};
+    if (!this.stats.stageWinsAccumulated) this.stats.stageWinsAccumulated = {};
+    if (!this.stats.weekdayStatsAccumulated)
+      this.stats.weekdayStatsAccumulated = {};
+    if (this.stats.manualRPAdjustment === undefined)
+      this.stats.manualRPAdjustment = 0;
+
+    if (this.state && !this.state.meta.stageTimes)
+      this.state.meta.stageTimes = {};
+    
+    // 3. Launch Cleanup (Purge pre-production beta data)
+    this._runLaunchCleanup();
+
+    // 4. Automated Stats Healer: DISABLED per user request for simplified stability.
+    // DISCONTINUED: this._healStatsInconsistency();
+
+    // Return the decay check promise so callers can await it if needed
+    const decayResult = await this._checkRankDecay();
+    return decayResult;
+  }
+
+  /**
+   * Automatic cross-check to detect and heal inconsistencies between
+   * cumulative stats and the history log.
+   */
+  _healStatsInconsistency() {
+    if (!this.stats || !this.stats.history) return;
+
+    const wonHistoryCount = Object.values(this.stats.history).filter(
+      (h) => h.status === "won",
+    ).length;
+    const currentWins = this.stats.wins || 0;
+
+    // Advanced Triggers:
+    // 1. Fundamental win count mismatch
+    const countMismatch = wonHistoryCount !== currentWins;
+    // 2. Missing date markers while history has entries (fixes new users/sync gaps)
+    const missingDates = wonHistoryCount > 0 && !this.stats.lastDailyUpdate;
+    // 3. Hierarchy paradox (Hoy > Mes or Mes > Siempre) - v1.3.0
+    const dailyRP = this.stats.dailyRP || 0;
+    const monthlyRP = this.stats.monthlyRP || 0;
+    const totalRP = this.stats.totalRP || 0;
+    const hierarchyMismatch = (monthlyRP < dailyRP) || (totalRP < monthlyRP);
+    
+    // v1.5.55: MANUAL ONLY. This function no longer triggers automatically.
+    // It stays here as an emergency manual recovery utility.
+    
+    if (forceManualRebuild || (countMismatch || missingDates || hierarchyMismatch)) {
+      console.warn(
+        `[Maintenance] Cross-check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, hierarchyMismatch=${hierarchyMismatch}.`,
+      );
+      this._recalculateRecords(this.stats);
+      
+      // Hierarchy Healing (v1.5.54: totalRP is the anchor)
+      this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
+      this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP || 0);
+
+      this.stats.integrityChecked = "1.5.62"; // Prevent repeated reconstruction
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      
+      // v1.2.11: DECOUPLED CLOUD SAVE.
+      // We no longer push healed stats immediately to avoid racing with account transitions.
+      // Persistence will happen during the next natural save event.
+      
+      return true; // Indicate changes made
+    }
+    return false;
+  }
+
+  async _checkRankDecay(targetStats = null) {
+    let stats =
+      targetStats ||
+      this.stats ||
+      JSON.parse(localStorage.getItem("jigsudo_user_stats"));
+    if (!stats) return false;
+
+    const seedStr = this.currentSeed.toString();
+    const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+    const currentMonth = today.substring(0, 7); // "YYYY-MM"
+
+    // Use lastDailyUpdate if available (more reliable for daily sync)
+    const lastCheck =
+      stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
+    let changed = false;
+
+    if (lastCheck && lastCheck !== today) {
+      const lastDate = new Date(lastCheck + "T12:00:00Z");
+      const currDate = new Date(today + "T12:00:00Z");
+      const diffDays = Math.round((currDate - lastDate) / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 1) {
+        // 1. Reset Daily RP
+        if (stats.dailyRP !== 0) {
+          stats.lastDayRP = stats.dailyRP || 0; // Archive
+          stats.dailyRP = 0;
+          changed = true;
+        }
+
+        // 2. Reset Monthly RP
+        const lastMonth = lastCheck.substring(0, 7);
+        if (currentMonth !== lastMonth && stats.monthlyRP !== 0) {
+          stats.lastMonthRP = stats.monthlyRP || 0; // Archive
+          stats.monthlyRP = 0;
+          stats.monthlyWinsAccumulated = 0;
+          stats.monthlyPeaksErrorsAccumulated = 0;
+          stats.monthlyBonusesAccumulated = 0;
+          changed = true;
+        }
+
+        // 3. Decay Penalty (Missed full Jigsudo days of INTENTIAL play)
+        // Uses lastPenaltyDate (if exists) or lastDailyUpdate as the specific anchor for "Safe vs Unsafe"
+        const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
+        if (lastIntent && lastIntent !== today) {
+          const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
+          const intentDiff = Math.round((currDate - lastIntentDate) / (1000 * 60 * 60 * 24));
+          
+          if (intentDiff > 1) {
+            const missed = intentDiff - 1;
+            const { getRankData } = await import("./ranks.js?v=1.3.1");
+            let currentSimulatedRP = stats.totalRP || 0;
+            
+            for (let i = 0; i < missed; i++) {
+              const rankInfo = getRankData(currentSimulatedRP);
+              const penaltyForDay = 5 + rankInfo.level;
+              currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
+              if (currentSimulatedRP === 0) break;
+            }
+            
+            if ((stats.totalRP || 0) !== currentSimulatedRP) {
+               const penaltyAmount = (stats.totalRP || 0) - currentSimulatedRP;
+               console.warn(`[Decay] Applied penalty for ${missed} days. RP: ${stats.totalRP} -> ${currentSimulatedRP}`);
+               stats.totalRP = currentSimulatedRP;
+               stats.monthlyRP = Math.min(stats.monthlyRP || 0, stats.totalRP);
+               stats.lastPenalty = penaltyAmount;
+               stats.totalPenaltyAccumulated = (stats.totalPenaltyAccumulated || 0) + penaltyAmount;
+               changed = true;
+            }
+            
+            // Advance the penalty anchor to "yesterday" so we don't penalize these same days again tomorrow
+            const anchorDate = new Date(currDate.getTime());
+            anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
+            stats.lastPenaltyDate = anchorDate.toISOString().substring(0, 10);
+          }
+        }
+
+        // 4. Strict Streak Reset (Missed full Jigsudo days of WINNING)
+        // Uses lastPlayedDate (Victory) as the anchor.
+        if (stats.lastPlayedDate && stats.lastPlayedDate !== today) {
+          const lastWinDate = new Date(stats.lastPlayedDate + "T12:00:00Z");
+          const streakDiff = Math.round((currDate - lastWinDate) / (1000 * 60 * 60 * 24));
+          
+          if (streakDiff > 1 && stats.currentStreak !== 0) {
+            console.log(`[Streak] Win missed yesterday (Last win: ${stats.lastPlayedDate}). Resetting streak to 0.`);
+            stats.currentStreak = 0;
+            changed = true;
+          }
+        }
+      }
+    } else if (!lastCheck) {
+      // NEW USER: Fundamental initialization of date markers
+      console.log("[Decay] Initializing date markers for new user.");
+      // We explicitly DO NOT set lastDailyUpdate / lastMonthlyUpdate here. 
+      // They should only be set when the user actively clicks "EMPEZAR".
+      stats.lastDecayCheck = today;
+      changed = true;
+    }
+
+    if (changed) {
+      stats.lastDecayCheck = today;
+      
+      // v1.5.56: Maintain timestamp as 0 for completely fresh initializations
+      // to allow immediate adoption of cloud data on new devices.
+      if (lastCheck) {
+        stats.lastLocalUpdate = Date.now();
+      }
+      if (!targetStats) {
+        this.stats = stats;
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+      }
+    }
+    return changed;
+  }
+
+  /**
+   * v1.5.16: Returns the current time normalized with the server clock.
+   */
+  _getServerNow() {
+    return Date.now() + (this.serverTimeOffset || 0);
+  }
+
+  updateServerOffset(serverTimeMs) {
+    if (!serverTimeMs) return;
+    const now = Date.now();
+    const newOffset = serverTimeMs - now;
+    
+    // Smooth update: if the difference is significant (> 1s), we update
+    if (Math.abs(newOffset - this.serverTimeOffset) > 1000) {
+      this.serverTimeOffset = newOffset;
+      localStorage.setItem("jigsudo_server_offset", newOffset.toString());
+      if (CONFIG.debugMode) console.log(`[Timer] Synchronized Clock Drift. New Offset: ${newOffset}ms`);
+    }
+  }
+
+  startStageTimer(stage) {
+    this.currentStage = stage;
+    const now = this._getServerNow(); // Normalized
+
+    // v1.5.16: ABSOLUTE STICKY LOGIC
+    // If we already have a START stamp for this stage in meta, WE DO NOT OVERWRITE IT.
+    // This allows the timer to keep running from the original start across devices.
+    if (this.state && this.state.meta) {
+      if (!this.state.meta.stageStamps) this.state.meta.stageStamps = {};
+      
+      const existingStamp = this.state.meta.stageStamps[stage]?.start;
+      
+      if (!existingStamp) {
+        // First time starting this level
+        this.state.meta.stageStamps[stage] = {
+           start: new Date(now).toISOString(),
+           startMs: now // Source of truth for duration math
+        };
+        if (CONFIG.debugMode) console.log(`[Timer] Stage ${stage} started (New): ${this.state.meta.stageStamps[stage].start}`);
+        this.save();
+      } else {
+        // Resuming level
+        if (CONFIG.debugMode) console.log(`[Timer] Stage ${stage} resumed from original start: ${existingStamp}`);
+      }
+      
+      // Memory hook for live duration calculation
+      this.stageStartTime = this.state.meta.stageStamps[stage].startMs || new Date(existingStamp).getTime();
+    } else {
+      // Fallback (redundant)
+      this.stageStartTime = now;
+    }
+    
+    // Safety: Ensure server knows we are playing today if logged in
+    this.ensureSessionStarted();
+  }
+
+  /**
+   * Calls the Cloud Function to anchor the start time on the server.
+   */
+  /**
+   * Proactive Maintenance Check (v1.5.2)
+   * Calls the server logic to check for decay without claiming a session or shield.
+   */
+  async checkMaintenance() {
+    return;
+  }
+
+  async ensureSessionStarted() {
+    return;
+  }
+
+  stopStageTimer() {
+    // v1.5.16: ELAPSED TIME CALCULATION (End - Sticky Start)
+    if (!this.currentStage) return;
+
+    const startAnchor = (this.state?.meta?.stageStamps?.[this.currentStage]?.startMs) 
+                     || (this.state?.meta?.stageStamps?.[this.currentStage]?.start ? new Date(this.state.meta.stageStamps[this.currentStage].start).getTime() : null)
+                     || this.stageStartTime;
+
+    if (!startAnchor) {
+      console.warn(`[Timer] Cannot stop stage ${this.currentStage}: No start anchor found.`);
+      return;
+    }
+
+    const now = this._getServerNow();
+    const duration = now - startAnchor;
+    
+    // Ensure duration is never negative
+    const safeDuration = Math.max(0, duration);
+
+    // Record end stamp and finalize level persistence
+    if (this.state && this.state.meta) {
+        if (!this.state.meta.stageStamps) this.state.meta.stageStamps = {};
+        if (!this.state.meta.stageStamps[this.currentStage]) this.state.meta.stageStamps[this.currentStage] = {};
+        
+        this.state.meta.stageStamps[this.currentStage].end = new Date(now).toISOString();
+        this.state.meta.stageStamps[this.currentStage].endMs = now;
+        
+        // Remove the live session anchor to prepare for the next stage
+        this.state.meta.stageStartAt = null; 
+        this.save();
+    }
+
+    if (CONFIG.debugMode) console.log(`[Timer] Stage ${this.currentStage} finished. Total Elapsed: ${Math.floor(safeDuration/1000)}s`);
+
+    this.recordStageTime(this.currentStage, safeDuration);
+    this.currentStage = null;
+    this.stageStartTime = null;
+  }
+
+  recordStageTime(stage, durationMs) {
+    if (!this.state) return;
+    if (!this.state.meta.stageTimes) this.state.meta.stageTimes = {};
+    
+    // v1.2.3: Overwrite with the latest total duration instead of adding.
+    // This prevents double-counting if a level is resumed or finished multiple times.
+    this.state.meta.stageTimes[stage] = durationMs;
+    this.save();
+  }
+
+  updateCloudHistory(cloudHistoryMap) {
+    if (!cloudHistoryMap || !this.stats) return;
+
+    // v1.4.6/7: Win Lock Protection (storage-aware)
+    const winLock = parseInt(localStorage.getItem("jigsudo_win_lock") || "0");
+    if (Date.now() < winLock) {
+        console.log("[Sync] History win-lock active (storage). Skipping sub-collection merge.");
+        return;
+    }
+    
+    let changed = false;
+    if (!this.stats.history) {
+      this.stats.history = {};
+      changed = true;
+    }
+    
+    // Merge logic: Add missing or check if cloud has a win that local doesn't
+    Object.keys(cloudHistoryMap).forEach(dateKey => {
+      const cloudItem = cloudHistoryMap[dateKey];
+      const localItem = this.stats.history[dateKey];
+      
+      const cloudWon = cloudItem.original?.won === true || cloudItem.best?.won === true;
+      
+      if (!localItem) {
+        this.stats.history[dateKey] = cloudItem;
+        changed = true;
+      } else {
+        const localWon = localItem.original?.won === true || localItem.best?.won === true;
+        
+        if (cloudWon && !localWon) {
+          this.stats.history[dateKey] = cloudItem;
+          changed = true;
+        }
+      }
+    });
+    
+    if (changed) {
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      window.dispatchEvent(new CustomEvent("userStatsUpdated"));
+    }
+  }
+
+  async handleCloudSync(remoteProgress, remoteStats, remoteRequest, remoteSettings) {
+    if (CONFIG.isBasicEdition) return;
+    if (this._isRestoring) return;
+
+    // 1. Victory Lock Protection
+    const winLock = parseInt(localStorage.getItem("jigsudo_win_lock") || "0");
+    if (Date.now() < winLock) {
+      console.log("[Sync] Victory in progress. Delaying sync to prevent state wipe.");
+      return;
+    }
+
+    // 2. Stats Synchronization Logic
+    if (remoteStats) {
+      // v1.5.0: ECHO INHIBITION
+      const remoteSessionId = remoteStats.stats ? remoteStats.stats.activeSessionId : remoteStats.activeSessionId;
+      
+      // v1.5.7: Allow echo adoption IF ranking points differ (Root priority)
+      const rankFields = ["dailyRP", "monthlyRP", "totalRP"];
+      const hasRankDiscrepancy = rankFields.some(f => (remoteStats[f] || 0) !== (this.stats ? (this.stats[f] || 0) : 0));
+      
+      if (remoteSessionId === this.localSessionId && !hasRankDiscrepancy) {
+        console.log("[Sync] Skipping echo (Scores match, Session match).");
+      } else {
+        const localTS = this.stats ? (this.stats.lastLocalUpdate || 0) : 0;
+        const remoteTS = remoteStats.lastLocalUpdate || 0;
+        
+        // Adoption Criteria (v1.5.19: Local Priority)
+        const isMigration = (remoteStats.schemaVersion || 0) >= 7 && (this.stats?.schemaVersion || 0) < 7;
+        const isRemoteNewer = remoteTS > localTS;
+        
+        // v1.5.30: Sync Shield (Grace Period)
+        // If we just wrote to the cloud, ignore slightly newer snapshots from the same session
+        // that still have the old score. 8s is usually enough for Firestore propagation.
+        const isWithinGracePeriod = Date.now() - (this._lastLocalWrite || 0) < 8000;
+        const isProtectedSession = remoteSessionId === this.localSessionId;
+        
+        if (isProtectedSession && hasRankDiscrepancy && isWithinGracePeriod) {
+          console.log("[Sync] Shield Active: Ignoring potentially stale cloud snapshot during grace period.");
+          return;
+        }
+
+        // v1.9.0: FORCED RESET DETECTION
+        // If the cloud document has a forceWipeAt timestamp newer than our last processed one,
+        // we MUST wipe local data and restart. This is the only way to effectively handle administrative resets.
+        const remoteWipe = remoteStats.forceWipeAt || 0;
+        if (remoteWipe > (this._lastProcessedWipe || 0)) {
+          console.warn(`[Sync] FORCED RESET DETECTED (${remoteWipe} > ${this._lastProcessedWipe}). Executing local wipe...`);
+          await this.wipeAccountData(remoteWipe);
+          return; // Stop here, page will reload
+        }
+
+        if (!this.stats || isRemoteNewer || this.isWiping || isMigration) {
+          console.log(`[Sync] Adopting remote stats (RemoteTS: ${remoteTS} > LocalTS: ${localTS})`);
+          
+          // v1.5.56: EXPANDED ATOM PRESERVATION
+          // Capture ALL accumulated fields to ensure multi-device consistency.
+          const localAtoms = {
+            dw: this.stats ? (this.stats.dailyWinsAccumulated || 0) : 0,
+            mw: this.stats ? (this.stats.monthlyWinsAccumulated || 0) : 0,
+            de: this.stats ? (this.stats.dailyPeaksErrorsAccumulated || 0) : 0,
+            me: this.stats ? (this.stats.monthlyPeaksErrorsAccumulated || 0) : 0,
+            db: this.stats ? (this.stats.dailyBonusesAccumulated || 0) : 0,
+            mb: this.stats ? (this.stats.monthlyBonusesAccumulated || 0) : 0,
+            
+            // v1.5.56 p2: Total Scope Atoms
+            tb: this.stats ? (this.stats.totalBonusesAccumulated || 0) : 0,
+            ts: this.stats ? (this.stats.totalScoreAccumulated || 0) : 0,
+            tt: this.stats ? (this.stats.totalTimeAccumulated || 0) : 0,
+            te: this.stats ? (this.stats.totalPeaksErrorsAccumulated || 0) : 0,
+            w: this.stats ? (this.stats.wins || 0) : 0,
+            bs: this.stats ? (this.stats.bestScore || 0) : 0,
+
+            swMap: this.stats ? { ...(this.stats.stageWinsAccumulated || {}) } : {},
+            stMap: this.stats ? { ...(this.stats.stageTimesAccumulated || {}) } : {}
+          };
+          
+          // Unpack nested stats map into flat local object (v1.5.0 Replica Support)
+          const newStats = { ...remoteStats };
+          if (remoteStats.stats) {
+            const protectedKeys = ["dailyRP", "monthlyRP", "totalRP", "currentRP", "score", "lastDailyUpdate", "lastMonthlyUpdate", "isPublic", "schemaVersion"];
+            const cleanMap = { ...remoteStats.stats };
+            protectedKeys.forEach(k => delete cleanMap[k]);
+            
+            Object.assign(newStats, cleanMap);
+            delete newStats.stats;
+          }
+          
+          // Re-apply local atoms using Math.max to ensure progress never goes backward
+          newStats.dailyWinsAccumulated = Math.max(newStats.dailyWinsAccumulated || 0, localAtoms.dw);
+          newStats.monthlyWinsAccumulated = Math.max(newStats.monthlyWinsAccumulated || 0, localAtoms.mw);
+          newStats.dailyPeaksErrorsAccumulated = Math.max(newStats.dailyPeaksErrorsAccumulated || 0, localAtoms.de);
+          newStats.monthlyPeaksErrorsAccumulated = Math.max(newStats.monthlyPeaksErrorsAccumulated || 0, localAtoms.me);
+          newStats.dailyBonusesAccumulated = Math.max(newStats.dailyBonusesAccumulated || 0, localAtoms.db);
+          newStats.monthlyBonusesAccumulated = Math.max(newStats.monthlyBonusesAccumulated || 0, localAtoms.mb);
+
+          newStats.totalBonusesAccumulated = Math.max(newStats.totalBonusesAccumulated || 0, localAtoms.tb);
+          newStats.totalScoreAccumulated = Math.max(newStats.totalScoreAccumulated || 0, localAtoms.ts);
+          newStats.totalTimeAccumulated = Math.max(newStats.totalTimeAccumulated || 0, localAtoms.tt);
+          newStats.totalPeaksErrorsAccumulated = Math.max(newStats.totalPeaksErrorsAccumulated || 0, localAtoms.te);
+          newStats.wins = Math.max(newStats.wins || 0, localAtoms.w);
+          newStats.bestScore = Math.max(newStats.bestScore || 0, localAtoms.bs);
+          
+          // Merge Stage Maps
+          if (!newStats.stageWinsAccumulated) newStats.stageWinsAccumulated = {};
+          Object.entries(localAtoms.swMap).forEach(([stage, count]) => {
+            newStats.stageWinsAccumulated[stage] = Math.max(newStats.stageWinsAccumulated[stage] || 0, count);
+          });
+          if (!newStats.stageTimesAccumulated) newStats.stageTimesAccumulated = {};
+          Object.entries(localAtoms.stMap).forEach(([stage, time]) => {
+            newStats.stageTimesAccumulated[stage] = Math.max(newStats.stageTimesAccumulated[stage] || 0, time);
+          });
+          
+          this.stats = newStats;
+          
+          // v1.5.43: Reset anchors
+          this._sessionBaselineTotal = null;
+          this._sessionBaselineMonthly = null;
+          
+          // v1.5.56: NO MORE AUTO-HEALER. We trust the cloud and the unified atoms.
+          // await this._recalculateNetStats(false, false); 
+          
+          this._lastLocalWrite = Date.now(); // Shield engagement after adoption
+          localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+          window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
+        } else {
+          console.log("[Sync] Remote stats are older or equal. Skipping adoption (Echo Prevention).");
+        }
+      }
+    }
+
+    // 3. Progress Synchronization Logic (Game State)
+    if (remoteProgress) {
+      // v1.5.57: Cloud Isolation
+      // Only load progress from the cloud if this is NOT a replay session.
+      if (this.isReplay) {
+        console.log("[Sync] Replay detected. Skipping Cloud Progress adoption.");
+        return;
+      }
+
+      // v1.5.34: Allow session stats (errors, etc.) to be adopted from the cloud.
+      let hydratedProgress = this._deserializeState(remoteProgress);
+
+      const remoteSeed = Number(hydratedProgress.meta.seed);
+      const localSeed = Number(this.currentSeed);
+
+      if (this.currentSeed === null) {
+        this.currentSeed = remoteSeed;
+        this.storageKey = `jigsudo_state_${this.currentSeed}`;
+      } else if (remoteSeed !== localSeed) {
+        console.warn(`[Sync] Seed mismatch (Remote: ${remoteSeed}, Local: ${localSeed}). Ignoring remote.`);
+        return;
+      }
+
+      const remoteTime = new Date(hydratedProgress.meta.lastPlayed).getTime();
+      const localTime = this.state ? new Date(this.state.meta.lastPlayed).getTime() : 0;
+
+      // Logic: If remote is significantly newer ( > 1s ), handle adoption
+      if (!this.state || remoteTime > localTime + 1000 || this.isWiping) {
+        // v1.4.6 History Safety: Force adoption if remote has today's win
+        const todayStr = getJigsudoDateString();
+        const remoteWonToday = remoteStats && remoteStats.history?.[todayStr]?.original?.won === true;
+        const localWonToday = this.stats?.history?.[todayStr]?.original?.won === true;
+        const victorySyncNeeded = remoteWonToday && !localWonToday;
+
+        if (this.isWiping || !this.state || remoteTime > localTime + 60000 || victorySyncNeeded) {
+          console.log(`[Sync] FORCE ADOPTING cloud progress (Victory Needed: ${victorySyncNeeded}).`);
+          
+          // v1.5.33: Session Stats Protection
+          // Preserve local errors/peaks progress to avoid RP rebounds during sync.
+          if (this.state && this.state.stats && hydratedProgress.stats) {
+            const localErrors = this.state.stats.peaksErrors || 0;
+            const remoteErrors = hydratedProgress.stats.peaksErrors || 0;
+            hydratedProgress.stats.peaksErrors = Math.max(localErrors, remoteErrors);
+            console.log(`[Sync] Merged Peaks Errors: local=${localErrors}, remote=${remoteErrors} -> Final: ${hydratedProgress.stats.peaksErrors}`);
+          }
+
+          this.state = hydratedProgress;
+          this.save(false); // Silent save
+          window.location.reload(); 
+        } else if (remoteTime > localTime + 1000) {
+          // If seeds match and it's just a bit newer, show conflict modal
+          this.showConflictResolution(hydratedProgress);
+        }
+      }
+    }
+  }
+
+  showConflictResolution(remoteState) {
+    // 1. Remove any existing overlays to prevent stacking/ID conflicts
+    const existingOverlay = document.getElementById("conflict-overlay");
+    if (existingOverlay) {
+      document.body.removeChild(existingOverlay);
+    }
+
+    this.conflictBlocked = true;
+
+    // Format Dates
+    const localTime = new Date(this.state.meta.lastPlayed);
+    const remoteTime = new Date(remoteState.meta.lastPlayed);
+
+    const timeFormat = {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    };
+    const localTimeStr = localTime.toLocaleTimeString([], timeFormat);
+    const remoteTimeStr = remoteTime.toLocaleTimeString([], timeFormat);
+
+    // Calculate "Ago"
+    const now = Date.now();
+    const localAgo = Math.floor((now - localTime.getTime()) / 1000);
+    const remoteAgo = Math.floor((now - remoteTime.getTime()) / 1000);
+
+    // Calculate Progress
+    const localProg = this._calculateProgress(this.state);
+    const remoteProg = this._calculateProgress(remoteState);
+
+    const overlay = document.createElement("div");
+    overlay.id = "conflict-overlay"; // Give it an ID for cleanup
+    Object.assign(overlay.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100%",
+      height: "100%",
+      background: "rgba(15, 23, 42, 0.95)", // Slate-900 with opacity
+      color: "white",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: "99999",
+      fontFamily: "'Outfit', sans-serif",
+      backdropFilter: "blur(5px)",
+    });
+
+    overlay.innerHTML = `
+        <h2 style="margin-bottom: 20px; font-size: 1.8rem;">⚠️ Conflicto de Sincronización</h2>
+        <p style="margin-bottom: 30px; opacity: 0.8;">Se ha detectado una versión más reciente en la nube.</p>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px;">
+            
+            <!-- LOCAL CARD -->
+            <div style="
+                background: rgba(255,255,255,0.05); 
+                border: 1px solid rgba(255,255,255,0.1); 
+                padding: 20px; border-radius: 16px; 
+                flex: 1; min-width: 280px; text-align: center;
+                display: flex; flex-direction: column; gap: 10px;
+            ">
+                <h3 style="color: #94a3b8; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Este Dispositivo</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${this.state.progress.currentStage.toUpperCase()}</div>
+                <div style="color: ${localProg >= remoteProg ? "#4ade80" : "#cbd5e1"}; font-weight: bold; font-size: 1.2rem;">
+                    Progreso: ${localProg}%
+                </div>
+                <div style="color: #cbd5e1;">Hace ${localAgo} seg</div>
+                <div style="font-size: 0.9rem; opacity: 0.6;">(${localTimeStr})</div>
+                
+                <button class="btn-keep-local" style="
+                    margin-top: 15px; padding: 12px; border-radius: 8px; border: none;
+                    background: #3b82f6; color: white; font-weight: bold; cursor: pointer;
+                    transition: all 0.2s;
+                ">Mantener Mío 🏠</button>
+            </div>
+
+            <!-- CLOUD CARD -->
+            <div style="
+                background: rgba(16, 185, 129, 0.1); 
+                border: 1px solid rgba(16, 185, 129, 0.3); 
+                padding: 20px; border-radius: 16px; 
+                flex: 1; min-width: 280px; text-align: center;
+                display: flex; flex-direction: column; gap: 10px;
+            ">
+                <h3 style="color: #6ee7b7; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Nube (Reciente)</h3>
+                <div style="font-size: 2rem; font-weight: bold; color: #6ee7b7;">${remoteState.progress.currentStage.toUpperCase()}</div>
+                 <div style="color: ${remoteProg > localProg ? "#4ade80" : "#d1fae5"}; font-weight: bold; font-size: 1.2rem;">
+                    Progreso: ${remoteProg}%
+                </div>
+                <div style="color: #d1fae5;">Hace ${remoteAgo} seg</div>
+                <div style="font-size: 0.9rem; opacity: 0.6; color: #6ee7b7;">(${remoteTimeStr})</div>
+
+                <button class="btn-use-cloud" style="
+                    margin-top: 15px; padding: 12px; border-radius: 8px; border: none;
+                    background: #10b981; color: white; font-weight: bold; cursor: pointer;
+                    transition: all 0.2s;
+                ">Usar Nube ☁️</button>
+            </div>
+
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Use querySelector on the OVERLAY to ensure we attach to the created elements
+    // Also use clean class selectors (removed IDs to avoid potential caching issues)
+    const btnKeep = overlay.querySelector(".btn-keep-local");
+    const btnCloud = overlay.querySelector(".btn-use-cloud");
+
+    // ACTION: KEEP LOCAL
+    if (btnKeep) {
+      btnKeep.onclick = async () => {
+        console.log("[Conflict] Keeping Local...");
+        if (this.state && this.state.meta) {
+          this.state.meta.lastPlayed = new Date().toISOString();
+        }
+        // 2. Unblock UI
+        if (document.body.contains(overlay)) {
+          document.body.removeChild(overlay);
+        }
+        this.conflictBlocked = false;
+        // 3. Force Push to Cloud
+        await this.forceCloudSave();
+        // 4. (Optional) Toast
+        const { showToast } = await import("./ui.js?v=1.3.1");
+        showToast("Versión local conservada y subida.");
+      };
+    }
+
+    // ACTION: USE CLOUD
+    if (btnCloud) {
+      btnCloud.onclick = async () => {
+        console.log("[Conflict] Using Cloud... Triggering remote save.");
+
+        const icon = btnCloud.innerText;
+        btnCloud.innerText = "⏳ Solicitando...";
+        btnCloud.disabled = true;
+
+        try {
+          const { fetchLatestUserData, triggerRemoteSave } =
+            await import("./db.js?v=1.3.1");
+          const { getCurrentUser } = await import("./auth.js?v=1.3.1");
+          const user = getCurrentUser();
+
+          if (user) {
+            // 1. SIGNAL: Tell other devices to save NOW
+            await triggerRemoteSave(user.uid);
+
+            // 2. WAIT: Give the other device time to process the signal and save
+            btnCloud.innerText = "⏳ Sincronizando...";
+            await new Promise((resolve) => setTimeout(resolve, 2500));
+          }
+
+          // 3. FETCH: Get the fresh data (which should now include the forced save)
+          btnCloud.innerText = "⏳ Descargando...";
+
+          let finalState = remoteState; // Fallback
+
+          if (user) {
+            const latestData = await fetchLatestUserData(user.uid);
+            if (latestData && latestData.progress) {
+              console.log("[Conflict] Fresh cloud data received.");
+              finalState = this._deserializeState(latestData.progress);
+
+              if (latestData.stats) {
+                this.stats = latestData.stats;
+                localStorage.setItem(
+                  "jigsudo_user_stats",
+                  JSON.stringify(this.stats),
+                );
+              }
+            }
+          }
+
+          // --- CRITICAL FIX: Preserve static puzzle 'data' before final assignment ---
+          if (this.state && this.state.data && !finalState.data) {
+            if (Number(this.state.meta.seed) === Number(finalState.meta.seed)) {
+              console.log("[Conflict] Injecting local static puzzle data into resolved state.");
+              finalState.data = this.state.data;
+            }
+          }
+
+          this.conflictBlocked = false;
+          this.state = finalState;
+          this.save(false);
+          window.location.reload();
+        } catch (e) {
+          console.error("Error applying cloud data:", e);
+          btnCloud.innerText = icon;
+          btnCloud.disabled = false;
+          alert("Error al descargar. Intenta de nuevo.");
+        }
+      };
+    }
+  }
+
+  _calculateProgress(state) {
+    if (!state || !state.progress) return 0;
+
+    // Base: 15 points per completed stage (Max 90 for 6 stages)
+    let points = (state.progress.stagesCompleted || []).length * 15;
+
+    // Partial for CURRENT stage
+    try {
+      const current = state.progress.currentStage;
+      let partial = 0;
+
+      switch (current) {
+        case "memory":
+          if (
+            state.memory &&
+            state.memory.cards &&
+            state.memory.cards.length > 0
+          ) {
+            partial =
+              (state.memory.pairsFound || 0) / (state.memory.cards.length / 2);
+          }
+          break;
+        case "jigsaw":
+          if (state.data && state.data.chunks) {
+            const totalChunks = state.data.chunks.length;
+            const placed = state.jigsaw
+              ? (state.jigsaw.placedChunks || []).length
+              : 0;
+            if (totalChunks > 0) partial = placed / totalChunks;
+          }
+          break;
+        case "sudoku":
+          if (state.sudoku && state.sudoku.currentBoard) {
+            let filled = 0;
+            state.sudoku.currentBoard.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell !== 0) filled++;
+              });
+            });
+            // Simple heuristic: filled / 81
+            partial = filled / 81;
+          }
+          break;
+        case "peaks":
+          // 81 cells max (roughly)
+          if (state.peaks && state.peaks.foundCoords) {
+            partial = state.peaks.foundCoords.length / 81;
+          }
+          break;
+        case "search":
+          if (state.search && state.search.targets) {
+            const total = state.search.targets.length;
+            const found = (state.search.found || []).length;
+            if (total > 0) partial = found / total;
+          }
+          break;
+      }
+
+      if (partial > 1) partial = 1;
+      points += partial * 15;
+    } catch (err) {
+      console.warn("Error calculating partial progress", err);
+    }
+
+    // Cap at 100
+    return Math.min(100, Math.round(points));
+  }
+
+  /**
+   * Exclusive Session Block (v1.5.0)
+   * Prevents multi-device conflicts by forcing a single active origin.
+   */
+  async showExclusiveSessionBlock() {
+    if (this.sessionBlocked) return;
+    this.sessionBlocked = true;
+
+    // Remove any existing sync overlays
+    const existingSync = document.getElementById("conflict-overlay");
+    if (existingSync) document.body.removeChild(existingSync);
+
+    const overlay = document.createElement("div");
+    overlay.id = "exclusive-session-overlay";
+    Object.assign(overlay.style, {
+      position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
+      background: "rgba(10, 15, 30, 0.98)", color: "white",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      zIndex: "100000", fontFamily: "'Outfit', sans-serif", backdropFilter: "blur(12px)",
+      textAlign: "center", padding: "20px"
+    });
+
+    const lang = localStorage.getItem("jigsudo_lang") || "es";
+    // We already have translations imported from top if available, 
+    // but in case of dynamic load issues, we fallback.
+    let t = {
+      sync_exclusive_title: "Cuenta en uso",
+      sync_exclusive_desc: "Jigsudo se ha abierto en otro dispositivo o pestaña. Solo puedes tener una sesión activa para evitar pérdida de datos.",
+      sync_btn_continue: "Continuar aquí 🔄"
+    };
+
+    try {
+      // v1.2.2: Access dynamic translations correctly
+      const { translations: tData } = await import("./translations.js?v=1.3.1");
+      if (tData && tData[lang]) {
+        t = { ...t, ...tData[lang] };
+      }
+    } catch (e) { console.warn("Fallback translations used for block screen."); }
+
+    overlay.innerHTML = `
+      <div style="font-size: 4rem; margin-bottom: 20px;">🔒</div>
+      <h2 style="font-size: 2rem; margin-bottom: 15px;">${t.sync_exclusive_title || "Cuenta en uso"}</h2>
+      <p style="font-size: 1.1rem; opacity: 0.8; max-width: 500px; line-height: 1.6; margin-bottom: 40px;">
+        ${t.sync_exclusive_desc || "Jigsudo se ha abierto en otro dispositivo. Solo puedes tener una sesión activa."}
+      </p>
+      <button class="btn-resume-here" style="
+        padding: 16px 40px; border-radius: 50px; border: none;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        transition: transform 0.2s, background 0.2s;
+      ">${t.sync_btn_continue || "Continuar aquí 🔄"}</button>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const btn = overlay.querySelector(".btn-resume-here");
+    if (btn) {
+      btn.onmouseover = () => btn.style.transform = "scale(1.05)";
+      btn.onmouseout = () => btn.style.transform = "scale(1)";
+      btn.onclick = () => {
+        // v1.2.2: Signal that on reload, this tab MUST take the throne immediately
+        localStorage.setItem("jigsudo_force_throne", "true");
+        window.location.reload();
+      };
+    }
+  }
+
+  async recordWin() {
+    if (this._processingWin) return null;
+    this._processingWin = true;
+    
+    // v1.4.6: Win Lock - Prevent Cloud Sync from overwritting this win for 10 seconds
+    const lockUntil = Date.now() + 10000;
+    this._winLockExpires = lockUntil;
+    try {
+      // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
+      await this._ensureStats();
+
+      // RE-FETCH stats after ensureStats in case the healer replaced the object reference
+      let stats = this.stats;
+      if (!stats.history) stats.history = {};
+      if (!stats.stageTimesAccumulated) stats.stageTimesAccumulated = {};
+      if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+      if (!stats.weekdayStatsAccumulated) stats.weekdayStatsAccumulated = {};
+
+      const seedStr = this.currentSeed.toString();
+
+      // v1.4.0: Standardized date derivation for consistency across all stats keys
+      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.3.1");
+      const seedDate = getDateStringFromSeed(this.currentSeed);
+      const puzzleDate = seedDate; // Alias used for history-specific keys
+      
+      const last = stats.lastPlayedDate;
+      
+      // v1.2.3: Calculate total time as the strict sum of the 6 game levels
+      // v1.2.4: Summing rounded seconds to ensure UI consistency
+      // v1.2.5: Custom rounding: nearest integer, but .5 rounds DOWN. Logic: Math.ceil(secs - 0.5)
+      const stageTimes = this.state.meta?.stageTimes || {};
+      const levels = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
+      const totalTimeMs = levels.reduce((sum, key) => {
+          const secs = (stageTimes[key] || 0) / 1000;
+          const roundedSecs = Math.ceil(secs - 0.5);
+          return sum + (roundedSecs * 1000);
+      }, 0);
+      
+      const peaksErrors = this.state.stats?.peaksErrors || 0;
+      const today = getJigsudoDateString();
+      const isAlreadyWon = stats.history[puzzleDate]?.status === "won" || stats.history[puzzleDate]?.original?.won === true;
+      const isLateCompletion = seedDate < today;
+
+      console.log(`[GM recordWin] START. Seed: ${this.currentSeed}, puzzleDate: ${puzzleDate}, today: ${today}, isLate: ${isLateCompletion}`);
+
+      if (!this.isReplay && !isAlreadyWon) {
+        // v1.5.52: Consolidating increments further down in the common flow 
+        // to avoid double jumps between early win detection and final sync.
+
+        // Handle Streak and RP Resets (Consistent UTC Logic)
+        if (last) {
+          const lastDate = new Date(last + "T12:00:00Z");
+          const currDate = new Date(puzzleDate + "T12:00:00Z");
+          const diffDays = Math.round(
+            (currDate - lastDate) / (1000 * 60 * 60 * 24),
+          );
+
+          if (diffDays === 1) {
+            stats.currentStreak = (stats.currentStreak || 0) + 1;
+          } else if (diffDays > 1) {
+            stats.currentStreak = 1;
+          }
+        } else {
+          stats.currentStreak = 1;
+        }
+
+        if (stats.currentStreak > (stats.maxStreak || 0))
+          stats.maxStreak = stats.currentStreak;
+      } else if (!this.isReplay && isAlreadyWon) {
+        // v1.2.7: Strict Isolation - Replays (re-wins) should NEVER update competitive rankings or accumulators.
+        // They only exist to update the 'Best' score in the history map (handled later in recordWin).
+        console.log("[Referee] Already won today. Skipping account RP and accumulator updates for this session.");
+        
+        // We only allow healing of the maintenance date if this is NOT a replay AND it's today's puzzle
+        // but since isAlreadyWon is true, the server session already handled the maintenance.
+      }
+      // --- PREPARATION (Common for all flows) ---
+      stats.lastLocalUpdate = Date.now();
+      const historyEntry = stats.history[today] || {};
+      // (isAlreadyWon is already declared at the top)
+
+      // (Variables were defined at the top)
+      const isOriginalDay = !this.isReplay && !isAlreadyWon && !isLateCompletion;
+
+      // --- SECTION A: SELF-HEALING / RECOVERY ---
+      if (!this.isReplay && isAlreadyWon && today === stats.lastDailyUpdate && !isLateCompletion) {
+      }
+
+      // v1.3.2: Re-defining missing session variables
+      const { calculateTimeBonus } = await import("./ranks.js?v=1.3.1");
+      const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
+      const stagesCountToday = (this.state.progress.stagesCompleted || []).length;
+
+
+      // --- 1. LOCAL WIN RECORDING ---
+      this.state.progress.won = true;
+      
+      // Standalone session calculation items
+      const sessionBonus = timeBonus; 
+      const sessionWins = stagesCountToday;
+      const sessionErrors = peaksErrors;
+      
+      // v1.3.2: Formula for the standalone session performance
+      const sessionScore = Number((sessionWins + sessionBonus - (sessionErrors * SCORING.ERROR_PENALTY_RP)).toFixed(2));
+      const dailyScore = sessionScore;
+      
+      // Determine if this is an improvement for comparison
+      const historyKey = puzzleDate;
+      const hEntry = stats.history[historyKey] || {};
+      const oldBest = hEntry.best || { score: 0, bonus: 0, wins: 0, errors: 0 };
+      
+      // v1.3.2: Atomic Improvements & Delta Logic
+      // We update the persistent status atoms based on the improvement over the previous BEST.
+      if (isOriginalDay) {
+          // FIRST WIN: Full credit for everything
+          stats.dailyWinsAccumulated = sessionWins;
+          stats.dailyBonusesAccumulated = sessionBonus;
+          stats.dailyPeaksErrorsAccumulated = sessionErrors;
+          
+          // Lifetime Persistence Atoms
+          stats.totalPlayed = (stats.totalPlayed || 0) + 1;
+          stats.wins = (stats.wins || 0) + 1;
+          stats.totalBonusesAccumulated = (stats.totalBonusesAccumulated || 0) + sessionBonus;
+          stats.totalPeaksErrorsAccumulated = (stats.totalPeaksErrorsAccumulated || 0) + sessionErrors;
+          stats.totalTimeAccumulated = (stats.totalTimeAccumulated || 0) + totalTimeMs;
+          
+          // Weekly Aggregates
+          const dayIdx = new Date((isLateCompletion || this.isReplay ? puzzleDate : today) + "T12:00:00").getDay();
+          if (!stats.weekdayStatsAccumulated[dayIdx]) {
+              stats.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
+          }
+          const w = stats.weekdayStatsAccumulated[dayIdx];
+          w.sumTime += totalTimeMs;
+          w.sumErrors += sessionErrors;
+          w.sumScore += (sessionWins + sessionBonus - (sessionErrors * SCORING.ERROR_PENALTY_RP));
+          w.count++;
+
+      } else if (sessionScore > oldBest.score) {
+          // REPLAY IMPROVEMENT: Credit/Debit Deltas
+          const deltaBonus = sessionBonus - (oldBest.bonus || 0);
+          const deltaWins = Math.max(0, sessionWins - (oldBest.wins || 0)); // Wins usually don't decrease but safe
+          const deltaErrors = sessionErrors - (oldBest.errors || 0); // Negative means improvement (fewer errors)
+          
+          if (!isLateCompletion) {
+              stats.dailyWinsAccumulated = Math.max(0, (stats.dailyWinsAccumulated || 0) + deltaWins);
+              stats.dailyBonusesAccumulated = Math.max(0, (stats.dailyBonusesAccumulated || 0) + deltaBonus);
+              stats.dailyPeaksErrorsAccumulated = Math.max(0, (stats.dailyPeaksErrorsAccumulated || 0) + deltaErrors);
+          }
+          
+          stats.totalBonusesAccumulated = Math.max(0, (stats.totalBonusesAccumulated || 0) + deltaBonus);
+          stats.totalPeaksErrorsAccumulated = Math.max(0, (stats.totalPeaksErrorsAccumulated || 0) + deltaErrors);
+          
+          if (seedMonth === todayMonth) {
+              stats.monthlyWinsAccumulated = Math.max(0, (stats.monthlyWinsAccumulated || 0) + deltaWins);
+              stats.monthlyBonusesAccumulated = Math.max(0, (stats.monthlyBonusesAccumulated || 0) + deltaBonus);
+          }
+          
+          // Update best record values for next comparison
+          // Note: totalRP is recalculated by _recalculateNetStats() using these atoms.
+      }
+      
+      stats.lastBonus = sessionBonus;
+
+
+      this.stats = stats;
+      await this._recalculateNetStats();
+      stats = this.stats;
+
+      // --- 2. BASIC STATS ENRICHMENT ---
+      if (stats.currentRP < 0) stats.currentRP = 0;
+      if (stats.totalRP < 0) stats.totalRP = 0;
+      if (stats.dailyRP < 0) stats.dailyRP = 0;
+      if (stats.monthlyRP < 0) stats.monthlyRP = 0;
+
+      if (isOriginalDay) {
+          if (dailyScore > (stats.bestScore || 0)) {
+              stats.bestScore = dailyScore;
+          }
+          if (stats.currentStreak > (stats.maxStreak || 0)) {
+              stats.maxStreak = stats.currentStreak;
+          }
+          // v1.5.51: Improved bestTime logic
+          const currentBestTime = (stats.bestTime === 0 || !stats.bestTime) ? Infinity : stats.bestTime;
+          if (totalTimeMs > 0 && totalTimeMs < currentBestTime) {
+            stats.bestTime = totalTimeMs;
+          }
+      }
+
+      if (!isLateCompletion && !this.isReplay) {
+        stats.lastDailyUpdate = today; 
+        stats.lastDecayCheck = today;
+      }
+
+      // --- 3. HISTORY ENRICHMENT ---
+      if (!stats.history[historyKey]) {
+        stats.history[historyKey] = { seed: this.currentSeed, played: true };
+      }
+
+      const resultData = {
+        score: sessionScore, 
+        bonus: sessionBonus,
+        wins: stagesCountToday,
+        totalTime: totalTimeMs,
+        stageTimes: stageTimes,
+        stageStamps: this.state.meta.stageStamps || {},
+        errors: peaksErrors,
+        timestamp: Date.now(),
+        won: true
+      };
+
+      if (!stats.history[historyKey].original && isOriginalDay) {
+        console.log(`[GM recordWin] WRITE ORIGINAL to history[${historyKey}]`);
+        stats.history[historyKey].status = "won";
+        stats.history[historyKey].original = resultData;
+        stats.history[historyKey].best = resultData;
+      } else {
+        console.log(`[GM recordWin] WRITE UPDATE to history[${historyKey}]. isOriginalDay: ${isOriginalDay}`);
+        stats.history[historyKey].status = "won";
+        const existingBest = stats.history[historyKey].best || {};
+        // v1.5.57: Strict Score Comparison (requested by user)
+        // Only replace if the new score is strictly better.
+        if (dailyScore > (existingBest.score || 0)) {
+          stats.history[historyKey].best = resultData;
+        }
+      }
+
+      // --- 4. PERSISTENCE ---
+      if (this.isReplay || isLateCompletion) {
+        console.log(`[GameManager] ${isLateCompletion ? "Late win" : "Replay win"}. Cleaning progress...`);
+        this.state.progress = { stagesCompleted: [], currentStage: "memory" };
+        const sections = ["memory", "jigsaw", "sudoku", "peaks", "search", "simon"];
+        sections.forEach(s => { if (this.state[s]) this.state[s] = {}; });
+        // Restore meta fields that might have been reset but are needed for the UI
+        this.state.meta.userId = localStorage.getItem("jigsudo_active_uid");
+        this.save();
+      }
+
+      stats.lastLocalUpdate = Date.now();
+      this.stats = stats;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+
+      // (Cloud Sync removed)
+
+      // --- 6. UX & NOTIFICATION ---
+      const { stopTimer } = await import("./timer.js?v=1.3.1");
+      const { showToast } = await import("./ui.js?v=1.3.1");
+      const { getCurrentLang } = await import("./i18n.js?v=1.3.1");
+      const { translations } = await import("./translations.js?v=1.3.1");
+      
+      stopTimer();
+      const lang = getCurrentLang() || "es";
+      showToast(translations[lang]?.toast_progress_saved || "¡Progreso Guardado! 💾🏆");
+
+      const sessionStats = {
+        totalTime: totalTimeMs,
+        score: dailyScore,
+        streak: stats.currentStreak || 1,
+        errors: peaksErrors,
+        stageTimes: stageTimes,
+        date: today,
+        isReplay: this.isReplay,
+      };
+
+      window.dispatchEvent(new CustomEvent("gameCompleted", { 
+        detail: { ...sessionStats, seed: this.currentSeed } 
+      }));
+
+      return sessionStats;
+ // v1.5.22: UI receives official stats through this object
+    } catch (err) {
+      console.error("Error saving stats:", err);
+      return null;
+    } finally {
+      this._processingWin = false;
+    }
+  }
+
+  /**
+   * Scans history to re-calculate global records and cumulative metrics.
+   * This ensures stats are always in sync with the history log (Source of Truth).
+   */
+  _recalculateRecords(stats, forceRebuild = false) {
+    if (!stats) return;
+    
+    // v1.5.49+: Atom & Session Preservation
+    // Capture "today's" atoms so we don't wipe active progress if a rebuild happens.
+    const todayStr = getJigsudoDateString();
+    const isActiveToday = stats.lastDailyUpdate === todayStr;
+    const sessionAtoms = {
+       dw: isActiveToday ? (stats.dailyWinsAccumulated || 0) : 0,
+       mw: isActiveToday ? (stats.monthlyWinsAccumulated || 0) : 0,
+       de: isActiveToday ? (stats.dailyPeaksErrorsAccumulated || 0) : 0,
+       db: isActiveToday ? (stats.dailyBonusesAccumulated || 0) : 0,
+       mb: isActiveToday ? (stats.monthlyBonusesAccumulated || 0) : 0,
+       swMap: isActiveToday ? { ...(stats.stageWinsAccumulated || {}) } : {}
+    };
+
+    // v1.5.50: INCREMENTAL TRUTH SHIELD
+    // We only perform the 'Nuclear Reset' if specifically forced or if it's a very old account
+    // that needs a full history scan to populate the first atoms.
+    const needsMigration = !stats.integrityChecked || stats.integrityChecked < "1.5.52";
+    const historyExists = stats.history && Object.keys(stats.history).length > 0;
+
+    // v1.5.54: ATOMIC SAFE REBUILD
+    // Instead of resetting the official stats immediately, we build a temporary state.
+    // If and only if the rebuild finds valid data, we apply it. 
+    // This prevents the "Nuclear Zero" bug if the history isn't ready in memory.
+    const rb = {
+      totalPlayed: 0,
+      wins: 0,
+      totalScoreAccumulated: 0,
+      totalTimeAccumulated: 0,
+      totalPeaksErrorsAccumulated: 0,
+      stageTimesAccumulated: {},
+      stageWinsAccumulated: {},
+      weekdayStatsAccumulated: {},
+      maxStreak: 0,
+      currentStreak: 0,
+      bestTime: Infinity,
+      bestScore: 0,
+      monthlyWinsAccumulated: 0,
+      monthlyPeaksErrorsAccumulated: 0
+    };
+
+    if (!historyExists) {
+      if (forceRebuild || needsMigration) {
+         stats.integrityChecked = "1.5.62";
+      }
+      return;
+    }
+
+    // Filter and sort won entries to rebuild history timeline
+    const dates = Object.keys(stats.history)
+      .filter((date) => stats.history[date].status === "won")
+      .sort();
+
+    if (dates.length === 0) {
+      if (forceRebuild || needsMigration) {
+          stats.integrityChecked = "1.5.62";
+      }
+      return;
+    }
+
+    let currentStreakCount = 0;
+    let lastDate = null;
+    const currentMonth = getJigsudoYearMonth();
+
+    dates.forEach((dateStr) => {
+      const h = stats.history[dateStr];
+      const isOriginal = !!h.original;
+
+      const hTime = Number(h.totalTime || 0);
+      const hScore = Number(h.score || 0); 
+      const hErrors = Number(h.peaksErrors || 0);
+
+      // 1. LIFETIME AGGREGATES (Only if isOriginal)
+      if (isOriginal) {
+        rb.totalPlayed++;
+        rb.wins++;
+        rb.totalTimeAccumulated += hTime;
+        rb.totalScoreAccumulated += hScore;
+        rb.totalPeaksErrorsAccumulated += hErrors;
+
+        // Monthly Atoms Rebuild Support
+        const hMonth = dateStr.substring(0, 7);
+        if (hMonth === currentMonth) {
+          rb.monthlyWinsAccumulated += 1;
+          rb.monthlyPeaksErrorsAccumulated += hErrors;
+        }
+
+        // Rebuild Stage Stats
+        if (h.stageTimes) {
+          for (const [stage, time] of Object.entries(h.stageTimes)) {
+            rb.stageTimesAccumulated[stage] = (rb.stageTimesAccumulated[stage] || 0) + time;
+            rb.stageWinsAccumulated[stage] = (rb.stageWinsAccumulated[stage] || 0) + 1;
+          }
+        }
+
+        // Rebuild Weekday Aggregates
+        const dWeek = new Date(dateStr + "T12:00:00");
+        const dayIdx = dWeek.getDay();
+        if (!rb.weekdayStatsAccumulated[dayIdx]) {
+          rb.weekdayStatsAccumulated[dayIdx] = { sumTime: 0, sumErrors: 0, sumScore: 0, count: 0 };
+        }
+        const w = rb.weekdayStatsAccumulated[dayIdx];
+        w.sumTime += hTime;
+        w.sumErrors += hErrors;
+        w.sumScore += hScore;
+        w.count++;
+      }
+
+      // 2. BESTS & STREAKS (Calculated globally)
+      if (hTime > 0 && hTime < rb.bestTime) {
+        rb.bestTime = hTime;
+      }
+      if (hScore > rb.bestScore) {
+        rb.bestScore = hScore;
+      }
+
+      const d = new Date(dateStr + "T12:00:00");
+      if (isOriginal) {
+        if (lastDate) {
+          const diff = Math.ceil((d - lastDate) / (1000 * 60 * 60 * 24));
+          if (diff === 1) {
+            currentStreakCount++;
+          } else {
+            currentStreakCount = 1;
+          }
+        } else {
+          currentStreakCount = 1;
+        }
+        lastDate = d;
+        if (currentStreakCount > rb.maxStreak) rb.maxStreak = currentStreakCount;
+        rb.currentStreak = currentStreakCount;
+      }
+    });
+
+    // 3. FINAL ATOMIC APPLY
+    if (forceRebuild || needsMigration) {
+      if (rb.totalPlayed > 0) {
+        stats.totalPlayed = rb.totalPlayed;
+        stats.wins = rb.wins;
+        stats.totalScoreAccumulated = rb.totalScoreAccumulated;
+        stats.totalTimeAccumulated = rb.totalTimeAccumulated;
+        stats.totalPeaksErrorsAccumulated = rb.totalPeaksErrorsAccumulated;
+        stats.stageTimesAccumulated = rb.stageTimesAccumulated;
+        stats.stageWinsAccumulated = rb.stageWinsAccumulated;
+        stats.weekdayStatsAccumulated = rb.weekdayStatsAccumulated;
+        stats.maxStreak = rb.maxStreak;
+        stats.currentStreak = rb.currentStreak;
+        stats.bestTime = (rb.bestTime === Infinity) ? null : rb.bestTime;
+        stats.bestScore = rb.bestScore;
+        stats.monthlyWinsAccumulated = rb.monthlyWinsAccumulated;
+        stats.monthlyPeaksErrorsAccumulated = rb.monthlyPeaksErrorsAccumulated;
+        stats.currentRP = Number(rb.totalScoreAccumulated.toFixed(2));
+      }
+      stats.integrityChecked = "1.5.62";
+    }
+
+    // v1.5.49: Re-apply session atoms captured at the beginning
+    // This ensures that progress for a game currently in progress (not yet in history) is preserved.
+    if (typeof sessionAtoms !== 'undefined') {
+      stats.dailyWinsAccumulated = Math.max(stats.dailyWinsAccumulated || 0, sessionAtoms.dw);
+      stats.monthlyWinsAccumulated = Math.max(stats.monthlyWinsAccumulated || 0, sessionAtoms.mw);
+      stats.dailyPeaksErrorsAccumulated = Math.max(stats.dailyPeaksErrorsAccumulated || 0, sessionAtoms.de);
+      stats.dailyBonusesAccumulated = Math.max(stats.dailyBonusesAccumulated || 0, sessionAtoms.db);
+      stats.monthlyBonusesAccumulated = Math.max(stats.monthlyBonusesAccumulated || 0, sessionAtoms.mb);
+      
+      if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+      Object.entries(sessionAtoms.swMap).forEach(([stage, count]) => {
+        stats.stageWinsAccumulated[stage] = Math.max(stats.stageWinsAccumulated[stage] || 0, count);
+      });
+    }
+
+    stats.lastPlayedDate = dates[dates.length - 1];
+
+    // Rebuild date markers based on the last historical win
+    if (stats.lastPlayedDate) {
+      // SAFETY: Only update markers if history provides a NEWER or missing anchor.
+      // We don't want a recalculation to wipe a "Play Intent" (lastDailyUpdate) from today.
+      const lastPlayedTime = new Date(stats.lastPlayedDate + "T12:00:00Z").getTime();
+      const currentUpdateDate = stats.lastDailyUpdate || "2026-04-05";
+      const currentUpdateTime = new Date(currentUpdateDate + "T12:00:00Z").getTime();
+
+      if (lastPlayedTime >= currentUpdateTime) {
+        stats.lastDailyUpdate = stats.lastPlayedDate;
+      }
+      
+      stats.lastMonthlyUpdate = stats.lastPlayedDate.substring(0, 7);
+      stats.lastDecayCheck = stats.lastPlayedDate;
+    }
+
+    // 3. Streak Validity Validation (relative to the active puzzle)
+    try {
+      const seedStr = this.currentSeed.toString();
+      const todayStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      const todayObj = new Date(todayStr + "T12:00:00");
+      const lastWinObj = new Date(stats.lastPlayedDate + "T12:00:00");
+      const dayGap = Math.ceil((todayObj - lastWinObj) / (1000 * 60 * 60 * 24));
+
+      if (dayGap > 1) {
+        stats.currentStreak = 0;
+      } else {
+        stats.currentStreak = currentStreakCount;
+      }
+    } catch (err) {
+      console.warn("[Recalc] Failed to validate streak gap:", err);
+      stats.currentStreak = 0;
+    }
+
+    // --- ADMINISTRATIVE SHIELD: Apply manual adjustments (admin penalties/bonuses) ---
+    stats.currentRP = Number((stats.currentRP + (stats.manualRPAdjustment || 0)).toFixed(2));
+    // v1.5.36: REMOVED totalRP = currentRP overwrite to prevent history-based score rebounds.
+    
+    if (stats.currentRP < 0) stats.currentRP = 0;
+    if (stats.totalRP < 0) stats.totalRP = 0;
+  }
+
+  _compareProgress(s1, s2) {
+    if (!s1 || !s2) return false;
+    
+    // 1. Compare Stage and Completion
+    if (s1.progress?.currentStage !== s2.progress?.currentStage) return false;
+    if ((s1.progress?.stagesCompleted || []).length !== (s2.progress?.stagesCompleted || []).length) return false;
+
+    // 2. Compare Specific Sub-stage Progress
+    const stage = s1.progress?.currentStage;
+    if (stage === "memory") {
+      if ((s1.memory?.pairsFound || 0) !== (s2.memory?.pairsFound || 0)) return false;
+    } else if (stage === "jigsaw") {
+      if ((s1.jigsaw?.placedChunks || []).length !== (s2.jigsaw?.placedChunks || []).length) return false;
+    } else if (stage === "sudoku") {
+      if ((s1.sudoku?.currentBoard || "") !== (s2.sudoku?.currentBoard || "")) return false;
+    }
+
+    return true;
+  }
+
+  _getDefaultStats() {
+    return {
+      totalPlayed: 0,
+      currentStreak: 0,
+      maxStreak: 0,
+      currentRP: 0,
+      totalRP: 0,
+      dailyRP: 0,
+      monthlyRP: 0,
+      bestScore: 0,
+      bestTime: null,
+      totalTimeAccumulated: 0,
+      totalScoreAccumulated: 0,
+      totalPeaksErrorsAccumulated: 0,
+      stageTimesAccumulated: {},
+      stageWinsAccumulated: {},
+      weekdayStatsAccumulated: {},
+      history: {},
+      lastPlayedDate: null,
+      lastDecayCheck: null,
+      manualRPAdjustment: 0,
+      totalPenaltyAccumulated: 0,
+      isPublic: true, // v1.5.30: Default to public
+      integrityChecked: "1.5.62"
+    };
+  }
+}
+export const gameManager = new GameManager();

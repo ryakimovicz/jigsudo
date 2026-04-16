@@ -1,4 +1,4 @@
-# Jigsudo Basic Edition Build Script
+# Jigsudo Basic Edition Build Script (Universal Forward-Slash Fix)
 # usage: ./build_basic.ps1
 
 $projectName = "jigsudo-basic-edition"
@@ -12,21 +12,21 @@ if (Test-Path $distFolder) { Remove-Item -Recurse -Force $distFolder }
 if (Test-Path $zipFile) { Remove-Item $zipFile }
 
 # 2. Create folder structure
-New-Item -ItemType Directory -Path $distFolder
-New-Item -ItemType Directory -Path "$distFolder/js"
-New-Item -ItemType Directory -Path "$distFolder/css"
-New-Item -ItemType Directory -Path "$distFolder/assets"
-New-Item -ItemType Directory -Path "$distFolder/public"
-New-Item -ItemType Directory -Path "$distFolder/public/puzzles"
-New-Item -ItemType Directory -Path "$distFolder/about"
+New-Item -ItemType Directory -Path $distFolder -Force
+New-Item -ItemType Directory -Path "$distFolder/js" -Force
+New-Item -ItemType Directory -Path "$distFolder/css" -Force
+New-Item -ItemType Directory -Path "$distFolder/assets" -Force
+New-Item -ItemType Directory -Path "$distFolder/public" -Force
+New-Item -ItemType Directory -Path "$distFolder/public/puzzles" -Force
+New-Item -ItemType Directory -Path "$distFolder/about" -Force
 
 # 3. Copy files
 Write-Host "Copying core files..."
 Copy-Item "index.html" "$distFolder/"
-Copy-Item -Recurse "css" "$distFolder/" -Force
-Copy-Item -Recurse "js" "$distFolder/" -Force
-Copy-Item -Recurse "assets" "$distFolder/" -Force
-Copy-Item -Recurse "about" "$distFolder/" -Force
+Copy-Item -Recurse "css/*" "$distFolder/css/" -Force
+Copy-Item -Recurse "js/*" "$distFolder/js/" -Force
+Copy-Item -Recurse "assets/*" "$distFolder/assets/" -Force
+Copy-Item -Recurse "about/*" "$distFolder/about/" -Force
 
 # 4. Copy ONLY the fixed puzzle and index
 Write-Host "Preparing limited puzzle data (2026-04-15 only)..."
@@ -38,12 +38,25 @@ Copy-Item "public/puzzles/daily-2026-04-15.json" "$distFolder/public/puzzles/" -
 Copy-Item "public/puzzles/daily-2026-04-15.json" "$distFolder/js/board_data.json" -Force
 
 # 5. Build Preparation
-Write-Host "Cleaning up build logic (keeping files)..."
-# We no longer delete files or purge HTML to maintain 100% stability.
-# All UI transformations are handled via CSS/JS in basic-edition.js.
+Write-Host "Cleaning up build logic..."
 
-# 6. Compress
-Write-Host "Creating ZIP: $zipFile..." -ForegroundColor Yellow
-Compress-Archive -Path "$distFolder/*" -DestinationPath $zipFile
+# 6. Manual ZIP Creation with Forward Slashes
+Write-Host "Creating ZIP (Forcing Forward Slashes for itch.io)..." -ForegroundColor Yellow
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+$zipFilePath = Join-Path (Get-Location) $zipFile
+$zipArchive = [System.IO.Compression.ZipFile]::Open($zipFilePath, "Update")
+
+$files = Get-ChildItem -Path $distFolder -Recurse | Where-Object { ! $_.PSIsContainer }
+
+foreach ($file in $files) {
+    $relativePath = $file.FullName.Substring((Get-Item $distFolder).FullName.Length + 1)
+    # FORCE FORWARD SLASHES
+    $universalPath = $relativePath.Replace("\", "/")
+    
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zipArchive, $file.FullName, $universalPath)
+}
+
+$zipArchive.Dispose()
 
 Write-Host "Build Complete! File: $zipFile" -ForegroundColor Green
