@@ -156,6 +156,13 @@ export class GameManager {
       // Proactively load stats to ensure this.stats is populated before syncs
       this.stats =
         JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
+      
+      // v1.3.3: Basic Edition Safety - Always ensure statistics exist
+      if (CONFIG.isBasicEdition && !this.stats) {
+          this.stats = { history: {}, totalRP: 0, currentStreak: 0 };
+          localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+      }
+
       const decayOccurred = await this._ensureStats();
       masterLock.showIcon();
       const activeUid = localStorage.getItem("jigsudo_active_uid");
@@ -191,8 +198,9 @@ export class GameManager {
         );
 
       // --- SELF-HEALING: Ensure 'data' branch exists even if local save was corrupted ---
-      if (dailyData && (!this.state.data || !this.state.data.chunks)) {
-        console.warn("[GameManager] Saved state missing 'data' (puzzle definition). Self-healing from Daily data...");
+      // v1.3.3: In Basic Edition, ALWAYS re-inject from JSON to ensure data integrity
+      if (dailyData && (CONFIG.isBasicEdition || !this.state.data || !this.state.data.chunks)) {
+        if (CONFIG.debugMode) console.log("[GameManager] Basic Edition: Injecting fresh puzzle data into existing save.");
         
         // Re-inject static puzzle data from the server while preserving user progress
         this.state.data = {
@@ -242,7 +250,7 @@ export class GameManager {
 
     // SELF-HEALING: Ensure search targets are populated if variation exists
     if (
-      this.state.jigsaw.variation &&
+      this.state && this.state.jigsaw && this.state.jigsaw.variation &&
       (!this.state.search.targets || this.state.search.targets.length === 0)
     ) {
       console.warn(
@@ -252,7 +260,7 @@ export class GameManager {
     }
 
     // DEBUG: Check loaded state
-    if (CONFIG.debugMode) {
+    if (CONFIG.debugMode && this.state && this.state.data) {
       console.log(
         `[GameManager] Loaded Variation: ${this.state.jigsaw.variation}`,
       );
@@ -274,6 +282,11 @@ export class GameManager {
 
   async recordStart() {
     if (this.isReplay) return;
+
+    // v1.3.3: Safety - Init stats if they don't exist yet
+    if (!this.stats) {
+        this.stats = JSON.parse(localStorage.getItem("jigsudo_user_stats")) || { history: {}, totalRP: 0 };
+    }
 
     // v1.5.59: SEQUENTIAL SAFETY - Ensure any pending decay from yesterday is processed
     // before we mark today as "played" (intent).
