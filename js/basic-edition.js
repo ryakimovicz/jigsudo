@@ -16,7 +16,9 @@ export function initBasicEdition() {
     "#ranking-container",
     "#support-container",
     ".auth-wrapper",
+    "#nav-changelog",
     "#nav-admin",
+    "#changelog-section",
     "#admin-section",  // Now that we don't purge HTML
     ".home-tabs",      // Hide "Custom" tab, keep only daily
     "#panel-custom",   // Ensure custom panel is gone
@@ -165,8 +167,8 @@ function injectStyles() {
         .basic-promo-banner {
             padding: 24px 16px;
             margin: 24px 0;
-            background: rgba(var(--primary-rgb), 0.05);
-            border: 1px solid rgba(var(--primary-rgb), 0.2);
+            background: rgba(var(--accent-rgb), 0.05);
+            border: 1px solid rgba(var(--accent-rgb), 0.2);
             border-radius: 20px;
             text-align: center;
             animation: fadeInPromo 0.5s ease-out;
@@ -182,7 +184,7 @@ function injectStyles() {
         
         .promo-link-btn {
             text-decoration: none;
-            background: linear-gradient(135deg, var(--primary), #a855f7);
+            background: linear-gradient(135deg, var(--accent-color), #f43f5e);
             color: white !important;
             padding: 12px 28px;
             border-radius: 50px;
@@ -192,12 +194,12 @@ function injectStyles() {
             gap: 12px;
             font-size: 1.05rem;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+            box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
         }
         
         .promo-link-btn:hover {
             transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4);
+            box-shadow: 0 8px 25px rgba(var(--accent-rgb), 0.4);
             filter: brightness(1.1);
         }
         
