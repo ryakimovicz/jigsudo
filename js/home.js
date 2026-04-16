@@ -96,7 +96,6 @@ export function initHome() {
 
   // --- Header Info (Date & Challenge #) ---
   function updateHeaderInfo() {
-    if (CONFIG.isBasicEdition) return;
     const dateEl = document.getElementById("current-date");
     const challengeEl = document.getElementById("challenge-num");
     if (!dateEl || !challengeEl) return;
