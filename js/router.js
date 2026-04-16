@@ -11,6 +11,7 @@ export const router = {
     "#history": "history-section",
     "#game": "game-section",
     "#changelog": "changelog-section",
+    "#about": "about-section",
   },
 
   // Map Section ID -> Body Class
@@ -19,6 +20,7 @@ export const router = {
     "history-section": "history-active",
     "guide-section": "guide-active",
     "changelog-section": "changelog-active",
+    "about-section": "about-active",
   },
 
   init() {

@@ -36,7 +36,8 @@ export function initBasicEdition() {
     ".victory-support",
     "#victory-streak-card",
     "#vsc-streak-card",
-    "#victory-social-card .sc-user-box"
+    "#victory-social-card .sc-user-box",
+    "#support-container-about"
   ];
 
   elementsToHide.forEach((selector) => {
@@ -86,17 +87,6 @@ export function initBasicEdition() {
       faqDemo.classList.remove("hidden", "hidden-basic");
       faqDemo.style.display = "block"; // Force override
   }
-
-  // 7. Secure footer links (itch.io iframe sandbox lacks clean-url folder resolution causing 403)
-  const auxLinks = document.querySelectorAll(".footer-links a");
-  auxLinks.forEach(link => {
-      const href = link.getAttribute("href");
-      // If it's a relative path (about/ , privacy/) redirect it to the canonical site
-      if (href && !href.startsWith("http")) {
-          link.setAttribute("href", `https://jigsudo.com/${href}`);
-          link.setAttribute("target", "_blank"); // Prevent iframe trapping
-      }
-  });
 
   console.log("[BasicEdition] UI transformation complete.");
 }

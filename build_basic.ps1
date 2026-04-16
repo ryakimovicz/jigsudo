@@ -18,7 +18,6 @@ New-Item -ItemType Directory -Path "$distFolder/css" -Force
 New-Item -ItemType Directory -Path "$distFolder/assets" -Force
 New-Item -ItemType Directory -Path "$distFolder/public" -Force
 New-Item -ItemType Directory -Path "$distFolder/public/puzzles" -Force
-New-Item -ItemType Directory -Path "$distFolder/about" -Force
 
 # 3. Copy files
 Write-Host "Copying core files..."
@@ -26,7 +25,6 @@ Copy-Item "index.html" "$distFolder/"
 Copy-Item -Recurse "css/*" "$distFolder/css/" -Force
 Copy-Item -Recurse "js/*" "$distFolder/js/" -Force
 Copy-Item -Recurse "assets/*" "$distFolder/assets/" -Force
-Copy-Item -Recurse "about/*" "$distFolder/about/" -Force
 
 # 4. Copy ONLY the fixed puzzle and index
 Write-Host "Preparing limited puzzle data (2026-04-15 only)..."
