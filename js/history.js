@@ -349,8 +349,8 @@ function renderHistoryCalendar(history = {}) {
           }
         }
 
-        // DOT MARKER (Any completion)
-        if (dayData.status === "won") {
+        // DOT MARKER (Any completion) - Hidden in Basic Edition per request
+        if (dayData.status === "won" && !CONFIG.isBasicEdition) {
           const dot = document.createElement("span");
           dot.className = "completed-dot";
           dot.textContent = "👑"; // Use crown emoji instead of dot

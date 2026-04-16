@@ -17,14 +17,14 @@
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jigsudo - Sobre mí</title>
+    <title>Jigsudo - Acerca de</title>
     <meta name="description" content="Conoce Jigsudo - El desafío mental diario. Descubre quién soy y mi misión de ofrecer puzzles lógicos gratuitos y sin complicaciones." />
-    <meta name="keywords" content="jigsudo, sobre mí, rompecabezas diarios, juegos de lógica, desarrollo independiente, Román Yakimovicz" />
+    <meta name="keywords" content="jigsudo, acerca de, rompecabezas diarios, juegos de lógica, desarrollo independiente, Román Yakimovicz" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://jigsudo.com/about/" />
 
     <!-- Social Media / Open Graph -->
-    <meta property="og:title" content="Jigsudo - Sobre mí" />
+    <meta property="og:title" content="Jigsudo - Acerca de" />
     <meta property="og:description" content="Descubre la historia detrás de Jigsudo, un proyecto independiente de puzzles lógicos diarios." />
     <meta property="og:image" content="https://jigsudo.com/assets/images/social-preview.png" />
     <meta property="og:url" content="https://jigsudo.com/about/" />
@@ -32,7 +32,7 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Jigsudo - Sobre mí" />
+    <meta name="twitter:title" content="Jigsudo - Acerca de" />
     <meta name="twitter:description" content="Conoce el desafío mental diario Jigsudo y su origen." />
     <meta name="twitter:image" content="https://jigsudo.com/assets/images/social-preview.png" />
     <link rel="stylesheet" href="../css/global.css?v=1.3.1" />
@@ -80,12 +80,12 @@
     <link rel="canonical" href="https://jigsudo.com/about/" />
 
     <!-- Social Media / Open Graph -->
-    <meta property="og:title" content="Jigsudo - Sobre mí" />
+    <meta property="og:title" content="Jigsudo - Acerca de" />
     <meta property="og:url" content="https://jigsudo.com/about/" />
     <meta property="og:type" content="website" />
 
     <!-- Twitter Card -->
-    <meta name="twitter:title" content="Jigsudo - Sobre mí" />
+    <meta name="twitter:title" content="Jigsudo - Acerca de" />
 
 </head>
 <body class="legal-page-body">
@@ -430,22 +430,37 @@
 
       <!-- Sidebar Overlay -->
       <div id="sidebar-overlay" class="hidden"></div>
+
+      <style>
+        .flag-ar {
+          display: inline-block;
+          width: 22px;
+          height: 14px;
+          background: linear-gradient(#74ACDF 33.3%, #FFFFFF 33.3%, #FFFFFF 66.6%, #74ACDF 66.6%);
+          vertical-align: middle;
+          margin-top: -3px;
+          border-radius: 2px;
+          position: relative;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .flag-ar::after {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 4px;
+          height: 4px;
+          background: #F6B40E;
+          border-radius: 50%;
+        }
+      </style>
       
       <main id="about-section" class="menu-container active" style="padding-top: 100px; display: block; overflow-y: auto;">
         <header class="section-header">
-          <h2 data-i18n="about_title">Sobre mí</h2>
+          <h2 data-i18n="about_title">Acerca de</h2>
         </header>
         <div class="section-body">
-          <div class="privacy-card">
-            <h2 data-i18n="about_independent_title">Un Proyecto Independiente</h2>
-            <p data-i18n-html="about_independent_text">
-              Este sitio es el resultado de la pasión por los acertijos y el 
-              desarrollo web. Fue creado íntegramente por <strong>Román Yakimovicz</strong> 
-              con el objetivo de ofrecer un juego gratuito, limpio y accesible 
-              al instante desde cualquier dispositivo.
-            </p>
-          </div>
-
           <div class="privacy-card">
             <h2 data-i18n="about_intro_title">Sobre Jigsudo</h2>
             <p data-i18n="about_intro_p">
@@ -458,13 +473,35 @@
           </div>
 
           <div class="privacy-card">
+            <h2 data-i18n="about_origin_title">El Origen</h2>
+            <p data-i18n="about_origin_text">
+              La idea comenzó con un concepto simple: ¿qué pasaría si mezclamos 
+              los rompecabezas tradicionales con el Sudoku? A partir de esa 
+              premisa, el proyecto evolucionó hasta convertirse en un recorrido 
+              completo de seis desafíos secuenciales que conviven sobre un mismo tablero.
+            </p>
+          </div>
+
+          <div class="privacy-card">
+            <h2 data-i18n="about_author_title">Acerca del Autor</h2>
+            <p data-i18n-html="about_author_text">
+              Soy Román Yakimovicz, de Argentina <span class="flag-ar"></span>, 
+              y Técnico Universitario en Programación por la UTN. 
+              Jigsudo es el resultado de mi pasión por los acertijos y el 
+              desarrollo web. Fuera del código, me apasionan los cómics 
+              —mi personaje favorito es Flash— y disfruto de los videojuegos 
+              con amigos. Jigsudo es mi forma de compartir esa pasión por la 
+              lógica y el desarrollo de software.
+            </p>
+          </div>
+
+          <div class="privacy-card">
             <h2 data-i18n="about_vision_title">Mi Filosofía</h2>
             <p data-i18n="about_vision_text">
               Entiendo los puzzles como una forma de ejercitar la mente y 
-              disfrutar del desafío lógico. Mi misión es puramente 
-              recreativa y busca ofrecer un refugio diario para desconectar 
-              del ruido cotidiano. Mantengo Jigsudo libre de publicidad 
-              intrusiva para que nada interrumpa tu concentración.
+              desconectar del ruido cotidiano. Por eso, mantengo Jigsudo 
+              libre de publicidad intrusiva y registros obligatorios, 
+              buscando ofrecer un refugio diario puramente recreativo.
             </p>
           </div>
 
@@ -473,10 +510,8 @@
             <p data-i18n-html="about_github_text">
               Jigsudo es un proyecto transparente. Si eres desarrollador o 
               tienes curiosidad por cómo funciona por dentro, puedes revisar 
-              todo el código fuente en 
-              <a href="https://github.com/ryakimovicz/jigsudo" target="_blank" style="color: var(--accent-color); font-weight: bold;">GitHub</a>.
-              Acepto sugerencias y colaboraciones para seguir mejorando el 
-              juego cada día.
+              todo el código fuente en GitHub e incluso proponer mejoras o 
+              reportar errores.
             </p>
           </div>
 
@@ -526,7 +561,7 @@
 
       <footer class="main-footer">
         <div class="footer-links">
-          <a href="../about/" data-i18n="footer_about">Sobre mí</a>
+          <a href="../about/" data-i18n="footer_about">Acerca de</a>
           <span class="footer-sep">|</span>
           <a href="../privacy/" data-i18n="footer_privacy">Privacidad</a>
           <span class="footer-sep">|</span>

@@ -541,6 +541,20 @@ export function transitionToJigsaw() {
     }, 500);
   }
 
+  // 1.5 Update Tooltip with Fade
+  const tooltipTitle = document.querySelector(".info-tooltip h3");
+  const tooltipDesc = document.querySelector(".info-tooltip p");
+  if (tooltipTitle && tooltipDesc) {
+    tooltipTitle.style.transition = "opacity 0.5s ease";
+    tooltipDesc.style.opacity = "0";
+    setTimeout(() => {
+      tooltipTitle.textContent = t.jigsaw_help_title || "Rompecabezas";
+      tooltipDesc.innerHTML = t.jigsaw_help_desc || "Arma el tablero.";
+      tooltipTitle.style.opacity = "1";
+      tooltipDesc.style.opacity = "1";
+    }, 500);
+  }
+
   // 2. Add Jigsaw Mode Class
   if (memorySection) {
     if (document.startViewTransition) {
@@ -637,24 +651,6 @@ export function transitionToJigsaw() {
       deselectPiece(); // Ensure clear state
       fitCollectedPieces(); // Force layout update
     }
-  }
-
-  // 3. Update Tooltip Info
-  const tooltipTitle = document.querySelector(".info-tooltip h3");
-  const tooltipDesc = document.querySelector(".info-tooltip p");
-
-  if (tooltipTitle && tooltipDesc) {
-    tooltipTitle.style.transition = "opacity 0.5s ease";
-    tooltipDesc.style.transition = "opacity 0.5s ease";
-    tooltipTitle.style.opacity = "0";
-    tooltipDesc.style.opacity = "0";
-
-    setTimeout(() => {
-      tooltipTitle.textContent = t.jigsaw_help_title;
-      tooltipDesc.innerHTML = t.jigsaw_help_desc;
-      tooltipTitle.style.opacity = "1";
-      tooltipDesc.style.opacity = "1";
-    }, 500);
   }
 }
 

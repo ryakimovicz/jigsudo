@@ -313,6 +313,10 @@ export class GameManager {
     }
     
     this.save(); 
+    
+    // v1.9.8: Mandatory local persistence for standalone demo
+    // Cloud save is disabled, so we must write stats to disk immediately.
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
   }
 
   // _ensureHistoryRecord removed in favor of proactive initialization in recordStart.

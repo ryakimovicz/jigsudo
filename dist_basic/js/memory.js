@@ -15,7 +15,8 @@ import { provideSearchHint } from "./search.js?v=1.3.1";
 import { gameManager } from "./game-manager.js?v=1.3.1";
 import { CONFIG } from "./config.js?v=1.3.1";
 import { startTimer } from "./timer.js?v=1.3.1";
-import { updateTexts } from "./i18n.js?v=1.3.1";
+import { translations } from "./translations.js?v=1.3.1";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.3.1";
 import { cleanupVictoryUI } from "./ui.js?v=1.3.1";
 import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.3.1";
 import { resumeSudokuState } from "./sudoku.js?v=1.3.1";
@@ -92,7 +93,17 @@ export function initMemoryGame() {
       document.getElementById("menu-content")?.classList.add("hidden");
     }
 
-    // 3. Load Data
+    // 4. Update Tooltip
+    const tooltipTitle = document.querySelector(".info-tooltip h3");
+    const tooltipDesc = document.querySelector(".info-tooltip p");
+    const lang = getCurrentLang();
+    const t = translations[lang];
+    if (tooltipTitle && tooltipDesc) {
+      tooltipTitle.textContent = t.memory_help_title;
+      tooltipDesc.innerHTML = t.memory_help_desc;
+    }
+
+    // 5. Load Data
     const state = gameManager.getState();
     if (!state || !state.data || !state.data.initialPuzzle) {
       throw new Error("No game data found in state!");

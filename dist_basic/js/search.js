@@ -492,6 +492,8 @@ export async function transitionToSearch() {
     tooltipTitle.style.transition = "opacity 0.5s ease";
     tooltipDesc.style.opacity = "0";
     setTimeout(() => {
+      tooltipTitle.textContent = t.search_help_title || "Sopa de Números";
+      tooltipDesc.innerHTML = t.search_help_desc || "Busca las secuencias.";
       tooltipTitle.style.opacity = "1";
       tooltipDesc.style.opacity = "1";
       // Unlock
