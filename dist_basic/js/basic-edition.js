@@ -31,7 +31,12 @@ export function initBasicEdition() {
     '[data-i18n="footer_privacy"]',
     '[data-i18n="footer_terms"]',
     // Targeted suppression for the guide ranks section
-    '.info-card:has([data-i18n="guide_ranks_title"])' 
+    '.info-card:has([data-i18n="guide_ranks_title"])',
+    // v1.3.2: Hide victory modal elements in basic edition
+    ".victory-support",
+    "#victory-streak-card",
+    "#vsc-streak-card",
+    "#victory-social-card .sc-user-box"
   ];
 
   elementsToHide.forEach((selector) => {
