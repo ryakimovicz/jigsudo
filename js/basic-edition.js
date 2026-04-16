@@ -213,6 +213,12 @@ function injectStyles() {
             color: #1e293b !important;
         }
 
+        .faq-link, .faq-link:visited {
+            color: var(--accent-color) !important;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
         /* Ensure FAQ is visible in Basic */
         #faq-demo-container { 
             display: block !important; 
