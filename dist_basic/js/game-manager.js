@@ -548,6 +548,17 @@ export class GameManager {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (e) {
+      // v1.3.2: Robust fallback for BasicEdition (Demo) on strict servers like itch.io (403 inside public/ folder)
+      if (CONFIG.isBasicEdition) {
+        if (CONFIG.debugMode) console.warn("[GameManager] Fetch failed in Basic Edition, falling back to board_data.json");
+        try {
+          const fbUrl = `${prefix}js/board_data.json`;
+          const fbResponse = await fetch(fbUrl);
+          if (fbResponse.ok) return await fbResponse.json();
+        } catch (fbErr) {
+           // Silently fail to return null
+        }
+      }
       return null;
     }
   }
