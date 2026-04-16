@@ -595,7 +595,8 @@ export function transitionToJigsaw() {
         memorySection.classList.add("jigsaw-mode");
 
         // UI/Layout updates MUST happen inside the transition callback
-        gameManager.updateProgress("progress", { currentStage: "jigsaw" });
+        // v1.3.2: Use silent update during VT to avoid I/O blocking the main thread
+        gameManager.updateProgress("progress", { currentStage: "jigsaw" }, true);
         deselectPiece();
 
         if (CONFIG.debugMode) console.time("[Perf] fitCollectedPieces");
@@ -609,6 +610,8 @@ export function transitionToJigsaw() {
       });
 
       transition.finished.finally(() => {
+        // v1.3.2: Save the state AFTER the transition is complete
+        gameManager.save();
         // Restore rendering quality
         document.body.classList.remove("perf-optimization-active");
 

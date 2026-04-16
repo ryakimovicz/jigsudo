@@ -1204,7 +1204,7 @@ export class GameManager {
     }
   }
 
-  updateProgress(section, data) {
+  updateProgress(section, data, silent = false) {
     if (!this.state || !this.state[section]) {
       if (section === "stats") this.state.stats = {};
       else return;
@@ -1229,7 +1229,9 @@ export class GameManager {
         if (this.state.meta) {
             this.state.meta.lastPlayed = new Date().toISOString();
         }
-        this.save();
+        if (!silent) {
+            this.save();
+        }
     }
   }
 
@@ -1474,25 +1476,11 @@ export class GameManager {
     
     // A. SCOPE RESETS (Transition Management)
     if (stats.lastDailyUpdate && stats.lastDailyUpdate !== today) {
-        // v1.2.2: Archive before reset
-        stats.lastDayRP = stats.dailyRP || 0;
-        
-        stats.dailyWinsAccumulated = 0;
-        stats.dailyBonusesAccumulated = 0;
-        stats.dailyPeaksErrorsAccumulated = 0;
-        stats.dailyRP = 0;
-        stats.lastDailyUpdate = today;
+        this._resetDailyStats(stats, today);
     }
     
     if (stats.lastMonthlyUpdate && stats.lastMonthlyUpdate !== currentMonth) {
-        // v1.2.2: Archive before reset
-        stats.lastMonthRP = stats.monthlyRP || 0;
-
-        stats.monthlyWinsAccumulated = 0;
-        stats.monthlyBonusesAccumulated = 0;
-        stats.monthlyPeaksErrorsAccumulated = 0;
-        stats.monthlyRP = 0;
-        stats.lastMonthlyUpdate = currentMonth;
+        this._resetMonthlyStats(stats, currentMonth);
     }
 
     // B. COMPONENT AGGREGATION (v1.5.47: Track Solidarity)
@@ -1694,21 +1682,14 @@ export class GameManager {
       const diffDays = Math.round((currDate - lastDate) / (1000 * 60 * 60 * 24));
 
       if (diffDays >= 1) {
-        // 1. Reset Daily RP
-        if (stats.dailyRP !== 0) {
-          stats.lastDayRP = stats.dailyRP || 0; // Archive
-          stats.dailyRP = 0;
-          changed = true;
-        }
+        // 1. Reset Daily Stats
+        this._resetDailyStats(stats, today);
+        changed = true;
 
-        // 2. Reset Monthly RP
+        // 2. Reset Monthly Stats
         const lastMonth = lastCheck.substring(0, 7);
-        if (currentMonth !== lastMonth && stats.monthlyRP !== 0) {
-          stats.lastMonthRP = stats.monthlyRP || 0; // Archive
-          stats.monthlyRP = 0;
-          stats.monthlyWinsAccumulated = 0;
-          stats.monthlyPeaksErrorsAccumulated = 0;
-          stats.monthlyBonusesAccumulated = 0;
+        if (currentMonth !== lastMonth) {
+          this._resetMonthlyStats(stats, currentMonth);
           changed = true;
         }
 
@@ -1769,7 +1750,6 @@ export class GameManager {
       stats.lastDecayCheck = today;
       changed = true;
     }
-
     if (changed) {
       stats.lastDecayCheck = today;
       
@@ -1784,6 +1764,35 @@ export class GameManager {
       }
     }
     return changed;
+  }
+
+  /**
+   * v1.3.2: Unified Daily Reset.
+   * Ensures all session/daily atoms are zeroed when the day changes.
+   */
+  _resetDailyStats(stats, today) {
+    console.log(`[GameManager] Performing Daily Reset for ${today}`);
+    stats.lastDayRP = stats.dailyRP || 0;
+    
+    stats.dailyWinsAccumulated = 0;
+    stats.dailyBonusesAccumulated = 0;
+    stats.dailyPeaksErrorsAccumulated = 0;
+    stats.dailyRP = 0;
+    stats.lastDailyUpdate = today;
+  }
+
+  /**
+   * v1.3.2: Unified Monthly Reset.
+   */
+  _resetMonthlyStats(stats, month) {
+    console.log(`[GameManager] Performing Monthly Reset for ${month}`);
+    stats.lastMonthRP = stats.monthlyRP || 0;
+    
+    stats.monthlyWinsAccumulated = 0;
+    stats.monthlyBonusesAccumulated = 0;
+    stats.monthlyPeaksErrorsAccumulated = 0;
+    stats.monthlyRP = 0;
+    stats.lastMonthlyUpdate = month;
   }
 
   /**
@@ -2724,21 +2733,14 @@ export class GameManager {
       if (stats.dailyRP < 0) stats.dailyRP = 0;
       if (stats.monthlyRP < 0) stats.monthlyRP = 0;
 
-      // v1.5.57: Session-Specific Score Calculation
-      // Always calculate the score of THIS attempt. 
-      // If it's a replay or late, we ignore the global dailyRP (which belongs to "Today").
-      let sessionScore = 0;
+      // v1.5.57: Session-Specific Score Calculation (Isolated performance)
       const basePoints = (this.state.progress.stagesCompleted || []).length;
-      sessionScore = Number((basePoints + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+      const sessionScore = Number((basePoints + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
       
-      if (!this.isReplay && !isLateCompletion) {
-         // If it's the Official Daily Win, we can sync with stats.dailyRP 
-         // but we prioritize the real session performance.
-         sessionScore = Math.max(sessionScore, stats.dailyRP || 0);
-      }
-
-      if (sessionScore < 0) sessionScore = 0;
-      const dailyScore = sessionScore;
+      // v1.3.2: Fixed critical scoping bug. 
+      // The summary score and history entry should reflect THIS SESSION ONLY,
+      // not the cumulative dailyRP (which may include previous attempts).
+      const dailyScore = sessionScore < 0 ? 0 : sessionScore;
       // v1.5.51: ORGANIC RECORDS & ACCUMULATORS
       if (isOriginalDay) {
           // v1.5.52: For the final win, we add the TOTAL net daily score.
