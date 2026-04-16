@@ -202,14 +202,32 @@ export class GameManager {
       if (dailyData && (CONFIG.isBasicEdition || !this.state.data || !this.state.data.chunks)) {
         if (CONFIG.debugMode) console.log("[GameManager] Basic Edition: Injecting fresh puzzle data into existing save.");
         
-        // Re-inject static puzzle data from the server while preserving user progress
+        // v1.3.4: Decrypt payload if present before injection
+        let decryptedData = dailyData.data || dailyData;
+        if (dailyData.payload) {
+          try {
+            const payloadStr = atob(dailyData.payload);
+            const key = String(dailyData.meta?.seed || this.currentSeed);
+            let decrypted = "";
+            for (let i = 0; i < payloadStr.length; i++) {
+              decrypted += String.fromCharCode(
+                payloadStr.charCodeAt(i) ^ key.charCodeAt(i % key.length),
+              );
+            }
+            decryptedData = JSON.parse(decrypted);
+          } catch (err) {
+            console.error("[GameManager] Failed to decrypt dailyData in self-healing:", err);
+          }
+        }
+
+        // Re-inject static puzzle data while preserving user progress
         this.state.data = {
-          solution: dailyData.solution,
-          initialPuzzle: dailyData.puzzle,
-          chunks: dailyData.chunks,
-          searchTargetsMap: dailyData.searchTargets,
-          simonValues: dailyData.simonValues || [],
-          codeSequence: dailyData.codeSequence || [],
+          solution: decryptedData.solution,
+          initialPuzzle: decryptedData.puzzle || decryptedData.initialPuzzle,
+          chunks: decryptedData.chunks,
+          searchTargetsMap: decryptedData.searchTargets || decryptedData.searchTargetsMap,
+          simonValues: decryptedData.simonValues || [],
+          codeSequence: decryptedData.codeSequence || [],
         };
       }
 
