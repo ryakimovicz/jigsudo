@@ -234,6 +234,16 @@ export const translations = {
     seo_faq_7_a: "¡Totalmente! Jigsudo está diseñado para ser 100% responsiva (móvil y tablet). Puedes usarlo desde tu navegador e incluso añadirlo a tu pantalla de inicio.",
     seo_faq_8_q: "¿Jigsudo tiene anuncios o micro-pagos?",
     seo_faq_8_a: "Jigsudo no tiene micro-pagos y el acceso siempre será gratuito para todos. El proyecto se mantiene de forma independiente y sin publicidad. Las donaciones son opcionales, no otorgan ventajas competitivas, ¡pero las agradezco enormemente!",
+
+    // DEMO Specific FAQs
+    seo_faq_demo_1_q: "¿Qué es la Edición Básica?",
+    seo_faq_demo_1_a: "Es una versión ligera y portátil de Jigsudo diseñada para jugar de forma rápida y sin necesidad de registros.",
+    seo_faq_demo_2_q: "¿Por qué solo incluye un puzzle?",
+    seo_faq_demo_2_a: "Esta edición está enfocada en mostrar las mecánicas del juego usando el tablero del 15/04/2026. En la versión completa, se genera un desafío único y diferente cada día.",
+    seo_faq_demo_3_q: "¿Dónde juego la versión completa?",
+    seo_faq_demo_3_a: "Puedes acceder a la experiencia completa con rankings globales, perfiles de usuario y desafíos diarios ilimitados en <a href='https://jigsudo.com' target='_blank'>Jigsudo.com</a>.",
+    seo_faq_demo_4_q: "¿Se guarda mi progreso?",
+    seo_faq_demo_4_a: "¡Sí! Tu progreso e historial se guardan localmente en este navegador. Ten en cuenta que si borras los datos del sitio, el progreso de la demo se perderá.",
     terms_intro_text: "Bienvenido a Jigsudo. Al acceder o utilizar este sitio web, aceptas cumplir con estos Términos y Condiciones. Si no estás de acuerdo con alguna parte, no deberías utilizar el servicio.",
     terms_sec1_h: "1. Descripción del Servicio",
     terms_sec1_p: "Jigsudo es una aplicación web gratuita de puzzles diarios. El proyecto es independiente y se mantiene mediante donaciones voluntarias.",
@@ -1043,6 +1053,16 @@ export const translations = {
     seo_faq_7_a: "Absolutely! Jigsudo is designed to be 100% responsive (mobile and tablet). You can use it from your browser and even add it to your home screen.",
     seo_faq_8_q: "Does Jigsudo have ads or micro-payments?",
     seo_faq_8_a: "Jigsudo has no micro-payments and access will always be free for everyone. The project is maintained independently and without ads. Donations are optional, do not grant competitive advantages, but I truly appreciate them!",
+
+    // DEMO Specific FAQs
+    seo_faq_demo_1_q: "What is the Basic Edition?",
+    seo_faq_demo_1_a: "It is a lightweight and portable version of Jigsudo designed for quick play without the need for an account.",
+    seo_faq_demo_2_q: "Why does it only include one puzzle?",
+    seo_faq_demo_2_a: "This edition is focused on showing the game mechanics using the April 15, 2026 board. In the full version, a unique different challenge is generated every day.",
+    seo_faq_demo_3_q: "Where do I play the full version?",
+    seo_faq_demo_3_a: "You can access the full experience with global rankings, user profiles, and unlimited daily challenges at <a href='https://jigsudo.com' target='_blank'>Jigsudo.com</a>.",
+    seo_faq_demo_4_q: "Is my progress saved?",
+    seo_faq_demo_4_a: "Yes! Your progress and history are saved locally in this browser. Keep in mind that if you clear the site data, the demo progress will be lost.",
     terms_intro_text: "Welcome to Jigsudo. By accessing or using this website, you agree to comply with these Terms and Conditions. If you do not agree with any part, you should not use the service.",
     terms_sec1_h: "1. Description of Service",
     terms_sec1_p: "Jigsudo is a free web application for daily puzzles. The project is independent and maintained through voluntary donations.",

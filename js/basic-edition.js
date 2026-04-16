@@ -16,10 +16,17 @@ export function initBasicEdition() {
     "#ranking-container",
     "#support-container",
     ".auth-wrapper",
-    "#nav-changelog",
     "#nav-admin",
+    "#admin-section",  // Now that we don't purge HTML
     ".home-tabs",      // Hide "Custom" tab, keep only daily
     "#panel-custom",   // Ensure custom panel is gone
+
+    // Auth Modals (Now that we don't purge HTML)
+    "#login-modal",
+    "#password-confirm-modal",
+    "#password-reset-modal",
+    "#logout-confirm-modal",
+    "#delete-account-confirm-modal",
 
     // History navigation
     "#hist-prev-btn",
@@ -80,6 +87,13 @@ export function initBasicEdition() {
   }
   
   updateTexts();
+
+  // 8. Swap FAQ containers
+  const faqGeneric = document.getElementById("faq-generic-container");
+  const faqDemo = document.getElementById("faq-demo-container");
+  if (faqGeneric) faqGeneric.style.display = "none";
+  if (faqDemo) faqDemo.classList.remove("hidden-basic");
+
   console.log("[BasicEdition] UI transformation complete.");
 }
 

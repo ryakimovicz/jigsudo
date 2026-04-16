@@ -61,6 +61,11 @@
   margin-bottom: 8px;
 }
 
+/* Basic Edition: center month title when nav buttons are hidden */
+.history-header:has(#hist-prev-btn.hidden-basic) {
+  justify-content: center;
+}
+
 .history-header h2 {
   margin: 0;
   /* Fluid title: scales from 1.15rem to 1.5rem */
