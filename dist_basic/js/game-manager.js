@@ -2448,6 +2448,9 @@ export class GameManager {
           stats.totalBonusesAccumulated = Math.max(0, (stats.totalBonusesAccumulated || 0) + deltaBonus);
           stats.totalPeaksErrorsAccumulated = Math.max(0, (stats.totalPeaksErrorsAccumulated || 0) + deltaErrors);
           
+          const seedMonth = puzzleDate.substring(0, 7);
+          const todayMonth = today.substring(0, 7);
+          
           if (seedMonth === todayMonth) {
               stats.monthlyWinsAccumulated = Math.max(0, (stats.monthlyWinsAccumulated || 0) + deltaWins);
               stats.monthlyBonusesAccumulated = Math.max(0, (stats.monthlyBonusesAccumulated || 0) + deltaBonus);
