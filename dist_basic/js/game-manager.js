@@ -550,13 +550,12 @@ export class GameManager {
     } catch (e) {
       // v1.3.2: Robust fallback for BasicEdition (Demo) on strict servers like itch.io (403 inside public/ folder)
       if (CONFIG.isBasicEdition) {
-        if (CONFIG.debugMode) console.warn("[GameManager] Fetch failed in Basic Edition, falling back to board_data.json");
+        if (CONFIG.debugMode) console.warn("[GameManager] Fetch failed in Basic Edition, importing board_data.js via ES Modules");
         try {
-          const fbUrl = `${prefix}js/board_data.json`;
-          const fbResponse = await fetch(fbUrl);
-          if (fbResponse.ok) return await fbResponse.json();
+          const fbModule = await import("./board_data.js");
+          return fbModule.default;
         } catch (fbErr) {
-           // Silently fail to return null
+           console.error("[GameManager] Fatal: Fallback ES Module import failed", fbErr);
         }
       }
       return null;

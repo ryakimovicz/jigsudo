@@ -34,8 +34,10 @@ Copy-Item "public/puzzles/daily-2026-04-15.json" "$distFolder/public/puzzles/" -
 # Create a dummy index.json with only one entry
 '["2026-04-15"]' | Out-File -FilePath "$distFolder/public/puzzles/index.json" -Encoding utf8
 
-# 4.1 Force fallback board_data to match 15/04 for total consistency
-Copy-Item "public/puzzles/daily-2026-04-15.json" "$distFolder/js/board_data.json" -Force
+# 4.1 Force fallback board_data to match 15/04 as an ES module for total consistency and cross-origin safety
+$jsonText = Get-Content "public/puzzles/daily-2026-04-15.json" -Raw
+$jsText = "export default " + $jsonText + ";"
+$jsText | Out-File -FilePath "$distFolder/js/board_data.js" -Encoding utf8
 
 # 5. Build Preparation
 Write-Host "Cleaning up build logic..."
