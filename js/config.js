@@ -3,8 +3,8 @@ export const CONFIG = {
   fechaUpdate: "2026-04-15",
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
-  debugMode: true, // Toggle to true to see logs
-  betaMode: true, // Toggle to true to enable "Ayuda" button
+  debugMode: false, // Toggle to true to see logs
+  betaMode: false, // Toggle to true to enable "Ayuda" button
   isBasicEdition: true, // v1.3.2: Standalone Demo Mode (itch.io)
 
   // Configuración de sincronización del servidor
