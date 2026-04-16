@@ -543,21 +543,24 @@ export class GameManager {
     
     const url = `${prefix}public/puzzles/daily-${dateStr}.json`;
 
+    // v1.3.2: Short-circuit network requests completely for BasicEdition (Demo)
+    // This prevents 403 Forbidden browser errors explicitly on strict servers like itch.io.
+    if (CONFIG.isBasicEdition) {
+      if (CONFIG.debugMode) console.log("[GameManager] Basic Edition detected. Importing board_data.js via ES Modules directly.");
+      try {
+        const fbModule = await import("./board_data.js");
+        return fbModule.default;
+      } catch (fbErr) {
+        console.error("[GameManager] Fatal: Fallback ES Module import failed", fbErr);
+        return null;
+      }
+    }
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (e) {
-      // v1.3.2: Robust fallback for BasicEdition (Demo) on strict servers like itch.io (403 inside public/ folder)
-      if (CONFIG.isBasicEdition) {
-        if (CONFIG.debugMode) console.warn("[GameManager] Fetch failed in Basic Edition, importing board_data.js via ES Modules");
-        try {
-          const fbModule = await import("./board_data.js");
-          return fbModule.default;
-        } catch (fbErr) {
-           console.error("[GameManager] Fatal: Fallback ES Module import failed", fbErr);
-        }
-      }
       return null;
     }
   }
