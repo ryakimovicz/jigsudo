@@ -112,8 +112,16 @@ export class GameManager {
     let savedState = null;
 
     if (cachedState) {
-       // Try to decrypt 
-       savedState = decryptData(cachedState);
+       // Try to decrypt or parse directly for Basic Edition
+       if (CONFIG.isBasicEdition) {
+         try {
+           savedState = JSON.parse(cachedState);
+         } catch(e) {
+           savedState = decryptData(cachedState); // Fallback if switching from a previous build
+         }
+       } else {
+         savedState = decryptData(cachedState);
+       }
        
        // Fallback for legacy (non-encrypted) sessions during transition
        if (!savedState) {
@@ -863,7 +871,8 @@ export class GameManager {
     // We do NOT save the board state locally if we are in a history replay.
     if (this.isReplay) return;
 
-    localStorage.setItem(this.storageKey, encryptData(this.state));
+    const dataString = CONFIG.isBasicEdition ? JSON.stringify(this.state) : encryptData(this.state);
+    localStorage.setItem(this.storageKey, dataString);
     if (syncToCloud) this.saveCloudDebounced(5000, isPenalty);
   }
 
@@ -1170,7 +1179,7 @@ export class GameManager {
     // ENSURE STAGE IS MARKED AS COMPLETED for the current session sum
     if (!this.state.progress.stagesCompleted.includes(stage)) {
       this.state.progress.stagesCompleted.push(stage);
-      this.save();
+      // Removed redundant this.save() to prevent OOM in Incognito
     }
 
     // GUARD 3: Game Already Won (Prevent post-win farming for leaderboard stats)
@@ -1364,11 +1373,6 @@ export class GameManager {
     this._lastLocalWrite = Date.now();       // v1.5.30: Shield engagement
     localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
-    // Finalization (No cloud sync in Standalone Demo)
-    this.stats = stats;
-    this.stats.lastLocalUpdate = Date.now();
-    this._lastLocalWrite = Date.now();
-    localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
 
     // Notify UI
     window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
