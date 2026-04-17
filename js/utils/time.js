@@ -77,6 +77,9 @@ export function getDateStringFromSeed(seed) {
   if (!seed) return getJigsudoDateString();
   const s = String(seed);
   if (s.length !== 8) return getJigsudoDateString();
+  return `${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}`;
+}
+
 /**
  * Calculates the integer difference in days between two Jigsudo Date strings (YYYY-MM-DD).
  * It uses a 12:00:00 UTC anchor to ensure that floating point drift or DST doesn't

@@ -1732,8 +1732,7 @@ export class GameManager {
         const anchorDate = new Date(currDate.getTime());
         anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
         stats.lastPenaltyDate = anchorDate.toISOString().substring(0, 10);
-      }
-    } else if (!lastCheck) {
+      } else if (!lastCheck) {
       // NEW USER: Fundamental initialization of date markers
       console.log("[Decay] Initializing date markers for new user.");
       // We explicitly DO NOT set lastDailyUpdate / lastMonthlyUpdate here. 
