@@ -1,4 +1,4 @@
-import { db, functions } from "./firebase-config.js?v=1.3.2";
+import { db, functions } from "./firebase-config.js?v=1.3.3";
 import {
   doc,
   setDoc,
@@ -19,10 +19,10 @@ import {
   increment,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js";
-import { gameManager } from "./game-manager.js?v=1.3.2";
-import { getCurrentUser } from "./auth.js?v=1.3.2";
-import { showAlertModal } from "./ui.js?v=1.3.2";
-import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.3.2";
+import { gameManager } from "./game-manager.js?v=1.3.3";
+import { getCurrentUser } from "./auth.js?v=1.3.3";
+import { showAlertModal } from "./ui.js?v=1.3.3";
+import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.3.3";
 
 /**
  * Helper to call a Jigsudo Cloud Function (Referee)
@@ -310,7 +310,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
     // v1.3.4: Atomic RP management (Authority is the Server/Functions)
     const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
     
-    const { auth } = await import("./firebase-config.js?v=1.3.2");
+    const { auth } = await import("./firebase-config.js?v=1.3.3");
     const currentUser = auth.currentUser;
 
     const updateData = {

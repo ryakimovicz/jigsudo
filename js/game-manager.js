@@ -1,15 +1,15 @@
-import { getDailySeed } from "./utils/random.js?v=1.3.2";
+import { getDailySeed } from "./utils/random.js?v=1.3.3";
 // Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
   countSequenceOccurrences,
-} from "./search-gen.js?v=1.3.2";
-import { CONFIG } from "./config.js?v=1.3.2";
-import { calculateRP, SCORING } from "./ranks.js?v=1.3.2";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.2";
-import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.2";
-import { getJigsudoDateString, getJigsudoYearMonth, getJigsudoDayDiff } from "./utils/time.js?v=1.3.2";
-import { masterLock } from "./lock.js?v=1.3.2";
+} from "./search-gen.js?v=1.3.3";
+import { CONFIG } from "./config.js?v=1.3.3";
+import { calculateRP, SCORING } from "./ranks.js?v=1.3.3";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.3";
+import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.3";
+import { getJigsudoDateString, getJigsudoYearMonth, getJigsudoDayDiff } from "./utils/time.js?v=1.3.3";
+import { masterLock } from "./lock.js?v=1.3.3";
 
 export class GameManager {
   constructor() {
@@ -286,13 +286,13 @@ export class GameManager {
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
     delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
 
-    const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+    const { getCurrentUser } = await import("./auth.js?v=1.3.3");
     const user = getCurrentUser();
 
     if (user && !user.isAnonymous) {
       console.log("[Referee] Registering game start and maintenance check on server...");
       try {
-        const { callJigsudoFunction } = await import("./db.js?v=1.3.2");
+        const { callJigsudoFunction } = await import("./db.js?v=1.3.3");
         const result = await callJigsudoFunction("startJigsudoSession", {
           seed: this.currentSeed,
           sessionId: this.localSessionId
@@ -317,7 +317,7 @@ export class GameManager {
 
     // v1.4.6: Proactively initialize History record
     if (user && !user.isAnonymous) {
-      import("./db.js?v=1.3.2").then(m => m.initializeHistoryDocument(user.uid, this.currentSeed));
+      import("./db.js?v=1.3.3").then(m => m.initializeHistoryDocument(user.uid, this.currentSeed));
     } else {
       // Local Guest History
       if (!this.stats.history) this.stats.history = {};
@@ -777,7 +777,7 @@ export class GameManager {
       const seed = this.currentSeed;
 
       // Dynamic import to avoid circular dependencies if any
-      const { generateSearchSequences } = await import("./search-gen.js?v=1.3.2");
+      const { generateSearchSequences } = await import("./search-gen.js?v=1.3.3");
       const sequences = generateSearchSequences(solution, seed);
 
       if (sequences && sequences.length > 0) {
@@ -858,7 +858,7 @@ export class GameManager {
   }
 
   async forceCloudSave(overrideUid = null, isPenalty = false) {
-    const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+    const { getCurrentUser } = await import("./auth.js?v=1.3.3");
     const user = getCurrentUser();
     if (this.isWiping) {
       console.log("[GM] Wiping in progress. Save blocked.");
@@ -874,8 +874,8 @@ export class GameManager {
       return;
     }
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.3.2");
-      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.3.2");
+      const { getCurrentUser } = await import("./auth.js?v=1.3.3");
+      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.3.3");
 
       let uid = overrideUid;
       if (!uid) {
@@ -1100,8 +1100,8 @@ export class GameManager {
 
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.3.2");
-      const { showNotification } = await import("./ui.js?v=1.3.2");
+      const { getCurrentUser } = await import("./auth.js?v=1.3.3");
+      const { showNotification } = await import("./ui.js?v=1.3.3");
       const user = getCurrentUser();
 
       if (user && !user.isAnonymous) {
@@ -1110,7 +1110,7 @@ export class GameManager {
         const freshData = await this.fetchDailyPuzzle();
         const freshState = this.createStateFromJSON(freshData);
         // We await both to ensure they are on the wire before reload
-        const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.3.2");
+        const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.3.3");
         await Promise.all([
           saveUserProgress(user.uid, this._serializeState(freshState)),
           saveUserStats(user.uid, this.stats, user.displayName),
@@ -1332,8 +1332,8 @@ export class GameManager {
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js");
     const functions = getFunctions();
     const submitStageResult = httpsCallable(functions, "submitStageResult");
-    const { getCurrentUser } = await import("./auth.js?v=1.3.2");
-    const { saveUserStats } = await import("./db.js?v=1.3.2");
+    const { getCurrentUser } = await import("./auth.js?v=1.3.3");
+    const { saveUserStats } = await import("./db.js?v=1.3.3");
 
     while (this.validationQueue.length > 0) {
       const task = this.validationQueue[0];
@@ -1368,8 +1368,8 @@ export class GameManager {
           console.warn("[Referee] Server rejected stage validation:", result.data);
           
           // v1.6.0: Automated Fraud Reporting
-          const { sendRefereeReport } = await import("./db.js?v=1.3.2");
-          const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+          const { sendRefereeReport } = await import("./db.js?v=1.3.3");
+          const { getCurrentUser } = await import("./auth.js?v=1.3.3");
           const user = getCurrentUser();
           
           sendRefereeReport({
@@ -1394,8 +1394,8 @@ export class GameManager {
           console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
           
           // v1.6.0: Report Logic Errors too (The "Too Fast" etc)
-          const { sendRefereeReport } = await import("./db.js?v=1.3.2");
-          const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+          const { sendRefereeReport } = await import("./db.js?v=1.3.3");
+          const { getCurrentUser } = await import("./auth.js?v=1.3.3");
           const user = getCurrentUser();
 
           sendRefereeReport({
@@ -1525,10 +1525,10 @@ export class GameManager {
 
     // 4. Persistence
     if (!skipPersistence && !this._processingWin) {
-      const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+      const { getCurrentUser } = await import("./auth.js?v=1.3.3");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
-        const { saveUserStats } = await import("./db.js?v=1.3.2");
+        const { saveUserStats } = await import("./db.js?v=1.3.3");
         
         // v1.5.31: Robust Penalty Detection
         // If there are peaks errors, we MUST treat this as an intentional penalty 
@@ -1683,7 +1683,7 @@ export class GameManager {
 
         // 3. Sequential Simulation Loop (v1.6.3: Transition Integrity)
         // We step through each day missed to apply penalties BEFORE monthly resets.
-        const { getRankData } = await import("./ranks.js?v=1.3.2");
+        const { getRankData } = await import("./ranks.js?v=1.3.3");
         let lastProcessedMonth = lastCheck.substring(0, 7);
         const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
 
@@ -1850,7 +1850,7 @@ export class GameManager {
    */
   async checkMaintenance() {
     try {
-      const { callJigsudoFunction } = await import("./db.js?v=1.3.2");
+      const { callJigsudoFunction } = await import("./db.js?v=1.3.3");
       await callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true });
       console.log("[Maintenance] Proactive check triggered successfully.");
     } catch (err) {
@@ -1859,11 +1859,11 @@ export class GameManager {
   }
 
   async ensureSessionStarted() {
-    const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+    const { getCurrentUser } = await import("./auth.js?v=1.3.3");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
         try {
-            const { callJigsudoFunction } = await import("./db.js?v=1.3.2");
+            const { callJigsudoFunction } = await import("./db.js?v=1.3.3");
             const result = await callJigsudoFunction("startJigsudoSession", {
                 sessionId: this.localSessionId
             });
@@ -2280,7 +2280,7 @@ export class GameManager {
         // 3. Force Push to Cloud
         await this.forceCloudSave();
         // 4. (Optional) Toast
-        const { showToast } = await import("./ui.js?v=1.3.2");
+        const { showToast } = await import("./ui.js?v=1.3.3");
         showToast("Versión local conservada y subida.");
       };
     }
@@ -2296,8 +2296,8 @@ export class GameManager {
 
         try {
           const { fetchLatestUserData, triggerRemoteSave } =
-            await import("./db.js?v=1.3.2");
-          const { getCurrentUser } = await import("./auth.js?v=1.3.2");
+            await import("./db.js?v=1.3.3");
+          const { getCurrentUser } = await import("./auth.js?v=1.3.3");
           const user = getCurrentUser();
 
           if (user) {
@@ -2453,7 +2453,7 @@ export class GameManager {
 
     try {
       // v1.2.2: Access dynamic translations correctly
-      const { translations: tData } = await import("./translations.js?v=1.3.2");
+      const { translations: tData } = await import("./translations.js?v=1.3.3");
       if (tData && tData[lang]) {
         t = { ...t, ...tData[lang] };
       }
@@ -2509,7 +2509,7 @@ export class GameManager {
       const seedStr = this.currentSeed.toString();
 
       // v1.4.0: Standardized date derivation for consistency across all stats keys
-      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.3.2");
+      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.3.3");
       const seedDate = getDateStringFromSeed(this.currentSeed);
       const puzzleDate = seedDate; // Alias used for history-specific keys
       
@@ -2594,9 +2594,9 @@ export class GameManager {
       if (!this.isReplay && isAlreadyWon && today === stats.lastDailyUpdate && !isLateCompletion) {
       }
 
-      const { getCurrentUser } = await import("./auth.js?v=1.3.2");
-      const { calculateTimeBonus } = await import("./ranks.js?v=1.3.2");
-      const { callJigsudoFunction, saveUserStats, saveHistoryEntry } = await import("./db.js?v=1.3.2");
+      const { getCurrentUser } = await import("./auth.js?v=1.3.3");
+      const { calculateTimeBonus } = await import("./ranks.js?v=1.3.3");
+      const { callJigsudoFunction, saveUserStats, saveHistoryEntry } = await import("./db.js?v=1.3.3");
       
       const user = getCurrentUser();
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
@@ -2871,7 +2871,7 @@ export class GameManager {
 
       // --- 5. CLOUD SYNC ---
       if (user && !user.isAnonymous) {
-        const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.3.2");
+        const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.3.3");
         
         // Only mark today as updated if this was the ORIGINAL Daily win of the session.
         if (isOriginalDay) {
@@ -2891,10 +2891,10 @@ export class GameManager {
       await this.forceCloudSave();
 
       // --- 6. UX & NOTIFICATION ---
-      const { stopTimer } = await import("./timer.js?v=1.3.2");
-      const { showToast } = await import("./ui.js?v=1.3.2");
-      const { getCurrentLang } = await import("./i18n.js?v=1.3.2");
-      const { translations } = await import("./translations.js?v=1.3.2");
+      const { stopTimer } = await import("./timer.js?v=1.3.3");
+      const { showToast } = await import("./ui.js?v=1.3.3");
+      const { getCurrentLang } = await import("./i18n.js?v=1.3.3");
+      const { translations } = await import("./translations.js?v=1.3.3");
       
       stopTimer();
       const lang = getCurrentLang() || "es";
