@@ -1016,8 +1016,12 @@ export class GameManager {
       if (stats.history && stats.history[today]) {
         const h = stats.history[today];
         if (h.status === "won") {
+          // v1.6.4: Support both legacy flat structure and new nested original/best structure
+          const hData = h.original || h.best || h;
+          const hErrors = hData.errors || hData.peaksErrors || 0;
+
           // netChange = score - 6.0 (bonus added to currentRP etc.)
-          const netChange = (h.score || 0) - 6.0;
+          const netChange = (hData.score || 0) - 6.0;
           stats.currentRP = Math.max(0, (stats.currentRP || 0) - netChange);
           stats.dailyRP = Math.max(0, (stats.dailyRP || 0) - netChange);
           stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - netChange);
@@ -1029,16 +1033,16 @@ export class GameManager {
           // Cumulative stats
           stats.totalTimeAccumulated = Math.max(
             0,
-            (stats.totalTimeAccumulated || 0) - (h.totalTime || 0),
+            (stats.totalTimeAccumulated || 0) - (hData.totalTime || 0),
           );
           stats.totalPeaksErrorsAccumulated = Math.max(
             0,
-            (stats.totalPeaksErrorsAccumulated || 0) - (h.peaksErrors || 0),
+            (stats.totalPeaksErrorsAccumulated || 0) - hErrors,
           );
 
           // Deep Reversion of Stage Stats
-          if (stats.stageTimesAccumulated && h.stageTimes) {
-            for (const [stage, time] of Object.entries(h.stageTimes)) {
+          if (stats.stageTimesAccumulated && hData.stageTimes) {
+            for (const [stage, time] of Object.entries(hData.stageTimes)) {
               stats.stageTimesAccumulated[stage] = Math.max(
                 0,
                 (stats.stageTimesAccumulated[stage] || 0) - time,
@@ -1059,9 +1063,9 @@ export class GameManager {
             stats.weekdayStatsAccumulated[dayIdx]
           ) {
             const w = stats.weekdayStatsAccumulated[dayIdx];
-            w.sumTime = Math.max(0, w.sumTime - (h.totalTime || 0));
-            w.sumErrors = Math.max(0, w.sumErrors - (h.peaksErrors || 0));
-            w.sumScore = Math.max(0, w.sumScore - (h.score || 0));
+            w.sumTime = Math.max(0, w.sumTime - (hData.totalTime || 0));
+            w.sumErrors = Math.max(0, w.sumErrors - hErrors);
+            w.sumScore = Math.max(0, w.sumScore - (hData.score || 0));
             w.count = Math.max(0, w.count - 1);
           }
 

@@ -543,7 +543,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false) {
           <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
           <span class="tooltip-value">${fmt(o.totalTime)}</span>
           <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
-          <span class="tooltip-value">${o.peaksErrors || 0}</span>
+          <span class="tooltip-value">${o.peaksErrors || o.errors || 0}</span>
         </div>
       </div>`;
     }

@@ -707,7 +707,8 @@ function renderWeekdayStats(stats) {
 
           if (!isNaN(dayIdx)) {
             days[dayIdx].sum += data.totalTime;
-            days[dayIdx].sumErrors += data.peaksErrors || 0;
+            const errors = (data.original && data.original.errors) || data.errors || data.peaksErrors || 0;
+            days[dayIdx].sumErrors += errors;
             days[dayIdx].sumScore += data.score || 0;
             days[dayIdx].count++;
             hasData = true;
