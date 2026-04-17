@@ -539,7 +539,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false) {
         <span class="tooltip-section-title">${t.stats_original || "Desempeño Original"}</span>
         <div class="tooltip-grid">
           <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
-          <span class="tooltip-value highlight">${(o.score || 0).toFixed(2)} RP</span>
+          <span class="tooltip-value highlight">${(o.score || 0).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RP</span>
           <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
           <span class="tooltip-value">${fmt(o.totalTime)}</span>
           <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
@@ -555,7 +555,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false) {
         <span class="tooltip-section-title">${t.stats_best || "Mejor Histórico"}</span>
         <div class="tooltip-grid">
           <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
-          <span class="tooltip-value highlight">${(b.score || 0).toFixed(2)} RP</span>
+          <span class="tooltip-value highlight">${(b.score || 0).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RP</span>
           <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
           <span class="tooltip-value">${fmt(b.totalTime)}</span>
           <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
