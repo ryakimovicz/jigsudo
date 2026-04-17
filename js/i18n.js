@@ -1,6 +1,6 @@
 import { translations } from "./translations.js?v=1.3.1";
 
-export let currentLang = "es"; // Default
+export let currentLang = "en"; // Default
 
 export function getCurrentLang() {
   return currentLang;
@@ -39,7 +39,7 @@ export function initLanguage() {
   } else {
     // 2. No override? Check Browser (Auto)
     const browserLang = navigator.language.split("-")[0]; // 'es-ES' -> 'es'
-    const supportedLang = translations[browserLang] ? browserLang : "es";
+    const supportedLang = translations[browserLang] ? browserLang : "en";
 
     // Apply detection, but DO NOT save to localStorage yet.
     // This allows the user to change browser lang later and see the change
