@@ -515,8 +515,8 @@ function renderProfileStats(stats) {
     const bScore = stats.bestScore;
     document.getElementById("stat-max-score").textContent =
       bScore !== undefined && bScore > 0
-        ? fmtNumber(bScore, 3)
-        : fmtNumber(calculateRP(maxScore), 3);
+        ? fmtNumber(bScore, 2)
+        : fmtNumber(calculateRP(maxScore), 2);
   }
 
   if (document.getElementById("stat-best-time"))
@@ -599,7 +599,7 @@ function renderProfileStats(stats) {
 
   if (progressFill) progressFill.style.width = `${rankData.progress}%`;
 
-  if (rpCurrentEl) rpCurrentEl.textContent = fmtNumber(currentRP, 3);
+  if (rpCurrentEl) rpCurrentEl.textContent = fmtNumber(currentRP, 2);
   if (rpNextEl) {
     const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
     rpNextEl.textContent =
@@ -628,7 +628,7 @@ function renderProfileStats(stats) {
     const prefix = translations[lang]?.rank_level_prefix || "Nvl.";
     mRankLevel.textContent = `${prefix} ${rankData.level}`;
   }
-  if (mRpCurrent) mRpCurrent.textContent = fmtNumber(currentRP, 3);
+  if (mRpCurrent) mRpCurrent.textContent = fmtNumber(currentRP, 2);
   if (mRpNext) {
     const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
     mRpNext.textContent =
@@ -636,7 +636,7 @@ function renderProfileStats(stats) {
   }
   if (mRpProgress) mRpProgress.style.width = `${rankData.progress}%`;
   if (mStreak) mStreak.textContent = s.currentStreak || i.currentStreak || 0;
-  if (mDailyPoints) mDailyPoints.textContent = fmtNumber(s.dailyRP || i.dailyRP || 0, 3);
+  if (mDailyPoints) mDailyPoints.textContent = fmtNumber(s.dailyRP || i.dailyRP || 0, 2);
 
   // 3. Render Calendar
   try {
@@ -763,7 +763,7 @@ function renderWeekdayStats(stats) {
     // Calculate raw avg first, then convert to RP scale? Or convert each?
     // Conversion is linear, so avg(RP) == convert(avg(Score))
     const avgScoreRaw = d.count > 0 ? d.sumScore / d.count : 0;
-    const avgScoreRP = d.count > 0 ? calculateRP(avgScoreRaw).toFixed(3) : "--";
+    const avgScoreRP = d.count > 0 ? calculateRP(avgScoreRaw).toFixed(2) : "--";
     const scoreCol = createMetricCol("⭐", avgScoreRP, "Puntaje Promedio");
 
     metricsGrid.appendChild(timeCol);

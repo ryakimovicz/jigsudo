@@ -350,8 +350,8 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
 
   // Format options for locale score
   const scoreFormat = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   });
 
   // Initial Render (First Load)
