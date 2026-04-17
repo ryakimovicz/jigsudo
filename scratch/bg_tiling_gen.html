@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Jigsudo Vertical Tiling Background</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --grid-color: rgba(255, 255, 255, 0.04);
+            --grid-size: 50px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Essential repeating tile */
+        .bg-tile {
+            width: 1600px;
+            height: 1000px; /* Multiple of 50 for grid tiling */
+            background: var(--bg-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            z-index: 1;
+        }
+
+        /* Ambient glows placed to NEVER touch the top or bottom edges (0px and 1000px) */
+        .glow {
+            position: absolute;
+            width: 1000px;
+            height: 700px; /* Kept strictly away from seams */
+            background: radial-gradient(circle, rgba(30, 58, 138, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .floating {
+            position: absolute;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.06);
+            user-select: none;
+            z-index: 3;
+            filter: blur(1.5px);
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 6px;
+            z-index: 3;
+            opacity: 0.08;
+            transform: rotate(45deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-tile" id="tile">
+        <div class="grid-overlay"></div>
+        
+        <!-- Glows focused on the vertical middle, where they won't break the top/bottom seams -->
+        <div class="glow" style="top: 150px; left: -400px;"></div>
+        <div class="glow" style="top: 150px; right: -400px;"></div>
+
+        <!-- Decorative elements on the sides (visible when game is embedded) -->
+        <!-- Left Column -->
+        <div class="floating" style="font-size: 160px; top: 150px; left: 60px; transform: rotate(-15deg);">4</div>
+        <div class="floating" style="font-size: 110px; top: 680px; left: 140px; transform: rotate(10deg);">7</div>
+        <div class="shape" style="width: 80px; height: 80px; top: 400px; left: 30px; background: #059669;"></div>
+        
+        <!-- Right Column -->
+        <div class="floating" style="font-size: 140px; top: 200px; right: 80px; transform: rotate(20deg);">1</div>
+        <div class="floating" style="font-size: 150px; top: 750px; right: 120px; transform: rotate(-10deg);">9</div>
+        <div class="shape" style="width: 70px; height: 70px; top: 480px; right: 50px; background: #b45309;"></div>
+
+        <!-- Subtle center details -->
+        <div class="shape" style="width: 40px; height: 40px; top: 850px; left: 50%; background: #1e3a8a; transform: translateX(-50%) rotate(45deg);"></div>
+    </div>
+</body>
+</html>
