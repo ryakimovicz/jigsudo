@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Jigsudo Project Cover Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020617; /* Very dark slate */
+            --accent-blue: #60a5fa;
+            --accent-orange: #ffa726;
+            --text-white: #f8fafc;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .cover-canvas {
+            width: 630px;
+            height: 500px;
+            background: #020617;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 0 100px rgba(0,0,0,1);
+        }
+
+        /* Ambient Glow */
+        .ambient-glow {
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle at center, rgba(30, 58, 138, 0.15) 0%, transparent 70%);
+            z-index: 2;
+        }
+
+        /* Grid Overlay */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+        }
+
+        /* Decorative Elements */
+        .floating {
+            position: absolute;
+            font-weight: 800;
+            user-select: none;
+            z-index: 3;
+            opacity: 0.15;
+            filter: blur(1px);
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 4px;
+            z-index: 3;
+            opacity: 0.1;
+            transform: rotate(45deg);
+        }
+
+        .main-content {
+            z-index: 10;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .logo-box {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 25px;
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo-svg {
+            width: 240px;
+            height: 240px;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+        }
+
+        .brand-text {
+            color: var(--text-white);
+            font-size: 68px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            line-height: 0.9;
+        }
+
+        .edition-badge {
+            background: var(--accent-orange);
+            color: #000;
+            padding: 5px 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: -10px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(255, 167, 38, 0.4);
+            display: none;
+        }
+
+        .tagline {
+            color: #64748b;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="cover-canvas" id="capture-area">
+        <div class="ambient-glow"></div>
+        <div class="grid-overlay"></div>
+        
+        <!-- Floating Numbers (Matching Wide Cover vibe) -->
+        <div class="floating" style="font-size: 120px; top: -10px; left: 20px; color: #fff; transform: rotate(-15deg);">4</div>
+        <div class="floating" style="font-size: 90px; bottom: 40px; right: 30px; color: #fff; transform: rotate(10deg);">7</div>
+        <div class="floating" style="font-size: 70px; top: 120px; right: 60px; color: #fff; transform: rotate(25deg);">1</div>
+        <div class="floating" style="font-size: 60px; bottom: 150px; left: 50px; color: #fff; transform: rotate(-20deg);">9</div>
+
+        <!-- Floating Shapes -->
+        <div class="shape" style="width: 60px; height: 60px; top: 60px; right: 120px; background: #059669;"></div>
+        <div class="shape" style="width: 40px; height: 40px; bottom: 100px; left: 100px; background: #b45309; border-radius: 50%;"></div>
+        <div class="shape" style="width: 30px; height: 30px; top: 200px; left: 40px; background: #1e3a8a;"></div>
+
+        <div class="main-content">
+            <div class="logo-box">
+                <svg class="logo-svg" viewBox="0 0 512 512">
+                    <line x1="170.6" y1="20" x2="170.6" y2="492" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+                    <line x1="341.3" y1="20" x2="341.3" y2="492" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+                    <line x1="20" y1="170.6" x2="492" y2="170.6" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+                    <line x1="20" y1="341.3" x2="492" y2="341.3" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+                    <text x="85.3" y="105" text-anchor="middle" dominant-baseline="middle" fill="#60a5fa" font-size="160" font-weight="700">J</text>
+                    <text x="256" y="105" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">1</text>
+                    <text x="426.6" y="105" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">6</text>
+                    <text x="85.3" y="275" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">5</text>
+                    <text x="256" y="275" text-anchor="middle" dominant-baseline="middle" fill="#60a5fa" font-size="160" font-weight="700">U</text>
+                    <text x="256" y="445" text-anchor="middle" dominant-baseline="middle" fill="#60a5fa" font-size="160" font-weight="700">D</text>
+                    <text x="426.6" y="445" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">0</text>
+                </svg>
+            </div>
+            
+            <h1 class="brand-text">JIGSUDO</h1>
+            <div id="badge" class="edition-badge">Basic Edition</div>
+            <div class="tagline">Sudoku meets Jigsaw</div>
+        </div>
+    </div>
+
+    <script>
+        function setMode(mode) {
+            const badge = document.getElementById('badge');
+            const tagline = document.querySelector('.tagline');
+            
+            if (mode === 'minimal') {
+                badge.style.display = 'none';
+                tagline.style.display = 'none';
+            } else if (mode === 'basic') {
+                badge.style.display = 'inline-block';
+                tagline.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+                tagline.style.display = 'block';
+            }
+        }
+        window.setMode = setMode;
+    </script>
+</body>
+</html>
+</body>
+</html>
