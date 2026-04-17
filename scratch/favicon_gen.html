@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Jigsudo Favicon Comparison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 50px;
+            background: #111;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .option-card {
+            background: #222;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .preview-box {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .light-bg { background: #fdfbf7; }
+        .dark-bg { background: #1e2329; }
+        
+        svg {
+            width: 128px;
+            height: 128px;
+        }
+        
+        .tab-preview {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #eee;
+            color: #333;
+            padding: 4px 12px;
+            border-radius: 6px 6px 0 0;
+            font-size: 12px;
+            width: fit-content;
+            margin: 10px auto;
+        }
+        .tab-preview.dark {
+            background: #3c4043;
+            color: #fff;
+        }
+        .tab-preview img, .tab-preview svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Propuestas de Favicon para Jigsudo</h1>
+
+    <div class="comparison-grid">
+        <!-- Opc 1: La "J" Celda -->
+        <div class="option-card">
+            <h3>1. La "J" en la Celda</h3>
+            <p>Simplificado, legible y coherente.</p>
+            <div class="preview-box light-bg" id="opt1-light">
+                <svg viewBox="0 0 512 512">
+                    <rect x="40" y="40" width="432" height="432" rx="60" fill="none" stroke="#f97316" stroke-width="40"/>
+                    <text x="256" y="280" text-anchor="middle" dominant-baseline="central" fill="#185b93" font-size="320" font-weight="700">J</text>
+                </svg>
+            </div>
+            <div class="preview-box dark-bg" id="opt1-dark">
+                <svg viewBox="0 0 512 512">
+                    <rect x="40" y="40" width="432" height="432" rx="60" fill="none" stroke="#ffa726" stroke-width="40"/>
+                    <text x="256" y="280" text-anchor="middle" dominant-baseline="central" fill="#60a5fa" font-size="320" font-weight="700">J</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Opc 2: La "J" Puzzle -->
+        <div class="option-card">
+            <h3>2. La "J" Puzzle</h3>
+            <p>Iconografía específica del juego.</p>
+            <div class="preview-box light-bg" id="opt2-light">
+                <svg viewBox="0 0 512 512">
+                    <path d="M120 100 H320 V200 C320 280 260 340 180 340 H160 V440" fill="none" stroke="#185b93" stroke-width="60" stroke-linecap="round"/>
+                    <circle cx="320" cy="80" r="40" fill="#f97316" />
+                </svg>
+            </div>
+            <div class="preview-box dark-bg" id="opt2-dark">
+                <svg viewBox="0 0 512 512">
+                    <path d="M120 100 H320 V200 C320 280 260 340 180 340 H160 V440" fill="none" stroke="#60a5fa" stroke-width="60" stroke-linecap="round"/>
+                    <circle cx="320" cy="80" r="40" fill="#ffa726" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Opc 3: Dúo de Cuadrados -->
+        <div class="option-card">
+            <h3>3. Dúo de Cuadrados</h3>
+            <p>Moderno, abstracto y geométrico.</p>
+            <div class="preview-box light-bg" id="opt3-light">
+                <svg viewBox="0 0 512 512">
+                    <rect x="80" y="80" width="280" height="280" rx="40" fill="none" stroke="#185b93" stroke-width="50"/>
+                    <rect x="152" y="152" width="280" height="280" rx="40" fill="none" stroke="#f97316" stroke-width="50"/>
+                </svg>
+            </div>
+            <div class="preview-box dark-bg" id="opt3-dark">
+                <svg viewBox="0 0 512 512">
+                    <rect x="80" y="80" width="280" height="280" rx="40" fill="none" stroke="#60a5fa" stroke-width="50"/>
+                    <rect x="152" y="152" width="280" height="280" rx="40" fill="none" stroke="#ffa726" stroke-width="50"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

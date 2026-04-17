@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Jigsudo Logo Fix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        ::selection { background: transparent; }
+        .logo-wrapper {
+            display: inline-block;
+            width: 512px;
+            height: 512px;
+            background: transparent;
+            outline: none;
+        }
+        .hide { display: none; }
+    </style>
+</head>
+<body>
+    <div class="logo-wrapper" id="logo-light">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+            <line x1="170.6" y1="20" x2="170.6" y2="492" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+            <line x1="341.3" y1="20" x2="341.3" y2="492" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+            <line x1="20" y1="170.6" x2="492" y2="170.6" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+            <line x1="20" y1="341.3" x2="492" y2="341.3" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+            <text x="85.3" y="105" text-anchor="middle" dominant-baseline="middle" fill="#185b93" font-size="160" font-weight="700">J</text>
+            <text x="256" y="105" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-size="160" font-weight="700">1</text>
+            <text x="426.6" y="105" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-size="160" font-weight="700">6</text>
+            <text x="85.3" y="275" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-size="160" font-weight="700">5</text>
+            <text x="256" y="275" text-anchor="middle" dominant-baseline="middle" fill="#185b93" font-size="160" font-weight="700">U</text>
+            <text x="256" y="445" text-anchor="middle" dominant-baseline="middle" fill="#185b93" font-size="160" font-weight="700">D</text>
+            <text x="426.6" y="445" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-size="160" font-weight="700">0</text>
+        </svg>
+    </div>
+
+    <div class="logo-wrapper" id="logo-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+            <line x1="170.6" y1="20" x2="170.6" y2="492" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+            <line x1="341.3" y1="20" x2="341.3" y2="492" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+            <line x1="20" y1="170.6" x2="492" y2="170.6" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+            <line x1="20" y1="341.3" x2="492" y2="341.3" stroke="#cdd9e5" stroke-width="24" stroke-linecap="round" />
+            <text x="85.3" y="105" text-anchor="middle" dominant-baseline="middle" fill="#60a5fa" font-size="160" font-weight="700">J</text>
+            <text x="256" y="105" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">1</text>
+            <text x="426.6" y="105" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">6</text>
+            <text x="85.3" y="275" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">5</text>
+            <text x="256" y="275" text-anchor="middle" dominant-baseline="middle" fill="#60a5fa" font-size="160" font-weight="700">U</text>
+            <text x="256" y="445" text-anchor="middle" dominant-baseline="middle" fill="#60a5fa" font-size="160" font-weight="700">D</text>
+            <text x="426.6" y="445" text-anchor="middle" dominant-baseline="middle" fill="#ffa726" font-size="160" font-weight="700">0</text>
+        </svg>
+    </div>
+</body>
+</html>
