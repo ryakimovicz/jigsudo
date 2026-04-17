@@ -396,7 +396,9 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const finalScoreResult = Math.max(0, Number((6.0 + finalBonus - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3)));
 
   // Calculate the final incremental change for Total/Monthly RP
-  const currentDailyRP = userData.dailyRP || 0;
+  // v1.6.5: If the win is for a new day, currentDailyRP should be 0 because 
+  // the cron decay may not have wiped yesterday's score yet.
+  const currentDailyRP = (lastUpdate !== seedDate) ? 0 : (userData.dailyRP || 0);
   const finalDelta = Number((finalScoreResult - currentDailyRP).toFixed(3));
 
   const batch = db.batch();

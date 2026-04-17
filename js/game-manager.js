@@ -1685,6 +1685,10 @@ export class GameManager {
       const currDate = new Date(today + "T12:00:00Z");
         const diffDays = getJigsudoDayDiff(lastCheck, today);
 
+        // 1. Reset Daily Stats immediately for the new day
+        this._resetDailyStats(stats, today);
+        changed = true;
+
         // 3. Sequential Simulation Loop (v1.6.3: Transition Integrity)
         // We step through each day missed to apply penalties BEFORE monthly resets.
         const { getRankData } = await import("./ranks.js?v=1.3.3");
@@ -2700,12 +2704,13 @@ export class GameManager {
               }
 
               // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments
-              const dailyScore = Number((1 + (stats.lastBonus || 0)).toFixed(3)); // 1 point for the stage + bonus
+              const atomScore = Number((1 + (stats.lastBonus || 0)).toFixed(3)); // 1 point for the final stage + bonus
               
-              stats.dailyRP = Number(((stats.dailyRP || 0) + dailyScore).toFixed(3));
-              stats.monthlyRP = Number(((stats.monthlyRP || 0) + dailyScore).toFixed(3));
-              stats.totalRP = Number(((stats.totalRP || 0) + dailyScore).toFixed(3));
-              stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
+              if (!isLateCompletion) {
+                stats.dailyRP = Number(((stats.dailyRP || 0) + atomScore).toFixed(3));
+              }
+              stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomScore).toFixed(3));
+              stats.totalRP = Number(((stats.totalRP || 0) + atomScore).toFixed(3));
 
               this.state.progress.won = true;
               this.stats = stats;
@@ -2730,12 +2735,13 @@ export class GameManager {
             }
 
             // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments (Local Fallback)
-            const dailyScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
+            const atomScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
             
-            stats.dailyRP = Number(((stats.dailyRP || 0) + dailyScore).toFixed(3));
-            stats.monthlyRP = Number(((stats.monthlyRP || 0) + dailyScore).toFixed(3));
-            stats.totalRP = Number(((stats.totalRP || 0) + dailyScore).toFixed(3));
-            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
+            if (!isLateCompletion) {
+              stats.dailyRP = Number(((stats.dailyRP || 0) + atomScore).toFixed(3));
+            }
+            stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomScore).toFixed(3));
+            stats.totalRP = Number(((stats.totalRP || 0) + atomScore).toFixed(3));
 
             this.stats = stats;
             await this._recalculateNetStats();
@@ -2758,12 +2764,13 @@ export class GameManager {
           }
 
           // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments (Guest Flow)
-          const dailyScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
+          const atomScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
           
-          stats.dailyRP = Number(((stats.dailyRP || 0) + dailyScore).toFixed(3));
-          stats.monthlyRP = Number(((stats.monthlyRP || 0) + dailyScore).toFixed(3));
-          stats.totalRP = Number(((stats.totalRP || 0) + dailyScore).toFixed(3));
-          stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
+          if (!isLateCompletion) {
+            stats.dailyRP = Number(((stats.dailyRP || 0) + atomScore).toFixed(3));
+          }
+          stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomScore).toFixed(3));
+          stats.totalRP = Number(((stats.totalRP || 0) + atomScore).toFixed(3));
 
           this.stats = stats;
           await this._recalculateNetStats();
@@ -2785,10 +2792,18 @@ export class GameManager {
       // not the cumulative dailyRP (which may include previous attempts).
       const dailyScore = sessionScore < 0 ? 0 : sessionScore;
       // v1.5.51: ORGANIC RECORDS & ACCUMULATORS
-      if (isOriginalDay) {
-          // v1.5.52: For the final win, we add the TOTAL net daily score.
-          // This ensures lifetime score matches what the user actually sees (net of penalties).
-          stats.totalScoreAccumulated = (stats.totalScoreAccumulated || 0) + dailyScore;
+      if (!this.isReplay && !isAlreadyWon) {
+          // v1.5.52: Apply error penalty to ALL-TIME and MONTHLY accumulators.
+          // Since we previously added the 1.0 "atoms", we now subtract the error penalty globally.
+          const errorPenalty = Number((peaksErrors * SCORING.ERROR_PENALTY_RP).toFixed(3));
+          if (errorPenalty > 0) {
+            stats.dailyRP = Number((Math.max(0, (stats.dailyRP || 0) - errorPenalty)).toFixed(3));
+            stats.monthlyRP = Number((Math.max(0, (stats.monthlyRP || 0) - errorPenalty)).toFixed(3));
+            stats.totalRP = Number((Math.max(0, (stats.totalRP || 0) - errorPenalty)).toFixed(3));
+          }
+
+          // v1.5.52: Update Total Score (Lifetime Points)
+          stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
           
           if (dailyScore > (stats.bestScore || 0)) {
               stats.bestScore = dailyScore;
