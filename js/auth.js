@@ -203,7 +203,6 @@ export function initAuth() {
           console.log(`[Auth] Routing to stage: ${currentStage}`);
           const memoryModule = await import("./memory.js?v=1.3.1");
           memoryModule.resumeToStage(currentStage);
-          gameManager.ensureSessionStarted();
         }
       } catch (err) {
         console.error("[Auth] Error during sync phase:", err);

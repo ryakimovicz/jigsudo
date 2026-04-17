@@ -213,8 +213,6 @@ export class GameManager {
       const activeUid = localStorage.getItem("jigsudo_active_uid");
       if (activeUid) {
         this.state.meta.userId = activeUid;
-        // Anchor the server session for victory validation
-        this.ensureSessionStarted();
       }
 
       // Record as played in history ONLY if it's the original day
@@ -1510,10 +1508,12 @@ export class GameManager {
     const totalNet = Number((totalWins + totalBonuses - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
     
     if (!this.isReplay) {
+      // v1.6.0: MASTER SPEC COMPLIANCE
+      // totals (totalRP, monthlyRP) are now persistent accumulators.
+      // We only update dailyRP from the live session ingredients.
       stats.dailyRP = dailyNet;
-      stats.monthlyRP = monthlyNet;
-      stats.totalRP = totalNet;
       
+      // Ensure the dates are updated to avoid repeated resets
       stats.lastDailyUpdate = today;
       stats.lastMonthlyUpdate = currentMonth;
     }
@@ -1713,14 +1713,17 @@ export class GameManager {
             }
             
             if ((stats.totalRP || 0) !== currentSimulatedRP) {
-               const penaltyAmount = (stats.totalRP || 0) - currentSimulatedRP;
-               console.warn(`[Decay] Applied penalty for ${missed} days. RP: ${stats.totalRP} -> ${currentSimulatedRP}`);
-               stats.totalRP = currentSimulatedRP;
-               stats.monthlyRP = Math.min(stats.monthlyRP || 0, stats.totalRP);
-               stats.lastPenalty = penaltyAmount;
-               stats.totalPenaltyAccumulated = (stats.totalPenaltyAccumulated || 0) + penaltyAmount;
-               changed = true;
-            }
+                const penaltyAmount = (stats.totalRP || 0) - currentSimulatedRP;
+                console.warn(`[Decay] Applied penalty for ${missed} days. RP: ${stats.totalRP} -> ${currentSimulatedRP}`);
+                
+                // v1.6.0: Parallel Accumulator Subtraction
+                stats.totalRP = currentSimulatedRP;
+                stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - penaltyAmount);
+                stats.totalPenaltyAccumulated = (stats.totalPenaltyAccumulated || 0) + penaltyAmount;
+                
+                stats.lastPenalty = penaltyAmount;
+                changed = true;
+             }
             
             // Advance the penalty anchor to "yesterday" so we don't penalize these same days again tomorrow
             const anchorDate = new Date(currDate.getTime());
@@ -2709,6 +2712,14 @@ export class GameManager {
                 }
               }
 
+              // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments
+              const dailyScore = Number((1 + (stats.lastBonus || 0)).toFixed(3)); // 1 point for the stage + bonus
+              
+              stats.dailyRP = Number(((stats.dailyRP || 0) + dailyScore).toFixed(3));
+              stats.monthlyRP = Number(((stats.monthlyRP || 0) + dailyScore).toFixed(3));
+              stats.totalRP = Number(((stats.totalRP || 0) + dailyScore).toFixed(3));
+              stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
+
               this.state.progress.won = true;
               this.stats = stats;
               await this._recalculateNetStats();
@@ -2731,6 +2742,14 @@ export class GameManager {
               }
             }
 
+            // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments (Local Fallback)
+            const dailyScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
+            
+            stats.dailyRP = Number(((stats.dailyRP || 0) + dailyScore).toFixed(3));
+            stats.monthlyRP = Number(((stats.monthlyRP || 0) + dailyScore).toFixed(3));
+            stats.totalRP = Number(((stats.totalRP || 0) + dailyScore).toFixed(3));
+            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
+
             this.stats = stats;
             await this._recalculateNetStats();
             stats = this.stats;
@@ -2750,6 +2769,14 @@ export class GameManager {
               stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
             }
           }
+
+          // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments (Guest Flow)
+          const dailyScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
+          
+          stats.dailyRP = Number(((stats.dailyRP || 0) + dailyScore).toFixed(3));
+          stats.monthlyRP = Number(((stats.monthlyRP || 0) + dailyScore).toFixed(3));
+          stats.totalRP = Number(((stats.totalRP || 0) + dailyScore).toFixed(3));
+          stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
 
           this.stats = stats;
           await this._recalculateNetStats();

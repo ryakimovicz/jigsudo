@@ -59,7 +59,7 @@ export function reconstructStats(data) {
   // v1.3.6: Exhaustive scavenger for all 17 fields including legacy names
   const scavengeNum = (key, fallback) => {
     const ghostKey = `stats.${key}`;
-    const val = Math.max(parseFloat(fallback) || 0, parseFloat(data[ghostKey]) || 0, parseFloat(data[key]) || 0, parseFloat(s[key]) || 0);
+    const val = parseFloat(data[key] ?? s[key] ?? data[ghostKey] ?? fallback ?? 0);
     return isNaN(val) ? 0 : val;
   };
 
