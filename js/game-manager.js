@@ -8,7 +8,7 @@ import { CONFIG } from "./config.js?v=1.3.1";
 import { calculateRP, SCORING } from "./ranks.js?v=1.3.1";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.1";
 import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.1";
-import { getJigsudoDateString, getJigsudoYearMonth } from "./utils/time.js?v=1.3.1";
+import { getJigsudoDateString, getJigsudoYearMonth, getJigsudoDayDiff } from "./utils/time.js?v=1.3.1";
 import { masterLock } from "./lock.js?v=1.3.1";
 
 export class GameManager {
@@ -1679,64 +1679,47 @@ export class GameManager {
     if (lastCheck && lastCheck !== today) {
       const lastDate = new Date(lastCheck + "T12:00:00Z");
       const currDate = new Date(today + "T12:00:00Z");
-      const diffDays = Math.round((currDate - lastDate) / (1000 * 60 * 60 * 24));
+        const diffDays = getJigsudoDayDiff(lastCheck, today);
 
-      if (diffDays >= 1) {
-        // 1. Reset Daily Stats
-        this._resetDailyStats(stats, today);
-        changed = true;
-
-        // 2. Reset Monthly Stats
-        const lastMonth = lastCheck.substring(0, 7);
-        if (currentMonth !== lastMonth) {
-          this._resetMonthlyStats(stats, currentMonth);
-          changed = true;
-        }
-
-        // 3. Decay Penalty (Missed full Jigsudo days of INTENTIAL play)
-        // Uses lastPenaltyDate (if exists) or lastDailyUpdate as the specific anchor for "Safe vs Unsafe"
+        // 3. Sequential Simulation Loop (v1.6.3: Transition Integrity)
+        // We step through each day missed to apply penalties BEFORE monthly resets.
+        const { getRankData } = await import("./ranks.js?v=1.3.1");
+        let lastProcessedMonth = lastCheck.substring(0, 7);
         const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
-        if (lastIntent && lastIntent !== today) {
-          const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
-          const intentDiff = Math.round((currDate - lastIntentDate) / (1000 * 60 * 60 * 24));
-          
-          if (intentDiff > 1) {
-            const missed = intentDiff - 1;
-            const { getRankData } = await import("./ranks.js?v=1.3.1");
-            let currentSimulatedRP = stats.totalRP || 0;
+
+        for (let i = 1; i <= diffDays; i++) {
+          const simDateObj = new Date(lastCheck + "T12:00:00Z");
+          simDateObj.setUTCDate(simDateObj.getUTCDate() + i);
+          const dStr = simDateObj.toISOString().substring(0, 10);
+          const dMonth = dStr.substring(0, 7);
+          const dayBeforeStr = new Date(simDateObj.getTime() - 86400000).toISOString().substring(0, 10);
+
+          // A. Decay Calculation (for the day before the simulation index)
+          if (lastIntent && dayBeforeStr > lastIntent) {
+            const rankInfo = getRankData(stats.totalRP || 0);
+            const penalty = 5 + rankInfo.level;
+            const realizedPenalty = Math.min(stats.totalRP || 0, penalty);
             
-            for (let i = 0; i < missed; i++) {
-              const rankInfo = getRankData(currentSimulatedRP);
-              const penaltyForDay = 5 + rankInfo.level;
-              currentSimulatedRP = Math.max(0, currentSimulatedRP - penaltyForDay);
-              if (currentSimulatedRP === 0) break;
-            }
+            stats.totalRP = Number(((stats.totalRP || 0) - realizedPenalty).toFixed(3));
+            stats.monthlyRP = Number(((stats.monthlyRP || 0) - realizedPenalty).toFixed(3));
+            stats.totalPenaltyAccumulated = Number(((stats.totalPenaltyAccumulated || 0) + realizedPenalty).toFixed(3));
             
-            if ((stats.totalRP || 0) !== currentSimulatedRP) {
-                const penaltyAmount = (stats.totalRP || 0) - currentSimulatedRP;
-                console.warn(`[Decay] Applied penalty for ${missed} days. RP: ${stats.totalRP} -> ${currentSimulatedRP}`);
-                
-                // v1.6.0: Parallel Accumulator Subtraction
-                stats.totalRP = currentSimulatedRP;
-                stats.monthlyRP = Math.max(0, (stats.monthlyRP || 0) - penaltyAmount);
-                stats.totalPenaltyAccumulated = (stats.totalPenaltyAccumulated || 0) + penaltyAmount;
-                
-                stats.lastPenalty = penaltyAmount;
-                changed = true;
-             }
-            
-            // Advance the penalty anchor to "yesterday" so we don't penalize these same days again tomorrow
-            const anchorDate = new Date(currDate.getTime());
-            anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
-            stats.lastPenaltyDate = anchorDate.toISOString().substring(0, 10);
+            console.log(`[Decay Loop] Day ${dStr} (Penalty for ${dayBeforeStr}): -${realizedPenalty} RP`);
+            changed = true;
+          }
+
+          // B. Month Transition (Reset AFTER applying previous day's decay)
+          if (dMonth !== lastProcessedMonth) {
+            this._resetMonthlyStats(stats, dMonth);
+            lastProcessedMonth = dMonth;
+            changed = true;
           }
         }
 
         // 4. Strict Streak Reset (Missed full Jigsudo days of WINNING)
         // Uses lastPlayedDate (Victory) as the anchor.
         if (stats.lastPlayedDate && stats.lastPlayedDate !== today) {
-          const lastWinDate = new Date(stats.lastPlayedDate + "T12:00:00Z");
-          const streakDiff = Math.round((currDate - lastWinDate) / (1000 * 60 * 60 * 24));
+          const streakDiff = getJigsudoDayDiff(stats.lastPlayedDate, today);
           
           if (streakDiff > 1 && stats.currentStreak !== 0) {
             console.log(`[Streak] Win missed yesterday (Last win: ${stats.lastPlayedDate}). Resetting streak to 0.`);
@@ -1744,6 +1727,11 @@ export class GameManager {
             changed = true;
           }
         }
+
+        // Update anchor date so we don't repeat this tomorrow
+        const anchorDate = new Date(currDate.getTime());
+        anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
+        stats.lastPenaltyDate = anchorDate.toISOString().substring(0, 10);
       }
     } else if (!lastCheck) {
       // NEW USER: Fundamental initialization of date markers
@@ -2567,11 +2555,7 @@ export class GameManager {
         }
 
         if (lastWinAnchor) {
-          const lastDate = new Date(lastWinAnchor + "T12:00:00Z");
-          const currDate = new Date(puzzleDate + "T12:00:00Z");
-          const diffDays = Math.round(
-            (currDate - lastDate) / (1000 * 60 * 60 * 24),
-          );
+          const diffDays = getJigsudoDayDiff(lastWinAnchor, puzzleDate);
 
           if (diffDays === 1) {
             stats.currentStreak = (stats.currentStreak || 0) + 1;

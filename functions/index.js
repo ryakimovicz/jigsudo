@@ -43,6 +43,13 @@ function getJigsudoDateString() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function getJigsudoDayDiff(date1, date2) {
+  if (!date1 || !date2) return 0;
+  const d1 = new Date(date1 + "T12:00:00Z");
+  const d2 = new Date(date2 + "T12:00:00Z");
+  return Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 /**
  * 1. startJigsudoSession (v2)
  */
@@ -119,15 +126,10 @@ async function _performUserMaintenance(userRef, userData, today) {
   const stats = userData.stats || {};
   
   // v1.9.1: Correcting anchor dates
-  // lastDecayCheck: The last date we successfully processed.
-  // lastIntentDate: The last date the user actually played (safe date).
-  let lastDecay = stats.lastDecayCheck || userData.lastDailyUpdate || userData.lastPlayedDate || today;
+  const lastDecay = stats.lastDecayCheck || userData.lastDailyUpdate || userData.lastPlayedDate || today;
   const lastIntent = stats.lastIntentDate || userData.lastDailyUpdate || userData.lastPlayedDate || today;
-
-  // Convert to Date objects (Safe comparison)
-  let simDate = new Date(lastDecay + "T12:00:00Z");
-  const todayDate = new Date(today + "T12:00:00Z");
-  const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
+  
+  const totalDaysToSimulate = getJigsudoDayDiff(lastDecay, today);
 
   // Local state for the simulation
   let currentTotalRP = userData.totalRP || 0;
@@ -140,34 +142,27 @@ async function _performUserMaintenance(userRef, userData, today) {
   let lastProcessedMonth = lastDecay.substring(0, 7);
 
   // Iterative Simulation: Step through each day missing between lastDecay and Today
-  let safetyBreak = 365; // Prevent hanging on massive gaps
-  while (simDate < todayDate && safetyBreak > 0) {
-    safetyBreak--;
+  const safetyBreak = Math.min(totalDaysToSimulate, 365); 
+  for (let i = 1; i <= safetyBreak; i++) {
     totalSimulatedDays++;
     
-    // Move to next day
-    simDate.setUTCDate(simDate.getUTCDate() + 1);
-    const dStr = simDate.toISOString().substring(0, 10);
+    // Calculate the simulated day Jigsudo string
+    const simDateObj = new Date(lastDecay + "T12:00:00Z");
+    simDateObj.setUTCDate(simDateObj.getUTCDate() + i);
+    const dStr = simDateObj.toISOString().substring(0, 10);
     const dMonth = dStr.substring(0, 7);
 
-    // 1. MONTHLY TRANSITION (Borrón y cuenta nueva)
-    // If this simulated day is a new month, reset monthly counter
-    if (dMonth !== lastProcessedMonth) {
-      console.log(`[Maintenance] Month transition detected at ${dStr}. Resetting MonthlyRP.`);
-      currentMonthlyRP = 0;
-      lastProcessedMonth = dMonth;
-    }
-
-    // 2. DAILY RESET
+    // 1. DAILY RESET
     currentDailyRP = 0;
 
-    // 3. DECAY CALCULATION
-    // A day is a "missed day" if the day BEFORE it was already > lastIntentDate
+    // 2. DECAY CALCULATION
+    // A day is a "missed day" if the day BEFORE it was already > lastIntent
     // (Jigsudo gives 24h grace: if you play Mon, Tues is safe, Wed is the first penalty)
-    const dayBeforeSim = new Date(simDate.getTime());
+    const dayBeforeSim = new Date(simDateObj.getTime());
     dayBeforeSim.setUTCDate(dayBeforeSim.getUTCDate() - 1);
+    const dayBeforeStr = dayBeforeSim.toISOString().substring(0, 10);
 
-    if (dayBeforeSim > lastIntentDate) {
+    if (dayBeforeStr > lastIntent) {
       // Find Rank Level
       let level = 0;
       for (let j = 0; j < SCORING.RANK_THRESHOLDS.length; j++) {
@@ -176,16 +171,27 @@ async function _performUserMaintenance(userRef, userData, today) {
       }
       
       const penalty = 5 + level;
-      currentTotalRP = Math.max(0, currentTotalRP - penalty);
-      currentMonthlyRP = Math.max(0, currentMonthlyRP - penalty);
-      currentPenaltyAcc += penalty;
+      const realizedPenalty = Math.min(currentTotalRP, penalty);
+      
+      currentTotalRP = Number((currentTotalRP - realizedPenalty).toFixed(3));
+      currentMonthlyRP = Number((currentMonthlyRP - realizedPenalty).toFixed(3));
+      currentPenaltyAcc += realizedPenalty;
       
       // Streak Reset
       currentStreak = 0;
       
-      console.log(`[Maintenance] Day ${dStr}: Applied -${penalty} RP penalty (Inactivity).`);
+      console.log(`[Maintenance] Day ${dStr}: Applied -${realizedPenalty} RP penalty (Inactivity missed ${dayBeforeStr}).`);
+    }
+
+    // 3. MONTHLY TRANSITION (Borrón y cuenta nueva)
+    // Runs AFTER Applying the previous day's decay to ensure accuracy
+    if (dMonth !== lastProcessedMonth) {
+      console.log(`[Maintenance] Month transition detected at ${dStr}. Resetting MonthlyRP.`);
+      currentMonthlyRP = 0;
+      lastProcessedMonth = dMonth;
     }
   }
+
 
   if (totalSimulatedDays > 0) {
     const updates = {
@@ -358,13 +364,11 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   let newWins = stats.wins || 0;
 
   if (isOriginalDay) {
-    const d = new Date(today + "T12:00:00Z");
-    d.setUTCDate(d.getUTCDate() - 1);
-    const yesterday = d.toISOString().split("T")[0];
+    const diffDays = getJigsudoDayDiff(lastUpdate, today);
 
-    if (lastUpdate === yesterday) {
+    if (diffDays === 1) {
       newStreak += 1;
-    } else if (lastUpdate !== today) {
+    } else if (diffDays > 1 || (newStreak === 0 && lastUpdate !== today)) {
       newStreak = 1;
     }
     

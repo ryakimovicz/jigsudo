@@ -1,6 +1,6 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getJigsudoDateString } from "../js/utils/time.js?v=1.3.1"; // Uses Jigsudo offset handling
+import { getJigsudoDateString, getJigsudoDayDiff } from "../js/utils/time.js?v=1.3.1"; // Uses Jigsudo offset handling
 import { getRankData } from "../js/ranks.js?v=1.3.1"; // Uses dynamic bounds for decay penalty
 const todayStr = getJigsudoDateString();
 
@@ -53,87 +53,75 @@ async function runDecay() {
 snapshot.docs.forEach((doc) => {
       const data = doc.data();
       const stats = data.stats || {};
-      // v1.5.59: Normalized Intent Anchors for Point Decay
+      const lastCheck = stats.lastDecayCheck || data.lastDailyUpdate || stats.lastPlayedDate;
+
+      if (!lastCheck) return;
+
+      const diffDays = getJigsudoDayDiff(lastCheck, todayStr);
+      if (diffDays < 1) return;
+
+      // Simulation State
+      let currentTotalRP = data.totalRP || 0;
+      let currentMonthlyRP = data.monthlyRP || 0;
+      let lastProcessedMonth = lastCheck.substring(0, 7);
       const lastIntent = stats.lastPenaltyDate || data.lastDailyUpdate || stats.lastPlayedDate;
-      const lastUpdate = data.lastDailyUpdate || "";
-      const lastMonth = data.lastMonthlyUpdate || "";
-      const nowMonth = todayStr.substring(0, 7);
-      const isNewMonth = lastMonth !== nowMonth;
-
-      if (!lastIntent) return; 
-
+      
       const updateObj = {
         "stats.lastDecayCheck": todayStr,
         lastUpdated: FieldValue.serverTimestamp(),
       };
 
-      // 1. Reset Daily Points for the new day
-      if (lastUpdate !== todayStr) {
-        // v1.2.2: Archive previous day points before reset
-        updateObj.lastDayRP = data.dailyRP || 0;
-        updateObj["stats.lastDayRP"] = data.dailyRP || 0;
-        
-        updateObj.dailyRP = 0;
-        updateObj["stats.dailyRP"] = 0;
-      }
+      // 1. Daily Reset (Always happens if diffDays >= 1)
+      updateObj.lastDayRP = data.dailyRP || 0;
+      updateObj["stats.lastDayRP"] = data.dailyRP || 0;
+      updateObj.dailyRP = 0;
+      updateObj["stats.dailyRP"] = 0;
 
-      // 2. Reset Monthly Points if Month changed
-      if (isNewMonth) {
-        // v1.2.2: Archive previous month points before reset
-        updateObj.lastMonthRP = data.monthlyRP || 0;
-        updateObj["stats.lastMonthRP"] = data.monthlyRP || 0;
+      // 2. Sequential Simulation (Transition Integrity)
+      let totalPenaltyAccumulatedThisRun = 0;
 
-        updateObj.monthlyRP = 0;
-        updateObj["stats.monthlyRP"] = 0;
-      }
+      for (let i = 1; i <= diffDays; i++) {
+        const dObj = new Date(lastCheck + "T12:00:00Z");
+        dObj.setUTCDate(dObj.getUTCDate() + i);
+        const dStr = dObj.toISOString().substring(0, 10);
+        const dMonth = dStr.substring(0, 7);
+        const dayBeforeStr = new Date(dObj.getTime() - 86400000).toISOString().substring(0, 10);
 
-      // 3. Dynamic Decay Penalty (5 + Level)
-      const lastIntentDate = new Date(lastIntent + "T12:00:00Z");
-      const todayDate = new Date(todayStr + "T12:00:00Z");
-      const intentDiff = Math.round((todayDate - lastIntentDate) / (1000 * 60 * 60 * 24));
-
-      if (intentDiff > 1) {
-        const missedCount = intentDiff - 1;
-        const originalRP = data.totalRP || 0; // v1.5.62: Anchor for realized loss
-        let currentTempRP = originalRP;
-        let totalPenalty = 0;
-
-        for (let i = 0; i < missedCount; i++) {
-          const rankInfo = getRankData(currentTempRP);
+        // A. Decay Calculation
+        if (lastIntent && dayBeforeStr > lastIntent) {
+          const rankInfo = getRankData(currentTotalRP);
           const penalty = 5 + rankInfo.level;
-          currentTempRP = Math.max(0, currentTempRP - penalty);
-          if (currentTempRP === 0) break;
+          const realizedPenalty = Math.min(currentTotalRP, penalty);
+          
+          currentTotalRP = Number((currentTotalRP - realizedPenalty).toFixed(3));
+          currentMonthlyRP = Number((currentMonthlyRP - realizedPenalty).toFixed(3));
+          totalPenaltyAccumulatedThisRun += realizedPenalty;
         }
 
-        // v1.5.62: Precise Realized Loss Calculation
-        totalPenalty = originalRP - currentTempRP;
-
-        if (totalPenalty > 0) {
-          const negPenalty = -Number(totalPenalty.toFixed(3));
+        // B. Month Transition (Reset AFTER penalty)
+        if (dMonth !== lastProcessedMonth) {
+          // Archive the previous month'S FINAL count
+          updateObj.lastMonthRP = currentMonthlyRP;
+          updateObj["stats.lastMonthRP"] = currentMonthlyRP;
+          updateObj.lastMonthlyUpdate = lastProcessedMonth;
           
-          // v1.5.62: Monthly Floor Shield
-          const realizedMonthlyLoss = Math.min(data.monthlyRP || 0, totalPenalty);
-          const negMonthlyPenalty = -Number(realizedMonthlyLoss.toFixed(3));
-          
-          console.log(`📉 Penalty for ${data.username || doc.id}: -${totalPenalty} RP (Missed ${missedCount} days)`);
-          
-          updateObj.totalRP = FieldValue.increment(negPenalty);
-          updateObj.monthlyRP = FieldValue.increment(negMonthlyPenalty);
-          updateObj["stats.manualRPAdjustment"] = FieldValue.increment(negPenalty);
-          updateObj["stats.lastPenalty"] = totalPenalty; 
-          updateObj["stats.totalPenaltyAccumulated"] = FieldValue.increment(totalPenalty); // v1.5.61
-          
-          const yesterdayDate = new Date(todayDate.getTime());
-          yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-          updateObj["stats.lastPenaltyDate"] = yesterdayDate.toISOString().substring(0, 10);
+          currentMonthlyRP = 0;
+          lastProcessedMonth = dMonth;
         }
       }
 
-      // 4. Streak Reset (Based on last WINning date)
+      // Final Application
+      updateObj.totalRP = currentTotalRP;
+      updateObj.monthlyRP = currentMonthlyRP;
+      updateObj["stats.totalPenaltyAccumulated"] = FieldValue.increment(Number(totalPenaltyAccumulatedThisRun.toFixed(3)));
+      
+      const yesterdayStr = new Date(new Date(todayStr + "T12:00:00Z").getTime() - 86400000).toISOString().substring(0, 10);
+      updateObj["stats.lastPenaltyDate"] = yesterdayStr;
+
+      // 3. Streak Reset (Win anchor)
       const lastWin = stats.lastPlayedDate || data.lastDailyUpdate; 
-      if (lastWin) {
-        const lastWinDate = new Date(lastWin + "T12:00:00Z");
-        const streakDiff = Math.round((todayDate - lastWinDate) / (1000 * 60 * 60 * 24));
+      if (lastWin && lastWin !== todayStr) {
+        const streakDiff = getJigsudoDayDiff(lastWin, todayStr);
         if (streakDiff > 1 && (stats.currentStreak || 0) !== 0) {
           console.log(`[Streak] Win missed for ${data.username || doc.id}. Resetting streak to 0.`);
           updateObj["stats.currentStreak"] = 0;
