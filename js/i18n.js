@@ -38,8 +38,8 @@ export function initLanguage() {
     applyLanguage(savedLang);
   } else {
     // 2. No override? Check Browser (Auto)
-    const browserLang = navigator.language.split("-")[0]; // 'es-ES' -> 'es'
-    const supportedLang = translations[browserLang] ? browserLang : "es";
+    const browserLang = navigator.language.split("-")[0].toLowerCase(); // 'es-ES' -> 'es'
+    const supportedLang = browserLang === "es" ? "es" : "en";
 
     // Apply detection, but DO NOT save to localStorage yet.
     // This allows the user to change browser lang later and see the change
