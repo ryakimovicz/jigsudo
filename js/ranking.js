@@ -1,5 +1,5 @@
 /* Ranking Module for Jigsudo */
-import { db } from "./firebase-config.js?v=1.3.3";
+import { db } from "./firebase-config.js?v=1.3.4";
 import {
   collection,
   query,
@@ -8,15 +8,15 @@ import {
   getDocsFromServer,
   where,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-import { translations } from "./translations.js?v=1.3.3";
-import { getCurrentLang } from "./i18n.js?v=1.3.3";
-import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.3";
+import { translations } from "./translations.js?v=1.3.4";
+import { getCurrentLang } from "./i18n.js?v=1.3.4";
+import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.4";
 
-const dbMod = await import("./db.js?v=1.3.3");
-import { getCurrentUser } from "./auth.js?v=1.3.3";
-import { getRankData, SCORING } from "./ranks.js?v=1.3.3";
-import { gameManager } from "./game-manager.js?v=1.3.3";
-import { getDailySeed } from "./utils/random.js?v=1.3.3";
+const dbMod = await import("./db.js?v=1.3.4");
+import { getCurrentUser } from "./auth.js?v=1.3.4";
+import { getRankData, SCORING } from "./ranks.js?v=1.3.4";
+import { gameManager } from "./game-manager.js?v=1.3.4";
+import { getDailySeed } from "./utils/random.js?v=1.3.4";
 
 const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -68,7 +68,7 @@ export async function fetchRankings(forceRefresh = false) {
     ? user.uid
     : localStorage.getItem("jigsudo_active_uid") || "guest";
 
-  const { getJigsudoDateString } = await import("./utils/time.js?v=1.3.3");
+  const { getJigsudoDateString } = await import("./utils/time.js?v=1.3.4");
   const today = getJigsudoDateString();
 
   if (!forceRefresh && cached) {
@@ -125,7 +125,7 @@ export async function fetchRankings(forceRefresh = false) {
       "dailyRP",
       10,
       user,
-      (await import("./db.js?v=1.3.3")).getUserRank,
+      (await import("./db.js?v=1.3.4")).getUserRank,
       "lastDailyUpdate",
       today,
     ),
@@ -133,13 +133,13 @@ export async function fetchRankings(forceRefresh = false) {
       "lastDayRP",
       10,
       user,
-      (await import("./db.js?v=1.3.3")).getUserRank,
+      (await import("./db.js?v=1.3.4")).getUserRank,
     ),
     monthly: await getTopRankings(
       "monthlyRP",
       10,
       user,
-      (await import("./db.js?v=1.3.3")).getUserRank,
+      (await import("./db.js?v=1.3.4")).getUserRank,
       "lastMonthlyUpdate",
       currentMonth,
     ),
@@ -147,13 +147,13 @@ export async function fetchRankings(forceRefresh = false) {
       "lastMonthRP",
       10,
       user,
-      (await import("./db.js?v=1.3.3")).getUserRank,
+      (await import("./db.js?v=1.3.4")).getUserRank,
     ),
     allTime: await getTopRankings(
       "totalRP",
       10,
       user,
-      (await import("./db.js?v=1.3.3")).getUserRank,
+      (await import("./db.js?v=1.3.4")).getUserRank,
     ),
   };
 

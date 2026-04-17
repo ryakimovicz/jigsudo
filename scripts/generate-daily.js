@@ -3,9 +3,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // Import Logic Modules
-import { generateDailyGame } from "../js/sudoku-logic.js?v=1.3.3";
-import { getAllTargets } from "../js/peaks-logic.js?v=1.3.3";
-import { getJigsudoDate } from "../js/utils/time.js?v=1.3.3";
+import { generateDailyGame } from "../js/sudoku-logic.js?v=1.3.4";
+import { getAllTargets } from "../js/peaks-logic.js?v=1.3.4";
+import { getJigsudoDate } from "../js/utils/time.js?v=1.3.4";
 
 // Setup Paths
 const __filename = fileURLToPath(import.meta.url);
