@@ -329,12 +329,16 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
 
   const { seed, peaksErrors, stageTimes } = request.data;
   const uid = request.auth.uid;
+  
+  // v1.9.5: Seed-Based Anchor (Transition Resilience)
+  const sStr = seed.toString();
+  const seedDate = `${sStr.substring(0, 4)}-${sStr.substring(4, 6)}-${sStr.substring(6, 8)}`;
   const today = getJigsudoDateString();
   const now = Date.now();
 
-  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
+  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(seedDate);
   const sessionDoc = await sessionRef.get();
-  if (!sessionDoc.exists) throw new HttpsError("failed-precondition", "Session not initialized.");
+  if (!sessionDoc.exists) throw new HttpsError("failed-precondition", "Session not initialized for this date.");
 
   const sessionData = sessionDoc.data();
   if (sessionData.completed) throw new HttpsError("already-exists", "Victory already recorded.");
@@ -358,23 +362,27 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const lastUpdate = userData.lastDailyUpdate || "";
   const nowMonth = today.substring(0, 7);
 
-  // 1. Victory & Streak Logic (Original Day Only)
-  const isOriginalDay = seed.toString() === today.replace(/-/g, "");
+  // 1. Victory & Streak Logic (Transition Aware)
+  const isLateWin = seedDate < today;
   let newStreak = stats.currentStreak || 0;
   let newWins = stats.wins || 0;
 
-  if (isOriginalDay) {
+  if (seedDate === today) {
+    // Normal Win: Increment streak
     const diffDays = getJigsudoDayDiff(lastUpdate, today);
-
     if (diffDays === 1) {
       newStreak += 1;
     } else if (diffDays > 1 || (newStreak === 0 && lastUpdate !== today)) {
       newStreak = 1;
     }
-    
-    if (lastUpdate !== today) {
-        newWins += 1;
-    }
+  } else {
+    // Late Win (Delayed): Streak was already reset by maintenance/decay.
+    // We do NOT increment the streak for late wins.
+    console.log(`[submitDailyWin] Late win detected for ${seedDate}. Streak remains at ${newStreak}.`);
+  }
+
+  if (lastUpdate !== seedDate) {
+    newWins += 1;
   }
 
   const newMaxStreak = Math.max(stats.maxStreak || 0, newStreak);
@@ -396,13 +404,26 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   // 2. Root Update (RP & Meta)
   const rootUpdate = {
     totalRP: FieldValue.increment(finalDelta),
-    monthlyRP: FieldValue.increment(finalDelta),
-    dailyRP: finalScoreResult,
-    lastDailyUpdate: today,
+    lastDailyUpdate: seedDate,
+    lastPlayedDate: seedDate, 
     lastUpdated: FieldValue.serverTimestamp(),
-    lastLocalUpdate: Date.now(), // v1.5.30: Trigger client sync
-    schemaVersion: 7.1
+    lastLocalUpdate: Date.now(), 
+    schemaVersion: 7.2
   };
+
+  // v1.9.6: Scoring Attribution Routing
+  if (isLateWin) {
+    rootUpdate.lastDayRP = finalScoreResult;
+  } else {
+    rootUpdate.dailyRP = finalScoreResult;
+  }
+
+  const seedMonth = seedDate.substring(0, 7);
+  if (seedMonth < nowMonth) {
+    rootUpdate.lastMonthRP = FieldValue.increment(finalDelta); // Late month win
+  } else {
+    rootUpdate.monthlyRP = FieldValue.increment(finalDelta);
+  }
   
   // Set registeredAt if missing (v5 Transition)
   if (!userData.registeredAt) {
