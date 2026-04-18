@@ -1,6 +1,6 @@
 export const CONFIG = {
-  version: "1.3.5", // Sidebar Center & Lock Interaction
-  fechaUpdate: "2026-04-17",
+  version: "1.3.6", // Sidebar Center & Lock Interaction
+  fechaUpdate: "2026-04-18",
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
   debugMode: false, // Toggle to true to see logs
