@@ -241,6 +241,49 @@ export async function updateHistoryUI() {
                   best: data.best || null
               };
           });
+          
+          // v1.6.6: HYBRID MERGE. If the root stats.history has more data for these days (e.g. from a recent session), use it.
+          // This fixes cases where the sub-collection might have incomplete migration data (like 0 errors).
+          const localHistory = gameManager.stats?.history || {};
+          Object.keys(localHistory).forEach(dateStr => {
+              if (dateStr.startsWith(monthKey)) {
+                  const localEntry = localHistory[dateStr];
+                  const cloudEntry = monthHistory[dateStr];
+                  
+                  if (!cloudEntry) {
+                      // Day exists locally but not in the fetched cloud month? (Rare)
+                      monthHistory[dateStr] = {
+                          status: localEntry.status || "played",
+                          originalWon: localEntry.original?.won === true,
+                          hasOriginal: !!localEntry.original,
+                          score: localEntry.best?.score || 0,
+                          totalTime: localEntry.best?.totalTime || 0,
+                          original: localEntry.original || null,
+                          best: localEntry.best || null
+                      };
+                  } else {
+                      // MERGE: Prefer root stats if they have more errors or better scores
+                      if (localEntry.original) {
+                          if (!cloudEntry.original) cloudEntry.original = localEntry.original;
+                          else {
+                              // If cloud has 0 errors but local has > 0, trust local (migration fix)
+                              const localOErr = localEntry.original.errors || localEntry.original.peaksErrors || 0;
+                              const cloudOErr = cloudEntry.original.errors || cloudEntry.original.peaksErrors || 0;
+                              if (localOErr > cloudOErr) cloudEntry.original.errors = localOErr;
+                          }
+                      }
+                      if (localEntry.best) {
+                          if (!cloudEntry.best) cloudEntry.best = localEntry.best;
+                          else {
+                              const localBErr = localEntry.best.errors || localEntry.best.peaksErrors || 0;
+                              const cloudBErr = cloudEntry.best.errors || cloudEntry.best.peaksErrors || 0;
+                              if (localBErr > cloudBErr) cloudEntry.best.errors = localBErr;
+                          }
+                      }
+                  }
+              }
+          });
+
           historyCache[monthKey] = monthHistory;
       } else {
           monthHistory = {};

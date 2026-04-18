@@ -282,8 +282,8 @@ async function refreshVictorySummaryUI(stats, isHome) {
 
   // Formatted score
   const scoreFormat = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
   if (scoreEl) scoreEl.textContent = `+${scoreFormat.format(stats.score)}`;
 

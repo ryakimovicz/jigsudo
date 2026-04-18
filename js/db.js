@@ -678,14 +678,14 @@ export async function loadUserProgress(userId) {
                score: entry.score || 0,
                totalTime: entry.totalTime || entry.time || 0,
                stageTimes: entry.stageTimes || {},
-               errors: entry.errors || 0,
+               errors: entry.errors !== undefined ? entry.errors : (entry.peaksErrors || 0),
                timestamp: entry.timestamp || serverTimestamp()
              },
              best: {
                score: entry.score || 0,
                totalTime: entry.totalTime || entry.time || 0,
                stageTimes: entry.stageTimes || {},
-               errors: entry.errors || 0,
+               errors: entry.errors !== undefined ? entry.errors : (entry.peaksErrors || 0),
                timestamp: entry.timestamp || serverTimestamp()
              },
              attempts: entry.attempts || 1,

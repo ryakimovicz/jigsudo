@@ -1281,6 +1281,13 @@ export class GameManager {
             stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
             stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
             
+            // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments
+            // Every stage win adds 1.0 RP to the persistent accumulators.
+            const stageRP = 1.0;
+            stats.monthlyRP = Number(((stats.monthlyRP || 0) + stageRP).toFixed(3));
+            stats.totalRP = Number(((stats.totalRP || 0) + stageRP).toFixed(3));
+            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + stageRP).toFixed(3));
+
             this._recalculateNetStats(); // Direct Formula will pick up the new win
         }
 
@@ -1471,6 +1478,9 @@ export class GameManager {
 
     // 0. Temporal Reconciliation (v1.5.30: Absolute Truth Architecture)
     const today = getJigsudoDateString();
+    const { getDateStringFromSeed } = await import("./utils/time.js?v=1.3.3");
+    const seedDate = getDateStringFromSeed(this.currentSeed);
+    const isLateCompletion = seedDate < today;
     const currentMonth = getJigsudoYearMonth();
 
     // v1.5.44: DIRECT ATOMIC TRIPLE-TRACK SCORING
@@ -1515,7 +1525,9 @@ export class GameManager {
       // v1.6.0: MASTER SPEC COMPLIANCE
       // totals (totalRP, monthlyRP) are now persistent accumulators.
       // We only update dailyRP from the live session ingredients.
-      stats.dailyRP = dailyNet;
+      if (!isLateCompletion) {
+        stats.dailyRP = dailyNet;
+      }
       
       // Ensure the dates are updated to avoid repeated resets
       stats.lastDailyUpdate = today;
@@ -2704,13 +2716,16 @@ export class GameManager {
               }
 
               // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments
-              const atomScore = Number((1 + (stats.lastBonus || 0)).toFixed(3)); // 1 point for the final stage + bonus
+              // Note: The base 1.0 RP for the final stage was already added by awardStagePoints("code").
+              // Here we only add the Bonus part to avoid double-counting.
+              const atomBonus = Number((stats.lastBonus || 0).toFixed(3));
               
               if (!isLateCompletion) {
-                stats.dailyRP = Number(((stats.dailyRP || 0) + atomScore).toFixed(3));
+                stats.dailyRP = Number(((stats.dailyRP || 0) + atomBonus).toFixed(3));
               }
-              stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomScore).toFixed(3));
-              stats.totalRP = Number(((stats.totalRP || 0) + atomScore).toFixed(3));
+              stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomBonus).toFixed(3));
+              stats.totalRP = Number(((stats.totalRP || 0) + atomBonus).toFixed(3));
+              stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3));
 
               this.state.progress.won = true;
               this.stats = stats;
@@ -2735,13 +2750,14 @@ export class GameManager {
             }
 
             // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments (Local Fallback)
-            const atomScore = Number((1 + (stats.lastBonus || 0)).toFixed(3));
+            const atomBonus = Number((stats.lastBonus || 0).toFixed(3));
             
             if (!isLateCompletion) {
-              stats.dailyRP = Number(((stats.dailyRP || 0) + atomScore).toFixed(3));
+              stats.dailyRP = Number(((stats.dailyRP || 0) + atomBonus).toFixed(3));
             }
-            stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomScore).toFixed(3));
-            stats.totalRP = Number(((stats.totalRP || 0) + atomScore).toFixed(3));
+            stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomBonus).toFixed(3));
+            stats.totalRP = Number(((stats.totalRP || 0) + atomBonus).toFixed(3));
+            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3));
 
             this.stats = stats;
             await this._recalculateNetStats();
@@ -2797,7 +2813,9 @@ export class GameManager {
           // Since we previously added the 1.0 "atoms", we now subtract the error penalty globally.
           const errorPenalty = Number((peaksErrors * SCORING.ERROR_PENALTY_RP).toFixed(3));
           if (errorPenalty > 0) {
-            stats.dailyRP = Number((Math.max(0, (stats.dailyRP || 0) - errorPenalty)).toFixed(3));
+            if (!isLateCompletion) {
+              stats.dailyRP = Number((Math.max(0, (stats.dailyRP || 0) - errorPenalty)).toFixed(3));
+            }
             stats.monthlyRP = Number((Math.max(0, (stats.monthlyRP || 0) - errorPenalty)).toFixed(3));
             stats.totalRP = Number((Math.max(0, (stats.totalRP || 0) - errorPenalty)).toFixed(3));
           }
@@ -3019,7 +3037,9 @@ export class GameManager {
 
       const hTime = Number(h.totalTime || 0);
       const hScore = Number(h.score || 0); 
-      const hErrors = Number(h.peaksErrors || 0);
+      // v1.6.5: Robust error extraction for Season 1 (nested) and Legacy (flat) records
+      const hData = h.original || h.best || h;
+      const hErrors = Number(hData.errors || hData.peaksErrors || 0);
 
       // 1. LIFETIME AGGREGATES (Only if isOriginal)
       if (isOriginal) {
