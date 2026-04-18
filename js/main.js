@@ -1,26 +1,26 @@
 /* Main Entry Point */
 
-import { initHome } from "./home.js?v=1.3.3";
-import { initLanguage } from "./i18n.js?v=1.3.3";
-import { initSudoku } from "./sudoku.js?v=1.3.3";
-import { initHistory } from "./history.js?v=1.3.3";
-import { initGuide, openTutorialModal } from "./guide.js?v=1.3.3"; // Guide & Tutorial Import
-import { gameManager } from "./game-manager.js?v=1.3.3";
+import { initHome } from "./home.js?v=1.3.4";
+import { initLanguage } from "./i18n.js?v=1.3.4";
+import { initSudoku } from "./sudoku.js?v=1.3.4";
+import { initHistory } from "./history.js?v=1.3.4";
+import { initGuide, openTutorialModal } from "./guide.js?v=1.3.4"; // Guide & Tutorial Import
+import { gameManager } from "./game-manager.js?v=1.3.4";
 import {
   initAuth,
   loginUser,
   registerUser,
   logoutUser,
   loginWithGoogle,
-} from "./auth.js?v=1.3.3"; // Auth Import
-import { initProfile, showProfile } from "./profile.js?v=1.3.3"; // Profile Import
-import { CONFIG } from "./config.js?v=1.3.3"; // Keep CONFIG for displayVersion
-import { router } from "./router.js?v=1.3.3"; // Router Import
-import { closeSidebar, initSidebar } from "./sidebar.js?v=1.3.3";
-import { initChangelog } from "./changelog.js?v=1.3.3";
-import { toggleModal } from "./ui.js?v=1.3.3";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.3";
-import { checkSeasonMigration } from "./migration.js?v=1.3.3";
+} from "./auth.js?v=1.3.4"; // Auth Import
+import { initProfile, showProfile } from "./profile.js?v=1.3.4"; // Profile Import
+import { CONFIG } from "./config.js?v=1.3.4"; // Keep CONFIG for displayVersion
+import { router } from "./router.js?v=1.3.4"; // Router Import
+import { closeSidebar, initSidebar } from "./sidebar.js?v=1.3.4";
+import { initChangelog } from "./changelog.js?v=1.3.4";
+import { toggleModal } from "./ui.js?v=1.3.4";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.4";
+import { checkSeasonMigration } from "./migration.js?v=1.3.4";
 
 // v1.3.0: Season Transition Barrier (Absolute Blocking)
 // We check this at the top level BEFORE ANY initialization to prevent 
@@ -83,7 +83,7 @@ async function checkForUpdates() {
         `[Updater] New version available: ${serverVersion} (Current: ${localVersion})`,
       );
       
-      const { showUpdateToast } = await import("./ui.js?v=1.3.3");
+      const { showUpdateToast } = await import("./ui.js?v=1.3.4");
       
       // 2. Aggressive Update Strategy
       const attempts = Number(sessionStorage.getItem("jigsudo_update_attempts") || 0);
@@ -190,8 +190,8 @@ async function startApp() {
     window.resetToday = () => gameManager.resetCurrentGame();
 
     window.resetAccount = async () => {
-      const { getCurrentUser } = await import("./auth.js?v=1.3.3");
-      const { wipeUserData } = await import("./db.js?v=1.3.3");
+      const { getCurrentUser } = await import("./auth.js?v=1.3.4");
+      const { wipeUserData } = await import("./db.js?v=1.3.4");
       const user = getCurrentUser();
 
       if (
@@ -211,7 +211,7 @@ async function startApp() {
     };
 
     window.magicWand = async () => {
-      const { debugAutoMatch } = await import("./memory.js?v=1.3.3");
+      const { debugAutoMatch } = await import("./memory.js?v=1.3.4");
       // v1.3.3: Artificial delay to prevent anti-cheat "too fast" errors on server
       setTimeout(() => {
         debugAutoMatch();
@@ -398,8 +398,8 @@ function attachAuthListeners() {
     errBox.classList.add("hidden");
 
     if (pass !== confirmPass) {
-      const { translations } = await import("./translations.js?v=1.3.3");
-      const { getCurrentLang } = await import("./i18n.js?v=1.3.3");
+      const { translations } = await import("./translations.js?v=1.3.4");
+      const { getCurrentLang } = await import("./i18n.js?v=1.3.4");
       const lang = getCurrentLang();
       const t = translations[lang];
       errBox.textContent = t.toast_pw_mismatch || "Passwords do not match.";
@@ -417,8 +417,8 @@ function attachAuthListeners() {
   });
 
   window.shareApp = async function () {
-    const { translations } = await import("./translations.js?v=1.3.3");
-    const { getCurrentLang } = await import("./i18n.js?v=1.3.3");
+    const { translations } = await import("./translations.js?v=1.3.4");
+    const { getCurrentLang } = await import("./i18n.js?v=1.3.4");
     const lang = getCurrentLang();
     const t = translations[lang];
 
@@ -433,7 +433,7 @@ function attachAuthListeners() {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(`${shareData.text} Juega gratis aquí: ${shareData.url}`);
-        const { showToast } = await import("./ui.js?v=1.3.3");
+        const { showToast } = await import("./ui.js?v=1.3.4");
         showToast(t.toast_share_success);
       }
     } catch (err) {
