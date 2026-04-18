@@ -1620,10 +1620,8 @@ export class GameManager {
       this.forceCloudSave();
     }
 
-    // 4. Automated Stats Healer (v1.6.0: Mandatory Rebuild for Scoring Stabilization)
-    if (this.stats.integrityChecked !== "1.6.0") {
-       this._healStatsInconsistency(true); 
-    }
+    // 4. Maintenance cross-check (Only triggers on absolute mismatches)
+    this._healStatsInconsistency();
 
     // Return the decay check promise so callers can await it if needed
     const decayResult = await this._checkRankDecay();
@@ -1634,7 +1632,7 @@ export class GameManager {
    * Automatic cross-check to detect and heal inconsistencies between
    * cumulative stats and the history log.
    */
-  _healStatsInconsistency(forceRebuild = false) {
+  _healStatsInconsistency() {
     if (!this.stats || !this.stats.history) return;
 
     const wonHistoryCount = Object.values(this.stats.history).filter(
@@ -1653,8 +1651,7 @@ export class GameManager {
     const totalRP = this.stats.totalRP || 0;
     const hierarchyMismatch = (monthlyRP < dailyRP) || (totalRP < monthlyRP);
     
-    // v1.6.0: Reactive Trigger
-    if (forceRebuild || (countMismatch || missingDates || hierarchyMismatch)) {
+    if (countMismatch || missingDates || hierarchyMismatch) {
       console.warn(
         `[Maintenance] Cross-check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, hierarchyMismatch=${hierarchyMismatch}.`,
       );
@@ -1664,7 +1661,6 @@ export class GameManager {
       this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
       this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP || 0);
 
-      this.stats.integrityChecked = "1.6.0"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       
       // v1.2.11: DECOUPLED CLOUD SAVE.
@@ -2814,9 +2810,6 @@ export class GameManager {
           // Since we previously added the 1.0 "atoms", we now subtract the error penalty globally.
           const errorPenalty = Number((peaksErrors * SCORING.ERROR_PENALTY_RP).toFixed(3));
           if (errorPenalty > 0) {
-            if (!isLateCompletion) {
-              stats.dailyRP = Number((Math.max(0, (stats.dailyRP || 0) - errorPenalty)).toFixed(3));
-            }
             stats.monthlyRP = Number((Math.max(0, (stats.monthlyRP || 0) - errorPenalty)).toFixed(3));
             stats.totalRP = Number((Math.max(0, (stats.totalRP || 0) - errorPenalty)).toFixed(3));
           }
