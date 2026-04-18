@@ -1620,8 +1620,10 @@ export class GameManager {
       this.forceCloudSave();
     }
 
-    // 4. Automated Stats Healer: DISABLED per user request for simplified stability.
-    // DISCONTINUED: this._healStatsInconsistency();
+    // 4. Automated Stats Healer (v1.6.0: Mandatory Rebuild for Scoring Stabilization)
+    if (this.stats.integrityChecked !== "1.6.0") {
+       this._healStatsInconsistency(true); 
+    }
 
     // Return the decay check promise so callers can await it if needed
     const decayResult = await this._checkRankDecay();
@@ -1632,7 +1634,7 @@ export class GameManager {
    * Automatic cross-check to detect and heal inconsistencies between
    * cumulative stats and the history log.
    */
-  _healStatsInconsistency() {
+  _healStatsInconsistency(forceRebuild = false) {
     if (!this.stats || !this.stats.history) return;
 
     const wonHistoryCount = Object.values(this.stats.history).filter(
@@ -1651,10 +1653,8 @@ export class GameManager {
     const totalRP = this.stats.totalRP || 0;
     const hierarchyMismatch = (monthlyRP < dailyRP) || (totalRP < monthlyRP);
     
-    // v1.5.55: MANUAL ONLY. This function no longer triggers automatically.
-    // It stays here as an emergency manual recovery utility.
-    
-    if (forceManualRebuild || (countMismatch || missingDates || hierarchyMismatch)) {
+    // v1.6.0: Reactive Trigger
+    if (forceRebuild || (countMismatch || missingDates || hierarchyMismatch)) {
       console.warn(
         `[Maintenance] Cross-check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, hierarchyMismatch=${hierarchyMismatch}.`,
       );
@@ -1664,7 +1664,7 @@ export class GameManager {
       this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
       this.stats.totalRP = Math.max(this.stats.totalRP || 0, this.stats.monthlyRP || 0);
 
-      this.stats.integrityChecked = "1.5.62"; // Prevent repeated reconstruction
+      this.stats.integrityChecked = "1.6.0"; // Prevent repeated reconstruction
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       
       // v1.2.11: DECOUPLED CLOUD SAVE.
@@ -1771,6 +1771,7 @@ export class GameManager {
       if (!targetStats) {
         this.stats = stats;
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+        this.save(); // v1.6.0: Immediate cloud persistence for resets
       }
     }
     return changed;
@@ -2820,9 +2821,7 @@ export class GameManager {
             stats.totalRP = Number((Math.max(0, (stats.totalRP || 0) - errorPenalty)).toFixed(3));
           }
 
-          // v1.5.52: Update Total Score (Lifetime Points)
-          stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + dailyScore).toFixed(3));
-          
+          // v1.5.52: Update Best Score if exceeded
           if (dailyScore > (stats.bestScore || 0)) {
               stats.bestScore = dailyScore;
           }

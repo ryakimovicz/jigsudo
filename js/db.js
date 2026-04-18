@@ -84,8 +84,11 @@ export function reconstructStats(data) {
       const rawT = scavengeNum("totalRP", Math.max(s.totalRP || 0, s.currentRP || 0, data.totalRP || 0));
       const score = scavengeNum("totalScoreAccumulated", s.totalScoreAccumulated || 0);
       const penalty = scavengeNum("totalPenaltyAccumulated", s.totalPenaltyAccumulated || 0);
-      // v1.6.0: Respect net balance (Score - Penalty) to avoid "healing" lost points
-      return Math.max(rawT, Math.max(0, score - penalty));
+      
+      // v1.6.0: Trust the root totalRP field (rawT) if it is explicitly defined 
+      // or if it's already higher than the calculated net balance.
+      // This prevents "Ghost Healing" from corrupted atoms.
+      return (data.totalRP !== undefined || s.totalRP !== undefined) ? rawT : Math.max(0, score - penalty);
     })(),
     wins: scavengeNum("wins", s.wins || 0),
     currentStreak: scavengeNum("currentStreak", s.currentStreak || 0),
