@@ -1,11 +1,11 @@
-import { getCurrentUser, logoutUser } from "./auth.js?v=1.3.4";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.3.4";
-import { translations } from "./translations.js?v=1.3.4";
-import { gameManager } from "./game-manager.js?v=1.3.4";
-import { getRankData, calculateRP } from "./ranks.js?v=1.3.4";
-import { formatTime } from "./ui.js?v=1.3.4";
-import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.3.4";
-import { fetchPuzzleIndex } from "./history.js?v=1.3.4";
+import { getCurrentUser, logoutUser } from "./auth.js?v=1.3.5";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.3.5";
+import { translations } from "./translations.js?v=1.3.5";
+import { gameManager } from "./game-manager.js?v=1.3.5";
+import { getRankData, calculateRP } from "./ranks.js?v=1.3.5";
+import { formatTime } from "./ui.js?v=1.3.5";
+import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.3.5";
+import { fetchPuzzleIndex } from "./history.js?v=1.3.5";
 
 export let currentViewDate = getJigsudoDate();
 let minNavMonth = null;
@@ -82,7 +82,7 @@ let verificationInterval = null;
 // Listen for Router Changes to trigger polling/updates
 window.addEventListener("routeChanged", async ({ detail }) => {
   if (detail.baseRoute === "#profile") {
-    const { getCurrentUser } = await import("./auth.js?v=1.3.4");
+    const { getCurrentUser } = await import("./auth.js?v=1.3.5");
     const user = getCurrentUser();
     const requestedUsername = detail.params?.[0];
 
@@ -117,7 +117,7 @@ function _showProfileUI(requestedUsername) {
   const startPolling = async () => {
     if (verificationInterval) return;
     verificationInterval = setInterval(async () => {
-      const { refreshUserStatus } = await import("./auth.js?v=1.3.4");
+      const { refreshUserStatus } = await import("./auth.js?v=1.3.5");
       const result = await refreshUserStatus();
       if (result.success && result.user && result.user.emailVerified) {
         clearInterval(verificationInterval);
@@ -127,7 +127,7 @@ function _showProfileUI(requestedUsername) {
     }, 5000); // Check every 5s while profile is open
   };
 
-  import("./auth.js?v=1.3.4").then((mod) => {
+  import("./auth.js?v=1.3.5").then((mod) => {
     const user = mod.getCurrentUser();
     if (user && !user.isAnonymous && !user.emailVerified) {
       startPolling();
@@ -151,7 +151,7 @@ function _showProfileUI(requestedUsername) {
   if (footer) footer.classList.remove("hidden");
 
   // Highlight Sidebar Button (Cuenta)
-  import("./sidebar.js?v=1.3.4").then((mod) => {
+  import("./sidebar.js?v=1.3.5").then((mod) => {
     if (mod.updateSidebarActiveState) {
       mod.updateSidebarActiveState("btn-auth");
     }
@@ -191,7 +191,7 @@ function _hideProfileUI() {
 }
 
 export async function updateProfileData(targetUsername = activeProfileName) {
-  const { getCurrentUser } = await import("./auth.js?v=1.3.4");
+  const { getCurrentUser } = await import("./auth.js?v=1.3.5");
   const user = getCurrentUser();
   const lang = getCurrentLang() || "es";
   const t = translations[lang] || translations["es"];
@@ -245,7 +245,7 @@ export async function updateProfileData(targetUsername = activeProfileName) {
 
     // Fetch public stats from DB
     try {
-      const { getPublicUserByUsername } = await import("./db.js?v=1.3.4");
+      const { getPublicUserByUsername } = await import("./db.js?v=1.3.5");
       const publicData = await getPublicUserByUsername(decodedTarget);
 
       if (publicData) {
@@ -364,8 +364,8 @@ export async function updateProfileData(targetUsername = activeProfileName) {
       const resendBtn = document.getElementById("btn-resend-verification");
       if (resendBtn && !resendBtn.dataset.listenerAttached) {
         resendBtn.onclick = async () => {
-          const { resendVerification } = await import("./auth.js?v=1.3.4");
-          const { showToast } = await import("./ui.js?v=1.3.4");
+          const { resendVerification } = await import("./auth.js?v=1.3.5");
+          const { showToast } = await import("./ui.js?v=1.3.5");
           const lang = getCurrentLang() || "es";
           const t = translations[lang] || translations["es"];
 
@@ -952,7 +952,7 @@ function renderCalendar(history = {}) {
       }
 
       // v1.5.62: Attach dynamic tooltips
-      import("./history.js?v=1.3.4").then(mod => {
+      import("./history.js?v=1.3.5").then(mod => {
           mod.attachCalendarTooltip(dayEl, dayData, dateStr);
       });
 
@@ -977,13 +977,13 @@ async function handleShareStats() {
   // html2canvas is loaded via CDN in index.html, it should be global
   if (typeof html2canvas === "undefined") {
     console.error("html2canvas not loaded");
-    const { showToast } = await import("./ui.js?v=1.3.4");
+    const { showToast } = await import("./ui.js?v=1.3.5");
     showToast(t.err_html2canvas || "Error: html2canvas no está cargado ❌");
     return;
   }
 
   try {
-    const { showToast } = await import("./ui.js?v=1.3.4");
+    const { showToast } = await import("./ui.js?v=1.3.5");
     showToast(t.toast_generating_image || "Generando imagen... ⏳", 2000);
 
     // Ensure everything is translated for the card (in case it was hidden)
@@ -995,7 +995,7 @@ async function handleShareStats() {
     let shareUrl = "https://jigsudo.com";
     if (user && !user.isAnonymous) {
       try {
-        const { fetchLatestUserData } = await import("./db.js?v=1.3.4");
+        const { fetchLatestUserData } = await import("./db.js?v=1.3.5");
         const userData = await fetchLatestUserData(user.uid);
         if (userData && userData.isPublic !== false && userData.username) {
           const encodedName = encodeURIComponent(userData.username);
@@ -1213,7 +1213,7 @@ async function handleShareStats() {
     }, "image/png");
   } catch (err) {
     console.error("Failed to generate social card:", err);
-    const { showToast } = await import("./ui.js?v=1.3.4");
+    const { showToast } = await import("./ui.js?v=1.3.5");
     showToast("Error al generar la imagen ❌");
   }
 }
