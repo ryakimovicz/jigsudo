@@ -1,7 +1,7 @@
-import { isAdmin } from "./auth.js?v=1.3.5";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.3.5";
-import { formatTime } from "./ui.js?v=1.3.5";
-import { db } from "./firebase-config.js?v=1.3.5";
+import { isAdmin } from "./auth.js?v=1.3.6";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.3.6";
+import { formatTime } from "./ui.js?v=1.3.6";
+import { db } from "./firebase-config.js?v=1.3.6";
 import { 
   collection, 
   query, 
@@ -680,7 +680,7 @@ export function showAdminPanel() {
   updateTexts();
   
   // Highlight Sidebar
-  import("./sidebar.js?v=1.3.5").then((mod) => {
+  import("./sidebar.js?v=1.3.6").then((mod) => {
     if (mod.updateSidebarActiveState) mod.updateSidebarActiveState("nav-admin");
   });
 }

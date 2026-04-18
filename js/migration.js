@@ -1,7 +1,7 @@
-import { CONFIG } from "./config.js?v=1.3.5";
-import { performSeasonReset } from "./db.js?v=1.3.5";
-import { getCurrentUser } from "./auth.js?v=1.3.5";
-import { updateTexts, setLanguage } from "./i18n.js?v=1.3.5";
+import { CONFIG } from "./config.js?v=1.3.6";
+import { performSeasonReset } from "./db.js?v=1.3.6";
+import { getCurrentUser } from "./auth.js?v=1.3.6";
+import { updateTexts, setLanguage } from "./i18n.js?v=1.3.6";
 
 export async function checkSeasonMigration() {
   // v1.3.4: IMMEDIATE FREEZE to prevent any sync logic from running
@@ -37,7 +37,7 @@ export async function checkSeasonMigration() {
   // If there IS a user, checking cloud schema...
   let cloudSchema = 0;
   if (user && !user.isAnonymous) {
-     const { fetchLatestUserData } = await import("./db.js?v=1.3.5");
+     const { fetchLatestUserData } = await import("./db.js?v=1.3.6");
      const cloudData = await fetchLatestUserData(user.uid);
      cloudSchema = cloudData?.schemaVersion || 0;
      console.log(`[Migration] Cloud Schema: ${cloudSchema} | Local Schema: ${localSchema}`);
@@ -89,7 +89,7 @@ export async function checkSeasonMigration() {
  * @returns {Promise<Object|null>}
  */
 async function waitForUser() {
-  const { auth } = await import("./firebase-config.js?v=1.3.5");
+  const { auth } = await import("./firebase-config.js?v=1.3.6");
   return new Promise((resolve) => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       unsubscribe();
