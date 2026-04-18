@@ -1478,7 +1478,7 @@ export class GameManager {
 
     // 0. Temporal Reconciliation (v1.5.30: Absolute Truth Architecture)
     const today = getJigsudoDateString();
-    const { getDateStringFromSeed } = await import("./utils/time.js?v=1.3.3");
+    const { getDateStringFromSeed } = await import("./utils/time.js?v=1.3.4");
     const seedDate = getDateStringFromSeed(this.currentSeed);
     const isLateCompletion = seedDate < today;
     const currentMonth = getJigsudoYearMonth();
