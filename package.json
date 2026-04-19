@@ -8,6 +8,7 @@
     "bump": "node scripts/bump.js"
   },
   "dependencies": {
-    "firebase-admin": "^13.7.0"
+    "firebase-admin": "^13.7.0",
+    "sharp": "^0.34.5"
   }
 }
