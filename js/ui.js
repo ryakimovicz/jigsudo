@@ -296,7 +296,14 @@ async function refreshVictorySummaryUI(stats, isHome) {
   const btnHome = document.getElementById("btn-victory-home");
 
   if (timeEl) timeEl.textContent = formatTime(stats.totalTime);
-  if (streakEl) streakEl.textContent = stats.streak || "1";
+  if (streakEl) {
+    streakEl.textContent = stats.streak || "1";
+    // v3.0.1: Hide streak for history replays
+    const streakContainer = streakEl.closest(".victory-stat-card");
+    if (streakContainer) {
+      streakContainer.style.display = stats.isReplay ? "none" : "";
+    }
+  }
   if (errorsEl) errorsEl.textContent = stats.errors || "0";
 
   // Formatted score
@@ -490,8 +497,16 @@ async function handleShareVictory(stats) {
     document.getElementById("vsc-stat-time").textContent = formatTime(
       stats.totalTime,
     );
-    document.getElementById("vsc-stat-streak").textContent =
-      stats.streak || "1";
+    
+    const vscStreak = document.getElementById("vsc-stat-streak");
+    if (vscStreak) {
+      vscStreak.textContent = stats.streak || "1";
+      const vscStreakParent = vscStreak.closest(".sc-stat-item");
+      if (vscStreakParent) {
+        vscStreakParent.style.display = stats.isReplay ? "none" : "";
+      }
+    }
+
     document.getElementById("vsc-stat-errors").textContent =
       stats.errors || "0";
     document.getElementById("vsc-stat-score").textContent =
