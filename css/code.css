@@ -14,7 +14,7 @@
   width: 100% !important;
   max-width: 1000px !important;
   margin: 0 auto !important;
-  padding-top: 1rem !important;
+  padding-top: 0.2rem !important; /* v2.8.0: Compact top */
 
   --sudoku-grid-line: #000;
   --sudoku-inner-line: #bbb;

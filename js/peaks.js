@@ -21,7 +21,7 @@ export function initPeaks() {
   // 1. Load State
   const state = gameManager.getState();
   peaksErrors = state?.stats?.peaksErrors || 0;
-  // foundTargets = 0; // REMOVED: Breaks hydration via resumePeaksState
+  foundTargets = 0; // v2.9.2: Reset local counter to prevent session pollution
   currentHintRow = 0; // Reset hint progress
   updateErrorCounter();
   updateRemainingCounter();
@@ -301,10 +301,14 @@ function updateErrorCounter() {
 function checkPeaksVictory() {
   const state = gameManager.getState();
   const currentState = state?.progress?.currentStage || state?.currentStage || "memory";
-  if (currentState !== "peaks") return;
+  const gameSection = document.getElementById("game-section");
+  const isPeaksUI = gameSection && gameSection.classList.contains("peaks-mode");
 
-  if (foundTargets >= totalTargets) {
-    console.log("Peaks Stage Complete!");
+  // v2.9.2: More resilient check for history/replay mode
+  if (currentState !== "peaks" && !isPeaksUI) return;
+
+  if (foundTargets >= totalTargets && totalTargets > 0) {
+    console.log(`[Peaks] Stage Complete! (${foundTargets}/${totalTargets})`);
 
     // Play Victory Animation
     const board = document.getElementById("memory-board");

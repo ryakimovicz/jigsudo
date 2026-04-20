@@ -37,7 +37,31 @@
     inset -2px -2px 4px rgba(255, 255, 255, 0.8);
   --glass-bg: rgba(255, 255, 255, 0.8); /* Frosted glass becoming Paper-like */
   --glass-border: rgba(0, 0, 0, 0.05);
+}
 
+/* v2.9.0: Force condensed header during gameplay to maximize space */
+body.in-game {
+  --header-height: var(--header-height-condensed) !important;
+}
+
+body.in-game .main-header {
+  height: var(--header-height-condensed) !important;
+}
+
+body.in-game .header-logo {
+  height: 28px !important;
+}
+
+body.in-game .app-title {
+  font-size: 1.25rem !important;
+  transform: translateY(11px) !important;
+}
+
+body.in-game .header-meta {
+  opacity: 0 !important;
+  max-width: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Midnight Paper Theme (Dark Mode) */

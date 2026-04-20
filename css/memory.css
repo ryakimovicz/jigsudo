@@ -22,7 +22,7 @@ body.dark-mode {
   align-items: center;
   padding-left: 1rem;
   padding-bottom: 1rem;
-  padding-top: calc(var(--header-height) + 0.5rem);
+  padding-top: 0.2rem; /* v2.9.0: Removed redundant header offset */
   box-sizing: border-box;
   animation: fadeIn 0.5s ease-in-out;
   user-select: none;
@@ -50,21 +50,7 @@ body.dark-mode {
 }
 
 .memory-timer {
-  margin-top: auto;
-  margin-bottom: 0.8rem; /* Slightly more space from footer */
-  padding: 0.2rem 0.6rem; /* Reduced padding further */
-  background: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9); /* Solid/High Alpha instead of Blur */
-  border-radius: 6px;
-  font-family: "Outfit", sans-serif;
-  font-size: 0.9rem; /* Reduced font size further */
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: center;
-  z-index: 20002;
-  /* Ensure it doesn't look weird on mobile if tight space */
-  align-self: center;
-  white-space: nowrap; /* Prevent wrapping */
+  display: none !important; /* v2.8.0: Reclaimed space per user request */
 }
 
 /* Light Mode specific - Light Grey Background */
@@ -81,7 +67,7 @@ body.dark-mode .memory-timer {
 }
 
 .game-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem; /* v2.8.0: Compact title gap */
   text-align: center;
   position: relative;
   z-index: 20002; /* Ensure tooltip is above everything globally */
@@ -202,11 +188,7 @@ body.dark-mode .memory-timer {
   gap: 1.5rem;
   justify-content: center;
   flex: 1;
-  padding-top: 2rem; /* Push content down on Desktop */
-
-  justify-content: center;
-  flex: 1;
-  padding-top: 2rem; /* Push content down on Desktop */
+  padding-top: 0.5rem; /* v2.8.0: Compact board gap */
 }
 
 /* Grid Areas */
