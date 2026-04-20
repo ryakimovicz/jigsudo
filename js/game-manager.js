@@ -1317,8 +1317,7 @@ export class GameManager {
           }
       }
       
-      await this.awardStagePoints(currentStage);
-      this.forceCloudSave();
+      this.awardStagePoints(currentStage);
       window.dispatchEvent(
         new CustomEvent("stage-changed", { detail: nextStage }),
       );
@@ -1435,9 +1434,10 @@ export class GameManager {
         this._enqueueValidation(stage, points);
     }
 
-    // v1.6.6: Critical Persistence - Force cloud save AFTER all stage/stats updates are complete.
+    // v1.6.6: Critical Persistence - Trigger cloud save AFTER all stage/stats updates are complete.
+    // v2.7.0: Backgrounded save to avoid blocking UI transitions.
     if (!this.isReplay) {
-        await this.forceCloudSave();
+        this.forceCloudSave();
     }
   }
 
