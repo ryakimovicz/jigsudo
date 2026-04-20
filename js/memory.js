@@ -15,8 +15,9 @@ import { provideSearchHint } from "./search.js?v=1.3.7";
 import { gameManager } from "./game-manager.js?v=1.3.7";
 import { CONFIG } from "./config.js?v=1.3.7";
 import { startTimer } from "./timer.js?v=1.3.7";
-import { updateTexts } from "./i18n.js?v=1.3.7";
-import { cleanupVictoryUI } from "./ui.js?v=1.3.7";
+import { translations } from "./translations.js?v=1.3.7";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.3.7";
+import { cleanupVictoryUI, updateLevelTitle } from "./ui.js?v=1.3.7";
 import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.3.7";
 import { resumeSudokuState } from "./sudoku.js?v=1.3.7";
 import { resumePeaksState } from "./peaks.js?v=1.3.7";
@@ -90,6 +91,10 @@ export function initMemoryGame() {
     if (memorySection) {
       memorySection.classList.remove("hidden");
       document.getElementById("menu-content")?.classList.add("hidden");
+
+      // v3.0.0: Animate Title In
+      const t = translations[getCurrentLang()];
+      updateLevelTitle(t.game_memory || "Memoria");
     }
 
     // 3. Load Data

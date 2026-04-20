@@ -3,7 +3,7 @@ import { translations } from "./translations.js?v=1.3.7";
 import { getCurrentLang } from "./i18n.js?v=1.3.7";
 import { transitionToPeaks } from "./peaks.js?v=1.3.7";
 import { createMiniGrid, getChunksFromBoard } from "./memory.js?v=1.3.7";
-import { showToast } from "./ui.js?v=1.3.7";
+import { showToast, updateLevelTitle } from "./ui.js?v=1.3.7";
 // State
 let selectedCell = null;
 let pencilMode = false;
@@ -15,16 +15,7 @@ export function transitionToSudoku() {
   const lang = getCurrentLang();
   const t = translations[lang];
 
-  // 1. Update Title
-  const titleEl = document.querySelector(".header-title-container h2");
-  if (titleEl) {
-    titleEl.style.transition = "opacity 0.5s ease";
-    titleEl.style.opacity = "0";
-    setTimeout(() => {
-      titleEl.textContent = t.game_sudoku || "Sudoku";
-      titleEl.style.opacity = "1";
-    }, 500);
-  }
+  updateLevelTitle(t.game_sudoku || "Sudoku");
 
   // 2. Update Tooltip
   const tooltipTitle = document.querySelector(".info-tooltip h3");
@@ -68,10 +59,7 @@ export function transitionToSudoku() {
         if (collectedWrapper) collectedWrapper.style.display = "none";
 
         // Update Title/Text instantly here so it cross-fades with the view transition
-        if (titleEl) {
-          titleEl.textContent = t.game_sudoku || "Sudoku";
-          titleEl.style.opacity = "1";
-        }
+        updateLevelTitle(t.game_sudoku || "Sudoku");
         if (tooltipTitle && tooltipDesc) {
           tooltipTitle.textContent = t.sudoku_help_title;
           tooltipDesc.innerHTML = t.sudoku_help_desc;
@@ -97,10 +85,7 @@ export function transitionToSudoku() {
       const collectedWrapper = document.querySelector(".collected-wrapper");
       if (collectedWrapper) collectedWrapper.style.display = "none";
 
-      if (titleEl) {
-        titleEl.textContent = t.game_sudoku || "Sudoku";
-        titleEl.style.opacity = "1";
-      }
+      updateLevelTitle(t.game_sudoku || "Sudoku");
       if (tooltipTitle && tooltipDesc) {
         tooltipTitle.textContent = t.sudoku_help_title;
         tooltipDesc.innerHTML = t.sudoku_help_desc;

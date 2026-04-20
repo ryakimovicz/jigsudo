@@ -5,7 +5,7 @@ import { getCurrentLang } from "./i18n.js?v=1.3.7";
 import { transitionToSearch } from "./search.js?v=1.3.7";
 import { getAllTargets } from "./peaks-logic.js?v=1.3.7";
 import { resetUI } from "./memory.js?v=1.3.7";
-import { showToast } from "./ui.js?v=1.3.7";
+import { showToast, updateLevelTitle } from "./ui.js?v=1.3.7";
 
 // State
 let peaksErrors = 0;
@@ -76,16 +76,7 @@ export async function transitionToPeaks() {
   // 3. Update Title
   const lang = getCurrentLang();
   const t = translations[lang];
-  const titleEl = document.querySelector(".header-title-container h2");
-
-  if (titleEl) {
-    titleEl.style.transition = "opacity 0.5s ease";
-    titleEl.style.opacity = "0";
-    setTimeout(() => {
-      titleEl.textContent = t.game_peaks || "Picos y Valles";
-      titleEl.style.opacity = "1";
-    }, 500);
-  }
+  updateLevelTitle(t.game_peaks || "Picos y Valles");
 
   // 4. Update Tooltip
   const tooltipTitle = document.querySelector(".info-tooltip h3");

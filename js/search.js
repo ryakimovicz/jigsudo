@@ -2,7 +2,7 @@
 import { gameManager } from "./game-manager.js?v=1.3.7";
 import { translations } from "./translations.js?v=1.3.7";
 import { getCurrentLang } from "./i18n.js?v=1.3.7";
-import { showToast } from "./ui.js?v=1.3.7";
+import { showToast, updateLevelTitle } from "./ui.js?v=1.3.7";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.7";
 import { resetUI } from "./memory.js?v=1.3.7";
 import { initCode } from "./code.js?v=1.3.7";
@@ -475,16 +475,7 @@ export async function transitionToSearch() {
   // 2. Update Title
   const lang = getCurrentLang();
   const t = translations[lang];
-  const titleEl = document.querySelector(".header-title-container h2");
-
-  if (titleEl) {
-    titleEl.style.transition = "opacity 0.5s ease";
-    titleEl.style.opacity = "0";
-    setTimeout(() => {
-      titleEl.textContent = t.game_search || "Sopa de Números";
-      titleEl.style.opacity = "1";
-    }, 500);
-  }
+  updateLevelTitle(t.game_search || "Sopa de Números");
 
   // 3. Update Tooltip
   const tooltipTitle = document.querySelector(".info-tooltip h3");
@@ -560,16 +551,7 @@ export async function transitionToCode() {
   // 3. Update Title
   const lang = getCurrentLang();
   const t = translations[lang];
-  const titleEl = document.querySelector(".header-title-container h2");
-
-  if (titleEl) {
-    titleEl.style.transition = "opacity 0.5s ease";
-    titleEl.style.opacity = "0";
-    setTimeout(() => {
-      titleEl.textContent = t.game_code || "El Código";
-      titleEl.style.opacity = "1";
-    }, 500);
-  }
+  updateLevelTitle(t.game_code || "El Código");
 
   // 4. Update Tooltip
   const tooltipTitle = document.querySelector(".info-tooltip h3");

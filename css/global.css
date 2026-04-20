@@ -488,6 +488,16 @@ body.dark-mode .debug-btn {
   user-select: none;
 }
 
+.game-header h2 {
+  transition: opacity 0.3s ease, transform 0.3s ease !important;
+  display: inline-block;
+}
+
+.game-header h2.title-hidden {
+  opacity: 0 !important;
+  transform: translateY(-5px);
+}
+
 .checkbox-label input {
   display: none;
 }

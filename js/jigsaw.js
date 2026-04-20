@@ -5,6 +5,7 @@ import { transitionToSudoku } from "./sudoku.js?v=1.3.7";
 import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.3.7";
 import { getConflicts } from "./sudoku-logic.js?v=1.3.7";
 import { getCurrentLang } from "./i18n.js?v=1.3.7";
+import { showToast, updateLevelTitle } from "./ui.js?v=1.3.7";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.7";
 
 // DOM Elements Reference
@@ -537,16 +538,7 @@ export function transitionToJigsaw() {
   const lang = getCurrentLang();
   const t = translations[lang];
 
-  // 1. Update Title with Fade
-  const titleEl = document.querySelector(".header-title-container h2");
-  if (titleEl) {
-    titleEl.style.transition = "opacity 0.5s ease";
-    titleEl.style.opacity = "0";
-    setTimeout(() => {
-      titleEl.textContent = t.game_jigsaw || "Rompecabezas";
-      titleEl.style.opacity = "1";
-    }, 500);
-  }
+  updateLevelTitle(t.game_jigsaw || "Rompecabezas");
 
   // 2. Add Jigsaw Mode Class
   if (memorySection) {

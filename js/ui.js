@@ -15,6 +15,25 @@ window.addEventListener("languageChanged", () => {
   }
 });
 
+/**
+ * Centralized Level Title Animation (v3.0.0)
+ * Smoothly fades out the current title and fades in the new one.
+ */
+export function updateLevelTitle(newTitle) {
+  const titleEl = document.querySelector(".header-title-container h2");
+  if (!titleEl) return;
+
+  // 1. Start Fade Out
+  titleEl.classList.add("title-hidden");
+
+  // 2. Switch Text after fade out
+  setTimeout(() => {
+    titleEl.textContent = newTitle;
+    // 3. Start Fade In
+    titleEl.classList.remove("title-hidden");
+  }, 300); // Matches CSS transition duration
+}
+
 export function showToast(message, duration = 3000, type = "info") {
   let container = document.getElementById("toast-container");
 
