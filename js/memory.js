@@ -132,6 +132,16 @@ export function initMemoryGame() {
     // 6. Resume matches if any
     if (matchesFound > 0) {
       resumeMemoryState();
+      
+      // v1.9.9: Auto-Advance Protection
+      // If the stage is already complete upon hydration, trigger the win sequence
+      // to prevent the user from being stuck in a finished level.
+      if (matchesFound === TOTAL_PAIRS) {
+        console.log("[Memory] Auto-advance triggered: All pairs already found. Transitioning in 500ms...");
+        setTimeout(() => {
+            handleMatchSuccess(null); // Trigger transition
+        }, 500);
+      }
     }
   } catch (err) {
     console.error("[Memory] Initialization Failed:", err);
@@ -319,11 +329,16 @@ export function resetUI() {
  */
 export function resumeMemoryState() {
   const state = gameManager.getState();
-  // 1. Normalize and Deduplicate indices (ensure they are strings)
-  const rawIndices = (state.memory && state.memory.matchedIndices) || [];
-  const matchedIndices = [...new Set(rawIndices.map(String))];
+  if (!state) return;
 
-  console.log(`[Memory] Hydrating ${matchedIndices.length} unique matches.`);
+  // 1. Normalize and Deduplicate indices (ensure they are strings)
+  // v1.9.9: Robust Data Validation
+  // Filter out any NaN or corrupt values from matchedIndices to prevent downstream crashes
+  const matchedIndices = (state.memory?.matchedIndices || [])
+    .map(idx => parseInt(idx))
+    .filter(idx => !isNaN(idx));
+
+  console.log(`[Memory] Hydrating ${matchedIndices.length} matched pieces.`);
   matchesFound = matchedIndices.length;
 
   matchedIndices.forEach((idx) => {
@@ -345,7 +360,9 @@ export function resumeMemoryState() {
   });
 
   // Check if we should even show cards
-  if (state.progress.currentStage !== "memory") {
+  // v1.9.7: Resilience Guard - Support both legacy and modern state
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  if (currentStage !== "memory") {
     if (cardsContainer) cardsContainer.classList.add("cards-hidden");
   } else {
     if (cardsContainer) cardsContainer.classList.remove("cards-hidden");
@@ -729,22 +746,34 @@ function disableCards(cardsToDisable) {
   if (!cardsToDisable) flippedCards = [];
 }
 
-function handleMatchSuccess(chunkIndex) {
-  matchesFound++;
+export function handleMatchSuccess(e) {
+  // v1.9.9b: Support for manual/auto-advance triggers
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  
+  const chunkIndex = (e !== null) 
+    ? (typeof e === 'object' ? e.target?.dataset?.chunkIndex : e)
+    : null;
 
-  // SYNC STATE: Save matches count and indices
-  const state = gameManager.getState();
-  if (!state.memory.matchedIndices) state.memory.matchedIndices = [];
+  // If e is null, we are triggering a check for already-completed stage
+  if (e !== null) {
+    if (chunkIndex === null || chunkIndex === undefined) return;
 
-  const idStr = String(chunkIndex);
-  if (!state.memory.matchedIndices.map(String).includes(idStr)) {
-    state.memory.matchedIndices.push(idStr);
+    matchesFound++;
+
+    // SYNC STATE: Save matches count and indices
+    const state = gameManager.getState();
+    if (!state.memory.matchedIndices) state.memory.matchedIndices = [];
+
+    const idStr = String(chunkIndex);
+    if (!state.memory.matchedIndices.map(String).includes(idStr)) {
+      state.memory.matchedIndices.push(idStr);
+    }
+
+    gameManager.updateProgress("memory", {
+      pairsFound: [...new Set(state.memory.matchedIndices)].length,
+      matchedIndices: state.memory.matchedIndices,
+    });
   }
-
-  gameManager.updateProgress("memory", {
-    pairsFound: [...new Set(state.memory.matchedIndices)].length,
-    matchedIndices: state.memory.matchedIndices,
-  });
   
   // v1.3.2: Only save if we haven't won yet. If we won, awardStagePoints will handle the final save.
   const TOTAL_PAIRS = 9;
@@ -776,7 +805,8 @@ function handleMatchSuccess(chunkIndex) {
 
       // Timer Transition
       gameManager.stopStageTimer();
-      await gameManager.awardStagePoints("memory"); // Award RP
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      await gameManager.advanceStage(); 
       gameManager.startStageTimer("jigsaw");
 
       transitionToJigsaw();

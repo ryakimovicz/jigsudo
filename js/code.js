@@ -29,7 +29,7 @@ export function initCode() {
   isMultipressBlocked = false;
 
   const state = gameManager.getState();
-  const simonCoords = state.simon.coordinates;
+  const simonCoords = state?.simon?.coordinates;
   const board = document.getElementById("memory-board");
 
   if (!simonCoords || simonCoords.length < 3) {
@@ -92,8 +92,9 @@ export function initCode() {
  */
 export function resumeCodeState() {
   const state = gameManager.getState();
-  maxUnlockedLevel = state.code?.maxUnlockedLevel || 3;
-  currentLevel = state.progress.currentStage === "code" ? maxUnlockedLevel : 3;
+  maxUnlockedLevel = state?.code?.maxUnlockedLevel || 3;
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  currentLevel = currentStage === "code" ? maxUnlockedLevel : 3;
 
   console.log(`[Code] Hydrated max unlocked level: ${maxUnlockedLevel}`);
 }
@@ -366,7 +367,8 @@ async function winGame() {
   // v1.2.6: PRE-SAVING (Parallel to animation)
   // We trigger the compute-heavy recordWin now so it doesn't block the UI later.
   victoryPromise = (async () => {
-    await gameManager.awardStagePoints("code");
+    // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+    await gameManager.advanceStage(); 
     return await gameManager.recordWin();
   })();
 
@@ -556,7 +558,21 @@ async function finalizeVictory() {
 
   // 1. Wait for the background save started in winGame
   // While we wait, "VICTORIA" stays on screen in its golden state.
-  const sessionStats = await victoryPromise;
+  let sessionStats = await victoryPromise;
+
+  // v2.6.0: Resilient Victory UI - If recordWin failed (null), provide emergency fallback
+  if (!sessionStats) {
+    console.warn("[Code] sessionStats was null. Providing emergency fallback for UI.");
+    sessionStats = {
+      totalTime: gameManager.state?.meta?.stageTimes?.code || 0,
+      streak: gameManager.stats?.currentStreak || 1,
+      errors: 0,
+      score: 1.0,
+      stageTimes: gameManager.state?.meta?.stageTimes || {},
+      isReplay: gameManager.isReplay,
+      date: new Date().toISOString().split('T')[0]
+    };
+  }
 
   // 2. Ensure "Game Complete" state is saved
   gameManager.updateProgress("code", { completed: true });

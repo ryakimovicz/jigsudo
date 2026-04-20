@@ -304,6 +304,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
   const metadataOnly = typeof options === 'boolean' ? options : (options.metadataOnly || false);
   const isIntentionalPenalty = options._isIntentionalPenalty || false;
   const isConfirmedWin = options._isConfirmedWin || false;
+  const isIntentionalReset = options._isIntentionalReset || false; // v1.6.9
 
   if (!userId || window._jigsudo_migration_freeze) return;
 
@@ -323,6 +324,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
 
     // Propagate options to updateData for internal logic visibility
     if (isConfirmedWin) updateData._isConfirmedWin = true;
+    if (isIntentionalReset) updateData._isIntentionalReset = true; // v1.6.9
 
     // v1.5.30: Set isPublic ONLY if provided in statsData or if the document is new.
     if (statsData && statsData.isPublic !== undefined) {
@@ -400,12 +402,12 @@ export async function saveUserStats(userId, statsData, username = null, options 
           const isTotalRegression = localTotal < (cloudTotal - 0.01);
           // v1.5.56: If this is a confirmed victory or an intentional penalty, we usually trust the client truth.
           // BUT: We NEVER trust a 'Virgin State' (zeros) if the cloud is already populated.
-          if (isConfirmedWin || isIntentionalPenalty) {
-            if (isLocalVirgin && isCloudPopulated) {
+          if (isConfirmedWin || isIntentionalPenalty || isIntentionalReset) {
+            if (isLocalVirgin && isCloudPopulated && !isIntentionalReset) {
                console.error("[DB] BYPASS REJECTED: Preventing uninitialized local state from wiping cloud during victory anchor.");
                return; // ABORT
             }
-            console.log(`[DB] Bypass Guard: win=${isConfirmedWin}, penalty=${isIntentionalPenalty}`);
+            console.log(`[DB] Bypass Guard: win=${isConfirmedWin}, penalty=${isIntentionalPenalty}, reset=${isIntentionalReset}`);
           } else if (isTotalRegression) {
             // Normal safety check for periodic saves
             console.warn(`[DB] ANTI-REGRESSION TRIGGERED: Cloud(T:${cloudTotal.toFixed(1)}, D:${cloudDaily.toFixed(1)}) > Local(T:${localTotal.toFixed(1)}, D:${localDaily.toFixed(1)})`);
@@ -484,6 +486,11 @@ export async function saveUserStats(userId, statsData, username = null, options 
         Object.keys(statsMap).forEach(key => {
           updateData[`stats.${key}`] = statsMap[key];
         });
+        
+        // v2.2.3: Support for nuclear reset of specific history days
+        if (options._historyKeyToDelete) {
+           updateData[`stats.history.${options._historyKeyToDelete}`] = deleteField();
+        }
       }
 
       // v1.5.30: EXORCISM - Force-delete ghost fields from the map
@@ -540,29 +547,50 @@ export async function saveUserStats(userId, statsData, username = null, options 
   }
 }
 
-export async function saveUserProgress(userId, progressData) {
+export async function saveUserProgress(userId, progressData, options = {}) {
   if (!userId) return;
 
   try {
     const userRef = doc(db, "users", userId);
-    if (gameManager.isWiping || window._jigsudo_migration_freeze) {
+    const isIntentionalReset = options._isIntentionalReset || false;
+    if ((gameManager.isWiping && !isIntentionalReset) || window._jigsudo_migration_freeze) {
       console.log("[DB] Update blocked: GM is wiping or Migration Freeze active.");
       return;
     }
 
-    // v1.5.34: Allow session stats (including peaksErrors) to persist to the cloud.
-    const pClean = { ...progressData };
-    // Removed stripping of stats to ensure penalty persistence across devices.
+    // v1.9.4: Root Sanitization. 
+    // If progressData already has a 'progress' key, it means it's a full state object.
+    // We want to flatten it before saving to the 'progress' field in Firestore
+    // to match the expected structure: progress.currentStage (not progress.progress.currentStage)
+    let pClean = { ...progressData };
+    if (pClean.progress && pClean.memory && pClean.data) {
+       const { progress, ...rest } = pClean;
+       pClean = { ...progress, ...rest };
+    }
 
-    await setDoc(
-      userRef,
-      {
+    const { updateDoc, setDoc, serverTimestamp, deleteField } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    try {
+      if (isIntentionalReset) {
+        // v1.9.5: Nuclear Option - Wipe the field first to ensure ghost data is killed
+        await updateDoc(userRef, { progress: deleteField() });
+      }
+
+      await updateDoc(userRef, {
         progress: pClean,
         lastUpdated: serverTimestamp(),
-        schemaVersion: 7.2 // v1.4.4: Anchored to latest hybrid schema
-      },
-      { merge: true },
-    );
+        schemaVersion: 7.2
+      });
+    } catch (e) {
+      if (e.code === "not-found") {
+        await setDoc(userRef, {
+          progress: pClean,
+          lastUpdated: serverTimestamp(),
+          schemaVersion: 7.2
+        }, { merge: true });
+      } else {
+        throw e;
+      }
+    }
 
     console.log(
       `[DB] Progress saved to cloud for ${userId}. Stage: ${progressData.progress?.currentStage}`,
@@ -780,7 +808,16 @@ export async function performSeasonReset(userId) {
   try {
     const userRef = doc(db, "users", userId);
     const docSnap = await getDoc(userRef);
-    if (!docSnap.exists()) return { success: false, error: "User profile not found" };
+    if (!docSnap.exists()) {
+      console.log("[DB] performSeasonReset: Profile doesn't exist. Creating fresh Season 1 profile...");
+      const { setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+      await setDoc(userRef, {
+        schemaVersion: 7.2,
+        stats: { wins: 0, totalRP: 0, dailyRP: 0, monthlyRP: 0, registeredAt: serverTimestamp() },
+        lastUpdated: serverTimestamp()
+      });
+      return { success: true }; 
+    }
     
     const oldData = docSnap.data();
     console.warn(`[Season Migration] Wiping remote data for ${userId}...`);
@@ -1026,6 +1063,23 @@ export async function saveHistoryEntry(userId, seed, historyData) {
     window.dispatchEvent(new CustomEvent("jigsudoHistoryUpdated", { detail: { seed, data: cleanData } }));
   } catch (error) {
     console.error("[DB] Error saving detailed history record:", error);
+  }
+}
+
+/**
+ * v2.2.1: Nuclear Reset Support.
+ * Deletes a history record for a given seed.
+ */
+export async function deleteHistoryEntry(userId, seed) {
+  if (!userId || !seed) return;
+  try {
+    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const historyRef = doc(db, "users", userId, "history", seed.toString());
+    await deleteDoc(historyRef);
+    console.log(`[DB] History record DELETED for ${seed}`);
+    window.dispatchEvent(new CustomEvent("jigsudoHistoryUpdated", { detail: { seed, deleted: true } }));
+  } catch (error) {
+    console.error("[DB] Error deleting history record:", error);
   }
 }
 

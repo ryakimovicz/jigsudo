@@ -30,6 +30,14 @@ export class GameManager {
     this._throneShieldExpires = 0; // v1.2.3: Grace period for session claims
     this._lastLocalWrite = 0;      // v1.5.30: Sync Shield timer
 
+    // v1.6.6: Immediate Throne Shield
+    // If we reloaded to take the throne, activate the shield NOW (60s)
+    // to prevent early snapshots from blocking the UI.
+    if (localStorage.getItem("jigsudo_force_throne") === "true") {
+        this._throneShieldExpires = Date.now() + 60000;
+        console.log("[GM] Throne Takeover Shield activated (60s)");
+    }
+
     // v1.5.16: Clock Synchronization (Anti-drift)
     this.serverTimeOffset = parseInt(localStorage.getItem("jigsudo_server_offset") || "0");
     if (CONFIG.debugMode) console.log(`[Timer] Initial Server Offset: ${this.serverTimeOffset}ms`);
@@ -49,8 +57,8 @@ export class GameManager {
           const isAtGame = isAtGameRoute();
           const hasActiveProgress =
             this.state &&
-            this.state.progress &&
-            this.state.progress.currentStage !== "complete";
+            (this.state.progress?.currentStage || this.state.currentStage) &&
+            (this.state.progress?.currentStage || this.state.currentStage) !== "complete";
 
           if (isAtGame && hasActiveProgress) {
             console.log(
@@ -70,6 +78,16 @@ export class GameManager {
           }
         }
       }
+    });
+
+    // v1.6.6: Reactive Throne Takeover
+    // We must wait for Auth to be ready before claiming the session in Firestore.
+    window.addEventListener("authReady", async () => {
+        if (localStorage.getItem("jigsudo_force_throne") === "true") {
+            console.log("[GM] Auth Ready & Force Throne detected. Claiming session...");
+            localStorage.removeItem("jigsudo_force_throne");
+            await this.ensureSessionStarted();
+        }
     });
   }
 
@@ -92,10 +110,12 @@ export class GameManager {
   }
 
   async init(isSilent = false) {
-    // v1.4.0: Throne Shield - Grace period to claim the session without conflict 
     // after a reload or migration. 
-    this._throneShieldExpires = Date.now() + 45000; 
-    console.log("[GameManager] Throne Shield activated for 45s.");
+    // v1.6.6: Shield moved to constructor to catch early snapshots.
+    if (this._throneShieldExpires < Date.now() + 30000) {
+        this._throneShieldExpires = Date.now() + 30000; 
+    }
+    console.log(`[GameManager] Throne Shield active for next ${Math.round((this._throneShieldExpires - Date.now())/1000)}s`);
     masterLock.init();
     masterLock.reset();
 
@@ -106,6 +126,25 @@ export class GameManager {
       dailyData = await this.fetchDailyPuzzle();
     } catch (e) {
       console.warn("[GameManager] Offline or Fetch Failed:", e);
+    }
+
+    // v1.9.2: URL Hammer Enforcement
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceResetSeed = urlParams.get("forceReset");
+    const hardResetSeed = localStorage.getItem("_force_hard_reset_today");
+
+    if ((forceResetSeed && Number(forceResetSeed) === Number(this.currentSeed)) || 
+        (hardResetSeed && Number(hardResetSeed) === Number(this.currentSeed))) {
+        console.warn("[GameManager] NUCLEAR RESET FLAG DETECTED. Forcing fresh start.");
+        localStorage.removeItem(this.storageKey);
+        localStorage.removeItem("_force_hard_reset_today");
+        
+        // v1.9.3: Clean the URL to prevent reload loops
+        if (forceResetSeed) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("forceReset");
+            window.history.replaceState({}, "", url.href);
+        }
     }
 
     const cachedState = this.isReplay ? null : localStorage.getItem(this.storageKey);
@@ -164,7 +203,7 @@ export class GameManager {
         console.log(
           "[GameManager] Local self-healing detected. Syncing guest data to storage...",
         );
-        this.save(); // Save locally, but don't forceCloudSave yet if we are logged in
+        this.save(true, false, false); // v1.6.9: Silent timestamp
       }
       if (activeUid && !this.state.meta.userId) {
         this.state.meta.userId = activeUid;
@@ -205,9 +244,25 @@ export class GameManager {
         };
       }
 
-      this.save();
+      this.save(true, false, false); // v1.6.9: Silent timestamp
       // Purge invalid history once per load
       this._healHistoryProgress();
+
+      // v2.2.0: Timer Resumption - If we are loading a game in progress, ensure timer is running
+      const cStage = this.state.progress?.currentStage || this.state.currentStage;
+      const isMemoryStarted = cStage === "memory" && (this.state.memory?.pairsFound > 0 || this.state.memory?.matchedIndices?.length > 0);
+      if (cStage && cStage !== "complete" && (cStage !== "memory" || isMemoryStarted)) {
+          this.startStageTimer(cStage);
+          if (CONFIG.debugMode) console.log(`[Timer] Auto-resumed timer for ${cStage}`);
+      }
+
+      // v1.6.5: Emergency Save on Unload
+      window.addEventListener("beforeunload", () => {
+          if (this.cloudSaveTimeout && !this._blockEmergencySave) {
+              console.log("[GM] Emergency Unload Save Triggered.");
+              this.forceCloudSave();
+          }
+      });
     } else if (dailyData) {
       this.state = this.createStateFromJSON(dailyData);
       const activeUid = localStorage.getItem("jigsudo_active_uid");
@@ -215,15 +270,12 @@ export class GameManager {
         this.state.meta.userId = activeUid;
       }
 
-      // Record as played in history ONLY if it's the original day
-      const seedStr = this.currentSeed.toString();
-      const dateStr = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
       const decayOccurred = await this._ensureStats();
       if (decayOccurred && !activeUid) {
         console.log("[GameManager] Self-healing detected on fresh start. Syncing locally...");
-        this.save();
+        this.save(true, false, false);
       }
-      this.save();
+      this.save(true, false, false); // v1.6.9: Initial save should NOT anchor timestamp yet
     } else {
       console.error("[GameManager] CRITICAL: No Save & No Network.");
       if (!isSilent) {
@@ -271,7 +323,10 @@ export class GameManager {
 
 
   async recordStart() {
-    if (this.isReplay) return;
+    if (this.isReplay || this.isWiping) {
+        console.log("[GM] recordStart blocked (Replay or Sync in progress)");
+        return;
+    }
 
     // v1.5.59: SEQUENTIAL SAFETY - Ensure any pending decay from yesterday is processed
     // before we mark today as "played" (intent).
@@ -383,9 +438,8 @@ export class GameManager {
 
     if (changed) {
       console.log("[GameManager] Account History Purged (Invalid entries removed).");
-      localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
-      // Sincronizar inmediatamente para limpiar otros dispositivos
-      this.forceCloudSave();
+      // v1.6.9: Use silent save to avoid updating lastPlayed during internal cleanup
+      this.save(true, false, false); 
     }
   }
 
@@ -558,7 +612,7 @@ export class GameManager {
         startedAt: null,
         stageStartAt: null, // v1.5.15: Persist current stage start timestamp
         stageStamps: {},    // v1.5.15: Log of start/end times per stage
-        lastPlayed: "1970-01-01T00:00:00.000Z", // Initial state is always stale
+        lastPlayed: "1970-01-01T00:00:00.000Z", // Initial state is always stale to favor cloud adoption
         generatedBy: "static-server",
       },
       progress: {
@@ -833,12 +887,13 @@ export class GameManager {
     return this.getTargetSolution();
   }
 
-  async save(syncToCloud = true, isPenalty = false) {
+  async save(syncToCloud = true, isPenalty = false, updateTimestamp = true) {
     if (!this.state || this.isWiping) return;
 
-    // --- CRITICAL FIX: Ensure local timestamp is ALWAYS updated before persistence ---
-    // This marks the local progress as newer than the cloud, preventing 'Cloud Echo' loops.
-    if (this.state.meta) {
+    // --- CRITICAL FIX: Ensure local timestamp is updated ONLY on real progress ---
+    // v1.6.9: Added updateTimestamp flag to prevent maintenance tasks from making 
+    // stale local data appear newer than fresh cloud data.
+    if (this.state.meta && updateTimestamp) {
       this.state.meta.lastPlayed = new Date().toISOString();
     }
 
@@ -847,20 +902,21 @@ export class GameManager {
     if (this.isReplay) return;
 
     localStorage.setItem(this.storageKey, encryptData(this.state));
-    if (syncToCloud) this.saveCloudDebounced(5000, isPenalty);
+    if (syncToCloud) this.saveCloudDebounced(2000, isPenalty);
   }
 
-  saveCloudDebounced(delay = 5000, isPenalty = false) {
+  saveCloudDebounced(delay = 2000, isPenalty = false) {
     if (this.cloudSaveTimeout) clearTimeout(this.cloudSaveTimeout);
     this.cloudSaveTimeout = setTimeout(() => {
-      this.forceCloudSave(null, isPenalty);
+      this.forceCloudSave(false, isPenalty);
     }, delay);
   }
 
-  async forceCloudSave(overrideUid = null, isPenalty = false) {
+  async forceCloudSave(isWonNow = false, isPenalty = false, isReset = false) {
+    if (this.isWiping && !isReset) return;
     const { getCurrentUser } = await import("./auth.js?v=1.3.7");
     const user = getCurrentUser();
-    if (this.isWiping) {
+    if (this.isWiping && !isReset) {
       console.log("[GM] Wiping in progress. Save blocked.");
       return;
     }
@@ -877,16 +933,13 @@ export class GameManager {
       const { getCurrentUser } = await import("./auth.js?v=1.3.7");
       const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.3.7");
 
-      let uid = overrideUid;
-      if (!uid) {
-        const user = getCurrentUser();
-        if (user) uid = user.uid;
-      }
+      let uid = null;
+      const user = getCurrentUser();
+      if (user) uid = user.uid;
 
       if (uid) {
-        const user = getCurrentUser();
         // Skip cloud save for anonymous users unless it's an explicit override (migration)
-        if (user && user.isAnonymous && !overrideUid) {
+        if (user && user.isAnonymous) {
           return;
         }
 
@@ -898,7 +951,7 @@ export class GameManager {
           // This prevents past games from overwriting the Daily Puzzle state in Firestore.
           if (!this.isReplay) {
             const cloudState = this._serializeState(this.state);
-            await saveUserProgress(uid, cloudState);
+            await saveUserProgress(uid, cloudState, { _isIntentionalReset: isReset });
           } else {
             console.log("[GameManager] Replay detected. Skipping Cloud Progress save.");
           }
@@ -909,7 +962,7 @@ export class GameManager {
           // But if we have an override (registration) or any progress, we save.
           const hasHistory = this.stats.history && Object.keys(this.stats.history).length > 0;
           const hasProgress = (this.state?.progress?.stagesCompleted?.length || 0) > 0;
-          const isWonNow = this.state?.progress?.currentStage === "complete" || this.state?.progress?.won;
+          const isWonNowCalc = this.state?.progress?.currentStage === "complete" || this.state?.progress?.won;
           const isTrulyEmpty = (this.stats.dailyRP || 0) === 0 && 
                                (this.stats.totalRP || 0) === 0 && 
                                (this.stats.wins || 0) === 0 &&
@@ -917,14 +970,22 @@ export class GameManager {
           
           // v1.5.56: Stronger gate. Even if won, we don't push zeros if we are just starting up.
           // Registration (overrideUid) is the only valid case for pushing a fresh state.
-          if (isTrulyEmpty && !overrideUid) {
+          if (isTrulyEmpty) {
             console.log("[GM] Cloud stats save blocked: Local state is an uninitialized 'Zero State'.");
           } else {
             // v1.5.22: Pass win flag to allow cloud adoption if this is the final save
-            await saveUserStats(uid, this.stats, username, { 
-              _isConfirmedWin: isWonNow,
-              _isIntentionalPenalty: isPenalty 
-            });
+            const options = { 
+              _isConfirmedWin: isWonNow || isWonNowCalc,
+              _isIntentionalPenalty: isPenalty,
+              _isIntentionalReset: isReset
+            };
+
+            if (isReset) {
+               const seedStr = this.currentSeed.toString();
+               options._historyKeyToDelete = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+            }
+            
+            await saveUserStats(uid, this.stats, username, options);
           }
         }
       }
@@ -985,6 +1046,8 @@ export class GameManager {
    */
   async resetCurrentGame() {
     console.warn(`[GameManager] Surgical Reset for seed: ${this.currentSeed}`);
+    this.isWiping = true;
+    localStorage.setItem("_force_hard_reset_today", this.currentSeed); // NUCLEAR FLAG
 
     // 1. Load Stats to revert RP and history
     const seedStr = this.currentSeed.toString();
@@ -994,6 +1057,7 @@ export class GameManager {
       this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats"));
 
     if (stats) {
+      // ... (Reversion logic same as before) ...
       // A. Revert PARTIAL RP earned during this session (awardStagePoints)
       if (
         this.state &&
@@ -1073,34 +1137,65 @@ export class GameManager {
           stats.wins = Math.max(0, (stats.wins || 0) - 1);
           stats.totalPlayed = Math.max(0, (stats.totalPlayed || 0) - 1);
         }
-
-
-        // ALWAYS delete the history entry for today on reset,
-        // whether it was "won" or just "played".
-        delete stats.history[today];
       }
+      
+      const seedStr = this.currentSeed.toString();
+      const todayKey = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
+      
+      // 1. Nuclear Wipe: History entry
+      if (stats.history && stats.history[todayKey]) {
+          console.log(`[GM] Nuclear Wipe: Removing history entry for ${todayKey}`);
+          delete stats.history[todayKey];
+      }
+      
+      // 2. Nuclear Wipe: Daily Accumulators (Resets RP for today)
+      stats.dailyWinsAccumulated = 0;
+      stats.dailyBonusesAccumulated = 0;
+      stats.dailyPeaksErrorsAccumulated = 0;
+      stats.dailyRP = 0; // Forced reset for the button check
+      
+      // 3. Recalculate global records (wins, totalRP) based on the now-empty history
+      this._recalculateRecords(stats, true);
 
-      // AGGRESSIVE: Always recalculate records to ensure consistency
-      // This is now OUTSIDE the history check to ensure ghost records are cleared even if history is empty
-      this._recalculateRecords(stats);
-
-      // Final Sanity Clamps
+      // 4. Sanity Clamps
       stats.currentRP = Math.max(0, stats.currentRP);
-      stats.dailyRP = Math.max(0, stats.dailyRP);
+      stats.dailyRP = 0; 
       stats.monthlyRP = Math.max(0, stats.monthlyRP);
 
       this.stats = stats;
       localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
+      
+      // v2.2.2: Clear Optimistic Win Flags
+      localStorage.removeItem("jigsudo_just_won_day");
+      window._jigsudoJustWonToday = null;
+
       console.log("[GM] Stats after resetToday:", stats);
+      
+      // v2.2.2: Notify UI components (like Home button) to refresh
+      window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: { stats } }));
     }
 
-    // 2. Wipe local execution state for this seed
-    localStorage.removeItem(this.storageKey);
+    // v1.6.9: Update in-memory state immediately to prevent race-condition saves 
+    // from pushing old progress during the reload transition.
+    const freshData = await this.fetchDailyPuzzle();
+    const freshState = this.createStateFromJSON(freshData);
     
-    // v1.2.7: Clear optimistic win locks used by Home UI
-    localStorage.removeItem("jigsudo_just_won_day");
-    localStorage.removeItem("jigsudo_win_lock");
-    window._jigsudoJustWonToday = null;
+    // DEEP WIPE: Ensure no stage residue remains in the state object
+    // before it is sent to the cloud.
+    freshState.progress = {
+      currentStage: "memory",
+      stagesCompleted: [],
+      won: false
+    };
+    freshState.memory = { cards: [], matchedIndices: [], pairsFound: 0 };
+    freshState.jigsaw = { placedChunks: [], variation: null };
+    freshState.sudoku = { currentBoard: null };
+    freshState.peaks = { foundCoords: [] };
+    freshState.search = { found: [], targets: [] };
+    freshState.code = { completed: false, maxUnlockedLevel: 1 };
+    
+    this.state = freshState; 
+    this.state.meta.lastPlayed = new Date().toISOString();
 
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
@@ -1111,23 +1206,36 @@ export class GameManager {
       if (user && !user.isAnonymous) {
         showNotification("Sincronizando...", "info");
         console.log("[GameManager] Re-syncing cloud...");
-        const freshData = await this.fetchDailyPuzzle();
-        const freshState = this.createStateFromJSON(freshData);
-        // We await both to ensure they are on the wire before reload
-        const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.3.7");
-        await Promise.all([
-          saveUserProgress(user.uid, this._serializeState(freshState)),
-          saveUserStats(user.uid, this.stats, user.displayName),
-        ]);
+        
+        // v2.2.1: Nuclear Wipe - Delete the history record from the subcollection too
+        const { deleteHistoryEntry } = await import("./db.js?v=1.3.7");
+        await deleteHistoryEntry(user.uid, this.currentSeed);
+        
+        await this.forceCloudSave(false, false, true);
         console.log("[GameManager] Cloud sync complete.");
       }
     } catch (err) {
       console.error("[GameManager] Cloud re-sync failed:", err);
     }
 
-    // 4. Reload
-    console.log("Reset complete. Reloading...");
-    window.location.reload();
+    // 4. Final local wipe and Reload
+    this._blockEmergencySave = true; 
+    if (this.cloudSaveTimeout) {
+      clearTimeout(this.cloudSaveTimeout);
+      this.cloudSaveTimeout = null;
+    }
+    // v1.9.2: THE URL HAMMER
+    // We reload with a URL parameter to guarantee the reset flag is seen 
+    // even if localStorage is being flaky or competing syncs are wiping it.
+    const baseUrl = window.location.origin + window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set("forceReset", this.currentSeed);
+    
+    // v1.9.8: Sync Shield - Block adoption for 10s after reload to ensure fresh write wins
+    localStorage.setItem("jigsudo_sync_shield", (Date.now() + 10000).toString());
+
+    this.isWiping = false; 
+    window.location.href = baseUrl + "?" + searchParams.toString() + window.location.hash;
   }
 
   _serializeState(state) {
@@ -1190,15 +1298,26 @@ export class GameManager {
 
   async advanceStage() {
     const stages = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
-    const currentIdx = stages.indexOf(this.state.progress.currentStage);
-    if (currentIdx >= 0 && currentIdx < stages.length - 1) {
+    const currentStage = this.state.progress?.currentStage || this.state.currentStage;
+    const currentIdx = stages.indexOf(currentStage);
+
+    if (currentIdx !== -1 && currentIdx < stages.length - 1) {
       const nextStage = stages[currentIdx + 1];
-      const currentStage = this.state.progress.currentStage;
-      this.state.progress.currentStage = nextStage;
-      if (!this.state.progress.stagesCompleted.includes(currentStage)) {
-        this.state.progress.stagesCompleted.push(currentStage);
-        await this.awardStagePoints(currentStage);
+      
+      if (this.state.progress) {
+          this.state.progress.currentStage = nextStage;
+          if (!this.state.progress.stagesCompleted.includes(currentStage)) {
+            this.state.progress.stagesCompleted.push(currentStage);
+          }
+      } else {
+          this.state.currentStage = nextStage;
+          if (!this.state.stagesCompleted?.includes(currentStage)) {
+              if (!this.state.stagesCompleted) this.state.stagesCompleted = [];
+              this.state.stagesCompleted.push(currentStage);
+          }
       }
+      
+      await this.awardStagePoints(currentStage);
       this.forceCloudSave();
       window.dispatchEvent(
         new CustomEvent("stage-changed", { detail: nextStage }),
@@ -1232,7 +1351,13 @@ export class GameManager {
             this.state.meta.lastPlayed = new Date().toISOString();
         }
         if (!silent) {
-            this.save();
+            // v1.6.6: If we are changing levels, FORCE an immediate cloud save.
+            if (data.currentStage) {
+                console.log(`[GM] Level transition detected (${data.currentStage}). Forcing cloud save.`);
+                this.forceCloudSave();
+            } else {
+                this.save();
+            }
         }
     }
   }
@@ -1241,17 +1366,21 @@ export class GameManager {
     const points = SCORING.PARTIAL_RP[stage] || 0;
     if (points <= 0) return;
 
+    // v1.9.9: Resilience Guard
+    if (!this.state.progress) {
+        this.state.progress = { currentStage: "memory", stagesCompleted: [] };
+    }
+    if (!this.state.progress.stagesCompleted) {
+        this.state.progress.stagesCompleted = [];
+    }
+
     // GUARD 2: Already Completed (Prevent refresh farming)
     if (this.state.progress.stagesCompleted.includes(stage)) {
       console.log(`[RP] Stage ${stage} already completed. Skipping.`);
       return;
     }
 
-    // ENSURE STAGE IS MARKED AS COMPLETED for the current session sum
-    if (!this.state.progress.stagesCompleted.includes(stage)) {
-      this.state.progress.stagesCompleted.push(stage);
-      this.save();
-    }
+    this.state.progress.stagesCompleted.push(stage);
 
     // GUARD 3: Game Already Won (Prevent post-win farming for leaderboard stats)
     const seedStr = this.currentSeed.toString();
@@ -1304,6 +1433,11 @@ export class GameManager {
     // v1.4.1: ASYNC REFEREE (Background Validation)
     if (!this.isReplay) {
         this._enqueueValidation(stage, points);
+    }
+
+    // v1.6.6: Critical Persistence - Force cloud save AFTER all stage/stats updates are complete.
+    if (!this.isReplay) {
+        await this.forceCloudSave();
     }
   }
 
@@ -1635,6 +1769,13 @@ export class GameManager {
   _healStatsInconsistency() {
     if (!this.stats || !this.stats.history) return;
 
+    // v2.2.4: Reset Guard - Block healing if we are in the middle of a reset
+    const isShielded = localStorage.getItem("jigsudo_sync_shield") === "true";
+    if (isShielded) {
+      console.log("[Maintenance] Healing BLOCKED by Nuclear Shield.");
+      return;
+    }
+
     const wonHistoryCount = Object.values(this.stats.history).filter(
       (h) => h.status === "won",
     ).length;
@@ -1767,7 +1908,7 @@ export class GameManager {
       if (!targetStats) {
         this.stats = stats;
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
-        this.save(); // v1.6.0: Immediate cloud persistence for resets
+        this.save(true, false, false); // v1.6.0/v1.6.9: Immediate cloud persistence for resets (silent timestamp)
       }
     }
     return changed;
@@ -1885,9 +2026,20 @@ export class GameManager {
                 sessionId: this.localSessionId
             });
             console.log("[Sync] Server Session Anchor:", result);
+
+            // v1.6.6: Explicit Root Update (Surgical)
+            // Use updateDoc directly to avoid circular dependency with saveUserStats during init.
+            const { doc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+            const { db } = await import("./firebase-config.js?v=1.3.7");
+            const userRef = doc(db, "users", user.uid);
+            await updateDoc(userRef, { 
+                activeSessionId: this.localSessionId,
+                lastUpdated: serverTimestamp() 
+            });
+            console.log("[Sync] Root Session ID updated to:", this.localSessionId);
             
-            // v1.2.3: Activate Throne Shield - 10s grace period to allow Firestore to update its cache
-            this._throneShieldExpires = Date.now() + 10000;
+            // v1.2.3: Activate Throne Shield - 20s grace period to allow Firestore to update its cache
+            this._throneShieldExpires = Date.now() + 20000;
         } catch (err) {
             console.warn("[Sync] Failed to anchor server session:", err);
         }
@@ -1910,8 +2062,14 @@ export class GameManager {
     const now = this._getServerNow();
     const duration = now - startAnchor;
     
-    // Ensure duration is never negative
-    const safeDuration = Math.max(0, duration);
+    // v1.6.5: Integrity Guard - Ensure duration is never zero for a completed stage
+    // unless it was truly instantaneous (impossible for these games).
+    // If it's 0 or negative, we use a fallback of 1 second to avoid Referee flags.
+    const safeDuration = duration > 100 ? duration : 1000;
+
+    if (duration <= 0 && CONFIG.debugMode) {
+      console.warn(`[Timer] Detected zero/negative duration for ${this.currentStage}. Anchor: ${startAnchor}, Now: ${now}. Applying fallback.`);
+    }
 
     // Record end stamp and finalize level persistence
     if (this.state && this.state.meta) {
@@ -1985,7 +2143,39 @@ export class GameManager {
     }
   }
 
-  async handleCloudSync(remoteProgress, remoteStats, remoteRequest, remoteSettings) {
+  async handleCloudSync(remoteProgress, remoteStats, isSnapshot = false, remoteSettings = null) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceResetSeed = urlParams.get("forceReset");
+    
+    // v1.9.8: Nuclear Sync Shield (Post-Reset Protection)
+    const syncShield = parseInt(localStorage.getItem("jigsudo_sync_shield") || "0");
+    const isShielded = Date.now() < syncShield;
+    const forceResetActive = (forceResetSeed && Number(forceResetSeed) === Number(this.currentSeed));
+
+    if ((isShielded || this.isWiping || forceResetActive) && remoteProgress) {
+        // v2.4.0: Shield Bypass Heuristic - Only block if remote is NOT clearly ahead.
+        // This allows Device B to adopt Device A's progress immediately upon login.
+        const hydratedRemote = this._deserializeState(remoteProgress);
+        const remoteProgCount = (hydratedRemote.progress?.stagesCompleted || []).length;
+        const localProgCount = (this.state?.progress?.stagesCompleted || []).length;
+        
+        const remoteTime = new Date(hydratedRemote.meta?.lastPlayed || 0).getTime();
+        const localTime = new Date(this.state?.meta?.lastPlayed || 0).getTime();
+
+        // If cloud is same or behind, we respect the shield.
+        // If cloud is AHEAD (more stages or newer by >10s), we BYPASS the shield.
+        if (remoteProgCount < localProgCount || (remoteProgCount === localProgCount && remoteTime <= localTime + 10000)) {
+           console.log("[Sync] NUCLEAR SHIELD ACTIVE. Stale remote progress rejected.");
+           return;
+        }
+        console.log("[Sync] NUCLEAR SHIELD BYPASS: Remote progress is newer/ahead. Adopting...");
+    } else if (isShielded || this.isWiping || forceResetActive) {
+        // Generic block for stats-only syncs if no progress object is available to verify
+        console.log("[Sync] NUCLEAR SHIELD ACTIVE (Stats-only). Adoption blocked.");
+        return;
+    }
+    const { isAtGameRoute } = await import("./utils/route-utils.js?v=1.3.7");
+
     if (this._isRestoring) return;
 
     // 1. Victory Lock Protection
@@ -2023,6 +2213,18 @@ export class GameManager {
         if (isProtectedSession && hasRankDiscrepancy && isWithinGracePeriod) {
           console.log("[Sync] Shield Active: Ignoring potentially stale cloud snapshot during grace period.");
           return;
+        }
+
+        // v1.6.5: Exclusive Session Takeover Detection
+        // If another device started a session (different ID) and it's newer than ours,
+        // we must block this device to prevent split-brain state corruption.
+        // v1.6.6: Shield check - Don't block if we are in the 'Throne Shield' grace period (just reloaded).
+        const isThroneShieldActive = Date.now() < (this._throneShieldExpires || 0);
+        
+        if (remoteSessionId && remoteSessionId !== this.localSessionId && isRemoteNewer && !this.isWiping && !isThroneShieldActive) {
+            console.warn("[Sync] Exclusive session takeover detected. Blocking this device.");
+            this.showExclusiveSessionBlock();
+            return;
         }
 
         // v1.9.0: FORCED RESET DETECTION
@@ -2096,14 +2298,16 @@ export class GameManager {
             newStats.stageTimesAccumulated[stage] = Math.max(newStats.stageTimesAccumulated[stage] || 0, time);
           });
           
+          // v1.6.6: Session Identity Protection
+          // When adopting remote stats, we MUST preserve our local session identity
+          // to prevent being immediately blocked by our own adopted data.
+          newStats.activeSessionId = this.localSessionId;
+
           this.stats = newStats;
           
           // v1.5.43: Reset anchors
           this._sessionBaselineTotal = null;
           this._sessionBaselineMonthly = null;
-          
-          // v1.5.56: NO MORE AUTO-HEALER. We trust the cloud and the unified atoms.
-          // await this._recalculateNetStats(false, false); 
           
           this._lastLocalWrite = Date.now(); // Shield engagement after adoption
           localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
@@ -2140,28 +2344,84 @@ export class GameManager {
       const remoteTime = new Date(hydratedProgress.meta.lastPlayed).getTime();
       const localTime = this.state ? new Date(this.state.meta.lastPlayed).getTime() : 0;
 
-      // Logic: If remote is significantly newer ( > 1s ), handle adoption
-      if (!this.state || remoteTime > localTime + 1000 || this.isWiping) {
+      // v1.6.9: Strong Adoption Signal - Remote Progress (Stage Count)
+      const remoteProgCount = (hydratedProgress.progress?.stagesCompleted || []).length;
+      const localProgCount = (this.state?.progress?.stagesCompleted || []).length;
+      const hasHigherCloudProgress = remoteProgCount > localProgCount;
+
+      // Heuristic: Does the local state have ANY moves/progress?
+      const hasLocalMoves = (this.state?.memory?.pairsFound > 0) || 
+                            (this.state?.jigsaw?.placedChunks?.length > 0) ||
+                            (this.state?.sudoku?.movesCount > 0);
+      
+      const isLocalEmpty = localProgCount === 0 && !hasLocalMoves;
+      const hasCloudProgress = remoteProgCount > 0 || 
+                               (hydratedProgress.memory?.pairsFound > 0) ||
+                               (hydratedProgress.jigsaw?.placedChunks?.length > 0);
+
+      // Logic: If remote is significantly newer, or if local is empty, or if remote stage count is HIGHER, adopt.
+      if (!this.state || remoteTime > localTime + 1000 || (isLocalEmpty && hasCloudProgress) || hasHigherCloudProgress) {
+        // v1.6.5: Stage Protection - If user is in a game, only adopt if remote is AHEAD or SAME stage.
+        if (isAtGameRoute() && this.state && !isLocalEmpty) {
+            const levels = ["memory", "jigsaw", "sudoku", "peaks", "search", "code"];
+            const localStage = this.state.progress?.currentStage || this.state.currentStage;
+            const remoteStage = hydratedProgress.progress?.currentStage || hydratedProgress.currentStage;
+            
+            const localIdx = levels.indexOf(localStage);
+            const remoteIdx = levels.indexOf(remoteStage);
+            
+            if (remoteIdx < localIdx && !this.isWiping) {
+                console.warn(`[Sync] Remote stage (${remoteStage}) is behind local (${localStage}). Ignoring potentially stale cloud start.`);
+                return;
+            }
+
+            // v1.6.5: Partial Progress Shield
+            if (remoteIdx === localIdx && !this.isWiping) {
+                const localProg = this._calculateProgress(this.state);
+                const remoteProg = this._calculateProgress(hydratedProgress);
+                if (remoteProg < localProg) {
+                    console.log(`[Sync] Remote progress (${remoteProg}%) is behind local (${localProg}%). Ignoring cloud update.`);
+                    return;
+                }
+            }
+        }
+
         // v1.4.6 History Safety: Force adoption if remote has today's win
         const todayStr = getJigsudoDateString();
         const remoteWonToday = remoteStats && remoteStats.history?.[todayStr]?.original?.won === true;
         const localWonToday = this.stats?.history?.[todayStr]?.original?.won === true;
         const victorySyncNeeded = remoteWonToday && !localWonToday;
 
-        if (this.isWiping || !this.state || remoteTime > localTime + 60000 || victorySyncNeeded) {
-          console.log(`[Sync] FORCE ADOPTING cloud progress (Victory Needed: ${victorySyncNeeded}).`);
+        if (this.isWiping || !this.state || remoteTime > localTime + 60000 || victorySyncNeeded || (isLocalEmpty && hasCloudProgress) || hasHigherCloudProgress) {
+          // v1.6.8: Redundancy check - Don't reload if states are effectively identical
+          // v1.6.9: Removed !this.isWiping from here to prevent reload loops during initial sync
+          if (this.state && this._compareProgress(this.state, hydratedProgress) && !victorySyncNeeded) {
+            console.log("[Sync] Skipping adoption: Local and Remote states are identical.");
+            return;
+          }
+
+          console.log(`[Sync] ADOPTING cloud progress. Reason: isWiping=${this.isWiping}, remoteTime=${remoteTime}, localTime=${localTime}, victorySyncNeeded=${victorySyncNeeded}, isLocalEmpty=${isLocalEmpty}, hasHigherCloudProgress=${hasHigherCloudProgress}`);
           
           // v1.5.33: Session Stats Protection
-          // Preserve local errors/peaks progress to avoid RP rebounds during sync.
           if (this.state && this.state.stats && hydratedProgress.stats) {
             const localErrors = this.state.stats.peaksErrors || 0;
             const remoteErrors = hydratedProgress.stats.peaksErrors || 0;
             hydratedProgress.stats.peaksErrors = Math.max(localErrors, remoteErrors);
-            console.log(`[Sync] Merged Peaks Errors: local=${localErrors}, remote=${remoteErrors} -> Final: ${hydratedProgress.stats.peaksErrors}`);
+          }
+
+          // v1.6.8: Adopt remote session ID to prevent "Account in use" flicker after adoption
+          if (remoteStats && remoteStats.activeSessionId) {
+             console.log(`[Sync] Adopting remote session ID: ${remoteStats.activeSessionId}`);
+             this.localSessionId = remoteStats.activeSessionId;
+             this.stats.activeSessionId = remoteStats.activeSessionId;
+             // v1.6.9: Use unified sessionStorage key
+             sessionStorage.setItem("jigsudo_active_session_id", this.localSessionId);
           }
 
           this.state = hydratedProgress;
-          this.save(false); // Silent save
+          // v1.6.9: Manual write to bypass isWiping lock in save() during adoption
+          localStorage.setItem(this.storageKey, JSON.stringify(this.state));
+          localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
           window.location.reload(); 
         } else if (remoteTime > localTime + 1000) {
           // If seeds match and it's just a bit newer, show conflict modal
@@ -2235,7 +2495,7 @@ export class GameManager {
                 display: flex; flex-direction: column; gap: 10px;
             ">
                 <h3 style="color: #94a3b8; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Este Dispositivo</h3>
-                <div style="font-size: 2rem; font-weight: bold;">${this.state.progress.currentStage.toUpperCase()}</div>
+                <div style="font-size: 2rem; font-weight: bold;">${(this.state?.progress?.currentStage || this.state?.currentStage || "MEMORY").toUpperCase()}</div>
                 <div style="color: ${localProg >= remoteProg ? "#4ade80" : "#cbd5e1"}; font-weight: bold; font-size: 1.2rem;">
                     Progreso: ${localProg}%
                 </div>
@@ -2258,7 +2518,7 @@ export class GameManager {
                 display: flex; flex-direction: column; gap: 10px;
             ">
                 <h3 style="color: #6ee7b7; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Nube (Reciente)</h3>
-                <div style="font-size: 2rem; font-weight: bold; color: #6ee7b7;">${remoteState.progress.currentStage.toUpperCase()}</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #6ee7b7;">${(remoteState?.progress?.currentStage || remoteState?.currentStage || "MEMORY").toUpperCase()}</div>
                  <div style="color: ${remoteProg > localProg ? "#4ade80" : "#d1fae5"}; font-weight: bold; font-size: 1.2rem;">
                     Progreso: ${remoteProg}%
                 </div>
@@ -2367,6 +2627,23 @@ export class GameManager {
         }
       };
     }
+
+    // v1.6.5: Block keyboard events while conflict is active
+    const keyBlocker = (e) => {
+        if (this.conflictBlocked) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        }
+    };
+    window.addEventListener("keydown", keyBlocker, { capture: true });
+    
+    // Clean up keyBlocker if overlay is removed
+    const checkCleanup = setInterval(() => {
+        if (!document.body.contains(overlay)) {
+            window.removeEventListener("keydown", keyBlocker, { capture: true });
+            clearInterval(checkCleanup);
+        }
+    }, 1000);
   }
 
   _calculateProgress(state) {
@@ -2503,6 +2780,23 @@ export class GameManager {
         window.location.reload();
       };
     }
+
+    // v1.6.5: Block keyboard events while exclusive lock is active
+    const keyBlocker = (e) => {
+        if (this.sessionBlocked) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        }
+    };
+    window.addEventListener("keydown", keyBlocker, { capture: true });
+    
+    // Clean up keyBlocker if overlay is removed
+    const checkCleanup = setInterval(() => {
+        if (!document.body.contains(overlay)) {
+            window.removeEventListener("keydown", keyBlocker, { capture: true });
+            clearInterval(checkCleanup);
+        }
+    }, 1000);
   }
 
   async recordWin() {
@@ -2634,8 +2928,11 @@ export class GameManager {
       // v1.5.49: ATOMIC SOLIDARITY SYNC
       // Ensure every stage completed in the current session is reflected in the Atoms Map.
       // This heals any sync-loss that happened during registration.
+      // v2.6.0: Resilient Progress Guard
+      const stagesCompleted = (this.state && this.state.progress && this.state.progress.stagesCompleted) ? this.state.progress.stagesCompleted : [];
+      
       let sessionWinsAdded = 0;
-      this.state.progress.stagesCompleted.forEach(stage => {
+      stagesCompleted.forEach(stage => {
           if (!stats.stageWinsAccumulated[stage]) {
               stats.stageWinsAccumulated[stage] = 1;
               sessionWinsAdded++;
@@ -2643,9 +2940,7 @@ export class GameManager {
           }
       });
 
-      // If 'code' (final stage) was just restored or was already missing, ensure counters reflect it.
-      // We also verify that daily/monthly counters have AT LEAST the number of stages completed today.
-      const stagesCountToday = (this.state.progress.stagesCompleted || []).length;
+      const stagesCountToday = stagesCompleted.length;
       const seedMonth = seedDate.substring(0,7);
       const todayMonth = today.substring(0,7);
       
@@ -3190,7 +3485,10 @@ export class GameManager {
     } else if (stage === "jigsaw") {
       if ((s1.jigsaw?.placedChunks || []).length !== (s2.jigsaw?.placedChunks || []).length) return false;
     } else if (stage === "sudoku") {
-      if ((s1.sudoku?.currentBoard || "") !== (s2.sudoku?.currentBoard || "")) return false;
+      // v1.6.9: Use stringification for deep array comparison to prevent reload loops
+      const b1 = JSON.stringify(s1.sudoku?.currentBoard || []);
+      const b2 = JSON.stringify(s2.sudoku?.currentBoard || []);
+      if (b1 !== b2) return false;
     }
 
     return true;

@@ -131,7 +131,8 @@ export function initAuth() {
         // MUST BE AWAITED to prevent race condition during initial loadUserProgress
         await gameManager.forceCloudSave();
       } else if (storedUid && storedUid === user.uid) {
-        console.log("[Auth] Session resumed: Skipping data wipe.");
+        console.log("[Auth] Session resumed: Syncing account...");
+        gameManager.isWiping = true; // v1.6.9: LOCK ON during sync phase
       } else {
         console.log(
           `[Auth] Context switch (Mismatch: ${storedUid} -> ${user.uid}): Wiping local data.`,

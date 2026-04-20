@@ -888,7 +888,21 @@ function validateBoard() {
   // ALWAYS SYNC STATE: Collect current board for persistence
   // This ensures the win-state (full board) is also saved.
   syncSudokuState();
-  gameManager.save();
+
+  // v2.5.0: Milestone Cloud Save - Force cloud sync if a 3x3 block was just completed
+  const completedSlots = slots.filter(s => {
+      const cells = Array.from(s.querySelectorAll(".mini-cell"));
+      return cells.every(c => c.textContent.trim() && !c.classList.contains("has-notes"));
+  }).length;
+  
+  const lastCompleted = parseInt(board.dataset.lastCompletedBlocks || "0");
+  if (completedSlots > lastCompleted) {
+      console.log(`[Sudoku] Milestone reached: ${completedSlots} blocks completed. Forcing cloud sync.`);
+      board.dataset.lastCompletedBlocks = completedSlots;
+      gameManager.forceCloudSave();
+  } else {
+      gameManager.save();
+  }
 
   if (!isFull) return;
 
@@ -963,14 +977,17 @@ export function syncSudokuState() {
  */
 export function resumeSudokuState() {
   const state = gameManager.getState();
-  const savedBoard = state.sudoku?.currentBoard;
-  const initialPuzzle = state.data?.initialPuzzle;
+  // v1.9.7: Resilience Guard
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  
+  const savedBoard = state?.sudoku?.currentBoard;
+  const initialPuzzle = state?.data?.initialPuzzle;
 
+  if (currentStage !== "sudoku" && currentStage !== "peaks" && currentStage !== "search" && currentStage !== "code") return;
   if (!savedBoard || !initialPuzzle) return;
 
   console.log("[Sudoku] Hydrating board cells.");
 
-  const currentStage = state.progress.currentStage;
   const isPostSudoku = ["peaks", "search", "code"].includes(currentStage);
   const solution = isPostSudoku ? gameManager.getTargetSolution() : null;
 
@@ -1037,6 +1054,16 @@ export function resumeSudokuState() {
       }
     });
   });
+
+  // v1.9.9: Auto-Advance Protection
+  // Check if board is full and trigger validation to advance to next stage if needed.
+  const emptyCells = Array.from(document.querySelectorAll(".sudoku-chunk-slot.filled .mini-cell")).filter(c => !c.textContent.trim() && !c.classList.contains("has-notes")).length;
+  if (emptyCells === 0) {
+      console.log("[Sudoku] Auto-advance check: Board full.");
+      setTimeout(() => {
+          validateBoard();
+      }, 500);
+  }
 }
 
 function handleSudokuWin() {
@@ -1066,9 +1093,8 @@ function handleSudokuWin() {
       // Best to call both or have one call the other.
       // memory.js called transitionToSudoku() which called gameManager.updateProgress.
 
-      // Let's call the manager here for correctness
-      gameManager.awardStagePoints("sudoku");
-      // gameManager.advanceStage(); // Avoid stale state issues
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      gameManager.advanceStage();
     }, 600);
   }
 }

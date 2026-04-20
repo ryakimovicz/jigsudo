@@ -425,8 +425,14 @@ export function initHome() {
           gameManager._wipingStartTime = null;
         }
 
-        if (gameManager.isWiping) {
+        // v1.6.8: Double-Lock Check
+        if (gameManager.isWiping || document.body.classList.contains("syncing-account")) {
           console.warn("[Home] Sync in progress. Blocking start.");
+          if (startBtn) {
+            const lang = getCurrentLang() || "es";
+            startBtn.textContent = lang === "es" ? "Sincronizando..." : "Syncing...";
+            startBtn.disabled = true;
+          }
           return;
         }
         // 1. Refresh Seed & State (Ensures fresh date if tab was open)
@@ -521,6 +527,15 @@ export function initHome() {
   const refreshStartButton = () => {
     if (!startBtn) return;
     const lang = getCurrentLang() || "es";
+    
+    // v1.6.5: Sync Lock - Prevent starting if account sync is in progress
+    if (document.body.classList.contains("syncing-account")) {
+        startBtn.textContent = lang === "es" ? "Sincronizando..." : "Syncing...";
+        startBtn.disabled = true;
+        startBtn.classList.remove("btn-won");
+        return;
+    }
+
     const isWon = checkDailyWin();
     if (isWon && currentMode === "daily") {
       startBtn.dataset.i18n = "btn_view_results";
@@ -619,6 +634,11 @@ export function initHome() {
     clearRankingCache(); 
     updateRankingSmartTabs();
     loadAndRenderAllRankings(true);
+  });
+
+  // v1.6.5: Refresh button when auth sync finishes
+  window.addEventListener("authReady", () => {
+    refreshStartButton();
   });
 
   // Home Navigation (Inicio Button)
@@ -999,6 +1019,12 @@ export function initHome() {
         });
       } else {
         // Normal Daily
+        // v1.6.9: Sync Shield - Prevent proactive start while account is still syncing
+        if (gameManager.isWiping || document.body.classList.contains("syncing-account")) {
+           console.log("[Home] Route changed to game, but sync in progress. Skipping proactive recordStart.");
+           return;
+        }
+
         gameManager.prepareDaily().then(() => {
           gameManager.recordStart(); // Proactive history trigger
           startDailyGame();
@@ -1093,7 +1119,8 @@ export async function startDailyGame() {
 
     // 3. Load Memory/Stage logic
     const state = gameManager.getState();
-    const currentStage = state.progress.currentStage || "memory";
+    // v1.9.6: Resilience Guard - Support both legacy flat and modern nested state
+    const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
     const module = await import("./memory.js?v=1.3.7");
 
     if (currentStage === "memory") {

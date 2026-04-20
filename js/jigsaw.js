@@ -86,6 +86,12 @@ function createPlaceholder(container, index) {
 }
 
 export function placeInPanel(chunkIndex) {
+  // v1.9.9: Resilience Guard
+  if (isNaN(parseInt(chunkIndex))) {
+    console.warn(`[Jigsaw] Attempted to place invalid chunkIndex: ${chunkIndex}. Aborting.`);
+    return;
+  }
+
   const allPlaceholders = document.querySelectorAll(
     ".collected-piece.placeholder",
   );
@@ -967,7 +973,10 @@ export function debugJigsawPlace() {
 // Validation Logic
 export async function checkBoardCompletion() {
   // Guard 0: Prevent double-trigger logic
-  if (gameManager.getState().progress.currentStage !== "jigsaw") return;
+  const state = gameManager.getState();
+  // v1.9.7: Resilience Guard
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  if (currentStage !== "jigsaw") return;
   if (
     document
       .querySelector(".memory-board")
@@ -1116,7 +1125,8 @@ export async function checkBoardCompletion() {
     setTimeout(async () => {
       // Timer Transition
       gameManager.stopStageTimer();
-      await gameManager.awardStagePoints("jigsaw"); // Award RP
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      await gameManager.advanceStage(); 
       gameManager.startStageTimer("sudoku");
 
       transitionToSudoku();
@@ -1189,6 +1199,17 @@ export function resumeJigsawState() {
       }
     }
   });
+
+  // v1.9.9: Auto-Advance Protection
+  // If the board is already solved upon hydration, trigger the next stage transition.
+  // We use a small delay to ensure DOM is settled.
+  const filledCount = document.querySelectorAll(".sudoku-chunk-slot.filled").length;
+  if (filledCount === 9) {
+    console.log("[Jigsaw] Auto-advance triggered: Board already full.");
+    setTimeout(() => {
+        checkBoardCompletion();
+    }, 500);
+  }
 }
 
 function clearBoardErrors() {

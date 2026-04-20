@@ -17,7 +17,8 @@ export async function initSearch() {
   // Ensure gameManager is fully loaded (healing search targets happens in init)
   await gameManager.ready;
 
-  const searchData = gameManager.getState().search;
+  const state = gameManager.getState();
+  const searchData = state?.search;
 
   if (!searchData || !searchData.targets || searchData.targets.length === 0) {
     console.warn(
@@ -426,7 +427,8 @@ function handleFoundSequence(target) {
       gameManager.stopStageTimer(); // End Search
       gameManager.startStageTimer("code"); // Start Code
 
-      await gameManager.awardStagePoints("search"); // Advances to 'code'
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      await gameManager.advanceStage(); 
       transitionToCode();
     }, 500);
   }
@@ -503,7 +505,9 @@ export async function transitionToSearch() {
   await initSearch();
 
   // 6.5 Update Stage in State
-  if (gameManager.getState().progress.currentStage !== "search") {
+  const state = gameManager.getState();
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  if (currentStage !== "search") {
     gameManager.updateProgress("progress", { currentStage: "search" });
   }
 
@@ -586,7 +590,9 @@ export async function transitionToCode() {
   }
 
   // 5.5 Update Stage in State
-  if (gameManager.getState().progress.currentStage !== "code") {
+  const state = gameManager.getState();
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  if (currentStage !== "code") {
     gameManager.updateProgress("progress", { currentStage: "code" });
   }
 

@@ -19,7 +19,8 @@ export function initPeaks() {
   console.log("Initializing Peaks Stage...");
 
   // 1. Load State
-  peaksErrors = gameManager.getState().stats?.peaksErrors || 0;
+  const state = gameManager.getState();
+  peaksErrors = state?.stats?.peaksErrors || 0;
   // foundTargets = 0; // REMOVED: Breaks hydration via resumePeaksState
   currentHintRow = 0; // Reset hint progress
   updateErrorCounter();
@@ -102,7 +103,9 @@ export async function transitionToPeaks() {
   }
 
   // 5. Update Game Manager Logic
-  if (gameManager.getState().progress.currentStage !== "peaks") {
+  const state = gameManager.getState();
+  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  if (currentStage !== "peaks") {
     gameManager.updateProgress("progress", { currentStage: "peaks" });
   }
 
@@ -296,7 +299,8 @@ function updateErrorCounter() {
 }
 
 function checkPeaksVictory() {
-  const currentState = gameManager.getState().progress.currentStage;
+  const state = gameManager.getState();
+  const currentState = state?.progress?.currentStage || state?.currentStage || "memory";
   if (currentState !== "peaks") return;
 
   if (foundTargets >= totalTargets) {
@@ -323,8 +327,8 @@ function checkPeaksVictory() {
 
       transitionToSearch();
       // Also advance logic state
-      gameManager.awardStagePoints("peaks");
-      // gameManager.advanceStage("search"); // Explicit award is safer
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      gameManager.advanceStage();
     }, 800); // reduced delay to match animation (0.6s) + buffer
   }
 }
