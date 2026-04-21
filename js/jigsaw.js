@@ -34,6 +34,14 @@ export function initJigsaw(elements) {
   // Initialize Drag & Drop
   initDragAndDrop();
 
+  // Initialize Reset Button
+  const btnReset = document.getElementById("btn-jigsaw-reset");
+  if (btnReset) {
+    btnReset.addEventListener("click", () => {
+      resetJigsaw();
+    });
+  }
+
   // Initialize resizing listener for Jigsaw pieces
   window.addEventListener("resize", () => {
     fitCollectedPieces();
@@ -866,6 +874,30 @@ export function handlePointerUp(e) {
 
     // Check Board State after drop
     checkBoardCompletion();
+  } else if (dragClone) {
+    // DROPPED OUTSIDE: Snap to first available placeholder in panel
+    const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
+    const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
+
+    if (available && sourceContent) {
+      available.innerHTML = "";
+      available.appendChild(sourceContent);
+      available.classList.remove("placeholder");
+      available.classList.add("collected-piece");
+      available.dataset.chunkIndex = sourceContent.dataset.chunkIndex;
+
+      // Clear Source
+      selectedPieceElement.innerHTML = "";
+      if (selectedPieceElement.classList.contains("sudoku-chunk-slot")) {
+        selectedPieceElement.classList.remove("filled");
+      } else {
+        selectedPieceElement.classList.add("placeholder");
+        delete selectedPieceElement.dataset.chunkIndex;
+      }
+      
+      fitCollectedPieces();
+      checkBoardCompletion();
+    }
   }
 
   // Cleanup
@@ -1149,6 +1181,49 @@ export function syncJigsawState() {
   });
 
   gameManager.updateProgress("jigsaw", { placedChunks });
+}
+
+/**
+ * Resets the Jigsaw board, moving all pieces from slots back to the panel.
+ */
+export function resetJigsaw() {
+  const filledSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot.filled");
+  let movedCount = 0;
+
+  filledSlots.forEach((slot) => {
+    const sIndex = parseInt(slot.dataset.slotIndex);
+    if (sIndex === 4) return; // Locked center
+
+    const content = slot.querySelector(".mini-sudoku-grid");
+    if (!content) return;
+
+    // Find first available placeholder
+    const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
+    const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
+
+    if (available) {
+      available.appendChild(content);
+      available.classList.remove("placeholder");
+      available.classList.add("collected-piece");
+      available.dataset.chunkIndex = content.dataset.chunkIndex;
+
+      slot.innerHTML = "";
+      slot.classList.remove("filled");
+      movedCount++;
+    }
+  });
+
+  if (movedCount > 0) {
+    fitCollectedPieces();
+    checkBoardCompletion();
+    syncJigsawState();
+    gameManager.save();
+    
+    // Optional: show a subtle toast
+    // const { translations } = await import("./translations.js?v=1.3.9");
+    // const lang = getCurrentLang();
+    // showToast(translations[lang].toast_jigsaw_reset || "Tablero reiniciado");
+  }
 }
 
 /**

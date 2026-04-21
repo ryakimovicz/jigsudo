@@ -483,6 +483,7 @@ export const translations = {
       "Se ha enviado un enlace de confirmación a tu nuevo correo. El cambio se completará cuando hagas clic en él.",
     toast_logout_success: "Sesión cerrada correctamente.",
     toast_logout_error: "Error al cerrar sesión: ",
+    btn_reset_jigsaw: "Reiniciar Tablero 🔄",
 
     // Placeholders
     placeholder_current_pw: "Contraseña actual",
@@ -1366,6 +1367,7 @@ export const translations = {
       "A confirmation link has been sent to your new email. The change will be complete once you click it.",
     toast_logout_success: "Logged out successfully.",
     toast_logout_error: "Error logging out: ",
+    btn_reset_jigsaw: "Reset Board 🔄",
     error_missing_puzzle: "There is no puzzle available for this day.",
     error_missing_puzzle_day: "There is no puzzle available for day {day}.",
 
