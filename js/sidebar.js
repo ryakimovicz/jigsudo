@@ -149,7 +149,7 @@ export function initSidebar() {
 
   // v1.6.0: Reactive Admin Access
   window.addEventListener("authReady", async ({ detail }) => {
-    const { isAdmin } = await import("./auth.js?v=1.3.8");
+    const { isAdmin } = await import("./auth.js?v=1.3.9");
     const adminNavItem = document.getElementById("nav-admin");
     if (adminNavItem) {
       const show = isAdmin(detail.user);

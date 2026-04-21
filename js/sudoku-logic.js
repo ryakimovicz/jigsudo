@@ -1,4 +1,4 @@
-import { createGenerator } from "./utils/random.js?v=1.3.8";
+import { createGenerator } from "./utils/random.js?v=1.3.9";
 
 // Constants
 const GRID_SIZE = 9;
