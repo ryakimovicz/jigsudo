@@ -62,6 +62,42 @@ export function initJigsaw(elements) {
 }
 
 // =========================================
+// Animation Utilities (FLIP Technique)
+// =========================================
+/**
+ * Animates an element from a starting position (rect) to its current DOM position.
+ */
+function animateMove(element, fromRect, duration = 300) {
+  if (!element || !fromRect) return;
+
+  const toRect = element.getBoundingClientRect();
+  const dx = fromRect.left - toRect.left;
+  const dy = fromRect.top - toRect.top;
+
+  // Only animate if there is a significant move
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+  // Invert
+  element.style.transition = "none";
+  element.style.transform = `translate(${dx}px, ${dy}px)`;
+  element.style.zIndex = "2000"; // Ensure it stays on top during animation
+
+  // Force reflow
+  void element.offsetWidth;
+
+  // Play
+  element.style.transition = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+  element.style.transform = "translate(0, 0)";
+
+  // Cleanup
+  setTimeout(() => {
+    element.style.transition = "";
+    element.style.transform = "";
+    element.style.zIndex = "";
+  }, duration);
+}
+
+// =========================================
 // Jigsaw Logic
 // =========================================
 
@@ -342,6 +378,11 @@ export function handlePieceSelect(pieceElement) {
     }
 
     // --- LOGIC: SWAP or MOVE ---
+    const sourceRect = sourceContent.getBoundingClientRect();
+    const targetRect = targetContent
+      ? targetContent.getBoundingClientRect()
+      : target.getBoundingClientRect();
+
     // If Target is Occupied -> SWAP
     if (!isTargetEmpty && targetContent) {
       // Move Target Content -> Source
@@ -370,6 +411,11 @@ export function handlePieceSelect(pieceElement) {
 
       // Resize if needed
       fitCollectedPieces();
+
+      // ANIMATE
+      animateMove(sourceContent, sourceRect);
+      animateMove(targetContent, targetRect);
+
       checkBoardCompletion(); // Validate board (clear errors if any)
       deselectPiece();
       return;
@@ -393,6 +439,10 @@ export function handlePieceSelect(pieceElement) {
       }
 
       fitCollectedPieces();
+
+      // ANIMATE
+      animateMove(sourceContent, sourceRect);
+
       checkBoardCompletion(); // Validate board (clear errors if any)
       deselectPiece();
       return;
@@ -466,6 +516,11 @@ export function handleSlotClick_v2(slotIndex) {
     }
 
     // --- LOGIC: SWAP or MOVE ---
+    const sourceRect = sourceContent.getBoundingClientRect();
+    const targetRect = targetContent
+      ? targetContent.getBoundingClientRect()
+      : target.getBoundingClientRect();
+
     if (isTargetFilled && targetContent) {
       // SWAP
       // Move Target -> Source
@@ -480,9 +535,6 @@ export function handleSlotClick_v2(slotIndex) {
         source.classList.add("collected-piece");
         source.dataset.chunkIndex = targetContent.dataset.chunkIndex; // ID Transfer
         // Reset Style for Panel
-        // fitCollectedPieces will handle size, but we might need to reset width/height if it came from board
-        // Actually fitCollectedPieces calls getCollectedPieceSize() and applies styles.
-        // But valid to clear inline styles just in case
         targetContent.style.width = "";
         targetContent.style.height = "";
       }
@@ -496,6 +548,11 @@ export function handleSlotClick_v2(slotIndex) {
       sourceContent.style.height = "100%";
 
       fitCollectedPieces(); // Update Panel
+
+      // ANIMATE
+      animateMove(sourceContent, sourceRect);
+      animateMove(targetContent, targetRect);
+
       deselectPiece();
     } else {
       // MOVE (Target Empty)
@@ -517,6 +574,10 @@ export function handleSlotClick_v2(slotIndex) {
       }
 
       fitCollectedPieces();
+
+      // ANIMATE
+      animateMove(sourceContent, sourceRect);
+
       deselectPiece();
     }
 
@@ -835,6 +896,7 @@ export function handlePointerUp(e) {
 
     // sourceContent is already defined above
     const targetContent = dropTarget.querySelector(".mini-sudoku-grid"); // Might be null
+    const targetRect = targetContent ? targetContent.getBoundingClientRect() : null;
 
     if (sourceContent) {
       // Move Source -> Target
@@ -842,7 +904,6 @@ export function handlePointerUp(e) {
       dropTarget.appendChild(sourceContent);
       dropTarget.classList.remove("placeholder", "filled");
       dropTarget.classList.add("filled"); // It has content now
-      // If dropTarget was a placeholder, remove placeholder class
 
       if (targetContent) {
         // Swap: Target Content -> Source
@@ -850,26 +911,28 @@ export function handlePointerUp(e) {
         selectedPieceElement.appendChild(targetContent);
         selectedPieceElement.classList.add("filled");
         selectedPieceElement.classList.remove("placeholder");
+
+        // ANIMATE ONLY the piece that was NOT being dragged
+        animateMove(targetContent, targetRect);
       } else {
         // Target empty: Source becomes empty
-        // If source is slot, make empty
         if (selectedPieceElement.classList.contains("sudoku-chunk-slot")) {
           selectedPieceElement.classList.remove("filled");
         } else {
-          // If source is panel, make placeholder
           selectedPieceElement.classList.add("placeholder");
           delete selectedPieceElement.dataset.chunkIndex; // Remove ID
         }
       }
 
-      // If dropping INTO Panel (and target was placeholder)
-      // We need to ensure we set the ID on the target container
+      // If dropping INTO Panel
       if (dropTarget.classList.contains("collected-piece")) {
         const newContent = dropTarget.querySelector(".mini-sudoku-grid");
         if (newContent && newContent.dataset.chunkIndex) {
           dropTarget.dataset.chunkIndex = newContent.dataset.chunkIndex;
         }
       }
+
+      fitCollectedPieces();
     }
 
     // Check Board State after drop
@@ -1197,9 +1260,16 @@ export function resetJigsaw() {
     const content = slot.querySelector(".mini-sudoku-grid");
     if (!content) return;
 
+    // Capture starting position for animation
+    const fromRect = content.getBoundingClientRect();
+
     // Find first available placeholder
-    const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
-    const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
+    const allPlaceholders = document.querySelectorAll(
+      ".collected-piece.placeholder",
+    );
+    const available = Array.from(allPlaceholders).find(
+      (p) => !p.hasChildNodes(),
+    );
 
     if (available) {
       available.appendChild(content);
@@ -1209,6 +1279,10 @@ export function resetJigsaw() {
 
       slot.innerHTML = "";
       slot.classList.remove("filled");
+
+      // Animate the piece returning to the panel
+      animateMove(content, fromRect, 400); // Slightly slower for mass movement clarity
+
       movedCount++;
     }
   });
