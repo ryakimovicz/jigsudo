@@ -67,8 +67,8 @@ async function bump() {
     // Matches ?v=1.1, ?v=1.1.0, etc. (for HTML attributes)
     const attrVersionRegex = /\?v=[\d\.\w]+/g; 
     
-    // Matches static: import/from "./path.js?v=1.3.7"
-    // Matches dynamic: import("./path.js?v=1.3.7")
+    // Matches static: import/from "./path.js?v=1.3.8"
+    // Matches dynamic: import("./path.js?v=1.3.8")
     // Group 1: from|import, Group 2: optional space/parenthesis, Group 3: quote, Group 4: ./ or ../, Group 5: filename, Group 6: optional version, Group 7: optional matching quote (group 3 reference), Group 8: optional closing parenthesis
     const jsImportRegex = /(from|import)(\s*\(?\s*)(['"])(\.\/|\.\.\/)([^'"]+?\.js)(\?v=[\d\.\w]+)?\3(\s*\)?)?/g;
 
