@@ -16,22 +16,33 @@ window.addEventListener("languageChanged", () => {
 });
 
 /**
- * Centralized Level Title Animation (v3.0.0)
- * Smoothly fades out the current title and fades in the new one.
+ * Centralized Level Title Animation (v3.4.0)
+ * Fixed: Removed i18n auto-update dependency to prevent text-change flickering.
  */
 export function updateLevelTitle(newTitle) {
-  const titleEl = document.querySelector(".header-title-container h2");
+  const titleEl = document.getElementById("current-level-title") || document.querySelector(".header-title-container h2");
   if (!titleEl) return;
 
-  // 1. Start Fade Out
-  titleEl.classList.add("title-hidden");
+  // 1. Exit Animation (Static Fade Out)
+  titleEl.style.transition = "opacity 0.15s ease";
+  titleEl.style.opacity = "0";
 
-  // 2. Switch Text after fade out
   setTimeout(() => {
-    titleEl.textContent = newTitle;
-    // 3. Start Fade In
-    titleEl.classList.remove("title-hidden");
-  }, 300); // Matches CSS transition duration
+    // 2. Teleport to Top (Invisible)
+    titleEl.style.transition = "none";
+    titleEl.style.transform = "translateY(-15px)";
+    titleEl.textContent = newTitle; // Changed while opacity is 0
+    
+    // Force DOM Reflow to ensure 'teleport' is registered
+    void titleEl.offsetWidth;
+
+    // 3. Trigger Entry Animation (Fall from top)
+    requestAnimationFrame(() => {
+      titleEl.style.transition = "opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+      titleEl.style.opacity = "1";
+      titleEl.style.transform = "translateY(0)";
+    });
+  }, 160); 
 }
 
 export function showToast(message, duration = 3000, type = "info") {

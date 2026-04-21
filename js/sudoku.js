@@ -59,7 +59,6 @@ export function transitionToSudoku() {
         if (collectedWrapper) collectedWrapper.style.display = "none";
 
         // Update Title/Text instantly here so it cross-fades with the view transition
-        updateLevelTitle(t.game_sudoku || "Sudoku");
         if (tooltipTitle && tooltipDesc) {
           tooltipTitle.textContent = t.sudoku_help_title;
           tooltipDesc.innerHTML = t.sudoku_help_desc;
@@ -85,7 +84,6 @@ export function transitionToSudoku() {
       const collectedWrapper = document.querySelector(".collected-wrapper");
       if (collectedWrapper) collectedWrapper.style.display = "none";
 
-      updateLevelTitle(t.game_sudoku || "Sudoku");
       if (tooltipTitle && tooltipDesc) {
         tooltipTitle.textContent = t.sudoku_help_title;
         tooltipDesc.innerHTML = t.sudoku_help_desc;

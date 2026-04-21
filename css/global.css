@@ -489,13 +489,12 @@ body.dark-mode .debug-btn {
 }
 
 .game-header h2 {
-  transition: opacity 0.3s ease, transform 0.3s ease !important;
   display: inline-block;
-}
-
-.game-header h2.title-hidden {
-  opacity: 0 !important;
-  transform: translateY(-5px);
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-main);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .checkbox-label input {
