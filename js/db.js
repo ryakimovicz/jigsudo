@@ -592,8 +592,9 @@ export async function saveUserProgress(userId, progressData, options = {}) {
       }
     }
 
+    const stageName = progressData.progress?.currentStage || progressData.currentStage || "unknown";
     console.log(
-      `[DB] Progress saved to cloud for ${userId}. Stage: ${progressData.progress?.currentStage}`,
+      `[DB] Progress saved to cloud for ${userId}. Stage: ${stageName}`,
     );
     showSaveIndicatorWithMessage("Guardado en nube");
   } catch (error) {

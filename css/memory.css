@@ -50,7 +50,14 @@ body.dark-mode {
 }
 
 .memory-timer {
-  display: none !important; /* v2.8.0: Reclaimed space per user request */
+  display: flex; /* Default: Visible */
+}
+
+/* Hide only on small screens OR low-height screens (<= 768px) */
+@media (max-height: 768px), (max-width: 768px) {
+  .memory-timer {
+    display: none !important;
+  }
 }
 
 /* Light Mode specific - Light Grey Background */
@@ -543,10 +550,6 @@ body.dark-mode .memory-card-back {
     flex: 0 0 auto;
   }
 
-  /* TIMER POSITIONING FIX - Hidden for mobile to save space */
-  .memory-timer {
-    display: none;
-  }
 
   .memory-grid-layout {
     display: flex;
