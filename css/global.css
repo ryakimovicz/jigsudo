@@ -80,7 +80,7 @@ body.dark-mode {
   --bg-tertiary: #30363d; /* Lighter background for slots */
   --brand-color: var(--accent-color);
 
-  --glass-border: #444c56; /* Medium Grey Border */
+  --glass-border: #545d68; /* Lightened Grey Border for better visibility */
   --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); /* Deeper shadows */
 
 }
@@ -89,6 +89,55 @@ body.dark-mode {
 body.dark-mode .glass-panel {
   background: #2d333b; /* Darker Grey Surface */
   border-color: var(--glass-border);
+}
+
+/* Static Pages Common Layout */
+.static-page {
+  padding-top: var(--header-height);
+  padding-bottom: 60px;
+  min-height: 100dvh;
+}
+
+.static-page .content-wrapper {
+  width: 95%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Common Card Style for Static Pages */
+.privacy-card, .terms-card, .support-card {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto 25px auto;
+  padding: 30px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--paper-shadow);
+  box-sizing: border-box;
+}
+
+body.dark-mode .privacy-card, 
+body.dark-mode .terms-card, 
+body.dark-mode .support-card {
+  background: #2d333b;
+}
+
+.privacy-card h2, .terms-card h2, .support-card h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  color: var(--accent-color);
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 12px;
+}
+
+.privacy-card p, .terms-card p, .support-card p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 15px;
+  font-size: 1rem;
 }
 
 * {
@@ -308,6 +357,7 @@ body {
   #contact-section,
   #changelog-section,
   #admin-section,
+  #support-section,
   .main-footer {
     margin-left: var(--sidebar-width);
     transition:
@@ -330,6 +380,7 @@ body {
   body.sidebar-expanded #contact-section,
   body.sidebar-expanded #changelog-section,
   body.sidebar-expanded #admin-section,
+  body.sidebar-expanded #support-section,
   body.sidebar-expanded .main-footer {
     margin-left: var(--sidebar-expanded-width);
     width: calc(100% - var(--sidebar-expanded-width));
@@ -704,6 +755,7 @@ body:not(.in-game) #debug-help-btn {
   #contact-section,
   #changelog-section,
   #admin-section,
+  #support-section,
   .main-footer,
   .modal-overlay {
     margin-left: 0;

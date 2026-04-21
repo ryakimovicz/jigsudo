@@ -181,9 +181,7 @@ function _hideProfileUI() {
   // REMOVED: Router handles this exclusively now.
   // if (!isInternalRouting) { ... }
 
-  // Show Footer when returning from Profile (to Home)
-  const footer = document.querySelector(".main-footer");
-  if (footer) footer.classList.remove("hidden");
+  // REMOVED: Router handles this exclusively now.
 
   // Restore Header Button to Stats Icon
   const btnStats = document.getElementById("btn-stats");

@@ -665,9 +665,6 @@ export function showAdminPanel() {
   const footer = document.querySelector(".main-footer");
 
   if (section) section.classList.remove("hidden");
-  if (menu) menu.classList.add("hidden");
-  if (profile) profile.classList.add("hidden");
-  if (footer) footer.classList.add("hidden");
 
   // v1.9.4: Reset view to main dashboard
   document.querySelectorAll(".admin-detail-view").forEach(v => v.classList.add("hidden"));

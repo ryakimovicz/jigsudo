@@ -1,0 +1,90 @@
+/* Styles consolidated in global.css */
+
+.support-intro {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin-bottom: 5px;
+  color: var(--text-main);
+}
+
+.support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.btn-primary.support-btn {
+  background: var(--accent-color);
+  color: white;
+}
+
+.btn-primary.support-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+
+.support-email {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-decoration: none;
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 2px;
+  transition: color 0.3s;
+}
+
+.support-email:hover {
+  color: var(--accent-color);
+}
+
+.support-divider {
+  border: 0;
+  border-top: 1px solid var(--glass-border);
+  margin: 40px 0;
+  opacity: 0.3;
+}
+
+.support-donation-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Ensure Ko-fi button matches Cafecito height */
+.support-donation-links .btn-support {
+  height: 48px;
+  padding: 0 20px;
+  min-width: 140px;
+  box-sizing: border-box;
+  border-radius: 8px; /* Match Cafecito border-radius */
+}
+
+.support-donation-links .btn-cafecito-raw img {
+  height: 48px;
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .support-card {
+    padding: 20px;
+  }
+  
+  .support-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .support-donation-links {
+    justify-content: center;
+  }
+}

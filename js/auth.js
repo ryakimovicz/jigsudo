@@ -173,35 +173,15 @@ export function initAuth() {
           await gameManager.prepareDaily();
         }
 
-        const isNowPlaying =
-          !document.body.classList.contains("home-active") &&
-          !document.body.classList.contains("profile-active") &&
-          !document.body.classList.contains("history-active");
-        const isOnProfile =
-          window.location.hash === "#profile" ||
-          document.body.classList.contains("profile-active");
-        const isOnHistory =
-          window.location.hash === "#history" ||
-          document.body.classList.contains("history-active");
-
-        const isOnGuide =
-          window.location.hash === "#guide" ||
-          document.body.classList.contains("guide-active");
-        const isOnInfo =
-          window.location.hash === "#info" ||
-          document.body.classList.contains("info-active");
-
-        if (
-          (wasPlaying || isNowPlaying) &&
-          !isOnProfile &&
-          !isOnHistory &&
-          !isOnGuide &&
-          !isOnInfo &&
-          !gameManager.isReplaying
-        ) {
+        // v1.6.0: Robust Game Resumption Check
+        // We only resume a stage if we are already at a game route
+        // (either #game or a history replay).
+        const isAtGame = router.isGameRoute();
+        
+        if (isAtGame && !gameManager.isReplaying) {
           const state = gameManager.getState();
           const currentStage = state?.progress?.currentStage || "memory";
-          console.log(`[Auth] Routing to stage: ${currentStage}`);
+          console.log(`[Auth] Resuming game session at stage: ${currentStage}`);
           const memoryModule = await import("./memory.js?v=1.3.9");
           memoryModule.resumeToStage(currentStage);
         }

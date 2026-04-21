@@ -13,6 +13,10 @@ export const router = {
     "#game": "game-section",
     "#changelog": "changelog-section",
     "#admin": "admin-section",
+    "#about": "about-section",
+    "#privacy": "privacy-section",
+    "#terms": "terms-section",
+    "#support": "support-section",
   },
 
   // Map Section ID -> Body Class
@@ -23,6 +27,10 @@ export const router = {
     "profile-section": "profile-active",
     "changelog-section": "changelog-active",
     "admin-section": "admin-active",
+    "about-section": "about-active",
+    "privacy-section": "privacy-active",
+    "terms-section": "terms-active",
+    "support-section": "support-active",
   },
 
   init() {
@@ -151,13 +159,15 @@ export const router = {
 
     // 2. Footer & In-Game Body Class Handling
     const footer = document.querySelector(".main-footer");
-    const isGame = activeId === "game-section";
+    const isGame = this.isGameRoute();
+    const isAdmin = activeId === "admin-section";
+    const hideFooter = isGame || isAdmin;
 
     document.body.classList.toggle("in-game", isGame);
     document.documentElement.classList.toggle("in-game", isGame);
 
     if (footer) {
-      if (isGame) {
+      if (hideFooter) {
         footer.classList.add("hidden");
         console.log("[Router] Footer hidden");
       } else {
@@ -251,5 +261,21 @@ export const router = {
   isNavigating() {
     const hash = window.location.hash;
     return hash && hash !== "#" && hash !== "#home";
+  },
+
+  /**
+   * Returns true if the current route corresponds to a game session
+   * (either the main #game or a history replay).
+   */
+  isGameRoute() {
+    const hash = window.location.hash;
+    const parts = hash.split("/");
+    const baseRoute = parts[0];
+    const params = parts.slice(1);
+
+    if (baseRoute === "#game") return true;
+    if (baseRoute === "#history" && params.length === 3) return true;
+    
+    return false;
   },
 };
