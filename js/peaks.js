@@ -20,7 +20,11 @@ export function initPeaks() {
 
   // 1. Load State
   const state = gameManager.getState();
-  peaksErrors = state?.stats?.peaksErrors || 0;
+  // v1.3.31: Sincronización Total de Errores (Nueva Ubicación)
+  const sessionErrors = state.peaks?.errors || state.stats?.peaksErrors || 0;
+  const globalErrors = gameManager.stats?.dailyPeaksErrorsAccumulated || 0;
+  peaksErrors = Math.max(sessionErrors, globalErrors);
+  
   foundTargets = 0; // v2.9.2: Reset local counter to prevent session pollution
   currentHintRow = 0; // Reset hint progress
   updateErrorCounter();
@@ -239,8 +243,11 @@ export function resumePeaksState() {
   foundTargets = 0;
   prepareGameLogic(); // Ensure targetMap is ready
 
-  // Hydrate local error count from state
-  peaksErrors = state.stats?.peaksErrors || 0;
+  // v1.3.31: Sincronización Total de Errores (Nueva Ubicación)
+  const sessionErrors = state.peaks?.errors || state.stats?.peaksErrors || 0;
+  const globalErrors = gameManager.stats?.dailyPeaksErrorsAccumulated || 0;
+  
+  peaksErrors = Math.max(sessionErrors, globalErrors);
   updateErrorCounter();
 
   foundCoords.forEach((key) => {
@@ -261,11 +268,17 @@ export function resumePeaksState() {
 }
 
 function handleIncorrectClick(cell) {
-  peaksErrors++;
+  // v1.3.31: Error Atómico
+  // Guardamos el error directamente en el objeto 'peaks' para asegurar que la nube lo acepte
+  const state = gameManager.getState();
+  if (!state.peaks) state.peaks = {};
+  state.peaks.errors = (state.peaks.errors || 0) + 1;
+  
+  peaksErrors = state.peaks.errors;
   updateErrorCounter();
 
   // Sync with GameManager State
-  gameManager.updateProgress("stats", { peaksErrors: peaksErrors });
+  gameManager.updateProgress("peaks", { errors: peaksErrors });
 
   // Shake animation on the NUMBER only
   const numSpan = cell.querySelector(".curr-number");

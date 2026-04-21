@@ -187,15 +187,20 @@ export class GameManager {
     if (savedState) {
       this.state = savedState;
       
-      // v1.4.5 Saneamiento v7.1: El progreso local ya no debe contener 'stats'
-      if (this.state && this.state.stats) {
-        delete this.state.stats;
-        if (CONFIG.debugMode) console.log("[GameManager] Residuo local 'progress.stats' purgado.");
-      }
+      // v1.3.26: Preservación de Stats de Sesión
+      // No purgamos 'this.state.stats' porque contiene los errores de Peaks & Valleys
+      // necesarios para la pantalla de victoria y sincronización entre dispositivos.
       // Proactively load stats to ensure this.stats is populated before syncs
       this.stats =
         JSON.parse(localStorage.getItem("jigsudo_user_stats")) || null;
       const decayOccurred = await this._ensureStats();
+      
+      // v1.3.28: Startup Audit
+      // Ensure local totals match the atomic reality of the loaded session.
+      if (this.state) {
+        await this._recalculateNetStats(false, true);
+      }
+
       masterLock.showIcon();
       const activeUid = localStorage.getItem("jigsudo_active_uid");
 
@@ -902,10 +907,10 @@ export class GameManager {
     if (this.isReplay) return;
 
     localStorage.setItem(this.storageKey, encryptData(this.state));
-    if (syncToCloud) this.saveCloudDebounced(2000, isPenalty);
+    if (syncToCloud) this.saveCloudDebounced(500, isPenalty);
   }
 
-  saveCloudDebounced(delay = 2000, isPenalty = false) {
+  saveCloudDebounced(delay = 500, isPenalty = false) {
     if (this.cloudSaveTimeout) clearTimeout(this.cloudSaveTimeout);
     this.cloudSaveTimeout = setTimeout(() => {
       this.forceCloudSave(false, isPenalty);
@@ -1330,13 +1335,14 @@ export class GameManager {
       else return;
     }
     
-    // v1.5.44: Detect error increment for live penalty and TRIPLE-TRACK atoms
-    const oldErrors = this.state.stats?.peaksErrors || 0;
+    // v1.3.32: Sincronización de Acumuladores
+    // Detectamos incremento de errores tanto en la carpeta vieja (stats) como en la nueva (peaks)
+    const oldErrors = (this.state.peaks?.errors || 0) + (this.state.stats?.peaksErrors || 0);
     this.state[section] = { ...this.state[section], ...data };
-    const newErrors = this.state.stats?.peaksErrors || 0;
+    const newErrors = (this.state.peaks?.errors || 0) + (this.state.stats?.peaksErrors || 0);
 
     // If errors increased, update the 3-track atoms and recalculate
-    if (section === "stats" && newErrors > oldErrors) {
+    if (newErrors > oldErrors) {
       const delta = newErrors - oldErrors;
       if (this.stats) {
         this.stats.dailyPeaksErrorsAccumulated = (this.stats.dailyPeaksErrorsAccumulated || 0) + delta;
@@ -1344,6 +1350,9 @@ export class GameManager {
         this.stats.totalPeaksErrorsAccumulated = (this.stats.totalPeaksErrorsAccumulated || 0) + delta;
       }
       this._recalculateNetStats(true);
+      
+      // v1.3.31+: Error Priority Sync
+      this.forceCloudSave();
     } else {
         // v1.5.44: Even if no direct error, ensure we save progress changes
         if (this.state.meta) {
@@ -1355,7 +1364,13 @@ export class GameManager {
                 console.log(`[GM] Level transition detected (${data.currentStage}). Forcing cloud save.`);
                 this.forceCloudSave();
             } else {
-                this.save();
+      // v1.3.31: Error Priority Sync
+      // Si el cambio es un error o progreso en picos, forzamos un guardado más agresivo
+      if (section === "peaks") {
+          this.forceCloudSave();
+      } else {
+          this.save();
+      }
             }
         }
     }
@@ -1631,6 +1646,7 @@ export class GameManager {
 
     // B. COMPONENT AGGREGATION (v1.5.47: Track Solidarity)
     // 0. Live Session Ingredients
+    if (!this.state || !this.state.progress) return; // v1.3.29: Resilience Guard
     let sessionWins = (this.state.progress.stagesCompleted || []).length;
     
     // v1.3.11: Robust sessionWins for victory state
@@ -1638,7 +1654,17 @@ export class GameManager {
     if (this.state.progress.won && (this.state.progress.currentStage === "code" || (this.state.progress.stagesCompleted || []).includes("code"))) {
         sessionWins = 6;
     }
-    const sessionErrors = (this.state.stats && this.state.stats.peaksErrors) || 0;
+    const sessionErrors = (this.state.peaks && this.state.peaks.errors) || (this.state.stats && this.state.stats.peaksErrors) || 0;
+    
+    // v1.3.34: Total Atom Self-Healing
+    // If the session has more errors than recorded in the daily accumulator, 
+    // we bump ALL levels to ensure the penalty is recorded everywhere.
+    if (sessionErrors > (stats.dailyPeaksErrorsAccumulated || 0)) {
+        const delta = sessionErrors - (stats.dailyPeaksErrorsAccumulated || 0);
+        stats.dailyPeaksErrorsAccumulated = sessionErrors;
+        stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + delta;
+        stats.totalPeaksErrorsAccumulated = (stats.totalPeaksErrorsAccumulated || 0) + delta;
+    }
     
     // 1. Daily Scope (The 'Game Day' Net)
     const dailyWins = Math.max(sessionWins, stats.dailyWinsAccumulated || 0);
@@ -2323,10 +2349,6 @@ export class GameManager {
           
           this._lastLocalWrite = Date.now(); // Shield engagement after adoption
           
-          // v1.3.25: Immediate Repair
-          // Recalculate everything locally to ensure no drift from the cloud persists.
-          await this._recalculateNetStats(false, true); // skipPersistence=true (no echo back)
-          
           localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
           window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: this.stats }));
         } else {
@@ -2452,6 +2474,10 @@ export class GameManager {
         }
       }
     }
+    // v1.3.28: Final Master Sync Audit
+    // Now that both Stats and Progress are potentially updated, 
+    // we run the absolute repair to ensure they match perfectly.
+    await this._recalculateNetStats(false, true); 
   }
 
   showConflictResolution(remoteState) {
@@ -2861,7 +2887,7 @@ export class GameManager {
           return sum + (roundedSecs * 1000);
       }, 0);
       
-      const peaksErrors = this.state.stats?.peaksErrors || 0;
+      const peaksErrors = ((this.state.peaks && this.state.peaks.errors) || 0) + (this.state.stats?.peaksErrors || 0);
       const today = getJigsudoDateString();
       const isAlreadyWon = stats.history[puzzleDate]?.status === "won" || stats.history[puzzleDate]?.original?.won === true;
       const isLateCompletion = seedDate < today;
@@ -3247,7 +3273,8 @@ export class GameManager {
         won: true
       };
 
-      if (!stats.history[historyKey].original && isOriginalDay) {
+      const isNotWonYet = !stats.history[historyKey].original || stats.history[historyKey].original.won === false;
+      if (isNotWonYet && isOriginalDay) {
         console.log(`[GM recordWin] WRITE ORIGINAL to history[${historyKey}]`);
         stats.history[historyKey].status = "won";
         stats.history[historyKey].original = resultData;
