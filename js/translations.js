@@ -587,6 +587,13 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v138_title: "Versión 1.3.8",
+    changelog_v138_date: "21/04/2026",
+    changelog_v138_item1: "Optimización de layout vertical para pantallas de 768px (Header condensado y eliminación de scroll).",
+    changelog_v138_item2: "Unificación de animaciones de títulos con efecto de caída premium y corrección de parpadeo.",
+    changelog_v138_item3: "Mejora en Modo Historial: Ocultación de racha en resumen e imágenes compartidas.",
+    changelog_v138_item4: "Corrección de error de progresión en Picos y Valles al jugar desde el historial.",
+    changelog_v138_item5: "Transiciones instantáneas mediante sincronización de datos en segundo plano.",
     changelog_v131_title: "Versión 1.3.1",
     changelog_v131_date: "15/04/2026",
     changelog_v131_item1: "Interactividad del Candado: Implementación de aviso informativo al hacer clic en el candado maestro durante los niveles.",
@@ -1368,6 +1375,13 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v138_title: "Version 1.3.8",
+    changelog_v138_date: "21/04/2026",
+    changelog_v138_item1: "Vertical layout optimization for 768px screens (Condensed header and scroll removal).",
+    changelog_v138_item2: "Unified title animations with premium falling effect and flicker fix.",
+    changelog_v138_item3: "History Mode Improvement: Streak hidden in summary and shared images.",
+    changelog_v138_item4: "Fixed progression bug in Peaks & Valleys when playing from history.",
+    changelog_v138_item5: "Instant transitions via background data synchronization.",
     changelog_v131_title: "Version 1.3.1 (Sidebar Center & Lock Interaction)",
     changelog_v131_date: "04/15/2026",
     changelog_v131_item1: "Lock Interactivity: Implementation of informational toast when clicking the master lock during gameplay.",
