@@ -587,6 +587,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v139_title: "Versión 1.3.9",
+    changelog_v139_date: "21/04/2026",
+    changelog_v139_item1: "Integridad de Puntaje: Refactorización del motor de cálculo para garantizar la coherencia total entre el progreso de la partida y el ranking global.",
+    changelog_v139_item2: "Sincronización de Errores: Implementación de guardado atómico e inmediato para errores en Picos y Valles, eliminando la pérdida de datos al cambiar de dispositivo.",
     changelog_v138_title: "Versión 1.3.8",
     changelog_v138_date: "21/04/2026",
     changelog_v138_item1: "Optimización de layout vertical para pantallas de 768px (Header condensado y eliminación de scroll).",
@@ -1583,5 +1587,9 @@ export const translations = {
     changelog_v132_item2: "Point Integrity: Total isolation of each session's score, preventing previous days' points from inflating daily totals.",
     changelog_v132_item3: "Stability Optimization (OOM): Removed redundant saves that caused crashes during stage transitions.",
     changelog_v132_item4: "Field Synchronization: Refined activity dates to ensure the decay system uses accurate anchors.",
+    changelog_v139_title: "Version 1.3.9",
+    changelog_v139_date: "04/21/2026",
+    changelog_v139_item1: "Scoring Integrity: Refactored the calculation engine to ensure total consistency between game progress and global rankings.",
+    changelog_v139_item2: "Error Synchronization: Implemented atomic and immediate saving for errors in Peaks & Valleys, eliminating data loss when switching devices.",
   },
 };
