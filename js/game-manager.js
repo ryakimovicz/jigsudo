@@ -3091,8 +3091,14 @@ export class GameManager {
       if (stats.dailyRP < 0) stats.dailyRP = 0;
       if (stats.monthlyRP < 0) stats.monthlyRP = 0;
 
-      // v1.5.57: Session-Specific Score Calculation (Isolated performance)
-      const basePoints = (this.state.progress.stagesCompleted || []).length;
+      // v1.3.9: Robust Base Points Calculation
+      // If we won from the 'code' stage, we MUST have completed all 6 stages.
+      // This prevents losing points due to race conditions in fast transitions.
+      let basePoints = stagesCompleted.length;
+      if (this.state.progress.currentStage === "code" || stagesCompleted.includes("code")) {
+        basePoints = 6;
+      }
+      
       const sessionScore = Number((basePoints + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
       
       // v1.3.2: Fixed critical scoping bug. 
