@@ -18,6 +18,7 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   verifyBeforeUpdateEmail,
+  getAdditionalUserInfo,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js?v=1.3.9";
 import { router } from "./router.js?v=1.3.9";
@@ -445,6 +446,16 @@ export async function loginWithGoogle() {
     // Refresh UI manually to ensure assignedName shows up immediately
     updateUIForLogin(user);
 
+    // NEW USER AUTOMATION:
+    // If it's a first-time Google sign-in (or linking), open the username modal
+    const additionalInfo = getAdditionalUserInfo(result);
+    if (additionalInfo && additionalInfo.isNewUser) {
+      console.log("[Auth] New Google user detected, prompting for username...");
+      setTimeout(() => {
+        showPasswordModal("change_username");
+      }, 500); // Small delay to let the login UI settle
+    }
+
     return { success: true, user };
   } catch (error) {
     console.error("Google Login Error:", error.code, error.message);
@@ -829,7 +840,7 @@ function translateAuthError(code) {
   }
 }
 
-function showPasswordModal(actionType) {
+export function showPasswordModal(actionType) {
   const modal = document.getElementById("password-confirm-modal");
   const title = document.getElementById("pwd-modal-title");
   const desc = document.getElementById("pwd-modal-desc");
