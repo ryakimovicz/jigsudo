@@ -1373,42 +1373,54 @@ function attachComparisonListeners(foreignData) {
     });
   }
 
-  // 2. Stats Grid
-  const statCards = document.querySelectorAll("#profile-section .stats-grid .stat-card");
-  statCards.forEach(card => {
+  // 2. Overview Stats (stat-box)
+  const statBoxes = document.querySelectorAll("#profile-section .stat-box");
+  statBoxes.forEach(card => {
+    const numberEl = card.querySelector(".stat-number");
     const labelEl = card.querySelector(".stat-label");
-    if (!labelEl) return;
-    const labelText = labelEl.textContent.trim().toLowerCase();
+    if (!numberEl || !labelEl) return;
     
+    const id = numberEl.id;
     let key = "";
-    if (labelText.includes("completados") || labelText.includes("completed")) key = "totalPlayed";
-    else if (labelText.includes("racha actual") || labelText.includes("current streak")) key = "currentStreak";
-    else if (labelText.includes("racha máx") || labelText.includes("max streak")) key = "maxStreak";
-    else if (labelText.includes("puntaje") || labelText.includes("score")) key = "bestScore";
-    else if (labelText.includes("récord") || labelText.includes("record")) key = "bestTime";
-    else if (labelText.includes("promedio") || labelText.includes("average")) key = "avgTime";
+    if (id === "stat-played") key = "wins";
+    else if (id === "stat-streak") key = "currentStreak";
+    else if (id === "stat-max-streak") key = "maxStreak";
+    else if (id === "stat-max-score") key = "bestScore";
+    else if (id === "stat-best-time") key = "bestTime";
+    else if (id === "stat-avg-time") key = "avgTime";
 
     if (!key) return;
+
+    console.log(`[Comparison] Attaching to: ${id} (${key})`);
 
     let foreignVal = 0, ownVal = 0, type = "number", suffix = "";
     
     if (key === "avgTime") {
-        const fH = foreignData.history || {};
-        const oH = ownStats.history || {};
-        const calcAvg = (h) => {
-            const wins = Object.values(h).filter(x => x.status === "won" && x.totalTime > 0);
-            return wins.length > 0 ? wins.reduce((a, b) => a + b.totalTime, 0) / wins.length : 0;
+        // Calculate average time dynamically if not in stats
+        const getAvg = (d) => {
+            if (!d) return 0;
+            // s can be d.stats (foreign) or d itself (own)
+            const s = (d.stats && d.stats.wins !== undefined) ? d.stats : d;
+            
+            if (s.avgTime) return s.avgTime;
+            const wins = s.wins || 0;
+            const time = s.totalTimeAccumulated || 0;
+            return wins > 0 ? time / wins : 0;
         };
-        foreignVal = calcAvg(fH);
-        ownVal = calcAvg(oH);
+        foreignVal = getAvg(foreignData);
+        ownVal = getAvg(ownStats);
         type = "time";
     } else if (key === "bestTime") {
         foreignVal = foreignData.stats?.bestTime || 0;
         ownVal = ownStats.bestTime || 0;
         type = "time";
     } else {
-        foreignVal = (foreignData.stats?.[key] !== undefined) ? foreignData.stats[key] : (foreignData[key] || 0);
-        ownVal = ownStats?.[key] || 0;
+        const fS = (foreignData.stats && foreignData.stats.wins !== undefined) ? foreignData.stats : foreignData;
+        const oS = (ownStats && ownStats.stats && ownStats.stats.wins !== undefined) ? ownStats.stats : ownStats;
+
+        foreignVal = fS[key] || 0;
+        ownVal = oS ? (oS[key] || 0) : 0;
+        
         if (key === "bestScore") suffix = " RP";
     }
 
@@ -1421,9 +1433,9 @@ function attachComparisonListeners(foreignData) {
   });
 
   // 3. Average Times per Level
-  const stageCards = document.querySelectorAll("#profile-section .stage-card");
+  const stageCards = document.querySelectorAll("#profile-section .stat-detail-box");
   stageCards.forEach(card => {
-    const nameEl = card.querySelector(".stage-name");
+    const nameEl = card.querySelector(".detail-label");
     if (!nameEl) return;
     const stageName = nameEl.textContent.trim();
     
@@ -1448,6 +1460,26 @@ function attachComparisonListeners(foreignData) {
     const fVal = getStageAvg(foreignData);
     const oVal = getStageAvg(ownStats);
 
+    // v1.7.9: Special case for Peaks & Valleys (Include Errors)
+    if (key === "peaks") {
+        const getPeaksExt = (d) => {
+            const s = (d.stats && d.stats.wins !== undefined) ? d.stats : d;
+            const wins = s.wins || 0;
+            const errs = s.totalPeaksErrorsAccumulated || 0;
+            return wins > 0 ? errs / wins : 0;
+        };
+        const fErr = getPeaksExt(foreignData);
+        const oErr = getPeaksExt(ownStats);
+
+        setupComp(card, {
+            title: stageName,
+            foreign: { name: fName, time: fVal, errs: fErr },
+            own: { name: t.comp_you || "Tú", time: oVal, errs: oErr },
+            type: "peaks"
+        });
+        return;
+    }
+
     setupComp(card, {
       title: stageName,
       foreign: { name: fName, val: fVal, label: formatCompValue(fVal, "time") },
@@ -1455,35 +1487,39 @@ function attachComparisonListeners(foreignData) {
       type: "time"
     });
   });
+  const metricCols = document.querySelectorAll("#profile-section .daily-stat-card .metric-col");
+  metricCols.forEach(col => {
+      const card = col.closest(".daily-stat-card");
+      const dayLabel = card?.querySelector(".daily-stat-label")?.textContent || "";
+      const metricTitle = col.title || ""; // "Tiempo Promedio", "Errores Promedio", "Puntaje Promedio"
+      const icon = col.querySelector(".metric-icon")?.textContent || "";
 
-  // 4. Daily Average
-  const dailyCards = document.querySelectorAll("#profile-section .daily-stat-card");
-  dailyCards.forEach(card => {
-     const labelEl = card.querySelector(".daily-stat-label");
-     if (!labelEl) return;
-     const labelText = labelEl.textContent.trim().toLowerCase();
+      let fVal = 0, oVal = 0, type = "number", suffix = "";
+      
+      // We need to know which day we are comparing (0=Sun, 1=Mon...)
+      const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      const dayIndex = dayNames.indexOf(dayLabel);
+      if (dayIndex === -1) return;
 
-     let fVal = 0, oVal = 0, type = "number", suffix = "";
-     if (labelText.includes("rp")) {
-         fVal = foreignData.stats?.dailyRP || foreignData.dailyRP || 0;
-         oVal = ownStats.dailyRP || 0;
-         suffix = " RP";
-     } else if (labelText.includes("jigsudos")) {
-         fVal = foreignData.stats?.dailyWinsAccumulated || 0;
-         oVal = ownStats.dailyWinsAccumulated || 0;
-     } else if (labelText.includes("tiempo") || labelText.includes("time")) {
-         const today = getJigsudoDateString();
-         fVal = foreignData.history?.[today]?.totalTime || 0;
-         oVal = ownStats.history?.[today]?.totalTime || 0;
-         type = "time";
-     } else return;
+      if (metricTitle.includes("Tiempo")) {
+          fVal = foreignData.stats?.weekdayStats?.[dayIndex]?.avgTime || 0;
+          oVal = ownStats.weekdayStats?.[dayIndex]?.avgTime || 0;
+          type = "time";
+      } else if (metricTitle.includes("Puntaje")) {
+          fVal = foreignData.stats?.weekdayStats?.[dayIndex]?.avgRP || 0;
+          oVal = ownStats.weekdayStats?.[dayIndex]?.avgRP || 0;
+          suffix = " RP";
+      } else if (metricTitle.includes("Errores")) {
+          fVal = foreignData.stats?.weekdayStats?.[dayIndex]?.avgErrors || 0;
+          oVal = ownStats.weekdayStats?.[dayIndex]?.avgErrors || 0;
+      } else return;
 
-     setupComp(card, {
-        title: labelEl.textContent,
+      setupComp(col, {
+        title: `${dayLabel} (${icon})`,
         foreign: { name: fName, val: fVal, label: formatCompValue(fVal, type, suffix) },
         own: { name: t.comp_you || "Tú", val: oVal, label: formatCompValue(oVal, type, suffix) },
         type: type
-     });
+      });
   });
 }
 
@@ -1491,8 +1527,13 @@ function formatCompValue(val, type, suffix = "") {
     if (!val || val <= 0) return "--";
     if (type === "time") {
         const totalSec = Math.floor(val / 1000);
-        const m = Math.floor(totalSec / 60);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
         const s = totalSec % 60;
+        
+        if (h > 0) {
+            return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+        }
         return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     }
     const num = Number(val);
@@ -1547,6 +1588,34 @@ function showCompTooltip(e, data) {
             <span class="comp-rank-name">${o.rankName}</span>
             <span class="comp-rank-level">Nvl. ${o.level}</span>
             <span class="comp-rank-rp">${oRP} RP <span class="${trendClass}">${trendIcon}</span></span>
+        </div>`;
+  } else if (data.type === "peaks") {
+      const f = data.foreign;
+      const o = data.own;
+
+      // Time Trend (Lower is better)
+      const tTrend = o.time < f.time ? "trend-up" : (o.time > f.time ? "trend-down" : "trend-equal");
+      const tIcon = tTrend === "trend-up" ? "▲" : (tTrend === "trend-down" ? "▼" : "");
+      
+      // Error Trend (Lower is better)
+      const eTrend = o.errs < f.errs ? "trend-up" : (o.errs > f.errs ? "trend-down" : "trend-equal");
+      const eIcon = eTrend === "trend-up" ? "▲" : (eTrend === "trend-down" ? "▼" : "");
+
+      const fTime = formatCompValue(f.time, "time");
+      const oTime = formatCompValue(o.time, "time");
+      const fErr = f.errs.toFixed(1);
+      const oErr = o.errs.toFixed(1);
+
+      fHtml = `
+        <div class="comp-value-stack">
+            <span class="comp-value">${fTime} ⏱️</span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fErr} err. ❌</span>
+        </div>`;
+
+      oHtml = `
+        <div class="comp-value-stack">
+            <span class="comp-value">${oTime} <span class="${tTrend}">${tIcon}</span></span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${oErr} <span class="${eTrend}">${eIcon}</span></span>
         </div>`;
   } else {
       fHtml = `<span class="comp-value">${data.foreign.label}</span>`;
