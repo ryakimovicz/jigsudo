@@ -69,7 +69,7 @@ export const router = {
 
     // v1.6.0: ADMIN PROTECTION
     if (baseRoute === "#admin") {
-      const { isAdmin } = await import("./auth.js?v=1.3.9");
+      const { isAdmin } = await import("./auth.js?v=1.3.10");
       if (!isAdmin()) {
         console.warn("[Router] Unprivileged access to #admin. Redirecting...");
         history.replaceState(null, null, "#home");
@@ -178,8 +178,8 @@ export const router = {
         // If we are navigating AWAY from a game (or landed on a menu),
         // ensure any victory modal/animation is removed.
         const cleanup = async () => {
-          const { cleanupVictoryUI } = await import("./ui.js?v=1.3.9");
-          const { stopVictoryAnimations } = await import("./code.js?v=1.3.9");
+          const { cleanupVictoryUI } = await import("./ui.js?v=1.3.10");
+          const { stopVictoryAnimations } = await import("./code.js?v=1.3.10");
           cleanupVictoryUI();
           stopVictoryAnimations();
         };
@@ -208,12 +208,12 @@ export const router = {
 
     // v1.6.0: Admin Init
     if (activeId === "admin-section") {
-      import("./admin.js?v=1.3.9").then((mod) => {
+      import("./admin.js?v=1.3.10").then((mod) => {
         mod.initAdmin();
         mod.showAdminPanel();
       });
     } else {
-      import("./admin.js?v=1.3.9").then((mod) => mod.hideAdminPanel());
+      import("./admin.js?v=1.3.10").then((mod) => mod.hideAdminPanel());
     }
 
     // 4. Update Sidebar
