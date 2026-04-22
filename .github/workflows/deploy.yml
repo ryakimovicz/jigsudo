@@ -34,7 +34,7 @@ jobs:
           git config --global user.email 'bot@jigsudo.com'
           
           # Check if there are changes (bump.js should have modified config.js, index.html, and .js imports)
-          git add js/config.js index.html "**/*.html" "**/*.js"
+          git add -u
           if git diff --staged --quiet; then
             echo "No changes to commit. Version might already be bumped."
           else
