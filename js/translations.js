@@ -608,6 +608,14 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v140_title: "Versión 1.4.0 - El Gran Salto Analítico",
+    changelog_v140_date: "22 de abril de 2026",
+    changelog_v140_item1: "Modo Comparativa: Paridad analítica total entre perfiles y secciones de historial.",
+    changelog_v140_item2: "Buscador de Jugadores: Nueva herramienta para explorar y analizar el rendimiento de otros usuarios.",
+    changelog_v140_item3: "Vistazos Inteligentes: Tooltips triple métrica (RP, Tiempo, Errores) con indicadores de tendencia.",
+    changelog_v140_item4: "Optimización de Carga: Apertura instantánea del menú principal mediante inicialización asíncrona.",
+    changelog_v140_item5: "Jerarquía de Datos: El Puntaje (RP) ahora es la métrica principal en todos los paneles y resúmenes.",
+
     changelog_v1310_title: "Versión 1.3.10",
     changelog_v1310_date: "22/04/2026",
     changelog_v1310_item1: "Actualización de las páginas informativas (Acerca de, Privacidad, Términos y Soporte).",
@@ -1648,6 +1656,14 @@ export const translations = {
     changelog_v139_date: "04/21/2026",
     changelog_v139_item1: "Scoring Integrity: Refactored the calculation engine to ensure total consistency between game progress and global rankings.",
     changelog_v139_item2: "Error Synchronization: Implemented atomic and immediate saving for errors in Peaks & Valleys, eliminating data loss when switching devices.",
+    changelog_v140_title: "Version 1.4.0 - The Great Analytical Leap",
+    changelog_v140_date: "April 22, 2026",
+    changelog_v140_item1: "Comparison Mode: Full analytical parity between profiles and history sections.",
+    changelog_v140_item2: "User Search: New tool to explore and analyze other users' performance.",
+    changelog_v140_item3: "Smart Tooltips: Triple-metric tooltips (RP, Time, Errors) with trend indicators.",
+    changelog_v140_item4: "Startup Optimization: Instant home menu opening through asynchronous initialization.",
+    changelog_v140_item5: "Data Hierarchy: Score (RP) is now the primary metric across all panels and summaries.",
+
     changelog_v1310_title: "Version 1.3.10",
     changelog_v1310_date: "04/22/2026",
     changelog_v1310_item1: "Informational pages update (About, Privacy, Terms, and Support).",
