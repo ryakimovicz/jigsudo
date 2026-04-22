@@ -3175,7 +3175,7 @@ export class GameManager {
             if (deltaRP > 0) {
                 stats.monthlyRP = Number(((stats.monthlyRP || 0) + deltaRP).toFixed(3));
                 stats.totalRP = Number(((stats.totalRP || 0) + deltaRP).toFixed(3));
-                stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + deltaRP).toFixed(3));
+                stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + stats.lastBonus).toFixed(3));
             }
 
             this.stats = stats;
@@ -3456,7 +3456,8 @@ export class GameManager {
         rb.totalPlayed++;
         rb.wins++;
         rb.totalTimeAccumulated += hTime;
-        rb.totalScoreAccumulated += hScore;
+        const errorPenalty = hErrors * 0.5; // SCORING.ERROR_PENALTY_RP
+        rb.totalScoreAccumulated += Number((hScore + errorPenalty).toFixed(3));
         rb.totalPeaksErrorsAccumulated += hErrors;
 
         // Monthly Atoms Rebuild Support

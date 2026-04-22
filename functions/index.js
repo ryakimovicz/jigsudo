@@ -298,7 +298,7 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
 
   // Stats Aggregators (No RP duplicates here anymore)
   const statsUpdate = {
-    "stats.totalScoreAccumulated": FieldValue.increment(stagePoints),
+    "stats.totalScoreAccumulated": FieldValue.increment(1.0),
     [`stats.stageWinsAccumulated.${stage}`]: FieldValue.increment(1),
     [`stats.stageTimesAccumulated.${stage}`]: FieldValue.increment(stageTime),
   };
@@ -438,8 +438,10 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const dayOfWeek = new Date(today + "T12:00:00Z").getUTCDay(); // 0-6
   // totalErrors already declared on line 362
 
+  const grossScoreForWin = Number((finalBonus).toFixed(3));
+
   batch.update(userRef, {
-    "stats.totalScoreAccumulated": FieldValue.increment(finalDelta),
+    "stats.totalScoreAccumulated": FieldValue.increment(grossScoreForWin),
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,
