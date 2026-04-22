@@ -569,6 +569,18 @@ function handleNumberInput(num) {
     console.log("Pencil note:", num);
     toggleNote(selectedCell, num, true); // Pass true to skip inner history push (already pushed above)
   } else {
+    // TOGGLE LOGIC: If same number is pressed, clear the cell
+    const currentVal = selectedCell.textContent.trim();
+    if (
+      selectedCell.classList.contains("user-filled") &&
+      currentVal === num.toString()
+    ) {
+      // Revert the history push from above since we'll call clearSelectedCell which pushes its own
+      undoStack.pop();
+      clearSelectedCell();
+      return;
+    }
+
     selectedCell.textContent = num;
     selectedCell.classList.add("user-filled");
     selectedCell.classList.remove("has-notes");
