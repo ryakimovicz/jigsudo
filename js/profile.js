@@ -611,7 +611,7 @@ function renderProfileStats(stats, isOwn = true) {
     const avgPeaksErr = peaksErrorCount
       ? (totalPeaksErrors / peaksErrorCount).toFixed(1)
       : "0";
-    document.getElementById("stat-avg-peaks").innerHTML = avgPeaksTime;
+    document.getElementById("stat-avg-peaks").innerHTML = `<strong>${avgPeaksTime}</strong>`;
     if (document.getElementById("stat-avg-peaks-err"))
       document.getElementById("stat-avg-peaks-err").textContent =
         `(${avgPeaksErr} err)`;

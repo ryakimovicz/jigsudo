@@ -455,13 +455,6 @@ export const translations = {
     err_auth_general: "Error de autenticación: ",
     err_user_exists: "El nombre de usuario ya está en uso.",
 
-    sidebar_history: "Historial",
-    history_title: "Historial de Puzzles",
-    history_select_date: "Selecciona una fecha para jugar",
-    toast_email_invalid: "El correo no es válido.",
-    toast_name_empty: "El nombre no puede estar vacío.",
-    error_missing_puzzle: "No hay partida disponible para este día.",
-    error_missing_puzzle_day: "No hay partida disponible para el día {day}.",
 
     toast_name_empty: "El nombre no puede estar vacío.",
     toast_name_success: "Nombre actualizado con éxito.",
