@@ -516,7 +516,11 @@ export class GameManager {
 
     this.storageKey = `jigsudo_state_${requestedSeed}`;
     this.currentSeed = requestedSeed;
-    this.isReplay = requestedSeed !== liveSeed;
+    this._ensureStats();
+    const dateStrToday = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const isAlreadyWon = this.stats.history && this.stats.history[dateStrToday]?.status === "won";
+
+    this.isReplay = requestedSeed !== liveSeed || isAlreadyWon;
 
     if (this.isReplay) {
       console.log(
@@ -529,20 +533,9 @@ export class GameManager {
       localStorage.removeItem(this.storageKey);
     } else {
       // Current live day logic
-      this._ensureStats();
-      const dateStrToday = `${parts[0]}-${parts[1]}-${parts[2]}`;
-      const isAlreadyWon = this.stats.history[dateStrToday]?.status === "won";
-
-      if (isAlreadyWon) {
-        console.log(
-          "[GameManager] Today already won: Wiping progress for a fresh replay.",
-        );
-        localStorage.removeItem(this.storageKey);
-      } else {
-        console.log(
-          "[GameManager] Today in progress: Preserving state for resume.",
-        );
-      }
+      console.log(
+        "[GameManager] Today in progress: Preserving state for resume.",
+      );
     }
 
     this.ready = this.init(true); // Silent re-init for history/replay
