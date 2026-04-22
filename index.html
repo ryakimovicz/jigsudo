@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google Consent Mode (Default Denied) -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'wait_for_update': 500
+      });
+    </script>
+
     <!-- Google Tag Manager -->
     <script>
       (function (w, d, s, l, i) {
@@ -35,6 +46,8 @@
     <link rel="stylesheet" href="css/guide.css?v=1.3.9" />
     <link rel="stylesheet" href="css/privacy.css?v=1.3.9" />
     <link rel="stylesheet" href="css/terms.css?v=1.3.9" />
+    <link rel="stylesheet" href="css/cookies.css?v=1.3.9" />
+    <link rel="stylesheet" href="css/support.css?v=1.3.9" />
     <link rel="stylesheet" href="css/sidebar.css?v=1.3.9" />
     <link rel="stylesheet" href="css/changelog.css?v=1.3.9" />
     <link rel="stylesheet" href="css/admin.css?v=1.3.9" />
@@ -1531,6 +1544,11 @@
           <!-- Center Area: Board -->
           <div class="board-wrapper">
             <div id="memory-board" class="memory-board"></div>
+            
+            <!-- Jigsaw Reset Button -->
+            <div class="jigsaw-controls">
+              <button id="btn-jigsaw-reset" class="btn-secondary btn-jigsaw-reset" data-i18n="btn_reset_jigsaw">Reiniciar Tablero 🔄</button>
+            </div>
           </div>
 
           <!-- Collected Pieces Wrapper -->
@@ -1579,6 +1597,7 @@
             <span id="peaks-error-count">0</span>
           </div>
         </div>
+
 
         <!-- Timer -->
         <div id="memory-timer" class="memory-timer">00:00</div>
@@ -1862,14 +1881,270 @@
         </div>
       </section>
 
+      <!-- About Section -->
+      <section id="about-section" class="hidden static-page">
+        <div class="content-wrapper">
+          <header class="section-header">
+            <h2 data-i18n="about_title">Acerca de</h2>
+          </header>
+          <div class="section-body">
+            <div class="privacy-card">
+              <h2 data-i18n="about_intro_title">Sobre Jigsudo</h2>
+              <p data-i18n="about_intro_p">
+                Jigsudo es un desafío mental diario que fusiona mecánicas de 
+                lógica, memoria y rompecabezas en una experiencia única. 
+                Cada día a las 06:00 UTC se genera un nuevo tablero, ofreciendo 
+                un momento de enfoque y entrenamiento inteligente directamente 
+                en tu navegador.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="about_origin_title">El Origen</h2>
+              <p data-i18n="about_origin_text">
+                La idea comenzó con un concepto simple: ¿qué pasaría si mezclamos 
+                los rompecabezas tradicionales con el Sudoku? A partir de esa 
+                premisa, el proyecto evolucionó hasta convertirse en un 
+                recorrido completo de seis desafíos secuenciales que conviven 
+                sobre un mismo tablero. Fue entonces cuando, buscando el nombre 
+                perfecto, descubrí que existía un título para una consola que 
+                explora una combinación similar, pero limitado a esa plataforma 
+                y sin la variedad de minijuegos que hoy integran Jigsudo.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="about_author_title">Acerca del Autor</h2>
+              <p data-i18n="about_author_text">
+                Me llamo Román Yakimovicz, de Argentina, y soy Técnico 
+                Universitario en Programación. Jigsudo es el resultado de mi 
+                pasión por los acertijos, el desarrollo web y mi constante 
+                curiosidad por explorar nuevos desafíos. Fuera del código, me 
+                apasionan los cómics de DC, mi personaje favorito es Flash, y 
+                disfruto ver series, escuchar música y los videojuegos con amigos.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="about_vision_title">Mi Filosofía</h2>
+              <p data-i18n="about_vision_text">
+                Entiendo los puzzles como una forma de ejercitar la mente y 
+                desconectar del ruido cotidiano. Por eso, mantengo Jigsudo libre 
+                de publicidad intrusiva y registros obligatorios, buscando 
+                ofrecer un refugio diario puramente recreativo.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="about_github_title">Código Abierto</h2>
+              <p data-i18n-html="about_github_text">
+                Jigsudo es un proyecto transparente. Si eres desarrollador o 
+                tienes curiosidad por cómo funciona por dentro, puedes revisar 
+                todo el código fuente en GitHub e incluso proponer mejoras.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Privacy Section -->
+      <section id="privacy-section" class="hidden static-page">
+        <div class="content-wrapper">
+          <header class="section-header">
+            <h2 data-i18n="privacy_title">Política de Privacidad</h2>
+          </header>
+          <div class="section-body">
+            <div class="privacy-card">
+              <p data-i18n-html="privacy_intro_text">
+                Tu privacidad es importante. Esta Política de Privacidad explica cómo se recopila, utiliza y protege tu información cuando utilizas esta aplicación web.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="privacy_sec1_h">1. Información que se Recopila</h2>
+              <h3 data-i18n="privacy_sec1_sub1">1.1. Autenticación y Perfil</h3>
+              <p data-i18n-html="privacy_sec1_p1">
+                Si decides crear una cuenta, se utiliza Google Firebase Authentication para gestionar tu inicio de sesión. Se recopila tu dirección de correo electrónico y un ID de usuario único para guardar tu progreso en la nube.
+              </p>
+              <p data-i18n-html="privacy_sec1_p2">
+                También se almacena tu nombre de usuario y tu preferencia de visibilidad del perfil (público o privado) en Google Firestore.
+              </p>
+
+              <h3 data-i18n="privacy_sec2_h" style="margin-top: 20px;">1.2. Datos de Juego</h3>
+              <p data-i18n-html="privacy_sec2_p">
+                Se almacena tu progreso en las partidas (tiempos, puntuaciones, estado del tablero) para que puedas continuar desde cualquier dispositivo y participar en las clasificaciones.
+              </p>
+              <p data-i18n-html="privacy_sec2_p2">
+                Si mantienes tu perfil como público, tu nombre de usuario, rango y estadísticas básicas serán visibles para otros jugadores. Puedes cambiar esto a privado en cualquier momento.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="privacy_sec3_h">2. Cookies y Almacenamiento Local</h2>
+              <p data-i18n-html="privacy_sec3_p">
+                Se utiliza LocalStorage para guardar tus preferencias (Tema, Sonido, Vibración) y mantener tu sesión iniciada. Aunque Jigsudo no utiliza cookies propias para fines publicitarios, servicios de terceros esenciales (como Google Firebase o Google Tag Manager) pueden utilizar cookies técnicas necesarias para la seguridad, autenticación y análisis básico de rendimiento.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="privacy_sec4_h">3. Donaciones y Servicios de Terceros</h2>
+              <p data-i18n-html="privacy_sec4_p">
+                Para el apoyo económico del proyecto, se utilizan plataformas externas como Ko-fi y Cafecito. Estos servicios tienen sus propias políticas de privacidad sobre cómo gestionan tus datos de pago.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="privacy_sec5_h">4. Tus Derechos</h2>
+              <p data-i18n-html="privacy_sec5_p1">
+                Tienes derecho a acceder, rectificar, limitar o eliminar tu información personal, así como a solicitar la portabilidad de tus datos. Puedes realizar la mayoría de estas acciones directamente desde la configuración de tu perfil. Para cualquier otra solicitud relacionada con tus derechos de privacidad, puedes contactarnos en <strong>support@jigsudo.com</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Terms Section -->
+      <section id="terms-section" class="hidden static-page">
+        <div class="content-wrapper">
+          <header class="section-header">
+            <h2 data-i18n="terms_title">Términos y Condiciones</h2>
+          </header>
+          <div class="section-body">
+            <div class="privacy-card">
+              <p data-i18n-html="terms_intro_text">
+                Bienvenido a Jigsudo. Al acceder o utilizar este sitio web, aceptas cumplir con estos Términos y Condiciones. Si no estás de acuerdo con alguna parte, no deberías utilizar el servicio.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec1_h">1. Descripción del Servicio</h2>
+              <p data-i18n-html="terms_sec1_p">
+                Jigsudo es una aplicación web gratuita de puzzles diarios. El proyecto es independiente y se mantiene mediante donaciones voluntarias.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec2_h">2. Cuentas de Usuario</h2>
+              <p data-i18n-html="terms_sec2_p">
+                Para acceder a funciones como el ranking y el progreso en la nube, es necesario autenticarse. Eres responsable de la seguridad de tu cuenta.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec3_h">3. Propiedad Intelectual</h2>
+              <p data-i18n-html="terms_sec3_p">
+                El código, diseño y logotipos de Jigsudo son propiedad exclusiva de Román Yakimovicz. Queda prohibida su reproducción o redistribución sin permiso.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec4_h">4. Donaciones</h2>
+              <p data-i18n-html="terms_sec4_p">
+                Las donaciones son voluntarias, no obligatorias y no otorgan ventajas competitivas en el juego. Se procesan a través de proveedores externos y las agradezco de corazón.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec5_h">5. Prohibiciones</h2>
+              <p data-i18n-html="terms_sec5_p">
+                Queda estrictamente prohibido: copiar, modificar, distribuir o realizar ingeniería inversa del código; utilizar bots o herramientas automatizadas; e intentar extraer datos de la aplicación.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec6_h">6. Limitación de Responsabilidad</h2>
+              <p data-i18n-html="terms_sec6_p">
+                El servicio se proporciona en su estado actual y según disponibilidad. No se garantiza que sea ininterrumpido o libre de errores. No se asume responsabilidad por daños derivados del uso del servicio.
+              </p>
+            </div>
+
+            <div class="privacy-card">
+              <h2 data-i18n="terms_sec7_h">7. Modificaciones y Ley Aplicable</h2>
+              <p data-i18n-html="terms_sec7_p">
+                Nos reservamos el derecho de modificar estos términos en cualquier momento. El uso continuado del sitio tras los cambios implica su aceptación. Estos términos se rigen por las leyes de Argentina.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Support Section -->
+      <section id="support-section" class="hidden static-page">
+        <div class="content-wrapper">
+          <header class="section-header">
+            <h2 data-i18n="support_title_page">Centro de Soporte</h2>
+          </header>
+          <div class="section-body">
+            <div class="privacy-card">
+              <p class="support-intro" data-i18n="support_intro">
+                ¿Necesitas ayuda con tu cuenta, encontraste un error o quieres enviarnos una sugerencia? Estamos aquí para escucharte.
+              </p>
+            </div>
+
+            <!-- GitHub Support -->
+            <div class="privacy-card">
+              <h3 data-i18n="support_github_title" style="color: var(--accent-color); margin-bottom: 15px;">Reportar Errores y Sugerencias</h3>
+              <p data-i18n="support_github_desc">
+                Si eres usuario de GitHub, puedes abrir un reporte técnico (issue) directamente en nuestro repositorio de desarrollo. Es la forma más rápida de que veamos un error o una propuesta de mejora pública.
+              </p>
+              <div style="text-align: center; margin-top: 20px;">
+                <a href="https://github.com/ryakimovicz/jigsudo/issues" target="_blank" class="btn-primary support-btn">
+                  <span data-i18n="support_github_btn">🛠️ Abrir Reporte en GitHub</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Email Support -->
+            <div class="privacy-card">
+              <h3 data-i18n="support_email_title" style="color: var(--accent-color); margin-bottom: 15px;">Consultas Privadas y Cuentas</h3>
+              <p data-i18n="support_email_desc">
+                Para problemas relacionados con tu cuenta, recuperación de datos, temas de privacidad o si prefieres contactarnos de forma privada, escríbenos a:
+              </p>
+              <div style="text-align: center;">
+                <button class="support-email btn-copy-email" data-email="support@jigsudo.com" style="background:none; border:none; padding:0; cursor:pointer; font-family:inherit;">support@jigsudo.com</button>
+                <br><br>
+                <a href="mailto:support@jigsudo.com" class="btn-secondary support-btn">
+                  <span data-i18n="support_email_btn">✉️ Enviar un Correo</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Donations -->
+            <div class="privacy-card">
+              <h3 data-i18n="support_donate_title" style="color: var(--accent-color); margin-bottom: 15px;">¿Quieres apoyar el proyecto?</h3>
+              <p data-i18n="support_donate_desc">
+                Jigsudo es y será siempre gratuito. Si te gusta el desafío y quieres ayudarnos con los costos del servidor, puedes invitarnos un café.
+              </p>
+              <div class="support-donation-links" style="display: flex; gap: 30px; justify-content: center; align-items: flex-start; margin-top: 25px; flex-wrap: wrap;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="support_global">Global (PayPal)</span>
+                  <a href="https://ko-fi.com/corolado" target="_blank" class="btn-support btn-kofi">
+                    <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
+                    <span>Ko-fi</span>
+                  </a>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="support_argentina">Argentina (MP)</span>
+                  <a href='https://cafecito.app/corolado' rel='noopener' target='_blank' class="btn-cafecito-raw">
+                    <img srcset='https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x' src='https://cdn.cafecito.app/imgs/buttons/button_1.png' alt='Invitame un café en cafecito.app' />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Footer -->
       <footer class="main-footer">
         <div class="footer-links">
-          <a href="about/" data-i18n="footer_about">Sobre mí</a>
+          <a href="#about" data-i18n="footer_about">Acerca de</a>
           <span class="footer-sep">|</span>
-          <a href="privacy/" data-i18n="footer_privacy">Privacidad</a>
+          <a href="#privacy" data-i18n="footer_privacy">Privacidad</a>
           <span class="footer-sep">|</span>
-          <a href="terms/" data-i18n="footer_terms">Términos</a>
+          <a href="#terms" data-i18n="footer_terms">Términos</a>
+          <span class="footer-sep">|</span>
+          <a href="#support" data-i18n="footer_support">Soporte</a>
         </div>
         <div class="footer-bottom">
           <span data-i18n-html="footer_rights_html"
@@ -2705,5 +2980,20 @@
     <!-- v1.5.62: Global Stats Tooltip / Modal -->
     <div id="history-tooltip-container" class="history-tooltip-container"></div>
     <div id="history-tooltip" class="history-tooltip hidden"></div>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" class="cookie-banner">
+      <div class="cookie-content">
+        <h4 data-i18n="cookies_title">Configuración de Cookies 🍪</h4>
+        <p>
+          <span data-i18n="cookies_text">Utilizamos cookies técnicas y analíticas para mejorar tu experiencia y la seguridad del sitio.</span>
+          <a href="#privacy" class="cookie-link" data-i18n="cookies_link_policy">Política de Privacidad</a>
+        </p>
+      </div>
+      <div class="cookie-actions">
+        <button id="cookie-deny" class="cookie-btn btn-deny" data-i18n="cookies_btn_deny">Solo técnicas</button>
+        <button id="cookie-accept" class="cookie-btn btn-accept" data-i18n="cookies_btn_accept">Aceptar todas</button>
+      </div>
+    </div>
   </body>
 </html>

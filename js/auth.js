@@ -18,6 +18,7 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   verifyBeforeUpdateEmail,
+  getAdditionalUserInfo,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import { gameManager } from "./game-manager.js?v=1.3.9";
 import { router } from "./router.js?v=1.3.9";
@@ -152,8 +153,11 @@ export function initAuth() {
       document.body.classList.add("syncing-account");
       try {
         console.log(`[Auth] Step 2: Syncing account data for ${user.uid}...`);
-        const { loadUserProgress, listenToUserProgress } =
+        const { loadUserProgress, listenToUserProgress, ensureUserProfileExists } =
           await import("./db.js?v=1.3.9");
+
+        // v1.9.6: Ensure profile exists in DB to prevent permission-denied errors on new/reset accounts
+        await ensureUserProfileExists(user.uid, user.displayName);
 
         // Await the fetch and the handleCloudSync call inside it
         await loadUserProgress(user.uid);
@@ -173,35 +177,15 @@ export function initAuth() {
           await gameManager.prepareDaily();
         }
 
-        const isNowPlaying =
-          !document.body.classList.contains("home-active") &&
-          !document.body.classList.contains("profile-active") &&
-          !document.body.classList.contains("history-active");
-        const isOnProfile =
-          window.location.hash === "#profile" ||
-          document.body.classList.contains("profile-active");
-        const isOnHistory =
-          window.location.hash === "#history" ||
-          document.body.classList.contains("history-active");
-
-        const isOnGuide =
-          window.location.hash === "#guide" ||
-          document.body.classList.contains("guide-active");
-        const isOnInfo =
-          window.location.hash === "#info" ||
-          document.body.classList.contains("info-active");
-
-        if (
-          (wasPlaying || isNowPlaying) &&
-          !isOnProfile &&
-          !isOnHistory &&
-          !isOnGuide &&
-          !isOnInfo &&
-          !gameManager.isReplaying
-        ) {
+        // v1.6.0: Robust Game Resumption Check
+        // We only resume a stage if we are already at a game route
+        // (either #game or a history replay).
+        const isAtGame = router.isGameRoute();
+        
+        if (isAtGame && !gameManager.isReplaying) {
           const state = gameManager.getState();
           const currentStage = state?.progress?.currentStage || "memory";
-          console.log(`[Auth] Routing to stage: ${currentStage}`);
+          console.log(`[Auth] Resuming game session at stage: ${currentStage}`);
           const memoryModule = await import("./memory.js?v=1.3.9");
           memoryModule.resumeToStage(currentStage);
         }
@@ -464,6 +448,16 @@ export async function loginWithGoogle() {
 
     // Refresh UI manually to ensure assignedName shows up immediately
     updateUIForLogin(user);
+
+    // NEW USER AUTOMATION:
+    // If it's a first-time Google sign-in (or linking), open the username modal
+    const additionalInfo = getAdditionalUserInfo(result);
+    if (additionalInfo && additionalInfo.isNewUser) {
+      console.log("[Auth] New Google user detected, prompting for username...");
+      setTimeout(() => {
+        showPasswordModal("change_username");
+      }, 500); // Small delay to let the login UI settle
+    }
 
     return { success: true, user };
   } catch (error) {
@@ -849,7 +843,7 @@ function translateAuthError(code) {
   }
 }
 
-function showPasswordModal(actionType) {
+export function showPasswordModal(actionType) {
   const modal = document.getElementById("password-confirm-modal");
   const title = document.getElementById("pwd-modal-title");
   const desc = document.getElementById("pwd-modal-desc");

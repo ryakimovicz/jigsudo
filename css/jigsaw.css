@@ -316,3 +316,94 @@
   color: red !important;
   font-weight: bold;
 }
+
+/* Ensure board and button stack vertically on desktop */
+#game-section.jigsaw-mode .board-wrapper {
+  flex-direction: column;
+  align-items: center; /* Horizontal center */
+  justify-content: flex-start; /* Vertical top align */
+}
+
+/* Jigsaw Reset Button */
+.jigsaw-controls {
+  display: none;
+  justify-content: center;
+  margin-top: 15px;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 100;
+}
+
+#game-section.jigsaw-mode .jigsaw-controls {
+  display: flex;
+  opacity: 1;
+}
+
+/* No special grid override needed for desktop now since it's inside board-wrapper again */
+
+.btn-jigsaw-reset {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+/* Dark Mode Overrides for Reset Button */
+.dark-mode .btn-jigsaw-reset {
+  background: #2d333b; /* Nordic Dark Lead */
+  border-color: #444c56; /* Subtle border */
+  color: #adbac7; /* Pearl grey */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-jigsaw-reset:hover {
+  background: var(--accent-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: transparent;
+}
+
+.dark-mode .btn-jigsaw-reset:hover {
+  background: var(--accent-color);
+  color: #1e2329; /* Dark text on bright accent */
+}
+
+.btn-jigsaw-reset:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  /* On mobile, we use display: contents to "unroll" board-wrapper 
+     so its children become direct children of the main column layout. */
+  .jigsaw-mode .board-wrapper {
+    display: contents;
+  }
+
+  /* Now we can order them independently */
+  .jigsaw-mode .memory-board {
+    order: 1;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .jigsaw-controls {
+    order: 10; /* Put it at the bottom on mobile */
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+
+  .btn-jigsaw-reset {
+    padding: 10px 24px;
+    font-size: 0.9rem;
+  }
+}

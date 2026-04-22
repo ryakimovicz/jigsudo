@@ -21,6 +21,7 @@ import { cleanupVictoryUI, updateLevelTitle } from "./ui.js?v=1.3.9";
 import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.3.9";
 import { resumeSudokuState } from "./sudoku.js?v=1.3.9";
 import { resumePeaksState } from "./peaks.js?v=1.3.9";
+import { router } from "./router.js?v=1.3.9";
 
 // DOM Elements
 let memorySection;
@@ -214,7 +215,7 @@ export async function resumeToStage(stage) {
 
   // Hide Footer during Gameplay
   const footer = document.querySelector(".main-footer");
-  if (footer) footer.classList.add("hidden");
+  if (footer && router.isGameRoute()) footer.classList.add("hidden");
 
   // 3. Setup Board (Empty slots for Jigsaw/Sudoku/etc)
   const state = gameManager.getState();
@@ -296,7 +297,7 @@ export function resetUI() {
 
   // Hide Footer aggressively in any game stage
   const footer = document.querySelector(".main-footer");
-  if (footer) footer.classList.add("hidden");
+  if (footer && router.isGameRoute()) footer.classList.add("hidden");
 
   // 1.5 AGGRESSIVE BOARD CLEANUP (Ghosting Fix)
   const board = document.getElementById("memory-board");

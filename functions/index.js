@@ -135,7 +135,7 @@ async function _performUserMaintenance(userRef, userData, today) {
   let currentTotalRP = userData.totalRP || 0;
   let currentMonthlyRP = userData.monthlyRP || 0;
   let currentDailyRP = userData.dailyRP || 0;
-  let currentPenaltyAcc = userData.totalPenaltyAccumulated || 0;
+  let currentPenaltyAcc = (userData.stats && userData.stats.totalPenaltyAccumulated) || userData.totalPenaltyAccumulated || 0;
   let currentStreak = stats.currentStreak || 0;
 
   let totalSimulatedDays = 0;
@@ -198,7 +198,7 @@ async function _performUserMaintenance(userRef, userData, today) {
       totalRP: Number(currentTotalRP.toFixed(3)),
       monthlyRP: Number(currentMonthlyRP.toFixed(3)),
       dailyRP: currentDailyRP,
-      totalPenaltyAccumulated: Number(currentPenaltyAcc.toFixed(3)),
+      "stats.totalPenaltyAccumulated": Number(currentPenaltyAcc.toFixed(3)),
       "stats.currentStreak": currentStreak,
       "stats.lastDecayCheck": today,
       "stats.lastPenaltyDate": currentStreak === 0 ? today : (stats.lastPenaltyDate || null),
@@ -298,7 +298,7 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
 
   // Stats Aggregators (No RP duplicates here anymore)
   const statsUpdate = {
-    "stats.totalScoreAccumulated": FieldValue.increment(stagePoints),
+    "stats.totalScoreAccumulated": FieldValue.increment(1.0),
     [`stats.stageWinsAccumulated.${stage}`]: FieldValue.increment(1),
     [`stats.stageTimesAccumulated.${stage}`]: FieldValue.increment(stageTime),
   };
@@ -438,8 +438,10 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const dayOfWeek = new Date(today + "T12:00:00Z").getUTCDay(); // 0-6
   // totalErrors already declared on line 362
 
+  const grossScoreForWin = Number((finalBonus).toFixed(3));
+
   batch.update(userRef, {
-    "stats.totalScoreAccumulated": FieldValue.increment(finalDelta),
+    "stats.totalScoreAccumulated": FieldValue.increment(grossScoreForWin),
     "stats.currentStreak": newStreak,
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,

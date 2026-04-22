@@ -1,6 +1,7 @@
 /* Main Entry Point */
 
 import { initHome } from "./home.js?v=1.3.9";
+import { initCookieConsent } from "./cookie-manager.js?v=1.3.9";
 import { initLanguage } from "./i18n.js?v=1.3.9";
 import { initSudoku } from "./sudoku.js?v=1.3.9";
 import { initHistory } from "./history.js?v=1.3.9";
@@ -146,6 +147,9 @@ async function startApp() {
 
   initLanguage();
   initSidebar();
+  // v1.6.0: Cookie Consent
+  initCookieConsent();
+
   initHome();
   initSudoku();
   initAuth(); // Initialize Firebase Auth listener
@@ -156,6 +160,8 @@ async function startApp() {
 
   // Initialize Router LAST to handle initial hash
   router.init();
+
+  initSupportEvents();
 
   attachAuthListeners();
 
@@ -190,7 +196,7 @@ async function startApp() {
     window.resetToday = () => gameManager.resetCurrentGame();
 
     window.resetAccount = async () => {
-      const { getCurrentUser } = await import("./auth.js?v=1.3.9");
+      const { getCurrentUser, logoutUser } = await import("./auth.js?v=1.3.9");
       const { wipeUserData } = await import("./db.js?v=1.3.9");
       const user = getCurrentUser();
 
@@ -199,14 +205,25 @@ async function startApp() {
           "¿Seguro que quieres borrar TODA TU CUENTA y progreso? Esto no se puede deshacer.",
         )
       ) {
-        if (user) {
-          console.log("Wiping remote data...");
-          await wipeUserData(user.uid);
+        try {
+          if (user) {
+            console.log("Wiping remote data for:", user.uid);
+            await wipeUserData(user.uid);
+            
+            console.log("Logging out to prevent auto-recreation...");
+            await logoutUser();
+          }
+          
+          console.log("Clearing local storage...");
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          console.log("Reset complete. Reloading...");
+          window.location.reload();
+        } catch (err) {
+          console.error("Critical error during resetAccount:", err);
+          alert("Error during reset. Check console for details.");
         }
-        console.log("Clearing local storage...");
-        localStorage.clear();
-        console.log("Reloading...");
-        window.location.reload();
       }
     };
 
@@ -466,3 +483,43 @@ function displayVersion() {
 }
 
 displayVersion();
+
+/**
+ * Initializes events for the Support page, such as copying email to clipboard.
+ */
+function initSupportEvents() {
+  document.body.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".btn-copy-email");
+    if (!btn) return;
+
+    const email = btn.getAttribute("data-email");
+    if (!email) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(email);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = email;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand("copy");
+        } catch (err) {
+          console.error("Fallback copy failed", err);
+        }
+        document.body.removeChild(textArea);
+      }
+
+      const { translations } = await import("./translations.js?v=1.3.9");
+      const { getCurrentLang } = await import("./i18n.js?v=1.3.9");
+      const { showToast } = await import("./ui.js?v=1.3.9");
+
+      const lang = getCurrentLang();
+      const t = translations[lang];
+      showToast(t.toast_email_copied || "Email copied to clipboard 📋");
+    } catch (err) {
+      console.error("Failed to copy email:", err);
+    }
+  });
+}

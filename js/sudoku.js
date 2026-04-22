@@ -569,6 +569,18 @@ function handleNumberInput(num) {
     console.log("Pencil note:", num);
     toggleNote(selectedCell, num, true); // Pass true to skip inner history push (already pushed above)
   } else {
+    // TOGGLE LOGIC: If same number is pressed, clear the cell
+    const currentVal = selectedCell.textContent.trim();
+    if (
+      selectedCell.classList.contains("user-filled") &&
+      currentVal === num.toString()
+    ) {
+      // Revert the history push from above since we'll call clearSelectedCell which pushes its own
+      undoStack.pop();
+      clearSelectedCell();
+      return;
+    }
+
     selectedCell.textContent = num;
     selectedCell.classList.add("user-filled");
     selectedCell.classList.remove("has-notes");
@@ -1058,8 +1070,13 @@ function handleSudokuWin() {
     board.classList.add("board-complete");
 
     // Advance Stage after animation
-    setTimeout(() => {
+    setTimeout(async () => {
       board.classList.remove("board-complete");
+
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      // IMPORTANT: advanceStage MUST be called before transitioning to the next stage
+      // so it validates the correct 'currentStage'.
+      await gameManager.advanceStage();
 
       // Timer Transition
       gameManager.stopStageTimer(); // End Sudoku
@@ -1067,17 +1084,6 @@ function handleSudokuWin() {
 
       // Transition to Peaks
       transitionToPeaks();
-
-      // We can also advance state here if not handled by transition
-      // gameManager.advanceStage(); // move this inside transitionToPeaks if preferred, or keep here
-      // Let's keep state logic separate or call it here?
-      // transitionToPeaks() has UI logic.
-      // gameManager.advanceStage() has Data logic.
-      // Best to call both or have one call the other.
-      // memory.js called transitionToSudoku() which called gameManager.updateProgress.
-
-      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
-      gameManager.advanceStage();
     }, 600);
   }
 }

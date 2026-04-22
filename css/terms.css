@@ -5,66 +5,7 @@
   box-sizing: border-box;
 }
 
-/* Ensure the cards aren't too wide on large screens */
-.terms-card {
-  width: 100%;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* Legal Card Style (Consistent with Privacy) */
-.terms-card {
-  padding: 20px;
-  border-radius: 16px;
-  margin-bottom: 25px;
-  background: white; /* Light mode default */
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--paper-shadow);
-}
-
-body.dark-mode .terms-card {
-  background: #2d333b; /* Match global glass-panel dark */
-}
-
-.terms-card h2 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.4rem;
-  color: var(--accent-color);
-  border-bottom: 1px solid var(--bg-tertiary);
-  padding-bottom: 10px;
-}
-
-.terms-card h3 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  font-size: 1.1rem;
-  color: var(--text-primary);
-}
-
-.terms-card p {
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 15px;
-  font-size: 0.95rem;
-  text-align: justify;
-}
-
-.terms-card ul {
-  padding-left: 20px;
-  margin-bottom: 15px;
-  color: var(--text-secondary);
-}
-
-.terms-card li {
-  margin-bottom: 8px;
-  line-height: 1.5;
-}
-
-.terms-card strong {
-  color: var(--text-primary);
-}
+/* Styles consolidated in global.css */
 
 /* Footer Wrapper */
 .terms-footer {
