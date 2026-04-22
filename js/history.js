@@ -432,7 +432,7 @@ function renderHistoryCalendar(history = {}) {
       }
 
       // v1.5.62: Attach dynamic tooltips
-      attachCalendarTooltip(dayEl, dayData, dateStr);
+      attachCalendarTooltip(dayEl, dayData, dateStr, null, null);
 
       dayEl.addEventListener("click", () => {
         const isToday = dateStr === todayStr;
@@ -467,7 +467,7 @@ function renderHistoryCalendar(history = {}) {
  * v1.5.62: Floating Tooltip Logic
  * v1.7.6: Added support for comparison (ownDayData)
  */
-export function attachCalendarTooltip(el, dayData, dateStr, ownDayData = null, fName = "Ellos") {
+export function attachCalendarTooltip(el, dayData, dateStr, ownDayData = null, fName = null) {
   // Desktop hover
   el.addEventListener("mouseenter", (e) => {
     if (window.matchMedia("(max-width: 768px)").matches) return;
@@ -488,7 +488,7 @@ export function attachCalendarTooltip(el, dayData, dateStr, ownDayData = null, f
   let touchTimer = null;
   el.addEventListener("touchstart", (e) => {
     touchTimer = setTimeout(() => {
-        showHistoryTooltip(e, dayData, dateStr, true);
+        showHistoryTooltip(e, dayData, dateStr, true, ownDayData, fName);
     }, 500);
   }, { passive: true });
 
@@ -553,9 +553,11 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
       html += `<button class="tooltip-close" id="hist-tooltip-close">×</button>`;
   }
 
+  const isComparison = fName && fName !== "Tú";
+
   html += `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
     <span>${dateTitle}</span>
-    ${data?.status === "won" ? "<span>👑</span>" : ""}
+    ${(!isComparison && data?.status === "won") ? "<span>👑</span>" : ""}
   </div>`;
 
   const fmt = (ms) => {
@@ -575,8 +577,8 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
       return "";
   };
 
-  if (!ownData) {
-      // STANDARD SINGLE VIEW
+  if (!isComparison) {
+      // STANDARD SINGLE VIEW (Own profile)
       if (!data || (!data.original && !data.best)) {
         html += `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 10px 0; text-align: center;">
           ${t.history_no_stat || "Sin estadísticas registradas"}
@@ -616,31 +618,73 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
       const f = data || {};
       const o = ownData || {};
       
-      const fO = f.original || {};
-      const oO = o.original || {};
-      
-      html += `
-        <div class="history-comp-grid">
-            <div class="history-comp-col">
-                <div class="history-comp-header">${fName}</div>
-                <div class="tooltip-grid">
-                    <span class="tooltip-label">RP</span>
-                    <span class="tooltip-value">${(fO.score || 0).toFixed(2)}</span>
-                    <span class="tooltip-label">${t.time || "Tiempo"}</span>
-                    <span class="tooltip-value">${fmt(fO.totalTime)}</span>
-                </div>
-            </div>
-            <div class="history-comp-col">
-                <div class="history-comp-header">${t.comp_you || "Tú"}</div>
-                <div class="tooltip-grid">
-                    <span class="tooltip-label">RP ${getTrend(fO.score, oO.score, "rp")}</span>
-                    <span class="tooltip-value">${(oO.score || 0).toFixed(2)}</span>
-                    <span class="tooltip-label">${t.time || "Tiempo"} ${getTrend(fO.totalTime, oO.totalTime, "time")}</span>
-                    <span class="tooltip-value">${fmt(oO.totalTime)}</span>
-                </div>
-            </div>
-        </div>
-      `;
+      // Comparison Mode Logic
+      const checkHasData = (d) => {
+          if (!d) return false;
+          const o = d.original || {};
+          const b = d.best || {};
+          return !!(o.score || o.totalTime || b.score || b.totalTime);
+      };
+
+      const hasF = checkHasData(data);
+      const hasO = checkHasData(ownData);
+
+      if (!hasF && !hasO) {
+          html += `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 10px 0; text-align: center;">
+            ${t.history_no_stat || "Sin estadísticas registradas"}
+          </div>`;
+      } else {
+          const fO = f.original || {};
+          const oO = o.original || {};
+          const fB = f.best || {};
+          const oB = o.best || {};
+          
+          const renderColumn = (name, orig, best, otherOrig, otherBest, color, showTrends = false, isWon = false) => {
+              const hasData = orig.score || best.score || orig.totalTime || best.totalTime;
+              
+              let colHtml = `
+                <div class="history-comp-col">
+                    <div class="history-comp-header" style="color: ${color}; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #ffffff11; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>${name}</span>
+                        ${isWon ? '<span style="font-size: 0.9rem;">👑</span>' : ''}
+                    </div>`;
+              
+              if (!hasData) {
+                  colHtml += `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 20px 0; text-align: center; font-style: italic;">
+                    ${t.not_played || "No jugado"}
+                  </div>`;
+              } else {
+                  colHtml += `
+                    <div class="comp-sub-label" style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; margin-bottom: 4px;">${t.stats_original || "Original"}</div>
+                    ${renderMiniGrid(orig, otherOrig, showTrends)}
+                    <div class="comp-sub-label" style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; margin-bottom: 4px;">${t.stats_best || "Mejor"}</div>
+                    ${renderMiniGrid(best, otherBest, showTrends)}`;
+              }
+              
+              colHtml += `</div>`;
+              return colHtml;
+          };
+
+          const renderMiniGrid = (s, os, showTrends) => {
+              if (!s || (!s.score && !s.totalTime)) return `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic;">---</div>`;
+              return `
+                <div class="tooltip-grid" style="font-size: 0.75rem; gap: 2px 8px; margin-bottom: 8px;">
+                    <span class="tooltip-label">RP:</span>
+                    <span class="tooltip-value highlight">${(s.score || 0).toFixed(2)}${showTrends && os?.score ? ' ' + getTrend(os.score, s.score, "rp") : ''}</span>
+                    <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
+                    <span class="tooltip-value">${fmt(s.totalTime)}${showTrends && os?.totalTime ? ' ' + getTrend(os.totalTime, s.totalTime, "time") : ''}</span>
+                    <span class="tooltip-label">Err:</span>
+                    <span class="tooltip-value">${s.peaksErrors || s.errors || 0}${showTrends && (os?.peaksErrors || os?.errors) ? ' ' + getTrend(os.peaksErrors || os.errors, s.peaksErrors || s.errors, "errors") : ''}</span>
+                </div>`;
+          };
+
+          html += `
+            <div class="history-comp-grid" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start;">
+                ${renderColumn(fName, fO, fB, oO, oB, "var(--accent-color)", false, f.status === "won")}
+                <div class="comp-vs" style="align-self: center; opacity: 0.3; font-style: italic; font-size: 0.8rem;">vs</div>
+                ${renderColumn(t.comp_you || "Tú", oO, oB, fO, fB, "#22c55e", true, o.status === "won")}
+            </div>`;
+      }
   }
 
   tooltip.innerHTML = html;

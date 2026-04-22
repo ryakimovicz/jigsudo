@@ -466,8 +466,8 @@ export async function updateProfileData(targetUsername = activeProfileName) {
     // Render own stats from GameManager source of truth to avoid wipe limbo
     renderProfileStats(gameManager.stats || localStats, true);
     
-    // v1.7.9: Ensure own calendar is rendered WITHOUT comparison
-    renderCalendar((gameManager.stats || localStats)?.history || {}, null);
+    // Use GameManager stats if available (more fresh), otherwise localStats
+    renderCalendar((gameManager.stats || localStats)?.history || {}, null, null);
     comparisonEnabled = false; 
     document.querySelectorAll("#profile-section [style*='cursor: help']").forEach(el => el.style.cursor = "default");
   }

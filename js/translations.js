@@ -290,6 +290,7 @@ export const translations = {
     hist_legend_green: "Jigsudo terminado en su día original.",
     hist_legend_crown: "Jigsudo terminado (en su día o posteriormente).",
     history_no_stat: "Sin estadísticas registradas",
+    not_played: "No jugado",
     stats_original: "Desempeño Original",
     stats_best: "Mejor Histórico",
 
@@ -1019,6 +1020,7 @@ export const translations = {
     hist_legend_green: "Jigsudo finished on its original day.",
     hist_legend_crown: "Jigsudo finished (on its day or later).",
     history_no_stat: "No stats recorded",
+    not_played: "Not played",
     stats_original: "Original Performance",
     stats_best: "Personal Best",
 
