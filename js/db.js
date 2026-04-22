@@ -465,8 +465,6 @@ export async function saveUserStats(userId, statsData, username = null, options 
         dailyWinsAccumulated: s.dailyWinsAccumulated || 0,
         dailyBonusesAccumulated: s.dailyBonusesAccumulated || 0,
         dailyPeaksErrorsAccumulated: s.dailyPeaksErrorsAccumulated || 0,
-        lastDayRP: s.lastDayRP || 0,
-        lastMonthRP: s.lastMonthRP || 0,
         lastBonus: s.lastBonus || 0,
         lastPenalty: s.lastPenalty || 0,
         lastDecayCheck: s.lastDecayCheck || null,
