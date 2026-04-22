@@ -316,6 +316,16 @@ export async function updateProfileData(targetUsername = activeProfileName) {
               ? "var(--accent-color)"
               : "var(--text-muted)";
           }
+
+          // v1.7.9: Final Cleanup for Deferred Navigation
+          const sectionsToHide = ["menu-content", "search-users-section", "history-section", "guide-section", "changelog-section"];
+          sectionsToHide.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add("hidden");
+          });
+          
+          const profileSec = document.getElementById("profile-section");
+          if (profileSec) profileSec.classList.remove("hidden");
         }
       } else {
         if (nameEl)
@@ -820,9 +830,9 @@ function renderWeekdayStats(stats) {
     const avgScoreRP = d.count > 0 ? calculateRP(avgScoreRaw).toFixed(2) : "--";
     const scoreCol = createMetricCol("⭐", avgScoreRP, "Puntaje Promedio");
 
+    metricsGrid.appendChild(scoreCol);
     metricsGrid.appendChild(timeCol);
     metricsGrid.appendChild(errorCol);
-    metricsGrid.appendChild(scoreCol);
 
     card.appendChild(metricsGrid);
     container.appendChild(card);
@@ -1487,40 +1497,43 @@ function attachComparisonListeners(foreignData) {
       type: "time"
     });
   });
-  const metricCols = document.querySelectorAll("#profile-section .daily-stat-card .metric-col");
-  metricCols.forEach(col => {
-      const card = col.closest(".daily-stat-card");
-      const dayLabel = card?.querySelector(".daily-stat-label")?.textContent || "";
-      const metricTitle = col.title || ""; // "Tiempo Promedio", "Errores Promedio", "Puntaje Promedio"
-      const icon = col.querySelector(".metric-icon")?.textContent || "";
 
-      let fVal = 0, oVal = 0, type = "number", suffix = "";
+  // v1.7.9: Unified Daily Average Comparison (Triple metric tooltip)
+  const dailyChart = document.getElementById("daily-time-chart");
+  if (dailyChart) {
+      const lang = getCurrentLang() || "es";
+      const formatterLong = new Intl.DateTimeFormat(lang, { weekday: "long" });
       
-      // We need to know which day we are comparing (0=Sun, 1=Mon...)
-      const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-      const dayIndex = dayNames.indexOf(dayLabel);
-      if (dayIndex === -1) return;
+      dailyChart.querySelectorAll(".daily-stat-card").forEach((card, i) => {
+          const getDayData = (d, idx) => {
+              const s = (d.stats && d.stats.wins !== undefined) ? d.stats : d;
+              const cache = s.weekdayStatsAccumulated;
+              if (cache && cache[idx] && cache[idx].count > 0) {
+                  const c = cache[idx];
+                  return {
+                      time: c.sumTime / c.count,
+                      errs: c.sumErrors / c.count,
+                      rp: calculateRP(c.sumScore / c.count)
+                  };
+              }
+              return { time: 0, errs: 0, rp: 0 };
+          };
 
-      if (metricTitle.includes("Tiempo")) {
-          fVal = foreignData.stats?.weekdayStats?.[dayIndex]?.avgTime || 0;
-          oVal = ownStats.weekdayStats?.[dayIndex]?.avgTime || 0;
-          type = "time";
-      } else if (metricTitle.includes("Puntaje")) {
-          fVal = foreignData.stats?.weekdayStats?.[dayIndex]?.avgRP || 0;
-          oVal = ownStats.weekdayStats?.[dayIndex]?.avgRP || 0;
-          suffix = " RP";
-      } else if (metricTitle.includes("Errores")) {
-          fVal = foreignData.stats?.weekdayStats?.[dayIndex]?.avgErrors || 0;
-          oVal = ownStats.weekdayStats?.[dayIndex]?.avgErrors || 0;
-      } else return;
+          const fD = getDayData(foreignData, i);
+          const oD = getDayData(ownStats, i);
+          
+          const dateObj = new Date(2025, 0, 5 + i); // Sun...
+          let dayName = formatterLong.format(dateObj);
+          dayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
-      setupComp(col, {
-        title: `${dayLabel} (${icon})`,
-        foreign: { name: fName, val: fVal, label: formatCompValue(fVal, type, suffix) },
-        own: { name: t.comp_you || "Tú", val: oVal, label: formatCompValue(oVal, type, suffix) },
-        type: type
+          setupComp(card, {
+              title: dayName,
+              foreign: { name: fName, time: fD.time, errs: fD.errs, rp: fD.rp },
+              own: { name: t.comp_you || "Tú", time: oD.time, errs: oD.errs, rp: oD.rp },
+              type: "daily-avg"
+          });
       });
-  });
+  }
 }
 
 function formatCompValue(val, type, suffix = "") {
@@ -1608,14 +1621,51 @@ function showCompTooltip(e, data) {
 
       fHtml = `
         <div class="comp-value-stack">
-            <span class="comp-value">${fTime} ⏱️</span>
-            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fErr} err. ❌</span>
+            <span class="comp-value">${fTime}</span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fErr} err.</span>
         </div>`;
 
       oHtml = `
         <div class="comp-value-stack">
             <span class="comp-value">${oTime} <span class="${tTrend}">${tIcon}</span></span>
-            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${oErr} <span class="${eTrend}">${eIcon}</span></span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${oErr} err. <span class="${eTrend}">${eIcon}</span></span>
+        </div>`;
+  } else if (data.type === "daily-avg") {
+      const f = data.foreign;
+      const o = data.own;
+
+      const getTrendData = (fV, oV, type) => {
+          if (fV === undefined || oV === undefined || fV === null || oV === null) return { icon: "", class: "trend-equal" };
+          const isBetter = (type === "time" || type === "errs") ? (oV < fV) : (oV > fV);
+          const isWorse = (type === "time" || type === "errs") ? (oV > fV) : (oV < fV);
+          if (isBetter) return { icon: "▲", class: "trend-up" };
+          if (isWorse) return { icon: "▼", class: "trend-down" };
+          return { icon: "", class: "trend-equal" };
+      };
+
+      const tT = getTrendData(f.time, o.time, "time");
+      const eT = getTrendData(f.errs, o.errs, "errs");
+      const rT = getTrendData(f.rp, o.rp, "rp");
+
+      const fTime = formatCompValue(f.time, "time");
+      const oTime = formatCompValue(o.time, "time");
+      const fErr = f.errs.toFixed(1);
+      const oErr = o.errs.toFixed(1);
+      const fRP = f.rp.toFixed(2);
+      const oRP = o.rp.toFixed(2);
+
+      fHtml = `
+        <div class="comp-value-stack" style="gap: 2px;">
+            <span class="comp-value">${fRP} RP ⭐</span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fTime} ⏱️</span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fErr} err. ❌</span>
+        </div>`;
+
+      oHtml = `
+        <div class="comp-value-stack" style="gap: 2px;">
+            <span class="comp-value">${oRP} <span class="${rT.class}">${rT.icon}</span></span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${oTime} <span class="${tT.class}">${tT.icon}</span></span>
+            <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${oErr} <span class="${eT.class}">${eT.icon}</span></span>
         </div>`;
   } else {
       fHtml = `<span class="comp-value">${data.foreign.label}</span>`;
