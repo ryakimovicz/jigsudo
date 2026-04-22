@@ -6,6 +6,7 @@
   --text-main: #1e293b; /* Dark Slate - Main Text */
   --text-muted: #94a3b8; /* Muted Text */
   --accent-color: #f97316; /* Burnt Orange - Selection/Highlights */
+  --accent-hover: #ea580c; /* Darker Orange for Hover */
   --accent-rgb: 249, 115, 22; /* RGB Triplet for rgba() usage */
 
   --bg-secondary: #f1f5f9; /* Light Slate - Secondary Background */
@@ -74,6 +75,7 @@ body.dark-mode {
   --text-primary: var(--text-main);
   --text-secondary: var(--text-muted);
   --accent-color: #ffa726; /* Lighter/Golden Orange for better contrast on dark */
+  --accent-hover: #ffb74d; /* Brighter Orange for Hover in Dark Mode */
   --accent-rgb: 255, 167, 38;
 
   --bg-secondary: #0d1117; /* Darker background for components */
