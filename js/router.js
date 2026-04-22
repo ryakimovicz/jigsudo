@@ -17,6 +17,7 @@ export const router = {
     "#privacy": "privacy-section",
     "#terms": "terms-section",
     "#support": "support-section",
+    "#search-users": "search-users-section",
   },
 
   // Map Section ID -> Body Class
@@ -31,6 +32,7 @@ export const router = {
     "privacy-section": "privacy-active",
     "terms-section": "terms-active",
     "support-section": "support-active",
+    "search-users-section": "search-users-active",
   },
 
   init() {
@@ -109,7 +111,7 @@ export const router = {
     this.updateView(sectionId, baseRoute, params);
   },
 
-  updateView(activeId, baseRoute, params) {
+  async updateView(activeId, baseRoute, params) {
     console.log(`[Router] updateView -> Target: ${activeId}`);
 
     // 1. Hide ALL registered sections
@@ -119,11 +121,20 @@ export const router = {
     uniqueIds.forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
+        // v1.7.9: Support deferred navigation for Foreign Profiles
+        // If we are going to a foreign profile, don't hide the previous section yet
+        const isForeignProfile = baseRoute === "#profile" && params.length > 0;
+        
         if (id !== activeId) {
-          el.classList.add("hidden");
+          if (!isForeignProfile) {
+            el.classList.add("hidden");
+          }
           console.log(`[Router] Hiding ${id}. Classes: ${el.className}`);
         } else {
-          el.classList.remove("hidden");
+          // If deferred, don't show yet either, Profile module will handle it
+          if (!isForeignProfile) {
+            el.classList.remove("hidden");
+          }
           console.log(`[Router] Showing ${id}. Classes: ${el.className}`);
         }
       } else if (id) {
@@ -224,12 +235,27 @@ export const router = {
       "history-section": "nav-history",
       "profile-section": "btn-auth", // Map profile to auth button
       "changelog-section": "nav-changelog",
+      "search-users-section": "nav-search-users",
     };
 
-    const sidebarId = sidebarMap[activeId];
-    // We need to import updateSidebarActiveState or reimplement it?
-    // Reimplementing is safer to avoid circular deps if sidebar imports router.
-    // Sidebar.js is simple.
+    let sidebarId = sidebarMap[activeId];
+
+    // v1.7.9: Sidebar Profile state should ONLY show active if it is OUR profile
+    if (activeId === "profile-section" && baseRoute === "#profile" && params.length > 0) {
+      try {
+        const { getCurrentUser } = await import("./auth.js?v=1.3.10");
+        const user = getCurrentUser();
+        const ownName = (user && user.displayName) || "";
+        const targetName = decodeURIComponent(params[0]).toLowerCase();
+
+        if (ownName.toLowerCase() !== targetName) {
+           sidebarId = null; // Foreign profile: do NOT mark "Account"
+        }
+      } catch (e) {
+        console.warn("[Router] Sidebar check failed:", e);
+      }
+    }
+
     if (sidebarId) {
       const navItems = document.querySelectorAll(".nav-item");
       navItems.forEach((item) => {

@@ -51,6 +51,7 @@
     <link rel="stylesheet" href="css/sidebar.css?v=1.3.10" />
     <link rel="stylesheet" href="css/changelog.css?v=1.3.10" />
     <link rel="stylesheet" href="css/admin.css?v=1.3.10" />
+    <link rel="stylesheet" href="css/search-users.css?v=1.3.10" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -227,6 +228,15 @@
                 <span class="nav-label" data-i18n="sidebar_history"
                   >Historial</span
                 >
+              </li>
+              <li
+                class="nav-item"
+                id="nav-search-users"
+                title="Buscar Usuarios"
+                data-i18n-title="sidebar_search_users"
+              >
+                <span class="nav-icon">🔍</span>
+                <span class="nav-label" data-i18n="sidebar_search_users">Buscar</span>
               </li>
               <li
                 class="nav-item"
@@ -1355,6 +1365,36 @@
           >
             Iniciar Sesión
           </button>
+        </div>
+      </section>
+
+      <!-- User Search Section -->
+      <section id="search-users-section" class="hidden">
+        <div class="search-users-wrapper">
+          <h1 class="page-title" data-i18n="search_users_title">Buscar Jugadores</h1>
+          
+          <div class="search-box-container glass-panel">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input 
+                type="text" 
+                id="user-search-input" 
+                data-i18n-placeholder="search_users_placeholder" 
+                placeholder="Escribe un nombre..."
+                autocomplete="off"
+              />
+              <div id="search-loader" class="loader-tiny hidden"></div>
+            </div>
+          </div>
+
+          <div id="search-results-container" class="results-grid">
+            <!-- Results will be injected here -->
+          </div>
+          
+          <div id="search-empty-state" class="empty-state hidden">
+            <span class="empty-icon">👤</span>
+            <p id="search-message" data-i18n="search_users_min_chars">Escribe al menos 2 letras...</p>
+          </div>
         </div>
       </section>
 

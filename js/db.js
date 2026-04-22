@@ -930,10 +930,81 @@ export async function getPublicUserByUsername(username) {
       monthlyRP: publicProfileData.monthlyRP || 0,
       dailyRP: publicProfileData.dailyRP || 0,
       lastUpdated: publicProfileData.lastUpdated,
+      uid: snap.docs[0].id,
     };
   } catch (error) {
     console.error("[DB] Error fetching public profile:", error);
     return null;
+  }
+}
+
+/**
+ * v1.7.5: Fetches public history records for a given user UID.
+ */
+export async function getPublicUserHistory(uid) {
+  if (!uid) return {};
+  try {
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const historyRef = collection(db, "users", uid, "history");
+    const snap = await getDocs(historyRef);
+    const history = {};
+    snap.docs.forEach(doc => {
+      const data = doc.data();
+      // v1.7.6: Convert seed ID (YYYYMMDD) to date string (YYYY-MM-DD) for the calendar
+      const seedStr = doc.id;
+      if (seedStr.length === 8) {
+         const y = seedStr.substring(0, 4);
+         const m = seedStr.substring(4, 6);
+         const d = seedStr.substring(6, 8);
+         const dateKey = `${y}-${m}-${d}`;
+         history[dateKey] = data;
+      } else {
+         history[doc.id] = data;
+      }
+    });
+    return history;
+  } catch (error) {
+    console.error("[DB] Error fetching public history:", error);
+    return {};
+  }
+}
+
+
+/**
+ * v1.7.0: User Search (Prefix-based)
+ * Returns a list of public users whose username starts with the query.
+ */
+export async function searchPublicUsers(queryText, limitCount = 20) {
+  if (!queryText || queryText.length < 2) return [];
+  try {
+    const { collection, query, where, getDocs, limit, orderBy } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const usersRef = collection(db, "users");
+    const lookName = queryText.toLowerCase();
+
+    // Prefix search strategy: [query] to [query + \uf8ff]
+    const q = query(
+      usersRef,
+      where("username_lc", ">=", lookName),
+      where("username_lc", "<=", lookName + "\uf8ff"),
+      where("isPublic", "==", true),
+      limit(limitCount)
+    );
+
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        username: data.username,
+        username_lc: data.username_lc,
+        totalRP: data.totalRP || 0,
+        monthlyRP: data.monthlyRP || 0,
+        stats: data.stats || {},
+        isVerified: data.isVerified || false
+      };
+    });
+  } catch (error) {
+    console.error("[DB] User search failed:", error);
+    return [];
   }
 }
 
@@ -997,6 +1068,7 @@ export async function updateUserPreference(userId, key, value) {
 
 function showSaveIndicatorWithMessage(msg) {
   // Reuse existing save indicator logic or create one
+  
   const indicator = document.getElementById("save-indicator");
   if (indicator) {
     indicator.textContent = msg;

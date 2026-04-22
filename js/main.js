@@ -22,6 +22,7 @@ import { initChangelog } from "./changelog.js?v=1.3.10";
 import { toggleModal } from "./ui.js?v=1.3.10";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.10";
 import { checkSeasonMigration } from "./migration.js?v=1.3.10";
+import { initSearchUsers } from "./search-users.js?v=1.3.10";
 
 // v1.3.0: Season Transition Barrier (Absolute Blocking)
 // We check this at the top level BEFORE ANY initialization to prevent 
@@ -157,6 +158,7 @@ async function startApp() {
   initHistory(); // History Module
   initGuide(); // Guide Module
   initChangelog(); // Changelog Module
+  initSearchUsers(); // Search Users Module
 
   // Initialize Router LAST to handle initial hash
   router.init();

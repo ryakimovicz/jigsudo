@@ -465,12 +465,13 @@ function renderHistoryCalendar(history = {}) {
 
 /**
  * v1.5.62: Floating Tooltip Logic
+ * v1.7.6: Added support for comparison (ownDayData)
  */
-export function attachCalendarTooltip(el, dayData, dateStr) {
+export function attachCalendarTooltip(el, dayData, dateStr, ownDayData = null, fName = "Ellos") {
   // Desktop hover
   el.addEventListener("mouseenter", (e) => {
     if (window.matchMedia("(max-width: 768px)").matches) return;
-    showHistoryTooltip(e, dayData, dateStr);
+    showHistoryTooltip(e, dayData, dateStr, false, ownDayData, fName);
   });
 
   el.addEventListener("mousemove", (e) => {
@@ -528,7 +529,7 @@ window.addEventListener("popstate", (e) => {
     }
 });
 
-function showHistoryTooltip(e, data, dateStr, isMobile = false) {
+function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, fName = "Ellos") {
   const tooltip = document.getElementById("history-tooltip");
   const container = document.getElementById("history-tooltip-container");
   if (!tooltip) return;
@@ -540,17 +541,14 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false) {
   const dateObj = new Date(dateStr + "T12:00:00Z");
   const dateTitle = dateObj.toLocaleDateString(lang, { day: "numeric", month: "long" });
 
-  // v1.5.62: Dynamic title color matching the day status
-  // v1.5.62: Dynamic title color matching the day's base circle color
-  let titleColor = "var(--text-muted)"; // Gray (Sin jugar original)
+  let titleColor = "var(--text-muted)";
   if (data) {
-    if (data.originalWon) titleColor = "#22c55e"; // Green (Ganado original)
-    else if (data.hasOriginal) titleColor = "#eab308"; // Yellow (Empezado original)
+    if (data.originalWon) titleColor = "#22c55e";
+    else if (data.hasOriginal) titleColor = "#eab308";
   }
 
   let html = "";
   
-  // Close Button for mobile
   if (isMobile) {
       html += `<button class="tooltip-close" id="hist-tooltip-close">×</button>`;
   }
@@ -560,7 +558,6 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false) {
     ${data?.status === "won" ? "<span>👑</span>" : ""}
   </div>`;
 
-  // Helper for formatting time
   const fmt = (ms) => {
     if (!ms || ms < 0) return "--:--";
     const totalSec = Math.floor(ms / 1000);
@@ -569,43 +566,81 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false) {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // 0. Empty Fallback
-  if (!data || (!data.original && !data.best)) {
-    html += `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 10px 0; text-align: center;">
-      ${t.history_no_stat || "Sin estadísticas registradas"}
-    </div>`;
-  } else {
-    // 1. Original Section
-    if (data.original) {
-      const o = data.original;
-      html += `<div class="tooltip-section">
-        <span class="tooltip-section-title">${t.stats_original || "Desempeño Original"}</span>
-        <div class="tooltip-grid">
-          <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
-          <span class="tooltip-value highlight">${(o.score || 0).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RP</span>
-          <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
-          <span class="tooltip-value">${fmt(o.totalTime)}</span>
-          <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
-          <span class="tooltip-value">${o.peaksErrors || o.errors || 0}</span>
-        </div>
-      </div>`;
-    }
+  const getTrend = (f, o, type) => {
+      if (!f || !o) return "";
+      const isBetter = type === "time" ? (o < f) : (o > f);
+      const isWorse = type === "time" ? (o > f) : (o < f);
+      if (isBetter) return '<span class="trend-up">▲</span>';
+      if (isWorse) return '<span class="trend-down">▼</span>';
+      return "";
+  };
 
-    // 2. Best Section
-    if (data.best) {
-      const b = data.best;
-      html += `<div class="tooltip-section">
-        <span class="tooltip-section-title">${t.stats_best || "Mejor Histórico"}</span>
-        <div class="tooltip-grid">
-          <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
-          <span class="tooltip-value highlight">${(b.score || 0).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RP</span>
-          <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
-          <span class="tooltip-value">${fmt(b.totalTime)}</span>
-          <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
-          <span class="tooltip-value">${b.peaksErrors || b.errors || 0}</span>
+  if (!ownData) {
+      // STANDARD SINGLE VIEW
+      if (!data || (!data.original && !data.best)) {
+        html += `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 10px 0; text-align: center;">
+          ${t.history_no_stat || "Sin estadísticas registradas"}
+        </div>`;
+      } else {
+        if (data.original) {
+          const o = data.original;
+          html += `<div class="tooltip-section">
+            <span class="tooltip-section-title">${t.stats_original || "Desempeño Original"}</span>
+            <div class="tooltip-grid">
+              <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
+              <span class="tooltip-value highlight">${(o.score || 0).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RP</span>
+              <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
+              <span class="tooltip-value">${fmt(o.totalTime)}</span>
+              <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
+              <span class="tooltip-value">${o.peaksErrors || o.errors || 0}</span>
+            </div>
+          </div>`;
+        }
+        if (data.best) {
+          const b = data.best;
+          html += `<div class="tooltip-section">
+            <span class="tooltip-section-title">${t.stats_best || "Mejor Histórico"}</span>
+            <div class="tooltip-grid">
+              <span class="tooltip-label">${lang === 'es' ? 'Puntaje' : 'Score'}:</span>
+              <span class="tooltip-value highlight">${(b.score || 0).toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RP</span>
+              <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
+              <span class="tooltip-value">${fmt(b.totalTime)}</span>
+              <span class="tooltip-label">${lang === 'es' ? 'Errores' : 'Errors'}:</span>
+              <span class="tooltip-value">${b.peaksErrors || b.errors || 0}</span>
+            </div>
+          </div>`;
+        }
+      }
+  } else {
+      // COMPARISON MODE (Two Columns)
+      const f = data || {};
+      const o = ownData || {};
+      
+      const fO = f.original || {};
+      const oO = o.original || {};
+      
+      html += `
+        <div class="history-comp-grid">
+            <div class="history-comp-col">
+                <div class="history-comp-header">${fName}</div>
+                <div class="tooltip-grid">
+                    <span class="tooltip-label">RP</span>
+                    <span class="tooltip-value">${(fO.score || 0).toFixed(2)}</span>
+                    <span class="tooltip-label">${t.time || "Tiempo"}</span>
+                    <span class="tooltip-value">${fmt(fO.totalTime)}</span>
+                </div>
+            </div>
+            <div class="history-comp-col">
+                <div class="history-comp-header">${t.comp_you || "Tú"}</div>
+                <div class="tooltip-grid">
+                    <span class="tooltip-label">RP ${getTrend(fO.score, oO.score, "rp")}</span>
+                    <span class="tooltip-value">${(oO.score || 0).toFixed(2)}</span>
+                    <span class="tooltip-label">${t.time || "Tiempo"} ${getTrend(fO.totalTime, oO.totalTime, "time")}</span>
+                    <span class="tooltip-value">${fmt(oO.totalTime)}</span>
+                </div>
+            </div>
         </div>
-      </div>`;
-    }
+      `;
   }
 
   tooltip.innerHTML = html;

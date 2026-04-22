@@ -11,6 +11,7 @@ export let currentViewDate = getJigsudoDate();
 let minNavMonth = null;
 let maxNavMonth = null;
 let activeProfileName = null;
+let comparisonEnabled = false;
 
 export function initProfile() {
   console.log("Profile Module Loaded");
@@ -86,13 +87,40 @@ window.addEventListener("routeChanged", async ({ detail }) => {
     const user = getCurrentUser();
     const requestedUsername = detail.params?.[0];
 
+    // v1.7.9: Smooth Pre-fetching for Foreign Profiles
+    if (requestedUsername) {
+      const decodedTarget = decodeURIComponent(requestedUsername).toLowerCase();
+      const isOwn = user && user.displayName && user.displayName.toLowerCase() === decodedTarget;
+
+      if (!isOwn) {
+        console.log("[Profile] Pre-fetching data for:", decodedTarget);
+        // Show a subtle loading indicator on the search results if possible
+        const searchInput = document.getElementById("user-search-input");
+        if (searchInput) searchInput.style.opacity = "0.5";
+
+        // Fetch everything BEFORE showing UI
+        await updateProfileData(requestedUsername);
+        
+        // Data is ready, now show the UI
+        if (searchInput) searchInput.style.opacity = "1";
+        _showProfileUI(requestedUsername, true); // skipInitialUpdate = true
+        
+        // Hide other sections now that we are ready
+        document.querySelectorAll(".nav-section, .menu-content").forEach(el => {
+            if (el.id !== "profile-section") el.classList.add("hidden");
+        });
+        
+        return; // Done
+      }
+    }
+
     if (!requestedUsername && user && !user.isAnonymous && user.displayName) {
       // Auto-redirect to their own profile URL
       const encodedName = encodeURIComponent(user.displayName);
       history.replaceState(null, null, `/#profile/${encodedName}`);
     }
 
-    _showProfileUI(requestedUsername); // Trigger polling and UI updates
+    _showProfileUI(requestedUsername); // Own profile is immediate
   } else {
     _hideProfileUI();
   }
@@ -101,7 +129,7 @@ window.addEventListener("routeChanged", async ({ detail }) => {
 // Router Handler (Removed)
 
 // Internal UI Manipulation
-function _showProfileUI(requestedUsername) {
+function _showProfileUI(requestedUsername, skipInitialUpdate = false) {
   activeProfileName = requestedUsername;
   const section = document.getElementById("profile-section");
   const menu = document.getElementById("menu-content"); // Main Home Content
@@ -150,14 +178,11 @@ function _showProfileUI(requestedUsername) {
   const footer = document.querySelector(".main-footer");
   if (footer) footer.classList.remove("hidden");
 
-  // Highlight Sidebar Button (Cuenta)
-  import("./sidebar.js?v=1.3.10").then((mod) => {
-    if (mod.updateSidebarActiveState) {
-      mod.updateSidebarActiveState("btn-auth");
-    }
-  });
+  // Highlight Sidebar Button (Cuenta) handled by router.js
 
-  updateProfileData(activeProfileName);
+  if (!skipInitialUpdate) {
+    updateProfileData(activeProfileName);
+  }
 
   // Update Header Button to Close Icon
   const btnStats = document.getElementById("btn-stats");
@@ -235,6 +260,9 @@ export async function updateProfileData(targetUsername = activeProfileName) {
 
   if (!isOwnProfile) {
     // FOREIGN PUBLIC PROFILE
+    // v1.7.9: CLEAR stats UI immediately to avoid showing own data while loading
+    renderProfileStats(null);
+    
     if (nameEl) nameEl.textContent = decodedTarget;
     if (avatarEl) {
       avatarEl.textContent = decodedTarget.charAt(0).toUpperCase();
@@ -257,7 +285,27 @@ export async function updateProfileData(targetUsername = activeProfileName) {
           renderProfileStats(null); // Hide/Clear stats
         } else {
           // PUBLIC PROFILE - Proceed to render
-          renderProfileStats(publicData.stats);
+          // v1.7.5: Fetch history for public profiles to show calendar
+          const { getPublicUserHistory } = await import("./db.js?v=1.3.10");
+          const publicHistory = await getPublicUserHistory(publicData.uid);
+          
+          // Merge history into the data object
+          const fullPublicData = {
+             ...publicData,
+             history: publicHistory
+          };
+
+          const ownHistory = gameManager.stats?.history || null;
+          renderProfileStats(fullPublicData, false);
+          renderCalendar(publicHistory, ownHistory, publicData.username);
+
+          // v1.7.6: Enable Comparison Mode
+          comparisonEnabled = true;
+          attachComparisonListeners(fullPublicData);
+
+          // v1.7.9: FORCE Sidebar Cleanliness (Ensure "Account" is NOT marked)
+          const authBtn = document.getElementById("btn-auth");
+          if (authBtn) authBtn.classList.remove("active");
 
           // Fix Email missing label visually
           if (emailEl) {
@@ -416,11 +464,16 @@ export async function updateProfileData(targetUsername = activeProfileName) {
     }
 
     // Render own stats from GameManager source of truth to avoid wipe limbo
-    renderProfileStats(gameManager.stats || localStats);
+    renderProfileStats(gameManager.stats || localStats, true);
+    
+    // v1.7.9: Ensure own calendar is rendered WITHOUT comparison
+    renderCalendar((gameManager.stats || localStats)?.history || {}, null);
+    comparisonEnabled = false; 
+    document.querySelectorAll("#profile-section [style*='cursor: help']").forEach(el => el.style.cursor = "default");
   }
 }
 
-function renderProfileStats(stats) {
+function renderProfileStats(stats, isOwn = true) {
   const statsContainers = document.querySelectorAll(
     "#profile-section .section-title, #profile-section .stats-grid, #profile-section .calendar-heatmap, #profile-section .daily-time-report, #profile-section .profile-share-actions, #profile-section .rank-display",
   );
@@ -483,11 +536,13 @@ function renderProfileStats(stats) {
   maxScore = i.bestScore || s.bestScore || 0;
 
   const st = i.stageTimesAccumulated || s.stageTimesAccumulated;
+  const sw = i.stageWinsAccumulated || s.stageWinsAccumulated;
+  
   if (st) {
     for (const [stage, time] of Object.entries(st)) {
       if (stageSums[stage] !== undefined) {
         stageSums[stage] = time;
-        stageCounts[stage] = s.stageWinsAccumulated?.[stage] || 0;
+        stageCounts[stage] = sw?.[stage] || 0;
       }
     }
   }
@@ -596,7 +651,6 @@ function renderProfileStats(stats) {
   }
 
   if (progressFill) progressFill.style.width = `${rankData.progress}%`;
-
   if (rpCurrentEl) rpCurrentEl.textContent = fmtNumber(currentRP, 2);
   if (rpNextEl) {
     const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
@@ -605,43 +659,42 @@ function renderProfileStats(stats) {
   }
 
   // --- Dynamic Stats for Account Dropdown Menu (Quick Stats) ---
-  const mRankIcon = document.getElementById("menu-rank-icon");
-  const mRankName = document.getElementById("menu-rank-name");
-  const mRankLevel = document.getElementById("menu-rank-level");
-  const mRpCurrent = document.getElementById("menu-rp-current");
-  const mRpNext = document.getElementById("menu-rp-next");
-  const mRpProgress = document.getElementById("menu-rp-progress");
-  const mStreak = document.getElementById("menu-stat-streak");
-  const mDailyPoints = document.getElementById("menu-stat-daily");
+  // v1.7.5: ONLY update sidebar elements if viewing OWN profile
+  if (isOwn) {
+    const mRankIcon = document.getElementById("menu-rank-icon");
+    const mRankName = document.getElementById("menu-rank-name");
+    const mRankLevel = document.getElementById("menu-rank-level");
+    const mRpCurrent = document.getElementById("menu-rp-current");
+    const mRpNext = document.getElementById("menu-rp-next");
+    const mRpProgress = document.getElementById("menu-rp-progress");
+    const mStreak = document.getElementById("menu-stat-streak");
+    const mDailyPoints = document.getElementById("menu-stat-daily");
 
-  if (mRankIcon) mRankIcon.textContent = rankData.rank.icon;
-  if (mRankName) {
-    let lang = getCurrentLang() || "es";
-    if (!translations[lang]) lang = lang.split("-")[0];
-    const nameKey = rankData.rank.nameKey;
-    mRankName.textContent = translations[lang]?.[nameKey] || nameKey;
+    if (mRankIcon) mRankIcon.textContent = rankData.rank.icon;
+    if (mRankName) {
+      let lang = getCurrentLang() || "es";
+      if (!translations[lang]) lang = lang.split("-")[0];
+      const nameKey = rankData.rank.nameKey;
+      mRankName.textContent = translations[lang]?.[nameKey] || nameKey;
+    }
+    if (mRankLevel) {
+      const lang = getCurrentLang() || "es";
+      const prefix = translations[lang]?.rank_level_prefix || "Nvl.";
+      mRankLevel.textContent = `${prefix} ${rankData.level}`;
+    }
+    if (mRpCurrent) mRpCurrent.textContent = fmtNumber(currentRP, 2);
+    if (mRpNext) {
+      const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
+      mRpNext.textContent =
+        typeof nextGoal === "number" ? fmtNumber(nextGoal, 0) : nextGoal;
+    }
+    if (mRpProgress) mRpProgress.style.width = `${rankData.progress}%`;
+    if (mStreak) mStreak.textContent = s.currentStreak || i.currentStreak || 0;
+    if (mDailyPoints) mDailyPoints.textContent = fmtNumber(s.dailyRP || i.dailyRP || 0, 2);
   }
-  if (mRankLevel) {
-    const lang = getCurrentLang() || "es";
-    const prefix = translations[lang]?.rank_level_prefix || "Nvl.";
-    mRankLevel.textContent = `${prefix} ${rankData.level}`;
-  }
-  if (mRpCurrent) mRpCurrent.textContent = fmtNumber(currentRP, 2);
-  if (mRpNext) {
-    const nextGoal = rankData.nextRank ? rankData.nextRank.minRP : "MAX";
-    mRpNext.textContent =
-      typeof nextGoal === "number" ? fmtNumber(nextGoal, 0) : nextGoal;
-  }
-  if (mRpProgress) mRpProgress.style.width = `${rankData.progress}%`;
-  if (mStreak) mStreak.textContent = s.currentStreak || i.currentStreak || 0;
-  if (mDailyPoints) mDailyPoints.textContent = fmtNumber(s.dailyRP || i.dailyRP || 0, 2);
 
   // 3. Render Calendar
-  try {
-    renderCalendar(stats.history || {});
-  } catch (e) {
-    console.error("Calendar Render Error:", e);
-  }
+  // Handled by updateProfileData to ensure history is ready
 
   // 4. Render Weekday Stats
   try {
@@ -661,7 +714,9 @@ function renderWeekdayStats(stats) {
   container.innerHTML = "";
 
   const history = stats.history || {};
-  const cache = stats.weekdayStatsAccumulated;
+  // v1.7.6: Support nested stats for foreign profiles
+  const i = stats.stats || {};
+  const cache = i.weekdayStatsAccumulated || stats.weekdayStatsAccumulated;
 
   // Dynamic Day Labels based on Locale
   const lang = getCurrentLang() || "es";
@@ -822,7 +877,7 @@ function changeMonth(delta) {
   updateProfileData(activeProfileName);
 }
 
-function renderCalendar(history = {}) {
+function renderCalendar(history = {}, ownHistory = null, fName = "Ellos") {
   const grid = document.getElementById("calendar-grid");
   const label = document.getElementById("cal-month-label");
   if (!grid) {
@@ -951,7 +1006,8 @@ function renderCalendar(history = {}) {
 
       // v1.5.62: Attach dynamic tooltips
       import("./history.js?v=1.3.10").then(mod => {
-          mod.attachCalendarTooltip(dayEl, dayData, dateStr);
+          const ownDayData = ownHistory ? ownHistory[dateStr] : null;
+          mod.attachCalendarTooltip(dayEl, dayData, dateStr, ownDayData, fName);
       });
 
       grid.appendChild(dayEl);
@@ -1279,4 +1335,257 @@ function downloadFallback(canvas, fileName = "jigsudo-stats.png") {
   link.href = canvas.toDataURL("image/png");
   link.download = fileName;
   link.click();
+}
+
+// --- Comparison Mode Tooltip Logic (v1.7.6) ---
+
+let compTooltip = null;
+
+function attachComparisonListeners(foreignData) {
+  const ownStats = gameManager.stats;
+  if (!ownStats) return;
+
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+  const fName = foreignData.username || "Ellos";
+
+  // 1. Header (RP & Level) - Expanded area to the whole identity card
+  const header = document.querySelector("#profile-section .identity-card");
+  if (header) {
+    const ownRank = getRankData(ownStats.totalRP || 0);
+    const foreignRank = getRankData(foreignData.totalRP || 0);
+    
+    setupComp(header, {
+      title: t.comp_header || "Comparativa de Rango",
+      foreign: { 
+        name: fName, 
+        val: foreignData.totalRP, 
+        rankName: (foreignRank.rank.icon || "") + " " + (t[foreignRank.rank.nameKey] || foreignRank.rank.nameKey),
+        level: foreignRank.level
+      },
+      own: { 
+        name: t.comp_you || "Tú", 
+        val: ownStats.totalRP, 
+        rankName: (ownRank.rank.icon || "") + " " + (t[ownRank.rank.nameKey] || ownRank.rank.nameKey),
+        level: ownRank.level
+      },
+      type: "rp"
+    });
+  }
+
+  // 2. Stats Grid
+  const statCards = document.querySelectorAll("#profile-section .stats-grid .stat-card");
+  statCards.forEach(card => {
+    const labelEl = card.querySelector(".stat-label");
+    if (!labelEl) return;
+    const labelText = labelEl.textContent.trim().toLowerCase();
+    
+    let key = "";
+    if (labelText.includes("completados") || labelText.includes("completed")) key = "totalPlayed";
+    else if (labelText.includes("racha actual") || labelText.includes("current streak")) key = "currentStreak";
+    else if (labelText.includes("racha máx") || labelText.includes("max streak")) key = "maxStreak";
+    else if (labelText.includes("puntaje") || labelText.includes("score")) key = "bestScore";
+    else if (labelText.includes("récord") || labelText.includes("record")) key = "bestTime";
+    else if (labelText.includes("promedio") || labelText.includes("average")) key = "avgTime";
+
+    if (!key) return;
+
+    let foreignVal = 0, ownVal = 0, type = "number", suffix = "";
+    
+    if (key === "avgTime") {
+        const fH = foreignData.history || {};
+        const oH = ownStats.history || {};
+        const calcAvg = (h) => {
+            const wins = Object.values(h).filter(x => x.status === "won" && x.totalTime > 0);
+            return wins.length > 0 ? wins.reduce((a, b) => a + b.totalTime, 0) / wins.length : 0;
+        };
+        foreignVal = calcAvg(fH);
+        ownVal = calcAvg(oH);
+        type = "time";
+    } else if (key === "bestTime") {
+        foreignVal = foreignData.stats?.bestTime || 0;
+        ownVal = ownStats.bestTime || 0;
+        type = "time";
+    } else {
+        foreignVal = (foreignData.stats?.[key] !== undefined) ? foreignData.stats[key] : (foreignData[key] || 0);
+        ownVal = ownStats?.[key] || 0;
+        if (key === "bestScore") suffix = " RP";
+    }
+
+    setupComp(card, {
+      title: labelEl.textContent,
+      foreign: { name: fName, val: foreignVal, label: formatCompValue(foreignVal, type, suffix) },
+      own: { name: t.comp_you || "Tú", val: ownVal, label: formatCompValue(ownVal, type, suffix) },
+      type: type
+    });
+  });
+
+  // 3. Average Times per Level
+  const stageCards = document.querySelectorAll("#profile-section .stage-card");
+  stageCards.forEach(card => {
+    const nameEl = card.querySelector(".stage-name");
+    if (!nameEl) return;
+    const stageName = nameEl.textContent.trim();
+    
+    const stageKeys = {
+        "Juego de Memoria": "memory", "Memory Game": "memory",
+        "Rompecabezas": "jigsaw", "Jigsaw Puzzle": "jigsaw",
+        "Sudoku": "sudoku",
+        "Picos y Valles": "peaks", "Peaks and Valleys": "peaks",
+        "Sopa de Números": "search", "Number Search": "search",
+        "El Código": "code", "The Code": "code"
+    };
+    const key = stageKeys[stageName];
+    if (!key) return;
+
+    const getStageAvg = (s) => {
+        const i = s.stats || s;
+        const time = i.stageTimesAccumulated?.[key] || 0;
+        const count = i.stageWinsAccumulated?.[key] || 0;
+        return count > 0 ? time / count : 0;
+    };
+
+    const fVal = getStageAvg(foreignData);
+    const oVal = getStageAvg(ownStats);
+
+    setupComp(card, {
+      title: stageName,
+      foreign: { name: fName, val: fVal, label: formatCompValue(fVal, "time") },
+      own: { name: t.comp_you || "Tú", val: oVal, label: formatCompValue(oVal, "time") },
+      type: "time"
+    });
+  });
+
+  // 4. Daily Average
+  const dailyCards = document.querySelectorAll("#profile-section .daily-stat-card");
+  dailyCards.forEach(card => {
+     const labelEl = card.querySelector(".daily-stat-label");
+     if (!labelEl) return;
+     const labelText = labelEl.textContent.trim().toLowerCase();
+
+     let fVal = 0, oVal = 0, type = "number", suffix = "";
+     if (labelText.includes("rp")) {
+         fVal = foreignData.stats?.dailyRP || foreignData.dailyRP || 0;
+         oVal = ownStats.dailyRP || 0;
+         suffix = " RP";
+     } else if (labelText.includes("jigsudos")) {
+         fVal = foreignData.stats?.dailyWinsAccumulated || 0;
+         oVal = ownStats.dailyWinsAccumulated || 0;
+     } else if (labelText.includes("tiempo") || labelText.includes("time")) {
+         const today = getJigsudoDateString();
+         fVal = foreignData.history?.[today]?.totalTime || 0;
+         oVal = ownStats.history?.[today]?.totalTime || 0;
+         type = "time";
+     } else return;
+
+     setupComp(card, {
+        title: labelEl.textContent,
+        foreign: { name: fName, val: fVal, label: formatCompValue(fVal, type, suffix) },
+        own: { name: t.comp_you || "Tú", val: oVal, label: formatCompValue(oVal, type, suffix) },
+        type: type
+     });
+  });
+}
+
+function formatCompValue(val, type, suffix = "") {
+    if (!val || val <= 0) return "--";
+    if (type === "time") {
+        const totalSec = Math.floor(val / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+    const num = Number(val);
+    return (isNaN(num) ? "0" : num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })) + suffix;
+}
+
+function setupComp(el, data) {
+  el.addEventListener("mouseenter", (e) => showCompTooltip(e, data));
+  el.addEventListener("mousemove", (e) => updateCompTooltipPosition(e));
+  el.addEventListener("mouseleave", () => hideCompTooltip());
+}
+
+function showCompTooltip(e, data) {
+  if (!comparisonEnabled) return;
+  if (!compTooltip) {
+    compTooltip = document.createElement("div");
+    compTooltip.className = "comp-tooltip";
+    document.body.appendChild(compTooltip);
+  }
+
+  const fVal = data.foreign.val;
+  const oVal = data.own.val;
+
+  let trendIcon = "";
+  let trendClass = "";
+
+  if (fVal > 0 && oVal > 0) {
+      const isBetter = data.type === "time" ? (oVal < fVal) : (oVal > fVal);
+      const isWorse = data.type === "time" ? (oVal > fVal) : (oVal < fVal);
+      if (isBetter) { trendIcon = "▲"; trendClass = "trend-up"; }
+      else if (isWorse) { trendIcon = "▼"; trendClass = "trend-down"; }
+  }
+
+  let fHtml = "";
+  let oHtml = "";
+
+  if (data.type === "rp") {
+      const f = data.foreign;
+      const o = data.own;
+      const fRP = Number(f.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const oRP = Number(o.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
+      fHtml = `
+        <div class="comp-value-stack">
+            <span class="comp-rank-name">${f.rankName}</span>
+            <span class="comp-rank-level">Nvl. ${f.level}</span>
+            <span class="comp-rank-rp">${fRP} RP</span>
+        </div>`;
+      
+      oHtml = `
+        <div class="comp-value-stack">
+            <span class="comp-rank-name">${o.rankName}</span>
+            <span class="comp-rank-level">Nvl. ${o.level}</span>
+            <span class="comp-rank-rp">${oRP} RP <span class="${trendClass}">${trendIcon}</span></span>
+        </div>`;
+  } else {
+      fHtml = `<span class="comp-value">${data.foreign.label}</span>`;
+      oHtml = `<span class="comp-value">${data.own.label} <span class="${trendClass}">${trendIcon}</span></span>`;
+  }
+
+  compTooltip.innerHTML = `
+    <div class="comp-tooltip-title">${data.title}</div>
+    <div class="comp-grid">
+        <div class="comp-column">
+            <span class="comp-label">${data.foreign.name}</span>
+            ${fHtml}
+        </div>
+        <div class="comp-vs">vs</div>
+        <div class="comp-column">
+            <span class="comp-label">${data.own.name}</span>
+            ${oHtml}
+        </div>
+    </div>
+  `;
+
+  compTooltip.classList.add("visible");
+  updateCompTooltipPosition(e);
+}
+
+function updateCompTooltipPosition(e) {
+  if (!compTooltip) return;
+  const x = e.clientX + 15;
+  const y = e.clientY + 15;
+  
+  const width = compTooltip.offsetWidth;
+  const height = compTooltip.offsetHeight;
+  const maxX = window.innerWidth - width - 20;
+  const maxY = window.innerHeight - height - 20;
+
+  compTooltip.style.left = `${Math.min(x, maxX)}px`;
+  compTooltip.style.top = `${Math.min(y, maxY)}px`;
+}
+
+function hideCompTooltip() {
+  if (compTooltip) compTooltip.classList.remove("visible");
 }

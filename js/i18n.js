@@ -212,3 +212,10 @@ function setupLanguageSelectorListener() {
     select.addEventListener("click", (e) => e.stopPropagation());
   }
 }
+
+/**
+ * v1.7.0: Get a translation string by key for the current language.
+ */
+export function getI18n(key) {
+  return translations[currentLang][key] || key;
+}
