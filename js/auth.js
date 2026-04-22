@@ -153,8 +153,11 @@ export function initAuth() {
       document.body.classList.add("syncing-account");
       try {
         console.log(`[Auth] Step 2: Syncing account data for ${user.uid}...`);
-        const { loadUserProgress, listenToUserProgress } =
+        const { loadUserProgress, listenToUserProgress, ensureUserProfileExists } =
           await import("./db.js?v=1.3.9");
+
+        // v1.9.6: Ensure profile exists in DB to prevent permission-denied errors on new/reset accounts
+        await ensureUserProfileExists(user.uid, user.displayName);
 
         // Await the fetch and the handleCloudSync call inside it
         await loadUserProgress(user.uid);

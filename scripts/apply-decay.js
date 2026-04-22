@@ -79,6 +79,7 @@ snapshot.docs.forEach((doc) => {
 
       // 2. Sequential Simulation (Transition Integrity)
       let totalPenaltyAccumulatedThisRun = 0;
+      let monthlyPenaltyAccumulatedThisRun = stats.monthlyPenaltyAccumulated || 0;
 
       for (let i = 1; i <= diffDays; i++) {
         const dObj = new Date(lastCheck + "T12:00:00Z");
@@ -96,6 +97,7 @@ snapshot.docs.forEach((doc) => {
           currentTotalRP = Number((currentTotalRP - realizedPenalty).toFixed(3));
           currentMonthlyRP = Number((currentMonthlyRP - realizedPenalty).toFixed(3));
           totalPenaltyAccumulatedThisRun += realizedPenalty;
+          monthlyPenaltyAccumulatedThisRun = Number((monthlyPenaltyAccumulatedThisRun + realizedPenalty).toFixed(3));
         }
 
         // B. Month Transition (Reset AFTER penalty)
@@ -106,6 +108,7 @@ snapshot.docs.forEach((doc) => {
           updateObj.lastMonthlyUpdate = lastProcessedMonth;
           
           currentMonthlyRP = 0;
+          monthlyPenaltyAccumulatedThisRun = 0; // Reset monthly accumulator on transition
           lastProcessedMonth = dMonth;
         }
       }
@@ -114,6 +117,7 @@ snapshot.docs.forEach((doc) => {
       updateObj.totalRP = currentTotalRP;
       updateObj.monthlyRP = currentMonthlyRP;
       updateObj["stats.totalPenaltyAccumulated"] = FieldValue.increment(Number(totalPenaltyAccumulatedThisRun.toFixed(3)));
+      updateObj["stats.monthlyPenaltyAccumulated"] = monthlyPenaltyAccumulatedThisRun;
       
       const yesterdayStr = new Date(new Date(todayStr + "T12:00:00Z").getTime() - 86400000).toISOString().substring(0, 10);
       updateObj["stats.lastPenaltyDate"] = yesterdayStr;

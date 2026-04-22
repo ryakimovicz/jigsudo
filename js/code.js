@@ -563,12 +563,15 @@ async function finalizeVictory() {
   // v2.6.0: Resilient Victory UI - If recordWin failed (null), provide emergency fallback
   if (!sessionStats) {
     console.warn("[Code] sessionStats was null. Providing emergency fallback for UI.");
+    const allStageTimes = gameManager.state?.meta?.stageTimes || {};
+    const totalTimeMs = Object.values(allStageTimes).reduce((acc, val) => acc + (val || 0), 0);
+    
     sessionStats = {
-      totalTime: gameManager.state?.meta?.stageTimes?.code || 0,
+      totalTime: totalTimeMs,
       streak: gameManager.stats?.currentStreak || 1,
       errors: 0,
-      score: 1.0,
-      stageTimes: gameManager.state?.meta?.stageTimes || {},
+      score: gameManager.stats?.dailyRP || 1.0,
+      stageTimes: allStageTimes,
       isReplay: gameManager.isReplay,
       date: new Date().toISOString().split('T')[0]
     };

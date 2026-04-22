@@ -312,7 +312,7 @@ export async function saveUserStats(userId, statsData, username = null, options 
     const userRef = doc(db, "users", userId);
     
     // v1.3.4: Atomic RP management (Authority is the Server/Functions)
-    const { setDoc, updateDoc, serverTimestamp, getDoc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+    const { setDoc, updateDoc, serverTimestamp, getDoc, deleteField } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
     
     const { auth } = await import("./firebase-config.js?v=1.3.9");
     const currentUser = auth.currentUser;
@@ -434,8 +434,6 @@ export async function saveUserStats(userId, statsData, username = null, options 
       updateData.dailyRP = s.dailyRP || 0;
       updateData.monthlyRP = s.monthlyRP || 0;
       updateData.totalRP = s.totalRP || 0;
-      updateData.lastDayRP = s.lastDayRP || 0;
-      updateData.lastMonthRP = s.lastMonthRP || 0;
 
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
       updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;
@@ -467,6 +465,8 @@ export async function saveUserStats(userId, statsData, username = null, options 
         dailyWinsAccumulated: s.dailyWinsAccumulated || 0,
         dailyBonusesAccumulated: s.dailyBonusesAccumulated || 0,
         dailyPeaksErrorsAccumulated: s.dailyPeaksErrorsAccumulated || 0,
+        lastDayRP: s.lastDayRP || 0,
+        lastMonthRP: s.lastMonthRP || 0,
         lastBonus: s.lastBonus || 0,
         lastPenalty: s.lastPenalty || 0,
         lastDecayCheck: s.lastDecayCheck || null,
@@ -510,6 +510,11 @@ export async function saveUserStats(userId, statsData, username = null, options 
       return;
     }
 
+    // v1.9.5: NUCLEAR ROOT EXORCISM - Cleanup legacy root fields authorized by rules
+    updateData.totalPenaltyAccumulated = deleteField();
+    updateData.monthlyPenaltyAccumulated = deleteField();
+    updateData.currentRP = deleteField();
+
     // v1.5.30: METADATA PURGE
     // Firestore rules (affectedKeys().hasOnly) are strict.
     // We must remove all internal control keys (starting with _) before sending.
@@ -525,19 +530,23 @@ export async function saveUserStats(userId, statsData, username = null, options 
       await updateDoc(userRef, updateData);
       console.log("[DB] Metadata and Ranking RP updated surgically (updateDoc).");
     } catch (e) {
-      // 2. Fallback: If document doesn't exist, we must use setDoc
-      if (e.code === "not-found") {
-        console.log("[DB] Profile not found, creating with initial stats...");
+      // 2. Fallback: If document doesn't exist or lacks root permission due to missing profile
+      if (e.code === "not-found" || e.code === "permission-denied") {
+        console.log(`[DB] Profile initialization required (${e.code}). Executing setDoc...`);
         
         // v1.5.0: For initial creation, we must ensure the 'stats' map exists
         const initialData = { ...updateData };
         initialData.stats = statsMap;
         
+        // Ensure critical fields for new users are present
+        if (initialData.schemaVersion === undefined) initialData.schemaVersion = 7.2;
+        if (initialData.isPublic === undefined) initialData.isPublic = true;
+        
         // Remove surgical dot-keys as they are redundant for a setDoc(merge:true) with the full map
         Object.keys(initialData).forEach(k => { if (k.includes(".")) delete initialData[k]; });
         
         await setDoc(userRef, initialData, { merge: true });
-        console.log("[DB] Profile created successfully (setDoc).");
+        console.log("[DB] Profile created/initialized successfully (setDoc).");
       } else {
         throw e;
       }
@@ -1106,7 +1115,35 @@ export async function getUserRank(fieldName, score, onlyVerified = false, filter
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count + 1;
   } catch (error) {
-    console.error(`[DB] Error calculating rank for ${fieldName}:`, error);
     return null;
+  }
+}
+
+/**
+ * v1.9.6: Secure Profile Initialization
+ * Ensures a clean, rule-compliant profile exists before saving progress or calling Cloud Functions.
+ * This resolves permission-denied errors that occur after a nuclear account reset.
+ */
+export async function ensureUserProfileExists(userId, userDisplayName) {
+  if (!userId) return;
+  try {
+    const userRef = doc(db, "users", userId);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) {
+      console.log("[DB] Perfil no encontrado. Inicializando perfil limpio...");
+      const { serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+      await setDoc(userRef, {
+        schemaVersion: 7.2,
+        lastUpdated: serverTimestamp(),
+        registeredAt: serverTimestamp(),
+        isPublic: true,
+        username: userDisplayName || "Usuario",
+        username_lc: (userDisplayName || "Usuario").toLowerCase(),
+        stats: {}
+      });
+      console.log("[DB] Perfil inicializado correctamente.");
+    }
+  } catch (e) {
+    console.error("[DB] Error al inicializar perfil:", e);
   }
 }

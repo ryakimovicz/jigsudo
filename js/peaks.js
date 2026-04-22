@@ -326,17 +326,18 @@ function checkPeaksVictory() {
 
 
     // Trigger Search Stage...
-    setTimeout(() => {
+    setTimeout(async () => {
       if (board) board.classList.remove("board-complete");
+
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      // IMPORTANT: advanceStage MUST be called before transitioning to the next stage
+      await gameManager.advanceStage();
 
       // Timer Transition
       gameManager.stopStageTimer(); // End Peaks
       gameManager.startStageTimer("search"); // Start Search
 
       transitionToSearch();
-      // Also advance logic state
-      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
-      gameManager.advanceStage();
     }, 800); // reduced delay to match animation (0.6s) + buffer
   }
 }

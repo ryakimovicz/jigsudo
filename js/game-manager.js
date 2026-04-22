@@ -5,7 +5,7 @@ import {
   countSequenceOccurrences,
 } from "./search-gen.js?v=1.3.9";
 import { CONFIG } from "./config.js?v=1.3.9";
-import { calculateRP, SCORING } from "./ranks.js?v=1.3.9";
+import { calculateRP, getRankData, SCORING } from "./ranks.js?v=1.3.9";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.3.9";
 import { encryptData, decryptData } from "./utils/crypto.js?v=1.3.9";
 import { getJigsudoDateString, getJigsudoYearMonth, getJigsudoDayDiff } from "./utils/time.js?v=1.3.9";
@@ -29,6 +29,7 @@ export class GameManager {
     this.sessionBlocked = false;
     this._throneShieldExpires = 0; // v1.2.3: Grace period for session claims
     this._lastLocalWrite = 0;      // v1.5.30: Sync Shield timer
+    this._statsUpdateQueue = Promise.resolve(); // v2.8.0: Mutex for stats integrity
 
     // v1.6.6: Immediate Throne Shield
     // If we reloaded to take the throne, activate the shield NOW (60s)
@@ -892,7 +893,7 @@ export class GameManager {
     return this.getTargetSolution();
   }
 
-  async save(syncToCloud = true, isPenalty = false, updateTimestamp = true) {
+  async save(syncToCloud = true, isPenalty = false, updateTimestamp = true, isReset = false) {
     if (!this.state || this.isWiping) return;
 
     // --- CRITICAL FIX: Ensure local timestamp is updated ONLY on real progress ---
@@ -907,13 +908,23 @@ export class GameManager {
     if (this.isReplay) return;
 
     localStorage.setItem(this.storageKey, encryptData(this.state));
-    if (syncToCloud) this.saveCloudDebounced(500, isPenalty);
+    if (syncToCloud) this.saveCloudDebounced(500, isPenalty, false, isReset);
   }
 
-  saveCloudDebounced(delay = 500, isPenalty = false) {
+  saveCloudDebounced(delay = 500, isPenalty = false, isWonNow = false, isReset = false) {
+    // v1.5.58: Flag Accumulation
+    // If a pending save is already marked as a penalty/win/reset, 
+    // we must preserve that state even if a subsequent non-flagged save occurs.
+    this._pendingSaveFlags = this._pendingSaveFlags || { isPenalty: false, isWonNow: false, isReset: false };
+    if (isPenalty) this._pendingSaveFlags.isPenalty = true;
+    if (isWonNow) this._pendingSaveFlags.isWonNow = true;
+    if (isReset) this._pendingSaveFlags.isReset = true;
+
     if (this.cloudSaveTimeout) clearTimeout(this.cloudSaveTimeout);
     this.cloudSaveTimeout = setTimeout(() => {
-      this.forceCloudSave(false, isPenalty);
+      const flags = this._pendingSaveFlags;
+      this._pendingSaveFlags = { isPenalty: false, isWonNow: false, isReset: false }; // Clear after capture
+      this.forceCloudSave(flags.isWonNow, flags.isPenalty, flags.isReset);
     }, delay);
   }
 
@@ -1306,23 +1317,16 @@ export class GameManager {
     const currentStage = this.state.progress?.currentStage || this.state.currentStage;
     const currentIdx = stages.indexOf(currentStage);
 
-    if (currentIdx !== -1 && currentIdx < stages.length - 1) {
-      const nextStage = stages[currentIdx + 1];
+    if (currentIdx !== -1) {
+      const nextStage = currentIdx < stages.length - 1 ? stages[currentIdx + 1] : "complete";
       
       if (this.state.progress) {
           this.state.progress.currentStage = nextStage;
-          if (!this.state.progress.stagesCompleted.includes(currentStage)) {
-            this.state.progress.stagesCompleted.push(currentStage);
-          }
       } else {
           this.state.currentStage = nextStage;
-          if (!this.state.stagesCompleted?.includes(currentStage)) {
-              if (!this.state.stagesCompleted) this.state.stagesCompleted = [];
-              this.state.stagesCompleted.push(currentStage);
-          }
       }
       
-      this.awardStagePoints(currentStage);
+      await this.awardStagePoints(currentStage);
       window.dispatchEvent(
         new CustomEvent("stage-changed", { detail: nextStage }),
       );
@@ -1411,38 +1415,34 @@ export class GameManager {
 
     if (this._processingWin) return;
 
-    let stats =
-      this.stats ||
-      JSON.parse(localStorage.getItem("jigsudo_user_stats")) ||
-      {};
+    // v2.8.0: Atomic Stats Update via Queue
+    await this.enqueueStatsUpdate(async () => {
+        let stats = this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats")) || {};
 
-    if (!this._processingWin) {
-      // ONLY mutate global user stats if NOT in replay mode
-      if (!this.isReplay) {
+        if (!this.isReplay) {
             if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
-            stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+            if (!stats.stagePointsAccumulated) stats.stagePointsAccumulated = {};
+            
+            // v2.2.0: Direct Mutation Architecture
+            stats.dailyRP = Number(((stats.dailyRP || 0) + points).toFixed(3));
+            stats.monthlyRP = Number(((stats.monthlyRP || 0) + points).toFixed(3));
+            stats.totalRP = Number(((stats.totalRP || 0) + points).toFixed(3));
+            
+            // v2.9.0: Historical Sync - Feed the atoms
+            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + points).toFixed(3));
             stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
             stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
-            
-            // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments
-            // Every stage win adds 1.0 RP to the persistent accumulators.
-            const stageRP = 1.0;
-            stats.monthlyRP = Number(((stats.monthlyRP || 0) + stageRP).toFixed(3));
-            stats.totalRP = Number(((stats.totalRP || 0) + stageRP).toFixed(3));
-            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + stageRP).toFixed(3));
 
-            this._recalculateNetStats(); // Direct Formula will pick up the new win
+            // Increment specific stage stats for historical record
+            stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+            stats.stagePointsAccumulated[stage] = Number(((stats.stagePointsAccumulated[stage] || 0) + points).toFixed(3));
+            
+            this.stats = stats;
+            await this.save(true);
         }
 
-        // Persist stage completion to local storage (save() handles its own replay guard)
         this.save();
-      }
-    
-    // v1.3.5+: Internal UI/Stats update
-    this.stats = stats;
-    if (!this.isReplay) {
-        await this._recalculateNetStats(); 
-    }
+    });
 
     // v1.4.1: ASYNC REFEREE (Background Validation)
     if (!this.isReplay) {
@@ -1621,6 +1621,19 @@ export class GameManager {
    * @param {boolean} isPenalty - Force cloud save even if score drops
    * @param {boolean} skipPersistence - Skip writing back to the cloud (Sync reconciliation)
    */
+  async enqueueStatsUpdate(updateFn) {
+    let result;
+    this._statsUpdateQueue = this._statsUpdateQueue.then(async () => {
+      try {
+        result = await updateFn();
+      } catch (err) {
+        console.error("[GM] Enqueued Stats Update Failed:", err);
+      }
+    });
+    await this._statsUpdateQueue;
+    return result;
+  }
+
   async _recalculateNetStats(isPenalty = false, skipPersistence = false) {
     if (!this.stats) await this._ensureStats();
     const stats = this.stats;
@@ -1667,25 +1680,15 @@ export class GameManager {
     }
     
     // 1. Daily Scope (The 'Game Day' Net)
-    const dailyWins = Math.max(sessionWins, stats.dailyWinsAccumulated || 0);
-    const dailyBonuses = stats.dailyBonusesAccumulated || 0;
-    const dailyErrors = Math.max(sessionErrors, stats.dailyPeaksErrorsAccumulated || 0);
-    const dailyNet = Number((dailyWins + dailyBonuses - (dailyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
-
-    // 2. Monthly Scope
-    // Ensure monthly atoms include today's live progress for consistency
-    const monthlyWins = Math.max(stats.monthlyWinsAccumulated || 0, dailyWins);
-    const monthlyBonuses = Math.max(stats.monthlyBonusesAccumulated || 0, dailyBonuses);
-    const monthlyErrors = Math.max(stats.monthlyPeaksErrorsAccumulated || 0, dailyErrors);
-    const monthlyNet = Number((monthlyWins + monthlyBonuses - (monthlyErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
-
-    // 3. Total Scope (Absolute World Ranking)
-    // totalWins is Sum(stageWinsAccumulated). We must ensure it includes today's wins.
-    const totalWinsBase = Object.values(stats.stageWinsAccumulated || {}).reduce((acc, val) => acc + (val || 0), 0);
-    const totalWins = Math.max(totalWinsBase, dailyWins); // At least today's progress 
-    const totalBonuses = Math.max(stats.totalBonusesAccumulated || 0, dailyBonuses);
-    const totalErrors = Math.max(stats.totalPeaksErrorsAccumulated || 0, dailyErrors);
-    const totalNet = Number((totalWins + totalBonuses - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+    // v2.2.0: Direct Mutation - Points are already updated by events
+    // We only ensure precision and floor values at 0
+    stats.dailyRP = Number((Math.max(0, stats.dailyRP || 0)).toFixed(3));
+    stats.monthlyRP = Number((Math.max(0, stats.monthlyRP || 0)).toFixed(3));
+    stats.totalRP = Number((Math.max(0, stats.totalRP || 0)).toFixed(3));
+    
+    const dailyNet = stats.dailyRP;
+    const monthlyNet = stats.monthlyRP;
+    const totalNet = stats.totalRP;
     
     if (!this.isReplay) {
       // v1.6.0: MASTER SPEC COMPLIANCE
@@ -1721,7 +1724,7 @@ export class GameManager {
         // v1.5.31: Robust Penalty Detection
         // If there are peaks errors, we MUST treat this as an intentional penalty 
         // to bypass anti-regression guards, even if the caller didn't specify it.
-        const effectivePenalty = isPenalty || dailyErrors > 0;
+        const effectivePenalty = isPenalty || (stats.dailyPeaksErrorsAccumulated || 0) > 0;
         
         await saveUserStats(user.uid, this.stats, user.displayName, { 
           _isIntentionalPenalty: effectivePenalty 
@@ -1872,6 +1875,8 @@ export class GameManager {
       const currDate = new Date(today + "T12:00:00Z");
         const diffDays = getJigsudoDayDiff(lastCheck, today);
 
+        const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
+
         // 1. Reset Daily Stats immediately for the new day
         this._resetDailyStats(stats, today);
         changed = true;
@@ -1880,7 +1885,6 @@ export class GameManager {
         // We step through each day missed to apply penalties BEFORE monthly resets.
         const { getRankData } = await import("./ranks.js?v=1.3.9");
         let lastProcessedMonth = lastCheck.substring(0, 7);
-        const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
 
         for (let i = 1; i <= diffDays; i++) {
           const simDateObj = new Date(lastCheck + "T12:00:00Z");
@@ -1895,9 +1899,13 @@ export class GameManager {
             const penalty = 5 + rankInfo.level;
             const realizedPenalty = Math.min(stats.totalRP || 0, penalty);
             
-            stats.totalRP = Number(((stats.totalRP || 0) - realizedPenalty).toFixed(3));
-            stats.monthlyRP = Number(((stats.monthlyRP || 0) - realizedPenalty).toFixed(3));
             stats.totalPenaltyAccumulated = Number(((stats.totalPenaltyAccumulated || 0) + realizedPenalty).toFixed(3));
+            stats.monthlyPenaltyAccumulated = Number(((stats.monthlyPenaltyAccumulated || 0) + realizedPenalty).toFixed(3));
+            
+            // v2.2.0: Direct Mutation in Decay Loop
+            stats.totalRP = Number((Math.max(0, (stats.totalRP || 0) - realizedPenalty)).toFixed(3));
+            stats.monthlyRP = Number((Math.max(0, (stats.monthlyRP || 0) - realizedPenalty)).toFixed(3));
+            stats.lastPenaltyDate = dayBeforeStr; // v1.7.2: Record the anchor for this penalty
             
             console.log(`[Decay Loop] Day ${dStr} (Penalty for ${dayBeforeStr}): -${realizedPenalty} RP`);
             changed = true;
@@ -1977,6 +1985,7 @@ export class GameManager {
     stats.monthlyWinsAccumulated = 0;
     stats.monthlyBonusesAccumulated = 0;
     stats.monthlyPeaksErrorsAccumulated = 0;
+    stats.monthlyPenaltyAccumulated = 0;
     stats.monthlyRP = 0;
     stats.lastMonthlyUpdate = month;
   }
@@ -2856,7 +2865,9 @@ export class GameManager {
     const lockUntil = Date.now() + 10000;
     this._winLockExpires = lockUntil;
     localStorage.setItem("jigsudo_win_lock", lockUntil.toString());
-    try {
+
+    return this.enqueueStatsUpdate(async () => {
+      try {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
       await this._ensureStats();
 
@@ -2992,14 +3003,13 @@ export class GameManager {
           }
       });
 
-      const stagesCountToday = stagesCompleted.length;
-      
-      // v1.3.9: Robust Base Points Calculation
-      // We calculate this EARLY so it's available for both the Referee call and the local fallback.
-      let basePoints = stagesCompleted.length;
-      if (this.state.progress.currentStage === "code" || stagesCompleted.includes("code")) {
-        basePoints = 6;
+      // v1.3.9: Robust Base Points & Win Counting
+      // If we are at the final stage or have it in history, we force 6 stages.
+      let stagesCountToday = stagesCompleted.length;
+      if (this.state.progress.currentStage === "code" || stagesCompleted.includes("code") || (this.state.progress.won)) {
+          stagesCountToday = 6;
       }
+      let basePoints = stagesCountToday;
       const sessionScore = Number((basePoints + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
       const seedMonth = seedDate.substring(0,7);
       const todayMonth = today.substring(0,7);
@@ -3355,9 +3365,10 @@ export class GameManager {
     } catch (err) {
       console.error("Error saving stats:", err);
       return null;
-    } finally {
-      this._processingWin = false;
-    }
+      } finally {
+        this._processingWin = false;
+      }
+    });
   }
 
   /**
@@ -3622,14 +3633,17 @@ export class GameManager {
       totalPeaksErrorsAccumulated: 0,
       stageTimesAccumulated: {},
       stageWinsAccumulated: {},
+      stagePointsAccumulated: {},
       weekdayStatsAccumulated: {},
       history: {},
       lastPlayedDate: null,
       lastDecayCheck: null,
       manualRPAdjustment: 0,
       totalPenaltyAccumulated: 0,
+      monthlyPenaltyAccumulated: 0,
       isPublic: true, // v1.5.30: Default to public
-      integrityChecked: "1.5.62"
+      integrityChecked: "1.5.62",
+      schemaVersion: 7.2
     };
   }
 }

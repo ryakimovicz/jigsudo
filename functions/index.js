@@ -135,7 +135,7 @@ async function _performUserMaintenance(userRef, userData, today) {
   let currentTotalRP = userData.totalRP || 0;
   let currentMonthlyRP = userData.monthlyRP || 0;
   let currentDailyRP = userData.dailyRP || 0;
-  let currentPenaltyAcc = userData.totalPenaltyAccumulated || 0;
+  let currentPenaltyAcc = (userData.stats && userData.stats.totalPenaltyAccumulated) || userData.totalPenaltyAccumulated || 0;
   let currentStreak = stats.currentStreak || 0;
 
   let totalSimulatedDays = 0;
@@ -198,7 +198,7 @@ async function _performUserMaintenance(userRef, userData, today) {
       totalRP: Number(currentTotalRP.toFixed(3)),
       monthlyRP: Number(currentMonthlyRP.toFixed(3)),
       dailyRP: currentDailyRP,
-      totalPenaltyAccumulated: Number(currentPenaltyAcc.toFixed(3)),
+      "stats.totalPenaltyAccumulated": Number(currentPenaltyAcc.toFixed(3)),
       "stats.currentStreak": currentStreak,
       "stats.lastDecayCheck": today,
       "stats.lastPenaltyDate": currentStreak === 0 ? today : (stats.lastPenaltyDate || null),

@@ -39,6 +39,21 @@ export async function checkSeasonMigration() {
   if (user && !user.isAnonymous) {
      const { fetchLatestUserData } = await import("./db.js?v=1.3.9");
      const cloudData = await fetchLatestUserData(user.uid);
+     // v1.3.11: New Account Detection
+     // If there is no cloudData at all, it's a brand new account.
+     // We explicitly skip migration for these to avoid showing the Season 1 modal.
+      if (!cloudData) {
+         console.log("[Migration] No cloud data found. Creating initial profile document...");
+         const { saveUserStats } = await import("./db.js?v=1.3.9");
+         // v1.3.12: Force initial creation with basic metadata to satisfy security rules
+         const initialName = user.displayName || user.email?.split("@")[0] || "Player";
+         await saveUserStats(user.uid, stats, initialName, false);
+         
+         localStorage.setItem("jigsudo_user_stats", JSON.stringify({ ...stats, schemaVersion: CONFIG.schemaVersion }));
+         window._jigsudo_migration_freeze = false;
+         return;
+      }
+
      cloudSchema = cloudData?.schemaVersion || 0;
      console.log(`[Migration] Cloud Schema: ${cloudSchema} | Local Schema: ${localSchema}`);
 

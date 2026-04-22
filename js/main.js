@@ -196,7 +196,7 @@ async function startApp() {
     window.resetToday = () => gameManager.resetCurrentGame();
 
     window.resetAccount = async () => {
-      const { getCurrentUser } = await import("./auth.js?v=1.3.9");
+      const { getCurrentUser, logoutUser } = await import("./auth.js?v=1.3.9");
       const { wipeUserData } = await import("./db.js?v=1.3.9");
       const user = getCurrentUser();
 
@@ -205,14 +205,25 @@ async function startApp() {
           "¿Seguro que quieres borrar TODA TU CUENTA y progreso? Esto no se puede deshacer.",
         )
       ) {
-        if (user) {
-          console.log("Wiping remote data...");
-          await wipeUserData(user.uid);
+        try {
+          if (user) {
+            console.log("Wiping remote data for:", user.uid);
+            await wipeUserData(user.uid);
+            
+            console.log("Logging out to prevent auto-recreation...");
+            await logoutUser();
+          }
+          
+          console.log("Clearing local storage...");
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          console.log("Reset complete. Reloading...");
+          window.location.reload();
+        } catch (err) {
+          console.error("Critical error during resetAccount:", err);
+          alert("Error during reset. Check console for details.");
         }
-        console.log("Clearing local storage...");
-        localStorage.clear();
-        console.log("Reloading...");
-        window.location.reload();
       }
     };
 
