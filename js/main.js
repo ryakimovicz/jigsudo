@@ -27,7 +27,9 @@ import { initSearchUsers } from "./search-users.js?v=1.3.10";
 // v1.3.0: Season Transition Barrier (Absolute Blocking)
 // We check this at the top level BEFORE ANY initialization to prevent 
 // "Cloud Echo" saves from background modules like GameManager.
-await checkSeasonMigration();
+// v1.3.0: Season Transition Barrier
+// Start migration check in background (non-blocking for UI)
+const migrationCheck = checkSeasonMigration();
 
 // Boot Sequence
 // Capture native logging before suppression
@@ -139,33 +141,38 @@ async function startApp() {
 
   console.log("Jigsudo App Starting...");
 
-  // Wait for Game Manager to fetch static puzzle or generate local
-  try {
-    await gameManager.ready;
-  } catch (err) {
-    console.error("[Main] Game Manager failed to initialize:", err);
-  }
-
+  // v1.7.9: Start App UI Immediately
+  // We no longer block the whole startApp for GameManager.ready or Migration.
+  // This lets the user see the page and navigate while data fetches.
   initLanguage();
   initSidebar();
-  // v1.6.0: Cookie Consent
   initCookieConsent();
-
+  
+  // Initialize UI modules
   initHome();
   initSudoku();
-  initAuth(); // Initialize Firebase Auth listener
-  initProfile(); // Profile Module
-  initHistory(); // History Module
-  initGuide(); // Guide Module
-  initChangelog(); // Changelog Module
-  initSearchUsers(); // Search Users Module
+  initAuth();
+  initProfile();
+  initHistory();
+  initGuide();
+  initChangelog();
+  initSearchUsers();
 
-  // Initialize Router LAST to handle initial hash
+  // Initialize Router to show the initial view
   router.init();
-
   initSupportEvents();
-
   attachAuthListeners();
+
+  // Background Tasks (Non-blocking for UI rendering)
+  (async () => {
+    try {
+        await migrationCheck;
+        await gameManager.ready;
+        console.log("[Main] Background tasks (Migration & GM) finished.");
+    } catch (err) {
+        console.error("[Main] Background task error:", err);
+    }
+  })();
 
   // FIRST VISIT TUTORIAL POPUP - Only for new, unauthenticated users
   window.addEventListener("authReady", (e) => {
