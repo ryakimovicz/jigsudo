@@ -260,8 +260,11 @@ export async function updateProfileData(targetUsername = activeProfileName) {
 
   if (!isOwnProfile) {
     // FOREIGN PUBLIC PROFILE
-    // v1.7.9: CLEAR stats UI immediately to avoid showing own data while loading
-    renderProfileStats(null);
+    // v1.7.9: Only CLEAR if it's a NEW target (prevents flicker on language change)
+    const currentName = nameEl?.textContent || "";
+    if (currentName.toLowerCase() !== decodedTarget.toLowerCase()) {
+        renderProfileStats(null);
+    }
     
     if (nameEl) nameEl.textContent = decodedTarget;
     if (avatarEl) {
@@ -1366,7 +1369,7 @@ function attachComparisonListeners(foreignData) {
     const foreignRank = getRankData(foreignData.totalRP || 0);
     
     setupComp(header, {
-      title: t.comp_header || "Comparativa de Rango",
+      title: t.comp_rank_title || "Comparativa de Rango",
       foreign: { 
         name: fName, 
         val: foreignData.totalRP, 
@@ -1567,6 +1570,9 @@ function showCompTooltip(e, data) {
     document.body.appendChild(compTooltip);
   }
 
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+
   const fVal = data.foreign.val;
   const oVal = data.own.val;
 
@@ -1589,17 +1595,19 @@ function showCompTooltip(e, data) {
       const fRP = Number(f.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const oRP = Number(o.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       
+      const lvlPrefix = t.rank_level_prefix || "Nvl.";
+      
       fHtml = `
         <div class="comp-value-stack">
             <span class="comp-rank-name">${f.rankName}</span>
-            <span class="comp-rank-level">Nvl. ${f.level}</span>
+            <span class="comp-rank-level">${lvlPrefix} ${f.level}</span>
             <span class="comp-rank-rp">${fRP} RP</span>
         </div>`;
       
       oHtml = `
         <div class="comp-value-stack">
             <span class="comp-rank-name">${o.rankName}</span>
-            <span class="comp-rank-level">Nvl. ${o.level}</span>
+            <span class="comp-rank-level">${lvlPrefix} ${o.level}</span>
             <span class="comp-rank-rp">${oRP} RP <span class="${trendClass}">${trendIcon}</span></span>
         </div>`;
   } else if (data.type === "peaks") {

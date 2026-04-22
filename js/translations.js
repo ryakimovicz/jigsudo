@@ -293,6 +293,8 @@ export const translations = {
     not_played: "No jugado",
     stats_original: "Desempeño Original",
     stats_best: "Mejor Histórico",
+    comp_rank_title: "Comparativa de rango",
+    comp_you: "Tú",
 
     // Memory Game Help
     memory_help_title: "Cómo jugar",
@@ -1023,6 +1025,8 @@ export const translations = {
     not_played: "Not played",
     stats_original: "Original Performance",
     stats_best: "Personal Best",
+    comp_rank_title: "Rank Comparison",
+    comp_you: "You",
 
     // Memory Game Help
     memory_help_title: "How to play",
