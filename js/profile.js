@@ -671,6 +671,11 @@ function renderProfileStats(stats, isOwn = true) {
       typeof nextGoal === "number" ? fmtNumber(nextGoal, 0) : nextGoal;
   }
 
+  const careerRpEl = document.getElementById("profile-career-rp");
+  if (careerRpEl) {
+    careerRpEl.textContent = fmtNumber(s.careerRP || 0, 2);
+  }
+
   // --- Dynamic Stats for Account Dropdown Menu (Quick Stats) ---
   // v1.7.5: ONLY update sidebar elements if viewing OWN profile
   if (isOwn) {
@@ -1373,12 +1378,14 @@ function attachComparisonListeners(foreignData) {
       foreign: { 
         name: fName, 
         val: foreignData.totalRP, 
+        careerVal: foreignData.careerRP || 0,
         rankName: (foreignRank.rank.icon || "") + " " + (t[foreignRank.rank.nameKey] || foreignRank.rank.nameKey),
         level: foreignRank.level
       },
       own: { 
         name: t.comp_you || "Tú", 
         val: ownStats.totalRP, 
+        careerVal: ownStats.careerRP || 0,
         rankName: (ownRank.rank.icon || "") + " " + (t[ownRank.rank.nameKey] || ownRank.rank.nameKey),
         level: ownRank.level
       },
@@ -1622,13 +1629,20 @@ function showCompTooltip(e, data, isMobile = false) {
       const o = data.own;
       const fRP = Number(f.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const oRP = Number(o.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fCareer = Number(f.careerVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const oCareer = Number(o.careerVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const careerLabel = t.rank_tab_gross || "Carrera";
       const lvlPrefix = t.rank_level_prefix || "Nvl.";
       
+      const cTrend = o.careerVal > f.careerVal ? "trend-up" : (o.careerVal < f.careerVal ? "trend-down" : "");
+      const cIcon = cTrend === "trend-up" ? "▲" : (cTrend === "trend-down" ? "▼" : "");
+
       fHtml = `
         <div class="comp-value-stack">
             <span class="comp-rank-name">${f.rankName}</span>
             <span class="comp-rank-level">${lvlPrefix} ${f.level}</span>
             <span class="comp-rank-rp">${fRP} RP</span>
+            <span class="comp-rank-career" style="font-size: 0.75rem; opacity: 0.7;">${fCareer} (${careerLabel})</span>
         </div>`;
       
       oHtml = `
@@ -1636,6 +1650,7 @@ function showCompTooltip(e, data, isMobile = false) {
             <span class="comp-rank-name">${o.rankName}</span>
             <span class="comp-rank-level">${lvlPrefix} ${o.level}</span>
             <span class="comp-rank-rp">${oRP} RP <span class="${trendClass}">${trendIcon}</span></span>
+            <span class="comp-rank-career" style="font-size: 0.75rem; opacity: 0.7;">${oCareer} (${careerLabel}) <span class="${cTrend}">${cIcon}</span></span>
         </div>`;
   } else if (data.type === "peaks") {
       const f = data.foreign;

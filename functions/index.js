@@ -325,6 +325,11 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
     schemaVersion: 7.1,
   };
 
+  // v2.2.0: Career RP Tracking (Gross points, never decay)
+  if (stagePoints > 0) {
+    rootUpdate.careerRP = FieldValue.increment(stagePoints);
+  }
+
   if (isNewMonth) {
     rootUpdate.monthlyRP = stagePoints; // Start month fresh
     rootUpdate.lastMonthlyUpdate = nowMonth;
@@ -479,6 +484,11 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
     lastLocalUpdate: Date.now(),
     schemaVersion: 7.2,
   };
+
+  // v2.2.0: Career RP Tracking (Gross points, never decay)
+  if (finalDelta > 0) {
+    rootUpdate.careerRP = FieldValue.increment(finalDelta);
+  }
 
   // v1.9.6: Scoring Attribution Routing
   if (isLateWin) {

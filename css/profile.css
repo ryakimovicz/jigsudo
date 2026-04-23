@@ -211,6 +211,8 @@ body.dark-mode .rank-progress-fill {
 .rank-details-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px; /* v2.2.1: Prevent label/value squashing */
   font-size: 0.85rem;
   color: var(--text-secondary);
   font-weight: 500;

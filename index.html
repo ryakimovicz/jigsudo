@@ -724,10 +724,17 @@
             </div>
 
             <!-- All Time -->
-            <div id="ranking-panel-alltime" class="ranking-panel glass-panel active">
-              <h4 data-i18n="rank_tab_all">Siempre</h4>
+            <div id="ranking-panel-alltime" class="ranking-panel glass-panel active swipe-panel" data-category="allTime" data-options="allTime,career">
+              <div class="ranking-subtabs">
+                <button class="subtab-btn active" data-target="allTime" data-i18n="rank_tab_net">Rango</button>
+                <button class="subtab-btn" data-target="career" data-i18n="rank_tab_gross">Carrera</button>
+              </div>
               <div id="ranking-alltime-wrapper" class="ranking-table-wrapper">
                 <div class="loader-small"></div>
+              </div>
+              <div class="ranking-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
               </div>
             </div>
           </div>
@@ -1098,6 +1105,10 @@
                       ><span id="profile-rp-current">0</span> /
                       <span id="profile-rp-next">15000</span> RP</span
                     >
+                  </div>
+                  <div class="rank-details-row career-row">
+                    <span class="career-label" data-i18n="profile_career_score">Puntaje Carrera</span>
+                    <span class="career-points"><span id="profile-career-rp">0</span> RP</span>
                   </div>
                 </div>
               </div>

@@ -2233,7 +2233,7 @@ export class GameManager {
       const remoteSessionId = remoteStats.stats ? remoteStats.stats.activeSessionId : remoteStats.activeSessionId;
       
       // v1.5.7: Allow echo adoption IF ranking points differ (Root priority)
-      const rankFields = ["dailyRP", "monthlyRP", "totalRP"];
+      const rankFields = ["dailyRP", "monthlyRP", "totalRP", "careerRP"];
       const hasRankDiscrepancy = rankFields.some(f => (remoteStats[f] || 0) !== (this.stats ? (this.stats[f] || 0) : 0));
       
       if (remoteSessionId === this.localSessionId && !hasRankDiscrepancy) {
@@ -2299,6 +2299,7 @@ export class GameManager {
             te: this.stats ? (this.stats.totalPeaksErrorsAccumulated || 0) : 0,
             w: this.stats ? (this.stats.wins || 0) : 0,
             bs: this.stats ? (this.stats.bestScore || 0) : 0,
+            cr: this.stats ? (this.stats.careerRP || 0) : 0,
 
             swMap: this.stats ? { ...(this.stats.stageWinsAccumulated || {}) } : {},
             stMap: this.stats ? { ...(this.stats.stageTimesAccumulated || {}) } : {}
@@ -2329,6 +2330,7 @@ export class GameManager {
           newStats.totalPeaksErrorsAccumulated = Math.max(newStats.totalPeaksErrorsAccumulated || 0, localAtoms.te);
           newStats.wins = Math.max(newStats.wins || 0, localAtoms.w);
           newStats.bestScore = Math.max(newStats.bestScore || 0, localAtoms.bs);
+          newStats.careerRP = Math.max(newStats.careerRP || 0, localAtoms.cr);
           
           // Merge Stage Maps
           if (!newStats.stageWinsAccumulated) newStats.stageWinsAccumulated = {};

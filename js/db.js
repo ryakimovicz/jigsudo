@@ -98,6 +98,7 @@ export function reconstructStats(data) {
       "lastMonthRP",
       s.lastMonthRP || data.lastMonthRP || 0,
     ),
+    careerRP: scavengeNum("careerRP", s.careerRP || data.careerRP || 0),
 
     // 7-17. Competitive / Metadata
     totalRP: (() => {
@@ -641,6 +642,7 @@ export async function saveUserStats(
         "score",
         "lastDayRP",
         "lastMonthRP",
+        "careerRP",
       ];
       exorcismKeys.forEach((k) => {
         updateData[`stats.${k}`] = deleteField();
@@ -1181,6 +1183,7 @@ export async function getPublicUserByUsername(username) {
       stats: publicProfileData.stats || {},
       isVerified: publicProfileData.isVerified || false,
       totalRP: publicProfileData.totalRP || 0,
+      careerRP: publicProfileData.careerRP || 0,
       monthlyRP: publicProfileData.monthlyRP || 0,
       dailyRP: publicProfileData.dailyRP || 0,
       lastUpdated: publicProfileData.lastUpdated,
@@ -1252,6 +1255,7 @@ export async function searchPublicUsers(queryText, limitCount = 20) {
         username: data.username,
         username_lc: data.username_lc,
         totalRP: data.totalRP || 0,
+        careerRP: data.careerRP || 0,
         monthlyRP: data.monthlyRP || 0,
         stats: data.stats || {},
         isVerified: data.isVerified || false,

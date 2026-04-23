@@ -82,7 +82,7 @@ export async function fetchRankings(forceRefresh = false) {
 
     // PARADOX DETECTION: If cache says user is OUT of top, but local score is GREATER than top people, it's stale!
     let isParadox = false;
-    const categories = ["daily", "yesterday", "monthly", "lastMonth", "allTime"];
+    const categories = ["daily", "yesterday", "monthly", "lastMonth", "allTime", "career"];
     categories.forEach((cat) => {
       const catData = data[cat];
       if (catData && catData.personal && !catData.personal.inTop) {
@@ -101,7 +101,8 @@ export async function fetchRankings(forceRefresh = false) {
       }
     });
 
-    const needsAuthUpgrade = (user && !isAuthenticated) || isStaleByScore || isParadox;
+    // v2.2.1: Cache version check (Ensures new categories exist)
+    const needsAuthUpgrade = (user && !isAuthenticated) || isStaleByScore || isParadox || !data.career;
 
     if (
       !needsAuthUpgrade &&
@@ -114,7 +115,7 @@ export async function fetchRankings(forceRefresh = false) {
     }
     if (needsAuthUpgrade)
       console.log(
-        `[Ranking] Cache invalidated (Auth: ${!!user}, Stale: ${isStaleByScore}, Paradox: ${isParadox})`,
+        `[Ranking] Cache invalidated (Auth: ${!!user}, Stale: ${isStaleByScore}, Paradox: ${isParadox}, Missing Career: ${!data.career})`,
       );
   }
 
@@ -151,6 +152,12 @@ export async function fetchRankings(forceRefresh = false) {
     ),
     allTime: await getTopRankings(
       "totalRP",
+      10,
+      user,
+      (await import("./db.js?v=1.4.0")).getUserRank,
+    ),
+    career: await getTopRankings(
+      "careerRP",
       10,
       user,
       (await import("./db.js?v=1.4.0")).getUserRank,

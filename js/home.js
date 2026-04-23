@@ -688,10 +688,11 @@ export function initHome() {
       // PRE-RENDER (Stale-While-Revalidate): Show cached table instantly
       const dayCat = getActiveCategory("ranking-panel-day") || "yesterday";
       const monthCat = getActiveCategory("ranking-panel-month") || "lastMonth";
+      const allTimeCat = getActiveCategory("ranking-panel-alltime") || "allTime";
 
       renderRankings(containerDaily, cachedRankings, dayCat);
       renderRankings(containerMonthly, cachedRankings, monthCat);
-      renderRankings(containerAllTime, cachedRankings, "allTime");
+      renderRankings(containerAllTime, cachedRankings, allTimeCat);
       
       toggleHeaderSpinner(containerDaily, true);
       toggleHeaderSpinner(containerMonthly, true);
@@ -716,10 +717,11 @@ export function initHome() {
       // Category names match the object keys in currentRankings
       const dayCat = getActiveCategory("ranking-panel-day") || "yesterday"; // v1.2.2: defaults to yesterday
       const monthCat = getActiveCategory("ranking-panel-month") || "lastMonth";
+      const allTimeCat = getActiveCategory("ranking-panel-alltime") || "allTime";
 
       renderRankings(containerDaily, currentRankings, dayCat);
       renderRankings(containerMonthly, currentRankings, monthCat);
-      renderRankings(containerAllTime, currentRankings, "allTime");
+      renderRankings(containerAllTime, currentRankings, allTimeCat);
     } catch (err) {
       console.error("[Home] Error loading rankings:", err);
     } finally {
