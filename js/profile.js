@@ -1526,7 +1526,7 @@ function attachComparisonListeners(foreignData) {
                       rp: calculateRP(c.sumScore / c.count)
                   };
               }
-              return { time: 0, errs: 0, rp: 0 };
+              return { time: null, errs: null, rp: null };
           };
 
           const fD = getDayData(foreignData, i);
@@ -1547,8 +1547,9 @@ function attachComparisonListeners(foreignData) {
 }
 
 function formatCompValue(val, type, suffix = "") {
-    if (!val || val <= 0) return "--";
+    if (val === null || val === undefined) return "--";
     if (type === "time") {
+        if (val <= 0) return "--";
         const totalSec = Math.floor(val / 1000);
         const h = Math.floor(totalSec / 3600);
         const m = Math.floor((totalSec % 3600) / 60);
@@ -1690,10 +1691,10 @@ function showCompTooltip(e, data, isMobile = false) {
       const rT = getTrendData(f.rp, o.rp, "rp");
       const fTime = formatCompValue(f.time, "time");
       const oTime = formatCompValue(o.time, "time");
-      const fErr = f.errs.toFixed(1);
-      const oErr = o.errs.toFixed(1);
-      const fRP = f.rp.toFixed(2);
-      const oRP = o.rp.toFixed(2);
+      const fErr = formatCompValue(f.errs, "num");
+      const oErr = formatCompValue(o.errs, "num");
+      const fRP = formatCompValue(f.rp, "num");
+      const oRP = formatCompValue(o.rp, "num");
 
       fHtml = `
         <div class="comp-value-stack" style="gap: 2px;">

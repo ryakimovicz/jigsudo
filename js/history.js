@@ -569,9 +569,9 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
   };
 
   const getTrend = (f, o, type) => {
-      if (!f || !o) return "";
-      const isBetter = type === "time" ? (o < f) : (o > f);
-      const isWorse = type === "time" ? (o > f) : (o < f);
+      if (f === undefined || o === undefined || f === null || o === null) return "";
+      const isBetter = (type === "time" || type === "errors" || type === "errs") ? (o < f) : (o > f);
+      const isWorse = (type === "time" || type === "errors" || type === "errs") ? (o > f) : (o < f);
       if (isBetter) return '<span class="trend-up">▲</span>';
       if (isWorse) return '<span class="trend-down">▼</span>';
       return "";
@@ -667,14 +667,22 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
 
           const renderMiniGrid = (s, os, showTrends) => {
               if (!s || (!s.score && !s.totalTime)) return `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic;">---</div>`;
+              
+              const sErr = s.peaksErrors !== undefined ? s.peaksErrors : (s.errors !== undefined ? s.errors : 0);
+              const osErr = os?.peaksErrors !== undefined ? os.peaksErrors : (os?.errors !== undefined ? os.errors : (os ? 0 : null));
+              const sScore = s.score || 0;
+              const osScore = os?.score !== undefined ? os.score : (os ? 0 : null);
+              const sTime = s.totalTime || 0;
+              const osTime = os?.totalTime !== undefined ? os.totalTime : (os ? 0 : null);
+
               return `
                 <div class="tooltip-grid" style="font-size: 0.75rem; gap: 2px 8px; margin-bottom: 8px;">
                     <span class="tooltip-label">RP:</span>
-                    <span class="tooltip-value highlight">${(s.score || 0).toFixed(2)}${showTrends && os?.score ? ' ' + getTrend(os.score, s.score, "rp") : ''}</span>
+                    <span class="tooltip-value highlight">${sScore.toFixed(2)}${showTrends && osScore !== null ? ' ' + getTrend(osScore, sScore, "rp") : ''}</span>
                     <span class="tooltip-label">${lang === 'es' ? 'Tiempo' : 'Time'}:</span>
-                    <span class="tooltip-value">${fmt(s.totalTime)}${showTrends && os?.totalTime ? ' ' + getTrend(os.totalTime, s.totalTime, "time") : ''}</span>
+                    <span class="tooltip-value">${fmt(sTime)}${showTrends && osTime !== null ? ' ' + getTrend(osTime, sTime, "time") : ''}</span>
                     <span class="tooltip-label">Err:</span>
-                    <span class="tooltip-value">${s.peaksErrors || s.errors || 0}${showTrends && (os?.peaksErrors || os?.errors) ? ' ' + getTrend(os.peaksErrors || os.errors, s.peaksErrors || s.errors, "errors") : ''}</span>
+                    <span class="tooltip-value">${sErr}${showTrends && osErr !== null ? ' ' + getTrend(osErr, sErr, "errors") : ''}</span>
                 </div>`;
           };
 
