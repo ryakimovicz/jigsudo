@@ -96,8 +96,9 @@ body.header-condensed .header-center {
 }
 
 body.header-condensed .header-text-block {
-  /* Removed asymmetrical margin-right which was causing horizontal shifts in centered flex containers */
   margin-right: 0;
+  flex-direction: column; /* Reverted to column for smooth animation */
+  padding-right: 42px; /* Visual compensation for the shifted puzzle number to fix centering */
 }
 
 .header-logo {
@@ -156,7 +157,7 @@ body.header-condensed .app-title {
 }
 
 body.header-condensed .header-meta {
-  /* Visually honed to perfectly align baselines and tight half-character spacing */
+  /* Restored original transform for smooth glide, now compensated by parent padding */
   transform: translate(98px, -11px);
   font-size: 0.9rem;
   gap: 8px;
