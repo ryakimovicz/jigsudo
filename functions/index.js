@@ -21,7 +21,7 @@ const SCORING = {
     sudoku: 5,
     peaks: 5,
     search: 5,
-    code: 5
+    code: 5,
   },
   PARTIAL_RP: {
     memory: 1.0,
@@ -29,10 +29,13 @@ const SCORING = {
     sudoku: 1.0,
     peaks: 1.0,
     search: 1.0,
-    code: 1.0
+    code: 1.0,
   },
   STAGE_ORDER: ["memory", "jigsaw", "sudoku", "peaks", "search", "code"],
-  RANK_THRESHOLDS: [0, 15, 45, 100, 160, 250, 400, 650, 1000, 1500, 2100, 2800, 3700, 5000, 6500, 8000]
+  RANK_THRESHOLDS: [
+    0, 15, 45, 100, 160, 250, 400, 650, 1000, 1500, 2100, 2800, 3700, 5000,
+    6500, 8000,
+  ],
 };
 
 function getJigsudoDateString() {
@@ -65,7 +68,8 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
 
   try {
     const userSnap = await userRef.get();
-    if (!userSnap.exists) throw new HttpsError("not-found", "User profile not found.");
+    if (!userSnap.exists)
+      throw new HttpsError("not-found", "User profile not found.");
     const userData = userSnap.data();
     const sessionId = request.data.sessionId || null;
     const onlyMaintenance = request.data.onlyMaintenance || false;
@@ -80,16 +84,16 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
     // NEW (v1.5.2): If only maintenance requested, stop here.
     // Do NOT update lastIntentDate (No shield).
     if (onlyMaintenance) {
-       return { status: "maintenance_complete" };
+      return { status: "maintenance_complete" };
     }
 
     // 2. MARK INTENT (THE SHIELD) & SESSION LOCK (v1.5.0)
     // Full Play Button click: user gets the shield and takes control of the session.
     const updateData = {
       "stats.lastIntentDate": today,
-      "stats.lastDecayCheck": today
+      "stats.lastDecayCheck": today,
     };
-    
+
     if (sessionId) {
       updateData["stats.activeSessionId"] = sessionId;
     }
@@ -98,7 +102,10 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
 
     const sessionDoc = await sessionRef.get();
     if (sessionDoc.exists) {
-      return { status: "already_started", startTime: sessionDoc.data().startTime };
+      return {
+        status: "already_started",
+        startTime: sessionDoc.data().startTime,
+      };
     }
 
     const startTime = Date.now();
@@ -108,7 +115,7 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
       uid: uid,
       date: today,
       completed: false,
-      stagesCompleted: []
+      stagesCompleted: [],
     });
 
     return { status: "started", startTime: startTime };
@@ -124,28 +131,39 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
  */
 async function _performUserMaintenance(userRef, userData, today) {
   const stats = userData.stats || {};
-  
+
   // v1.9.1: Correcting anchor dates
-  const lastDecay = stats.lastDecayCheck || userData.lastDailyUpdate || userData.lastPlayedDate || today;
-  const lastIntent = stats.lastIntentDate || userData.lastDailyUpdate || userData.lastPlayedDate || today;
-  
+  const lastDecay =
+    stats.lastDecayCheck ||
+    userData.lastDailyUpdate ||
+    userData.lastPlayedDate ||
+    today;
+  const lastIntent =
+    stats.lastIntentDate ||
+    userData.lastDailyUpdate ||
+    userData.lastPlayedDate ||
+    today;
+
   const totalDaysToSimulate = getJigsudoDayDiff(lastDecay, today);
 
   // Local state for the simulation
   let currentTotalRP = userData.totalRP || 0;
   let currentMonthlyRP = userData.monthlyRP || 0;
   let currentDailyRP = userData.dailyRP || 0;
-  let currentPenaltyAcc = (userData.stats && userData.stats.totalPenaltyAccumulated) || userData.totalPenaltyAccumulated || 0;
+  let currentPenaltyAcc =
+    (userData.stats && userData.stats.totalPenaltyAccumulated) ||
+    userData.totalPenaltyAccumulated ||
+    0;
   let currentStreak = stats.currentStreak || 0;
 
   let totalSimulatedDays = 0;
   let lastProcessedMonth = lastDecay.substring(0, 7);
 
   // Iterative Simulation: Step through each day missing between lastDecay and Today
-  const safetyBreak = Math.min(totalDaysToSimulate, 365); 
+  const safetyBreak = Math.min(totalDaysToSimulate, 365);
   for (let i = 1; i <= safetyBreak; i++) {
     totalSimulatedDays++;
-    
+
     // Calculate the simulated day Jigsudo string
     const simDateObj = new Date(lastDecay + "T12:00:00Z");
     simDateObj.setUTCDate(simDateObj.getUTCDate() + i);
@@ -169,31 +187,39 @@ async function _performUserMaintenance(userRef, userData, today) {
         if (currentTotalRP >= SCORING.RANK_THRESHOLDS[j]) level = j;
         else break;
       }
-      
+
       const penalty = 5 + level;
       const realizedPenalty = Math.min(currentTotalRP, penalty);
-      
+
       currentTotalRP = Number((currentTotalRP - realizedPenalty).toFixed(3));
-      currentMonthlyRP = Number((currentMonthlyRP - realizedPenalty).toFixed(3));
+      currentMonthlyRP = Number(
+        (currentMonthlyRP - realizedPenalty).toFixed(3),
+      );
       currentPenaltyAcc += realizedPenalty;
-      
+
       // Streak Reset
       currentStreak = 0;
-      
-      console.log(`[Maintenance] Day ${dStr}: Applied -${realizedPenalty} RP penalty (Inactivity missed ${dayBeforeStr}).`);
+
+      console.log(
+        `[Maintenance] Day ${dStr}: Applied -${realizedPenalty} RP penalty (Inactivity missed ${dayBeforeStr}).`,
+      );
     }
 
     // 3. MONTHLY TRANSITION (Borrón y cuenta nueva)
     // Runs AFTER Applying the previous day's decay to ensure accuracy
     if (dMonth !== lastProcessedMonth) {
-      console.log(`[Maintenance] Month transition detected at ${dStr}. Resetting MonthlyRP.`);
+      console.log(
+        `[Maintenance] Month transition detected at ${dStr}. Resetting MonthlyRP.`,
+      );
       currentMonthlyRP = 0;
       lastProcessedMonth = dMonth;
     }
   }
 
-
   if (totalSimulatedDays > 0) {
+    const yesterdayDate = new Date(new Date(today + "T12:00:00Z").getTime() - 86400000);
+    const yesterday = yesterdayDate.toISOString().substring(0, 10);
+
     const updates = {
       totalRP: Number(currentTotalRP.toFixed(3)),
       monthlyRP: Number(currentMonthlyRP.toFixed(3)),
@@ -201,8 +227,9 @@ async function _performUserMaintenance(userRef, userData, today) {
       "stats.totalPenaltyAccumulated": Number(currentPenaltyAcc.toFixed(3)),
       "stats.currentStreak": currentStreak,
       "stats.lastDecayCheck": today,
-      "stats.lastPenaltyDate": currentStreak === 0 ? today : (stats.lastPenaltyDate || null),
-      lastUpdated: FieldValue.serverTimestamp()
+      "stats.lastPenaltyDate":
+        currentStreak === 0 ? yesterday : stats.lastPenaltyDate || null,
+      lastUpdated: FieldValue.serverTimestamp(),
     };
 
     // Cleanup legacy fields if they exist
@@ -212,56 +239,67 @@ async function _performUserMaintenance(userRef, userData, today) {
     updates["stats.currentRP"] = FieldValue.delete();
     updates["stats.manualRPAdjustment"] = FieldValue.delete();
 
-    console.log(`[Maintenance] Finalizing update for ${userData.username || userRef.id}. Simulated days: ${totalSimulatedDays}`);
+    console.log(
+      `[Maintenance] Finalizing update for ${userData.username || userRef.id}. Simulated days: ${totalSimulatedDays}`,
+    );
     await userRef.update(updates);
   }
 }
 
-
 exports.submitStageResult = onCall({ cors: true }, async (request) => {
-  if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
-  
+  if (!request.auth)
+    throw new HttpsError("unauthenticated", "Must be logged in.");
+
   const { stage, seed, stageTime, peaksErrors } = request.data;
   const uid = request.auth.uid;
   const today = getJigsudoDateString();
   const now = Date.now();
 
   // 1. Fetch Session
-  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(today);
+  const sessionRef = db
+    .collection("users")
+    .doc(uid)
+    .collection("sessions")
+    .doc(today);
   const sessionDoc = await sessionRef.get();
-  if (!sessionDoc.exists) throw new HttpsError("failed-precondition", "Session not initialized.");
-  
+  if (!sessionDoc.exists)
+    throw new HttpsError("failed-precondition", "Session not initialized.");
+
   const sessionData = sessionDoc.data();
-  if (sessionData.completed) throw new HttpsError("already-exists", "Victory already recorded.");
-  
+  if (sessionData.completed)
+    throw new HttpsError("already-exists", "Victory already recorded.");
+
   const stagesDone = sessionData.stagesCompleted || [];
   if (stagesDone.includes(stage)) return { status: "already_verified" };
 
   // 2. Validate Sequence
   const stageIndex = SCORING.STAGE_ORDER.indexOf(stage);
-  if (stageIndex === -1) throw new HttpsError("invalid-argument", "Invalid stage.");
-  if (stagesDone.length !== stageIndex) throw new HttpsError("failed-precondition", "Out of sequence.");
+  if (stageIndex === -1)
+    throw new HttpsError("invalid-argument", "Invalid stage.");
+  if (stagesDone.length !== stageIndex)
+    throw new HttpsError("failed-precondition", "Out of sequence.");
 
   // 3. Validate Time
   const minTime = SCORING.MIN_TIME_THRESHOLDS[stage] || 0;
-  if (stageTime < minTime) throw new HttpsError("out-of-range", "Stage too fast.");
+  if (stageTime < minTime)
+    throw new HttpsError("out-of-range", "Stage too fast.");
 
   // 4. Score Calculation (Debt System v1.5.23)
   // We track the total potential points and total errors to calculate the running DailyRP correctly.
   const stagesDoneCount = (sessionData.stagesCompleted || []).length + 1;
   const basePointsTotal = stagesDoneCount * 1.0;
-  
+
   // Sum errors from previous stages stored in session + current peaksErrors
   let totalErrorsAccumulated = peaksErrors || 0;
   if (sessionData.results) {
-    Object.values(sessionData.results).forEach(r => {
+    Object.values(sessionData.results).forEach((r) => {
       if (r.errors) totalErrorsAccumulated += r.errors;
     });
   }
 
   const penaltyTotal = totalErrorsAccumulated * SCORING.ERROR_PENALTY_RP;
   const newDailyRP = Math.max(0, basePointsTotal - penaltyTotal);
-  
+
   // 5. Atomic Update
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
@@ -276,7 +314,7 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
   const isNewMonth = lastMonth !== nowMonth;
 
   const batch = db.batch();
-  
+
   // Root update (Official Ranking & Metadata v1.4.5: Atomic Monthly Reset)
   // v1.5.30: DailyRP is now an absolute SET to prevent drift, while Total/Monthly remain incremental.
   const rootUpdate = {
@@ -284,16 +322,16 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
     dailyRP: newDailyRP, // v1.5.30: Absolute Truth
     lastUpdated: FieldValue.serverTimestamp(),
     lastLocalUpdate: Date.now(), // v1.5.30: Trigger client sync
-    schemaVersion: 7.1
+    schemaVersion: 7.1,
   };
-  
+
   if (isNewMonth) {
     rootUpdate.monthlyRP = stagePoints; // Start month fresh
     rootUpdate.lastMonthlyUpdate = nowMonth;
   } else {
     rootUpdate.monthlyRP = FieldValue.increment(stagePoints);
   }
-  
+
   batch.set(userRef, rootUpdate, { merge: true });
 
   // Stats Aggregators (No RP duplicates here anymore)
@@ -302,9 +340,10 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
     [`stats.stageWinsAccumulated.${stage}`]: FieldValue.increment(1),
     [`stats.stageTimesAccumulated.${stage}`]: FieldValue.increment(stageTime),
   };
-  
+
   if (peaksErrors > 0) {
-    statsUpdate["stats.totalPeaksErrorsAccumulated"] = FieldValue.increment(peaksErrors);
+    statsUpdate["stats.totalPeaksErrorsAccumulated"] =
+      FieldValue.increment(peaksErrors);
   }
 
   batch.update(userRef, statsUpdate);
@@ -312,7 +351,12 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
   // Session update (v1.5.23: Store errors explicitly for debt calculation)
   batch.update(sessionRef, {
     stagesCompleted: FieldValue.arrayUnion(stage),
-    [`results.${stage}`]: { time: stageTime, points: stagePoints, errors: peaksErrors || 0, timestamp: now }
+    [`results.${stage}`]: {
+      time: stageTime,
+      points: stagePoints,
+      errors: peaksErrors || 0,
+      timestamp: now,
+    },
   });
 
   await batch.commit();
@@ -325,23 +369,33 @@ exports.submitStageResult = onCall({ cors: true }, async (request) => {
  * Finalizes the game, adds Time Bonus and updates history.
  */
 exports.submitDailyWin = onCall({ cors: true }, async (request) => {
-  if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in.");
+  if (!request.auth)
+    throw new HttpsError("unauthenticated", "Must be logged in.");
 
   const { seed, peaksErrors, stageTimes } = request.data;
   const uid = request.auth.uid;
-  
+
   // v1.9.5: Seed-Based Anchor (Transition Resilience)
   const sStr = seed.toString();
   const seedDate = `${sStr.substring(0, 4)}-${sStr.substring(4, 6)}-${sStr.substring(6, 8)}`;
   const today = getJigsudoDateString();
   const now = Date.now();
 
-  const sessionRef = db.collection("users").doc(uid).collection("sessions").doc(seedDate);
+  const sessionRef = db
+    .collection("users")
+    .doc(uid)
+    .collection("sessions")
+    .doc(seedDate);
   const sessionDoc = await sessionRef.get();
-  if (!sessionDoc.exists) throw new HttpsError("failed-precondition", "Session not initialized for this date.");
+  if (!sessionDoc.exists)
+    throw new HttpsError(
+      "failed-precondition",
+      "Session not initialized for this date.",
+    );
 
   const sessionData = sessionDoc.data();
-  if (sessionData.completed) throw new HttpsError("already-exists", "Victory already recorded.");
+  if (sessionData.completed)
+    throw new HttpsError("already-exists", "Victory already recorded.");
 
   const stagesDone = sessionData.stagesCompleted || [];
   if (stagesDone.length < SCORING.STAGE_ORDER.length) {
@@ -349,10 +403,16 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   }
 
   // Calculate Active Time Bonus
-  const activeDurationMs = Object.values(stageTimes || {}).reduce((a, b) => a + b, 0);
+  const activeDurationMs = Object.values(stageTimes || {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
   const totalSeconds = activeDurationMs / 1000;
   const decayPerSecond = SCORING.MAX_BONUS / SCORING.BONUS_DECAY_SECONDS;
-  const timeBonus = Math.max(0, SCORING.MAX_BONUS - (totalSeconds * decayPerSecond));
+  const timeBonus = Math.max(
+    0,
+    SCORING.MAX_BONUS - totalSeconds * decayPerSecond,
+  );
   const finalBonus = Number(timeBonus.toFixed(3));
 
   const userRef = db.collection("users").doc(uid);
@@ -378,7 +438,9 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   } else {
     // Late Win (Delayed): Streak was already reset by maintenance/decay.
     // We do NOT increment the streak for late wins.
-    console.log(`[submitDailyWin] Late win detected for ${seedDate}. Streak remains at ${newStreak}.`);
+    console.log(
+      `[submitDailyWin] Late win detected for ${seedDate}. Streak remains at ${newStreak}.`,
+    );
   }
 
   if (lastUpdate !== seedDate) {
@@ -386,19 +448,24 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   }
 
   const newMaxStreak = Math.max(stats.maxStreak || 0, newStreak);
-  
+
   /**
    * v1.5.23: DEBT SYSTEM IMPLEMENTATION
    * Calculation: Max(0, 6.0 (Levels) + Bonus - TotalErrors * 0.5)
    * This ensures the score shown in the UI matches the server truth perfectly.
    */
   const totalErrors = peaksErrors || 0;
-  const finalScoreResult = Math.max(0, Number((6.0 + finalBonus - (totalErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3)));
+  const finalScoreResult = Math.max(
+    0,
+    Number(
+      (6.0 + finalBonus - totalErrors * SCORING.ERROR_PENALTY_RP).toFixed(3),
+    ),
+  );
 
   // Calculate the final incremental change for Total/Monthly RP
-  // v1.6.5: If the win is for a new day, currentDailyRP should be 0 because 
+  // v1.6.5: If the win is for a new day, currentDailyRP should be 0 because
   // the cron decay may not have wiped yesterday's score yet.
-  const currentDailyRP = (lastUpdate !== seedDate) ? 0 : (userData.dailyRP || 0);
+  const currentDailyRP = lastUpdate !== seedDate ? 0 : userData.dailyRP || 0;
   const finalDelta = Number((finalScoreResult - currentDailyRP).toFixed(3));
 
   const batch = db.batch();
@@ -407,10 +474,10 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const rootUpdate = {
     totalRP: FieldValue.increment(finalDelta),
     lastDailyUpdate: seedDate,
-    lastPlayedDate: seedDate, 
+    lastPlayedDate: seedDate,
     lastUpdated: FieldValue.serverTimestamp(),
-    lastLocalUpdate: Date.now(), 
-    schemaVersion: 7.2
+    lastLocalUpdate: Date.now(),
+    schemaVersion: 7.2,
   };
 
   // v1.9.6: Scoring Attribution Routing
@@ -426,10 +493,10 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   } else {
     rootUpdate.monthlyRP = FieldValue.increment(finalDelta);
   }
-  
+
   // Set registeredAt if missing (v5 Transition)
   if (!userData.registeredAt) {
-      rootUpdate.registeredAt = FieldValue.serverTimestamp();
+    rootUpdate.registeredAt = FieldValue.serverTimestamp();
   }
 
   batch.set(userRef, rootUpdate, { merge: true });
@@ -438,7 +505,7 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   const dayOfWeek = new Date(today + "T12:00:00Z").getUTCDay(); // 0-6
   // totalErrors already declared on line 362
 
-  const grossScoreForWin = Number((finalBonus).toFixed(3));
+  const grossScoreForWin = Number(finalBonus.toFixed(3));
 
   batch.update(userRef, {
     "stats.totalScoreAccumulated": FieldValue.increment(grossScoreForWin),
@@ -446,19 +513,23 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
     "stats.maxStreak": newMaxStreak,
     "stats.wins": newWins,
     "stats.totalTimeAccumulated": FieldValue.increment(activeDurationMs),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.count`]: FieldValue.increment(1),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumScore`]: FieldValue.increment(finalScoreResult),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumTime`]: FieldValue.increment(activeDurationMs),
-    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumErrors`]: FieldValue.increment(totalErrors),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.count`]:
+      FieldValue.increment(1),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumScore`]:
+      FieldValue.increment(finalScoreResult),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumTime`]:
+      FieldValue.increment(activeDurationMs),
+    [`stats.weekdayStatsAccumulated.${dayOfWeek}.sumErrors`]:
+      FieldValue.increment(totalErrors),
   });
 
   // 4. History Sub-collection (Original vs Best)
   const historyRef = userRef.collection("history").doc(seed.toString());
   const historySnap = await historyRef.get();
-  
+
   const historyEntry = {
     seed: seed,
-    played: true
+    played: true,
   };
 
   const resultData = {
@@ -467,7 +538,7 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
     stageTimes: stageTimes,
     errors: totalErrors,
     timestamp: now,
-    won: true
+    won: true,
   };
 
   if ((!historySnap.exists || !historySnap.data().original) && isOriginalDay) {
@@ -476,8 +547,11 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
   } else if (historySnap.exists) {
     const existingBest = historySnap.data().best || {};
     // Compare and update Personal Best
-    if (finalScoreResult > (existingBest.score || 0) || 
-        (finalScoreResult === existingBest.score && activeDurationMs < (existingBest.totalTime || Infinity))) {
+    if (
+      finalScoreResult > (existingBest.score || 0) ||
+      (finalScoreResult === existingBest.score &&
+        activeDurationMs < (existingBest.totalTime || Infinity))
+    ) {
       historyEntry.best = resultData;
     }
   } else {
@@ -489,10 +563,10 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
 
   // 5. Update All-Time Bests (stats.bestScore, stats.bestTime)
   if (finalScoreResult > (stats.bestScore || 0)) {
-      batch.update(userRef, { "stats.bestScore": finalScoreResult });
+    batch.update(userRef, { "stats.bestScore": finalScoreResult });
   }
   if (activeDurationMs < (stats.bestTime || Infinity) && activeDurationMs > 0) {
-      batch.update(userRef, { "stats.bestTime": activeDurationMs });
+    batch.update(userRef, { "stats.bestTime": activeDurationMs });
   }
 
   // 6. Session Close (v1.4.5: DELETE session after successful history migration)
@@ -500,7 +574,12 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
 
   await batch.commit();
 
-  return { status: "success", bonus: finalBonus, finalScore: finalScoreResult, streak: newStreak };
+  return {
+    status: "success",
+    bonus: finalBonus,
+    finalScore: finalScoreResult,
+    streak: newStreak,
+  };
 });
 
 /**

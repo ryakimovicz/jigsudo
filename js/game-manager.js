@@ -1858,9 +1858,9 @@ export class GameManager {
     const today = `${seedStr.substring(0, 4)}-${seedStr.substring(4, 6)}-${seedStr.substring(6, 8)}`;
     const currentMonth = today.substring(0, 7); // "YYYY-MM"
 
-    // Use lastDailyUpdate if available (more reliable for daily sync)
-    const lastCheck =
-      stats.lastDailyUpdate || stats.lastDecayCheck || stats.lastPlayedDate;
+    const lastCheckDates = [stats.lastIntentDate, stats.lastDecayCheck, stats.lastPlayedDate].filter(Boolean);
+    lastCheckDates.sort();
+    const lastCheck = lastCheckDates.length > 0 ? lastCheckDates[lastCheckDates.length - 1] : null;
     let changed = false;
 
     if (lastCheck && lastCheck !== today) {
@@ -1868,7 +1868,9 @@ export class GameManager {
       const currDate = new Date(today + "T12:00:00Z");
         const diffDays = getJigsudoDayDiff(lastCheck, today);
 
-        const lastIntent = stats.lastPenaltyDate || stats.lastDailyUpdate || stats.lastPlayedDate;
+        const datesToConsider = [stats.lastPenaltyDate, stats.lastIntentDate, stats.lastPlayedDate].filter(Boolean);
+        datesToConsider.sort();
+        const lastIntent = datesToConsider.length > 0 ? datesToConsider[datesToConsider.length - 1] : null;
 
         // 1. Reset Daily Stats immediately for the new day
         this._resetDailyStats(stats, today);

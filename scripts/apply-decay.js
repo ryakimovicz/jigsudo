@@ -53,7 +53,9 @@ async function runDecay() {
 snapshot.docs.forEach((doc) => {
       const data = doc.data();
       const stats = data.stats || {};
-      const lastCheck = stats.lastDecayCheck || data.lastDailyUpdate || stats.lastPlayedDate;
+      const lastCheckDates = [stats.lastDecayCheck, stats.lastIntentDate, stats.lastPlayedDate].filter(Boolean);
+      lastCheckDates.sort();
+      const lastCheck = lastCheckDates.length > 0 ? lastCheckDates[lastCheckDates.length - 1] : null;
 
       if (!lastCheck) return;
 
@@ -64,7 +66,9 @@ snapshot.docs.forEach((doc) => {
       let currentTotalRP = data.totalRP || 0;
       let currentMonthlyRP = data.monthlyRP || 0;
       let lastProcessedMonth = lastCheck.substring(0, 7);
-      const lastIntent = stats.lastPenaltyDate || data.lastDailyUpdate || stats.lastPlayedDate;
+      const datesToConsider = [stats.lastPenaltyDate, stats.lastIntentDate, stats.lastPlayedDate].filter(Boolean);
+      datesToConsider.sort();
+      const lastIntent = datesToConsider.length > 0 ? datesToConsider[datesToConsider.length - 1] : null;
       
       const updateObj = {
         "stats.lastDecayCheck": todayStr,
