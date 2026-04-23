@@ -9,8 +9,18 @@
   width: 100% !important;
   max-width: 1000px !important;
   margin: 0 auto !important;
-  padding-top: 0.2rem !important; /* v2.8.0: Compact top */
+  padding-top: 0.2rem !important; /* v2.8.0: Compact top for standard screens */
+}
 
+@media (min-width: 801px) and (min-height: 880px) {
+  .sudoku-mode .memory-grid-layout,
+  .peaks-mode .memory-grid-layout {
+    padding-top: 0 !important;
+  }
+}
+
+.sudoku-mode .memory-grid-layout,
+.peaks-mode .memory-grid-layout {
   /* Swapped Contrast Logic: Light mode gets DARK lines */
   --sudoku-grid-line: #000;
   --sudoku-inner-line: #bbb;
@@ -271,17 +281,8 @@
     justify-items: center !important;
   }
 
-  /* Vertical Centering & Larger Pad for high-res tall screens (v3.0.2) */
+  /* High-Res Pad Sizing */
   @media (min-height: 880px) and (min-width: 801px) {
-    .sudoku-mode .memory-grid-layout,
-    .peaks-mode .memory-grid-layout {
-      flex: 0 0 auto !important;
-      justify-content: center !important;
-      padding-bottom: 0 !important;
-      margin-top: 1rem !important;
-      margin-bottom: 1rem !important;
-    }
-
     .sudoku-controls {
       width: 200px !important;
       height: 267px !important;

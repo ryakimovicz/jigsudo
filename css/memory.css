@@ -35,13 +35,43 @@ body.dark-mode {
    Only triggers on screens taller than 880px to avoid cutting off content 
    on standard laptop screens (like 1366x768) where space is tight. */
 @media (min-width: 801px) and (min-height: 880px) {
-  #game-section {
+  #game-section:not(.hidden) {
+    display: grid !important;
+    /* 1fr: top spacer, auto: header, auto: game board, 1fr: bottom spacer (Centered) */
+    grid-template-rows: 1fr auto auto 1fr;
+    justify-content: center;
+    padding-top: 0;
+    align-items: start; /* v3.0.6: Anchor rows to their tops for pixel-perfect title stability */
+    gap: 0;
+  }
+
+  .game-header {
+    grid-row: 2;
+    margin-bottom: 2rem; /* Stable gap between title and board */
+    height: 40px; 
+    display: flex;
+    align-items: center;
     justify-content: center;
   }
-  .memory-grid-layout {
+
+  #game-section .memory-grid-layout {
+    grid-row: 3;
     flex: 0 0 auto !important;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
+    margin: 0 !important;
+    /* Universal stable base height for all stages (Sudoku is the tallest) 
+       v3.0.7: Enforced with ID specificity to override stage-specific 'min-height: 0' */
+    min-height: 720px !important; 
+    padding-top: 0 !important;
+    align-content: start; /* Grid: Vertical Top-align */
+    justify-content: center; /* Grid: Horizontal Center-align */
+  }
+
+  /* v3.0.7: Enforce Vertical Top-alignment for Flex stages with high specificity */
+  #game-section.sudoku-mode .memory-grid-layout,
+  #game-section.peaks-mode .memory-grid-layout,
+  #game-section.search-mode .memory-grid-layout,
+  #game-section.code-mode .memory-grid-layout {
+    justify-content: flex-start !important;
   }
   /* Keep timer at the bottom despite centering parent */
   .memory-timer {
