@@ -5,7 +5,7 @@ import { getCurrentLang } from "./i18n.js?v=1.4.0";
 import { transitionToSearch } from "./search.js?v=1.4.0";
 import { getAllTargets } from "./peaks-logic.js?v=1.4.0";
 import { resetUI } from "./memory.js?v=1.4.0";
-import { showToast, updateLevelTitle } from "./ui.js?v=1.4.0";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.0";
 
 // State
 let peaksErrors = 0;
@@ -83,19 +83,7 @@ export async function transitionToPeaks() {
   updateLevelTitle(t.game_peaks || "Picos y Valles");
 
   // 4. Update Tooltip
-  const tooltipTitle = document.querySelector(".info-tooltip h3");
-  const tooltipDesc = document.querySelector(".info-tooltip p");
-
-  if (tooltipTitle && tooltipDesc) {
-    tooltipTitle.style.transition = "opacity 0.5s ease";
-    tooltipDesc.style.opacity = "0";
-    setTimeout(() => {
-      tooltipTitle.style.opacity = "1";
-      tooltipDesc.style.opacity = "1";
-      // Unlock
-      window.isGameTransitioning = false;
-    }, 500);
-  }
+  updateGameHelp("peaks");
 
   // 5. Update Game Manager Logic
   const state = gameManager.getState();

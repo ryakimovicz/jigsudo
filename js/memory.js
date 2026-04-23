@@ -17,7 +17,7 @@ import { CONFIG } from "./config.js?v=1.4.0";
 import { startTimer } from "./timer.js?v=1.4.0";
 import { translations } from "./translations.js?v=1.4.0";
 import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.0";
-import { cleanupVictoryUI, updateLevelTitle } from "./ui.js?v=1.4.0";
+import { cleanupVictoryUI, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.0";
 import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.4.0";
 import { resumeSudokuState } from "./sudoku.js?v=1.4.0";
 import { resumePeaksState } from "./peaks.js?v=1.4.0";
@@ -96,6 +96,7 @@ export function initMemoryGame() {
       // v3.0.0: Animate Title In
       const t = translations[getCurrentLang()];
       updateLevelTitle(t.game_memory || "Memoria");
+      updateGameHelp("memory");
     }
 
     // 3. Load Data

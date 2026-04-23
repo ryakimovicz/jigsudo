@@ -45,6 +45,47 @@ export function updateLevelTitle(newTitle) {
   }, 160); 
 }
 
+/**
+ * Updates the info tooltip content based on the current game stage.
+ */
+export function updateGameHelp(stage) {
+  const lang = getCurrentLang();
+  const t = translations[lang];
+  const tooltipTitle = document.querySelector(".info-tooltip h3");
+  const tooltipDesc = document.querySelector(".info-tooltip p");
+
+  if (!tooltipTitle || !tooltipDesc) return;
+
+  // Use a map for stage-to-translation keys
+  const stageMap = {
+    memory: { title: "memory_help_title", desc: "memory_help_desc" },
+    jigsaw: { title: "jigsaw_help_title", desc: "jigsaw_help_desc" },
+    sudoku: { title: "sudoku_help_title", desc: "sudoku_help_desc" },
+    peaks: { title: "peaks_help_title", desc: "peaks_help_desc" },
+    search: { title: "search_help_title", desc: "search_help_desc" },
+    code: { title: "code_help_title", desc: "code_help_desc" },
+  };
+
+  const keys = stageMap[stage];
+  if (!keys) return;
+
+  // Animate content change
+  tooltipTitle.style.transition = "opacity 0.25s ease";
+  tooltipDesc.style.transition = "opacity 0.25s ease";
+  tooltipTitle.style.opacity = "0";
+  tooltipDesc.style.opacity = "0";
+
+  setTimeout(() => {
+    tooltipTitle.textContent = t[keys.title] || "";
+    tooltipDesc.innerHTML = t[keys.desc] || "";
+    tooltipTitle.style.opacity = "1";
+    tooltipDesc.style.opacity = "1";
+    
+    // Unlock transition global guard
+    window.isGameTransitioning = false;
+  }, 260);
+}
+
 export function showToast(message, duration = 3000, type = "info") {
   let container = document.getElementById("toast-container");
 

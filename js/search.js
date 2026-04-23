@@ -2,7 +2,7 @@
 import { gameManager } from "./game-manager.js?v=1.4.0";
 import { translations } from "./translations.js?v=1.4.0";
 import { getCurrentLang } from "./i18n.js?v=1.4.0";
-import { showToast, updateLevelTitle } from "./ui.js?v=1.4.0";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.0";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.0";
 import { resetUI } from "./memory.js?v=1.4.0";
 import { initCode } from "./code.js?v=1.4.0";
@@ -478,19 +478,7 @@ export async function transitionToSearch() {
   updateLevelTitle(t.game_search || "Sopa de Números");
 
   // 3. Update Tooltip
-  const tooltipTitle = document.querySelector(".info-tooltip h3");
-  const tooltipDesc = document.querySelector(".info-tooltip p");
-
-  if (tooltipTitle && tooltipDesc) {
-    tooltipTitle.style.transition = "opacity 0.5s ease";
-    tooltipDesc.style.opacity = "0";
-    setTimeout(() => {
-      tooltipTitle.style.opacity = "1";
-      tooltipDesc.style.opacity = "1";
-      // Unlock
-      window.isGameTransitioning = false;
-    }, 500);
-  }
+  updateGameHelp("search");
 
   // 6. Initialize Search Logic
   await initSearch();
@@ -554,22 +542,7 @@ export async function transitionToCode() {
   updateLevelTitle(t.game_code || "El Código");
 
   // 4. Update Tooltip
-  const tooltipTitle = document.querySelector(".info-tooltip h3");
-  const tooltipDesc = document.querySelector(".info-tooltip p");
-
-  if (tooltipTitle && tooltipDesc) {
-    tooltipTitle.style.transition = "opacity 0.5s ease";
-    tooltipDesc.style.opacity = "0";
-    setTimeout(() => {
-      tooltipTitle.textContent = t.code_help_title || "El Código";
-      tooltipDesc.innerHTML = t.code_help_desc || "Memoriza la secuencia.";
-      tooltipTitle.style.opacity = "1";
-      tooltipTitle.style.opacity = "1";
-      tooltipDesc.style.opacity = "1";
-      // Unlock
-      window.isGameTransitioning = false;
-    }, 500);
-  }
+  updateGameHelp("code");
 
   // 5.5 Update Stage in State
   const state = gameManager.getState();

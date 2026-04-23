@@ -3,7 +3,7 @@ import { translations } from "./translations.js?v=1.4.0";
 import { getCurrentLang } from "./i18n.js?v=1.4.0";
 import { transitionToPeaks } from "./peaks.js?v=1.4.0";
 import { createMiniGrid, getChunksFromBoard } from "./memory.js?v=1.4.0";
-import { showToast, updateLevelTitle } from "./ui.js?v=1.4.0";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.0";
 // State
 let selectedCell = null;
 let pencilMode = false;
@@ -17,23 +17,7 @@ export function transitionToSudoku() {
 
   updateLevelTitle(t.game_sudoku || "Sudoku");
 
-  // 2. Update Tooltip
-  const tooltipTitle = document.querySelector(".info-tooltip h3");
-  const tooltipDesc = document.querySelector(".info-tooltip p");
-  if (tooltipTitle && tooltipDesc) {
-    tooltipTitle.style.transition = "opacity 0.5s ease";
-    tooltipDesc.style.transition = "opacity 0.5s ease";
-    tooltipTitle.style.opacity = "0";
-    tooltipDesc.style.opacity = "0";
-    setTimeout(() => {
-      tooltipTitle.textContent = t.sudoku_help_title;
-      tooltipDesc.innerHTML = t.sudoku_help_desc;
-      tooltipTitle.style.opacity = "1";
-      tooltipDesc.style.opacity = "1";
-      // Unlock
-      window.isGameTransitioning = false;
-    }, 500);
-  }
+  updateGameHelp("sudoku");
 
   // 3. Switch Mode
   const gameSection = document.getElementById("game-section");
@@ -59,12 +43,7 @@ export function transitionToSudoku() {
         if (collectedWrapper) collectedWrapper.style.display = "none";
 
         // Update Title/Text instantly here so it cross-fades with the view transition
-        if (tooltipTitle && tooltipDesc) {
-          tooltipTitle.textContent = t.sudoku_help_title;
-          tooltipDesc.innerHTML = t.sudoku_help_desc;
-          tooltipTitle.style.opacity = "1";
-          tooltipDesc.style.opacity = "1";
-        }
+        updateGameHelp("sudoku");
 
         gameManager.updateProgress("progress", { currentStage: "sudoku" });
       });
@@ -84,12 +63,7 @@ export function transitionToSudoku() {
       const collectedWrapper = document.querySelector(".collected-wrapper");
       if (collectedWrapper) collectedWrapper.style.display = "none";
 
-      if (tooltipTitle && tooltipDesc) {
-        tooltipTitle.textContent = t.sudoku_help_title;
-        tooltipDesc.innerHTML = t.sudoku_help_desc;
-        tooltipTitle.style.opacity = "1";
-        tooltipDesc.style.opacity = "1";
-      }
+      updateGameHelp("sudoku");
 
       gameManager.updateProgress("progress", { currentStage: "sudoku" });
     }
