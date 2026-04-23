@@ -32,7 +32,7 @@ service cloud.firestore {
                     && (
                       (resource.data.get('schemaVersion', 0) < 7.1 && request.resource.data.get('schemaVersion', 0) >= 7.1)
                       ||
-                      (resource.data.get('schemaVersion', 0) >= 7.1 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['schemaVersion', 'username', 'username_lc', 'dailyRP', 'monthlyRP', 'totalRP', 'isPublic', 'stats', 'progress', 'lastUpdated', 'lastDailyUpdate', 'lastMonthlyUpdate', 'lastLocalUpdate', 'registeredAt', 'isVerified', 'activeSessionId', 'totalPenaltyAccumulated', 'monthlyPenaltyAccumulated', 'currentRP']))
+                      (resource.data.get('schemaVersion', 0) >= 7.1 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['schemaVersion', 'username', 'username_lc', 'dailyRP', 'monthlyRP', 'totalRP', 'careerRP', 'lastDayRP', 'lastMonthRP', 'isPublic', 'stats', 'progress', 'lastUpdated', 'lastDailyUpdate', 'lastMonthlyUpdate', 'lastLocalUpdate', 'registeredAt', 'isVerified', 'activeSessionId', 'totalPenaltyAccumulated', 'monthlyPenaltyAccumulated', 'currentRP']))
                     );
       
       allow delete: if request.auth != null && request.auth.uid == userId;

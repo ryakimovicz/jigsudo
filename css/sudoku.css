@@ -152,12 +152,12 @@
 
 .sudoku-num {
   aspect-ratio: 1;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   font-size: 1.4rem;
   font-weight: 700;
-  color: #333;
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -250,15 +250,13 @@
     padding-bottom: 30px !important;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
-}
 
-/* Integrated 3-column Keypad (Actions + Numbers) for Mobile/Large Desktop */
-/* Keypad - Desktop Default (Integrated 3-column) */
-@media (min-width: 769px) {
   .sudoku-controls {
-    /* Limit width specifically on desktop */
+    /* Desktop Default: Flexible sizing to fit standard laptop screens */
     max-width: 200px !important;
     max-height: 267px !important;
+    width: auto !important;
+    height: 100% !important;
 
     flex: 1;
     min-height: 0;
@@ -266,14 +264,33 @@
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(4, 1fr) !important;
     gap: 5px !important;
-    width: auto !important;
     aspect-ratio: 3 / 4 !important;
     margin: 0 auto !important;
-    height: 100% !important;
     align-self: center !important;
     justify-content: center !important;
     justify-items: center !important;
   }
+
+  /* Vertical Centering & Larger Pad for high-res tall screens (v3.0.2) */
+  @media (min-height: 880px) and (min-width: 801px) {
+    .sudoku-mode .memory-grid-layout,
+    .peaks-mode .memory-grid-layout {
+      flex: 0 0 auto !important;
+      justify-content: center !important;
+      padding-bottom: 0 !important;
+      margin-top: 1rem !important;
+      margin-bottom: 1rem !important;
+    }
+
+    .sudoku-controls {
+      width: 200px !important;
+      height: 267px !important;
+      max-width: none !important;
+      max-height: none !important;
+      flex: 0 0 auto !important;
+    }
+  }
+}
 
   .control-row {
     display: contents !important;
@@ -281,6 +298,8 @@
 
   .btn-sudoku-action,
   .sudoku-num {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-main) !important;
     width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
@@ -290,12 +309,11 @@
     justify-content: center !important;
     align-items: center !important;
     font-size: 1.2rem !important;
+    border-radius: 8px !important;
   }
 
   .btn-sudoku-action {
-    background: var(--bg-tertiary) !important;
     max-width: none !important;
-    border-radius: 8px !important;
   }
 }
 

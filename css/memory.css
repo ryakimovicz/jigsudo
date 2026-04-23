@@ -31,6 +31,26 @@ body.dark-mode {
   position: relative;
 }
 
+/* PC Centering (v3.0.1) - High Resolution Vertical Alignment 
+   Only triggers on screens taller than 880px to avoid cutting off content 
+   on standard laptop screens (like 1366x768) where space is tight. */
+@media (min-width: 801px) and (min-height: 880px) {
+  #game-section {
+    justify-content: center;
+  }
+  .memory-grid-layout {
+    flex: 0 0 auto !important;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  /* Keep timer at the bottom despite centering parent */
+  .memory-timer {
+    position: absolute;
+    bottom: 1rem;
+    margin-top: 0;
+  }
+}
+
 /* View Transition API Overrides (Modern Browsers) */
 ::view-transition-group(*),
 ::view-transition-old(*),

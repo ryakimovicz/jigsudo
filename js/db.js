@@ -573,6 +573,7 @@ export async function saveUserStats(
       updateData.dailyRP = s.dailyRP || 0;
       updateData.monthlyRP = s.monthlyRP || 0;
       updateData.totalRP = s.totalRP || 0;
+      updateData.careerRP = s.careerRP || 0;
       updateData.lastDayRP = s.lastDayRP || 0;
       updateData.lastMonthRP = s.lastMonthRP || 0;
 
