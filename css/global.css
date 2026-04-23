@@ -296,6 +296,27 @@ body {
   border-radius: 12px;
 }
 
+/* User Avatar System */
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-paper);
+  background-color: #e2e8f0;
+  color: var(--text-main);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  user-select: none;
+  font-weight: 700;
+  line-height: 1;
+}
+
+body.dark-mode .user-avatar {
+  background-color: #334155;
+  color: #e2e8f0;
+}
+
 /* Main Content Layout Adjustments for Sidebar */
 .scrollable-content {
   padding: 20px;

@@ -126,6 +126,14 @@ body.sidebar-expanded .sidebar-toggle span:nth-child(3) {
   align-items: center;
 }
 
+#btn-auth .nav-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 1.1rem;
+  margin-left: -1px; /* Center adjustment */
+}
+
 .nav-label {
   font-weight: 500;
   font-size: 1rem;

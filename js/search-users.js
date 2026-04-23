@@ -108,7 +108,7 @@ function renderResults(users) {
         
         card.innerHTML = `
             <div class="user-card-header">
-                <div class="user-avatar-placeholder">👤</div>
+                <div class="user-avatar-placeholder user-avatar">${user.username.charAt(0).toUpperCase()}</div>
                 <div class="user-id-info">
                     <strong class="user-name">${user.username}</strong>
                     ${user.isVerified ? '<span class="verified-badge" title="Verificado">✅</span>' : ''}

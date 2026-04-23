@@ -1346,7 +1346,9 @@ input:checked + .slider-small:before {
 }
 
 .user-avatar-placeholder {
-  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
+  font-size: 1.1rem;
 }
 
 /* Segmented Control (Theme Switcher) */
@@ -1433,6 +1435,47 @@ body.dark-mode .segmented-control {
   font-size: 0.75rem;
   color: var(--text-muted);
   line-height: 1.1;
+}
+
+/* Premium Login Button (Menu) */
+.btn-login-premium {
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 14px 20px 14px 45px;
+  border-radius: 12px;
+  font-family: var(--font-header);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-login-premium:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.4);
+  background: var(--accent-hover);
+}
+
+.btn-login-premium:active {
+  transform: translateY(0) scale(0.98);
+}
+
+body.dark-mode .btn-login-premium {
+  color: #1e293b; /* Dark text as requested by user */
+}
+
+.btn-login-premium .btn-icon {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 /* Logout Button */

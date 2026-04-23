@@ -620,6 +620,13 @@ function updateUIForLogin(user) {
           ? t.guest || "Anónimo"
           : t.user_default || "Usuario");
     nameSpan.textContent = displayName;
+
+    // Update Avatar Initials in Sidebar and Dropdown
+    const initial = displayName.charAt(0).toUpperCase();
+    const sidebarAvatar = document.querySelector("#btn-auth .nav-icon");
+    const dropdownAvatar = document.querySelector("#btn-view-profile .user-avatar-placeholder");
+    if (sidebarAvatar) sidebarAvatar.textContent = initial;
+    if (dropdownAvatar) dropdownAvatar.textContent = initial;
   }
 
   /* Refactored to use Router */
@@ -757,6 +764,16 @@ function updateUIForLogout() {
 
   if (loginWrapper) loginWrapper.classList.remove("hidden");
   if (loggedInView) loggedInView.classList.add("hidden");
+
+  // Reset Avatar Initials to placeholder
+  const sidebarAvatar = document.querySelector("#btn-auth .nav-icon");
+  const guestAvatar = document.querySelector("#btn-guest-profile .user-avatar-placeholder");
+  const lang = getCurrentLang() || "es";
+  const t = translations[lang] || translations["es"];
+  const guestName = t.guest || "Anónimo";
+  
+  if (sidebarAvatar) sidebarAvatar.textContent = guestName.charAt(0).toUpperCase();
+  if (guestAvatar) guestAvatar.textContent = guestName.charAt(0).toUpperCase();
 
   const profileEmail = document.getElementById("profile-email-display");
   if (profileEmail) profileEmail.textContent = "";
