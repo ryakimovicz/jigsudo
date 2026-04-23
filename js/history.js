@@ -716,7 +716,8 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
       
       // Close on backdrop click
       if (container) {
-          container.onclick = () => hideHistoryTooltip(true);
+          // Use pointerdown to ensure a NEW touch is required to close
+          container.onpointerdown = () => hideHistoryTooltip(true);
       }
   } else {
       updateHistoryTooltipPosition(e);

@@ -1442,7 +1442,7 @@ body.dark-mode .segmented-control {
   background: var(--accent-color);
   color: white;
   border: none;
-  padding: 14px 20px 14px 45px;
+  padding: 14px 20px 14px 32px;
   border-radius: 12px;
   font-family: var(--font-header);
   font-weight: 700;

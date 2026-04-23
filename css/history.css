@@ -330,6 +330,8 @@ body.dark-mode .legend-box.gray {
     z-index: 100;
     font-size: 0.85rem;
     min-width: 220px;
+    user-select: none;
+    -webkit-user-select: none;
     transition: opacity 0.1s ease, transform 0.1s ease;
     opacity: 0;
     transform: translateY(10px) scale(0.95);
@@ -362,7 +364,7 @@ body.dark-mode .legend-box.gray {
 
 .tooltip-close {
     position: absolute;
-    top: 10px;
+    top: 4px;
     right: 10px;
     width: 30px;
     height: 30px;

@@ -1557,13 +1557,41 @@ function formatCompValue(val, type, suffix = "") {
 }
 
 function setupComp(el, data) {
-  el.addEventListener("mouseenter", (e) => showCompTooltip(e, data));
-  el.addEventListener("mousemove", (e) => updateCompTooltipPosition(e));
-  el.addEventListener("mouseleave", () => hideCompTooltip());
+  // Desktop hover
+  el.addEventListener("mouseenter", (e) => {
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+    showCompTooltip(e, data);
+  });
+  el.addEventListener("mousemove", (e) => {
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+    updateCompTooltipPosition(e);
+  });
+  el.addEventListener("mouseleave", () => {
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+    hideCompTooltip();
+  });
+
+  // Mobile Long Press
+  let touchTimer = null;
+  el.addEventListener("touchstart", (e) => {
+    touchTimer = setTimeout(() => {
+      showCompTooltip(e, data, true);
+    }, 500);
+  }, { passive: true });
+
+  el.addEventListener("touchend", () => {
+    if (touchTimer) clearTimeout(touchTimer);
+  });
+
+  el.addEventListener("touchmove", () => {
+    if (touchTimer) clearTimeout(touchTimer);
+  });
 }
 
-function showCompTooltip(e, data) {
+function showCompTooltip(e, data, isMobile = false) {
   if (!comparisonEnabled) return;
+  const container = document.getElementById("comp-tooltip-container");
+
   if (!compTooltip) {
     compTooltip = document.createElement("div");
     compTooltip.className = "comp-tooltip";
@@ -1594,7 +1622,6 @@ function showCompTooltip(e, data) {
       const o = data.own;
       const fRP = Number(f.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const oRP = Number(o.val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      
       const lvlPrefix = t.rank_level_prefix || "Nvl.";
       
       fHtml = `
@@ -1613,15 +1640,10 @@ function showCompTooltip(e, data) {
   } else if (data.type === "peaks") {
       const f = data.foreign;
       const o = data.own;
-
-      // Time Trend (Lower is better)
       const tTrend = o.time < f.time ? "trend-up" : (o.time > f.time ? "trend-down" : "trend-equal");
       const tIcon = tTrend === "trend-up" ? "▲" : (tTrend === "trend-down" ? "▼" : "");
-      
-      // Error Trend (Lower is better)
       const eTrend = o.errs < f.errs ? "trend-up" : (o.errs > f.errs ? "trend-down" : "trend-equal");
       const eIcon = eTrend === "trend-up" ? "▲" : (eTrend === "trend-down" ? "▼" : "");
-
       const fTime = formatCompValue(f.time, "time");
       const oTime = formatCompValue(o.time, "time");
       const fErr = f.errs.toFixed(1);
@@ -1632,7 +1654,6 @@ function showCompTooltip(e, data) {
             <span class="comp-value">${fTime}</span>
             <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fErr} err.</span>
         </div>`;
-
       oHtml = `
         <div class="comp-value-stack">
             <span class="comp-value">${oTime} <span class="${tTrend}">${tIcon}</span></span>
@@ -1641,7 +1662,6 @@ function showCompTooltip(e, data) {
   } else if (data.type === "daily-avg") {
       const f = data.foreign;
       const o = data.own;
-
       const getTrendData = (fV, oV, type) => {
           if (fV === undefined || oV === undefined || fV === null || oV === null) return { icon: "", class: "trend-equal" };
           const isBetter = (type === "time" || type === "errs") ? (oV < fV) : (oV > fV);
@@ -1650,11 +1670,9 @@ function showCompTooltip(e, data) {
           if (isWorse) return { icon: "▼", class: "trend-down" };
           return { icon: "", class: "trend-equal" };
       };
-
       const tT = getTrendData(f.time, o.time, "time");
       const eT = getTrendData(f.errs, o.errs, "errs");
       const rT = getTrendData(f.rp, o.rp, "rp");
-
       const fTime = formatCompValue(f.time, "time");
       const oTime = formatCompValue(o.time, "time");
       const fErr = f.errs.toFixed(1);
@@ -1668,7 +1686,6 @@ function showCompTooltip(e, data) {
             <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fTime} ⏱️</span>
             <span class="comp-value" style="font-size: 0.8rem; opacity: 0.8;">${fErr} err. ❌</span>
         </div>`;
-
       oHtml = `
         <div class="comp-value-stack" style="gap: 2px;">
             <span class="comp-value">${oRP} <span class="${rT.class}">${rT.icon}</span></span>
@@ -1680,7 +1697,10 @@ function showCompTooltip(e, data) {
       oHtml = `<span class="comp-value">${data.own.label} <span class="${trendClass}">${trendIcon}</span></span>`;
   }
 
+  let closeBtnHtml = isMobile ? `<button class="tooltip-close">×</button>` : "";
+
   compTooltip.innerHTML = `
+    ${closeBtnHtml}
     <div class="comp-tooltip-title">${data.title}</div>
     <div class="comp-grid">
         <div class="comp-column">
@@ -1695,24 +1715,71 @@ function showCompTooltip(e, data) {
     </div>
   `;
 
+  if (isMobile) {
+      compTooltip.style.left = "";
+      compTooltip.style.top = "";
+      compTooltip.classList.add("mobile-mode");
+      if (container) {
+          container.classList.add("visible");
+          // Use pointerdown to ensure a NEW touch is required to close
+          container.onpointerdown = () => hideCompTooltip(true);
+      }
+      document.documentElement.classList.add("no-scroll");
+      document.body.classList.add("no-scroll");
+      window.history.pushState({ compTooltipOpen: true }, "");
+
+      const closeBtn = compTooltip.querySelector(".tooltip-close");
+      if (closeBtn) {
+          closeBtn.onclick = (ev) => {
+              ev.stopPropagation();
+              hideCompTooltip(true);
+          };
+      }
+  } else {
+      compTooltip.classList.remove("mobile-mode");
+      if (container) container.classList.remove("visible");
+      updateCompTooltipPosition(e);
+  }
+
   compTooltip.classList.add("visible");
-  updateCompTooltipPosition(e);
 }
 
 function updateCompTooltipPosition(e) {
-  if (!compTooltip) return;
+  if (!compTooltip || compTooltip.classList.contains("mobile-mode")) return;
   const x = e.clientX + 15;
   const y = e.clientY + 15;
-  
   const width = compTooltip.offsetWidth;
   const height = compTooltip.offsetHeight;
   const maxX = window.innerWidth - width - 20;
   const maxY = window.innerHeight - height - 20;
-
   compTooltip.style.left = `${Math.min(x, maxX)}px`;
   compTooltip.style.top = `${Math.min(y, maxY)}px`;
 }
 
-function hideCompTooltip() {
-  if (compTooltip) compTooltip.classList.remove("visible");
+function hideCompTooltip(isExplicitClose = false) {
+  if (compTooltip) {
+      compTooltip.classList.remove("visible");
+      // v1.7.9: Delay removal of mobile-mode to allow fade-out animation to finish in place
+      setTimeout(() => {
+          if (compTooltip && !compTooltip.classList.contains("visible")) {
+              compTooltip.classList.remove("mobile-mode");
+          }
+      }, 300);
+  }
+  const container = document.getElementById("comp-tooltip-container");
+  if (container) container.classList.remove("visible");
+  
+  document.documentElement.classList.remove("no-scroll");
+  document.body.classList.remove("no-scroll");
+
+  if (isExplicitClose && window.history.state?.compTooltipOpen) {
+      window.history.back();
+  }
 }
+
+// Global popstate listener for comparison tooltip
+window.addEventListener("popstate", () => {
+    if (compTooltip && compTooltip.classList.contains("visible") && compTooltip.classList.contains("mobile-mode")) {
+        hideCompTooltip(false);
+    }
+});

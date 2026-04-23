@@ -171,42 +171,9 @@ body.no-scroll {
 body.no-scroll .main-header {
   position: fixed !important;
   top: 0 !important;
-  /* Removed left: 0 and width: 100% to prevent horizontal shift (the header already has its own responsive constraints) */
+  left: 0 !important;
+  right: 0 !important;
   z-index: 40001 !important;
-}
-
-/* Force header to condensed state on mobile when a modal is open (body is scroll-locked) */
-@media (max-width: 768px) {
-  body.no-scroll {
-    --header-height: var(--header-height-condensed) !important;
-  }
-
-  body.no-scroll .main-header {
-    height: var(--header-height-condensed) !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
-  }
-
-  body.no-scroll .header-meta {
-    opacity: 0 !important;
-    max-width: 0 !important;
-    margin: 0 !important;
-    pointer-events: none !important;
-    transform: translate(98px, -11px) !important;
-  }
-
-  body.no-scroll .app-title {
-    font-size: 1.25rem !important;
-    transform: translateY(11px) !important;
-  }
-
-  body.no-scroll .header-center {
-    gap: 12px !important;
-  }
-
-  body.no-scroll .header-logo {
-    height: 28px !important; /* Perfect fit for 45px condensed header */
-    transition: none !important; /* Instant snap for layout shifts */
-  }
 }
 
 body {
@@ -683,6 +650,23 @@ body.dark-mode .debug-btn {
 }
 
 /* --- Comparison Tooltip (v1.7.6) --- */
+.comp-tooltip-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 300000;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+}
+
+.comp-tooltip-container.visible {
+  display: block !important;
+}
+
 .comp-tooltip {
   position: fixed;
   z-index: 10000;
@@ -699,6 +683,8 @@ body.dark-mode .debug-btn {
   color: #1e293b;
   min-width: 210px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 body.dark-mode .comp-tooltip {
@@ -711,6 +697,58 @@ body.dark-mode .comp-tooltip {
 .comp-tooltip.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.comp-tooltip.mobile-mode {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 90% !important;
+  max-width: 320px !important;
+  margin: 0 !important;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+  z-index: 300001 !important;
+  background: var(--bg-paper);
+  display: none !important; /* Hidden by default */
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease;
+}
+
+.comp-tooltip.mobile-mode.visible {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.comp-tooltip.mobile-mode .comp-tooltip-title {
+  padding-right: 35px; /* Space for the X button */
+}
+
+/* Tooltip Close Button */
+.comp-tooltip .tooltip-close {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 300002;
+  border: none;
+  line-height: 1;
+}
+
+.comp-tooltip .tooltip-close:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .comp-tooltip-title {
