@@ -1,10 +1,10 @@
 export const CONFIG = {
-  version: "1.4.0",
-  fechaUpdate: "2026-04-22",
+  version: "1.4.1",
+  fechaUpdate: "2026-04-23",
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
-  debugMode: true, // Toggle to true to see logs
-  betaMode: true, // Toggle to true to enable "Ayuda" button
+  debugMode: false, // Toggle to true to see logs
+  betaMode: false, // Toggle to true to enable "Ayuda" button
 
   // Configuración de sincronización del servidor
   serverTimeSyncInterval: 1800000, // 30 minutos
