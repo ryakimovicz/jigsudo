@@ -611,6 +611,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v143_title: "Versión 1.4.3",
+    changelog_v143_date: "24/04/2026",
+    changelog_v143_item1: "Privacidad: Se corrigió la visualización de perfiles privados en las tablas de clasificación.",
+    changelog_v143_item2: "Arquitectura de Puntos: Se definieron tres niveles: Puntaje Perfecto (Bruto), Puntaje Carrera (Bruto - Errores) y Puntaje Ranking (Neto).",
     changelog_v142_title: "Versión 1.4.2",
     changelog_v142_date: "23/04/2026",
     changelog_v142_item1: "Hotfix Sincronización: Se corrigió un error que sobreescribía el Puntaje Carrera al iniciar sesión.",
@@ -1675,6 +1679,10 @@ export const translations = {
     changelog_v139_date: "04/21/2026",
     changelog_v139_item1: "Scoring Integrity: Refactored the calculation engine to ensure total consistency between game progress and global rankings.",
     changelog_v139_item2: "Error Synchronization: Implemented atomic and immediate saving for errors in Peaks & Valleys, eliminating data loss when switching devices.",
+    changelog_v143_title: "Version 1.4.3",
+    changelog_v143_date: "April 24, 2026",
+    changelog_v143_item1: "Privacy: Fixed private profile visibility in leaderboards.",
+    changelog_v143_item2: "Scoring Architecture: Defined three tiers: Perfect Score (Gross), Career RP (Gross - Errors), and Ranking Score (Net).",
     changelog_v142_title: "Version 1.4.2",
     changelog_v142_date: "April 23, 2026",
     changelog_v142_item1: "Sync Hotfix: Fixed a bug that overwrote Career Score during session initialization.",
