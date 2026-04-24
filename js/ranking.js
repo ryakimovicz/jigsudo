@@ -228,11 +228,12 @@ async function getTopRankings(
     }
     
     // NEW ROBUST INJECTION: If user is missing from DB list (e.g. latency/cache), inject them!
-    // v1.5.5: ONLY inject into Top 10 if verified. Unverified stay in Personal Row below.
+    // v1.5.5: ONLY inject into Top 10 if verified AND PUBLIC. Unverified/Private stay in Personal Row below.
     // robust check for verification (Email verified OR social provider)
     const isVerified = user && (user.emailVerified || (user.providerData && user.providerData.some(p => p.providerId !== "password")));
+    const isPublic = stats && stats.isPublic !== false;
     
-    if (inTop10 === -1 && userScore > 0 && isVerified) {
+    if (inTop10 === -1 && userScore > 0 && isVerified && isPublic) {
       const injectEntry = {
         id: activeUid,
         username: activeUsername || "Usuario",
@@ -265,8 +266,8 @@ async function getTopRankings(
     } else {
       // 2. Fetch actual rank
       let actualRank = "-";
-      // We can only fetch real rank if we have a full verified user or we are brave
-      if (user && user.emailVerified) {
+      // We can only fetch real rank if we have a full verified user AND they are public
+      if (user && user.emailVerified && isPublic) {
         actualRank = await getUserRankFn(fieldName, userScore, true, filterField, filterValue) || "-";
       }
 
@@ -333,7 +334,7 @@ async function getTop10(
         totalRP: doc.data().totalRP || 0, // Fetch totalRP for rank calculation
         isPublic: doc.data().isPublic !== false
       }))
-      .filter((u) => u.isPublic || u.id === activeUid)
+      .filter((u) => u.isPublic) // v1.4.3: Exclude private users even if it's us (they go to personal row)
       .slice(0, 10);
   } catch (error) {
     console.error(`[Ranking] Error fetching ${fieldName}:`, error);
