@@ -1047,13 +1047,12 @@ function handleSudokuWin() {
     setTimeout(async () => {
       board.classList.remove("board-complete");
 
-      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
-      // IMPORTANT: advanceStage MUST be called before transitioning to the next stage
-      // so it validates the correct 'currentStage'.
-      await gameManager.advanceStage();
-
       // Timer Transition
       gameManager.stopStageTimer(); // End Sudoku
+
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      await gameManager.advanceStage();
+
       gameManager.startStageTimer("peaks"); // Start Peaks
 
       // Transition to Peaks

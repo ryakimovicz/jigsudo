@@ -18,8 +18,11 @@ export class GameManager {
     this.cloudSaveTimeout = null;
     this.isWiping = false;
     this.isReplay = false;
-    this.validationQueue = [];
     this.isProcessingQueue = false;
+    
+    // v1.4.1: Persisted Validation Queue (survives refreshes)
+    const savedQueue = localStorage.getItem("jigsudo_validation_queue");
+    this.validationQueue = savedQueue ? JSON.parse(savedQueue) : [];
     // v1.3.8: Unified Session Continuity (survives refreshes for migration windows)
     const storedSession = sessionStorage.getItem("jigsudo_active_session_id");
     this.localSessionId = storedSession || Math.random().toString(36).substring(7);
@@ -1420,6 +1423,7 @@ export class GameManager {
             stats.dailyRP = Number(((stats.dailyRP || 0) + points).toFixed(3));
             stats.monthlyRP = Number(((stats.monthlyRP || 0) + points).toFixed(3));
             stats.totalRP = Number(((stats.totalRP || 0) + points).toFixed(3));
+            stats.careerRP = Number(((stats.careerRP || 0) + points).toFixed(3));
             
             // v2.9.0: Historical Sync - Feed the atoms
             stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + points).toFixed(3));
@@ -1468,6 +1472,7 @@ export class GameManager {
       peaksErrors,
       seed: this.currentSeed
     });
+    localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
 
     console.log(`[Referee] Stage ${stage} queued for background validation.`);
     this._processValidationQueue();
@@ -1497,6 +1502,13 @@ export class GameManager {
         this.validationQueue.shift();
         continue;
       }
+      
+      if (task.seed !== this.currentSeed) {
+        console.warn(`[Referee] Task seed ${task.seed} doesn't match current seed ${this.currentSeed}. Skipping stale task.`);
+        this.validationQueue.shift();
+        localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
+        continue;
+      }
 
       try {
         console.log(`[Referee] Validating stage ${task.stage} (Asynchronous)...`);
@@ -1511,6 +1523,7 @@ export class GameManager {
         if (result.data.status === "success" || result.data.status === "already_verified") {
           console.log(`[Referee] Stage ${task.stage} verified by server! Points awarded.`);
           this.validationQueue.shift(); // Remove from queue only on success
+          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
           
           // v1.5.29: Instant point adoption. Update local stats immediately so ranking updates.
           await this._recalculateNetStats();
@@ -1535,13 +1548,14 @@ export class GameManager {
           });
 
           this.validationQueue.shift(); // Remove anyway to avoid infinite loops, but log it
+          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
         }
       } catch (error) {
         // v1.2.6: UNCLOGGER - Distinguish between connectivity issues and logical rejections
         // Logic errors shouldn't be retried because they will fail again (clean up the queue)
         const logicCodes = ["out-of-range", "failed-precondition", "invalid-argument"];
         const isLogicError = logicCodes.includes(error.code) || 
-                             (error.message && error.message.includes("too fast"));
+                             (error.message && (error.message.includes("too fast") || error.message.includes("sequence") || error.message.includes("Missing stages")));
 
         if (isLogicError) {
           console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
@@ -1561,6 +1575,7 @@ export class GameManager {
           });
 
           this.validationQueue.shift(); // Remove permanent failure
+          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
           continue; // Proceed with next item
         }
 
@@ -1678,6 +1693,7 @@ export class GameManager {
     stats.dailyRP = Number((Math.max(0, stats.dailyRP || 0)).toFixed(3));
     stats.monthlyRP = Number((Math.max(0, stats.monthlyRP || 0)).toFixed(3));
     stats.totalRP = Number((Math.max(0, stats.totalRP || 0)).toFixed(3));
+    stats.careerRP = Number((Math.max(0, stats.careerRP || 0)).toFixed(3));
     
     const dailyNet = stats.dailyRP;
     const monthlyNet = stats.monthlyRP;
@@ -2279,7 +2295,15 @@ export class GameManager {
           return; // Stop here, page will reload
         }
 
-        if (!this.stats || isRemoteNewer || this.isWiping || isMigration) {
+        // v1.4.1: CRITICAL FIELD ADOPTION (CareerRP)
+        // If local is 0 but remote has value, we MUST adopt it regardless of timestamps
+        // to prevent overwriting manual/historical data during initialization.
+        const localCareer = this.stats ? (this.stats.careerRP || 0) : 0;
+        const remoteCareer = remoteStats.careerRP || 0;
+        const needsCareerAdoption = localCareer === 0 && remoteCareer > 0;
+
+        if (!this.stats || isRemoteNewer || this.isWiping || isMigration || needsCareerAdoption) {
+          if (needsCareerAdoption) console.log(`[Sync] Forced CareerRP adoption (${remoteCareer}) despite timestamps.`);
           console.log(`[Sync] Adopting remote stats (RemoteTS: ${remoteTS} > LocalTS: ${localTS})`);
           
           // v1.5.56: EXPANDED ATOM PRESERVATION

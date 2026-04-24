@@ -460,18 +460,16 @@ export async function saveUserStats(
 
           const localDaily = s.dailyRP || 0;
           const localTotal = s.totalRP || 0;
+          const localCareer = s.careerRP || 0;
 
           // Reconstruct stats for proper reset detection
           const remoteStats = reconstructStats(cloudData);
-
-          const isSameDay =
-            (cloudData.lastDailyUpdate || cloudStats.lastDailyUpdate) ===
-            s.lastDailyUpdate;
+          const cloudCareer = remoteStats.careerRP || 0;
 
           // --- ANTI-REGRESSION 2.0 (v1.5.4) ---
           // 1. Virgin State Lock: Protect cloud profile from being wiped by local 'localStorage.clear()'
-          const isLocalVirgin = localTotal === 0 && (s.wins || 0) === 0;
-          const isCloudPopulated = cloudTotal > 0 || (cloudStats.wins || 0) > 0;
+          const isLocalVirgin = localTotal === 0 && (s.wins || 0) === 0 && localCareer === 0;
+          const isCloudPopulated = cloudTotal > 0 || (cloudStats.wins || 0) > 0 || cloudCareer > 0;
 
           if (
             isLocalVirgin &&
@@ -491,6 +489,12 @@ export async function saveUserStats(
               );
               return; // ABORT
             }
+          }
+
+          // v1.4.1: Protect careerRP from being overwritten by 0 if remote has value
+          if (localCareer === 0 && cloudCareer > 0 && !updateData._isIntentionalReset) {
+            console.warn(`[DB] Protection: Preventing overwrite of CareerRP (${cloudCareer}) with local 0.`);
+            s.careerRP = cloudCareer;
           }
 
           // v1.9.0: RESET GUARD (Legacy/Ghost Protection)

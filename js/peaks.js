@@ -317,12 +317,12 @@ function checkPeaksVictory() {
     setTimeout(async () => {
       if (board) board.classList.remove("board-complete");
 
-      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
-      // IMPORTANT: advanceStage MUST be called before transitioning to the next stage
-      await gameManager.advanceStage();
-
       // Timer Transition
       gameManager.stopStageTimer(); // End Peaks
+
+      // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
+      await gameManager.advanceStage();
+
       gameManager.startStageTimer("search"); // Start Search
 
       transitionToSearch();
