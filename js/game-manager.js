@@ -3457,6 +3457,7 @@ export class GameManager {
       totalPlayed: 0,
       wins: 0,
       totalScoreAccumulated: 0,
+      careerRP: 0,
       totalTimeAccumulated: 0,
       totalPeaksErrorsAccumulated: 0,
       stageTimesAccumulated: {},
@@ -3510,6 +3511,7 @@ export class GameManager {
         rb.totalTimeAccumulated += hTime;
         const errorPenalty = hErrors * 0.5; // SCORING.ERROR_PENALTY_RP
         rb.totalScoreAccumulated += Number((hScore + errorPenalty).toFixed(3));
+        rb.careerRP += Number(hScore.toFixed(3));
         rb.totalPeaksErrorsAccumulated += hErrors;
 
         // Monthly Atoms Rebuild Support
@@ -3572,6 +3574,7 @@ export class GameManager {
         stats.totalPlayed = rb.totalPlayed;
         stats.wins = rb.wins;
         stats.totalScoreAccumulated = rb.totalScoreAccumulated;
+        stats.careerRP = rb.careerRP;
         stats.totalTimeAccumulated = rb.totalTimeAccumulated;
         stats.totalPeaksErrorsAccumulated = rb.totalPeaksErrorsAccumulated;
         stats.stageTimesAccumulated = rb.stageTimesAccumulated;
@@ -3583,7 +3586,11 @@ export class GameManager {
         stats.bestScore = rb.bestScore;
         stats.monthlyWinsAccumulated = rb.monthlyWinsAccumulated;
         stats.monthlyPeaksErrorsAccumulated = rb.monthlyPeaksErrorsAccumulated;
-        stats.currentRP = Number(rb.totalScoreAccumulated.toFixed(3));
+        
+        // v1.6.0: Monthly/Total RP are net outcomes (Career - Penalties)
+        const totalPenalties = stats.totalPenaltyAccumulated || 0;
+        stats.totalRP = Number((Math.max(0, stats.careerRP - totalPenalties)).toFixed(3));
+        stats.currentRP = stats.totalRP; // Legacy support
       }
       stats.integrityChecked = "1.5.62";
     }
