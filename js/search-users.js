@@ -1,7 +1,7 @@
-import { searchPublicUsers } from "./db.js?v=1.4.1";
-import { getI18n } from "./i18n.js?v=1.4.1";
-import { router } from "./router.js?v=1.4.1";
-import { getCurrentUser } from "./auth.js?v=1.4.1";
+import { searchPublicUsers } from "./db.js?v=1.4.2";
+import { getI18n } from "./i18n.js?v=1.4.2";
+import { router } from "./router.js?v=1.4.2";
+import { getCurrentUser } from "./auth.js?v=1.4.2";
 
 let searchTimeout = null;
 

@@ -2,9 +2,9 @@
  * MASTER LOCK - Logic for the 7-wheel industrial lock sequence.
  */
 
-import { translations } from "./translations.js?v=1.4.1";
-import { getCurrentLang } from "./i18n.js?v=1.4.1";
-import { showToast } from "./ui.js?v=1.4.1";
+import { translations } from "./translations.js?v=1.4.2";
+import { getCurrentLang } from "./i18n.js?v=1.4.2";
+import { showToast } from "./ui.js?v=1.4.2";
 
 class MasterLock {
 
