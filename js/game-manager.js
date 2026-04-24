@@ -1409,7 +1409,8 @@ export class GameManager {
       return;
     }
 
-    if (this._processingWin) return;
+    // v1.4.5: Block removed. Stage points are now atomic and independent of the win process
+    // to ensure the final stage (code) always awards its 1.0 point.
 
     // v2.8.0: Atomic Stats Update via Queue
     await this.enqueueStatsUpdate(async () => {
@@ -3158,29 +3159,27 @@ export class GameManager {
                 }
               }
 
-              // v1.5.46: ATOMS FIRST. Update bonus counter BEFORE recalculating.
+              // v1.4.5: ATOMIC SYNC - Decoupled from Client.
+              // Since the Referee (Server) now handles the global increment of accumulators 
+              // upon a successful validation, the client MUST NOT increment them again locally
+              // to avoid double-counting (inflation). 
+              // We only update the 'lastBonus' marker for UI and local context.
               if (stats.lastBonus > 0) {
-                stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-                if (seedMonth === todayMonth) {
-                  stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-                }
-                if (!isLateCompletion) {
-                  stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + stats.lastBonus).toFixed(3));
-                }
+                console.log(`[Referee] Bonus confirmed: ${stats.lastBonus}. Server handles global totals.`);
               }
 
-              // v1.6.0: MASTER SPEC COMPLIANCE - Parallel Accumulator Increments
-              // Note: The base 1.0 RP for the final stage was already added by awardStagePoints("code").
-              // Here we only add the Bonus part to avoid double-counting.
+              // v1.4.5: UI-Only Local Update
+              // We only update the track pointers for immediate UI feedback.
+              // Persistence of these increments was already handled by the server.
               const atomBonus = Number((stats.lastBonus || 0).toFixed(3));
-              
               if (!isLateCompletion) {
                 stats.dailyRP = Number(((stats.dailyRP || 0) + atomBonus).toFixed(3));
               }
               stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomBonus).toFixed(3));
               stats.totalRP = Number(((stats.totalRP || 0) + atomBonus).toFixed(3));
-              stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3));
               stats.careerRP = Number(((stats.careerRP || 0) + atomBonus).toFixed(3));
+              
+              // stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3)); // MOVED TO SERVER
 
               this.state.progress.won = true;
               this.stats = stats;

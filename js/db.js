@@ -642,7 +642,7 @@ export async function saveUserStats(
         }
       }
 
-      // v1.5.30: EXORCISM - Force-delete ghost fields from the map
+      // v1.4.5: HARD REINFORCEMENT - Prevent any ranking field from living in 'stats'
       const exorcismKeys = [
         "totalRP",
         "monthlyRP",
@@ -652,9 +652,14 @@ export async function saveUserStats(
         "lastDayRP",
         "lastMonthRP",
         "careerRP",
+        "totalScoreAccumulated",
+        "totalBonusesAccumulated",
+        "monthlyBonusesAccumulated",
+        "dailyBonusesAccumulated"
       ];
       exorcismKeys.forEach((k) => {
         updateData[`stats.${k}`] = deleteField();
+        if (updateData.stats) delete updateData.stats[k]; // Also remove from the map being sent
       });
 
       // v1.2.17: Sync Verification bit ONLY if Auth confirms it.
