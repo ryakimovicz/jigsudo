@@ -611,6 +611,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v142_title: "Versión 1.4.2",
+    changelog_v142_date: "23/04/2026",
+    changelog_v142_item1: "Hotfix Sincronización: Se corrigió un error que sobreescribía el Puntaje Carrera al iniciar sesión.",
+    changelog_v142_item2: "Hotfix Validación: Se mejoró la persistencia de la cola de validación para evitar errores de secuencia al refrescar la página.",
+    changelog_v142_item3: "Hotfix Cronómetro: Se ajustó el orden de cierre de etapa para evitar falsos positivos por 'Demasiado rápido' en Sudoku y Picos.",
     changelog_v141_title: "Versión 1.4.1",
     changelog_v141_date: "23/04/2026",
     changelog_v141_item1: "Puntaje Carrera: Se agregó el puntaje acumulado para premiar la constancia a largo plazo.",
@@ -1670,6 +1675,11 @@ export const translations = {
     changelog_v139_date: "04/21/2026",
     changelog_v139_item1: "Scoring Integrity: Refactored the calculation engine to ensure total consistency between game progress and global rankings.",
     changelog_v139_item2: "Error Synchronization: Implemented atomic and immediate saving for errors in Peaks & Valleys, eliminating data loss when switching devices.",
+    changelog_v142_title: "Version 1.4.2",
+    changelog_v142_date: "April 23, 2026",
+    changelog_v142_item1: "Sync Hotfix: Fixed a bug that overwrote Career Score during session initialization.",
+    changelog_v142_item2: "Validation Hotfix: Improved validation queue persistence to prevent 'Out of sequence' errors on page refresh.",
+    changelog_v142_item3: "Timer Hotfix: Adjusted stage closing sequence to avoid false positive 'Too fast' errors in Sudoku and Peaks.",
     changelog_v141_title: "Version 1.4.1",
     changelog_v141_date: "April 23, 2026",
     changelog_v141_item1: "Career Score: Added accumulated score to reward long-term consistency.",
