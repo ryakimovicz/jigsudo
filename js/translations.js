@@ -614,6 +614,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v144_title: "Versión 1.4.4",
+    changelog_v144_date: "24/04/2026",
+    changelog_v144_item1: "Integridad: Blindaje de puntos históricos (Ayer) contra borrados accidentales en la nube.",
+    changelog_v144_item2: "UI: Unificación de formato HH:mm:ss en tooltips para partidas de larga duración.",
+    changelog_v144_item3: "Localización: Traducción completa de métricas de perfil y corrección de lastPenaltyDate.",
     changelog_v143_title: "Versión 1.4.3",
     changelog_v143_date: "24/04/2026",
     changelog_v143_item1: "Privacidad: Se corrigió la visualización de perfiles privados en las tablas de clasificación.",
@@ -1473,6 +1478,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v144_title: "Version 1.4.4",
+    changelog_v144_date: "April 24, 2026",
+    changelog_v144_item1: "Integrity: Shielded historical points (Yesterday) against accidental cloud wipes.",
+    changelog_v144_item2: "UI: Unified HH:mm:ss formatting in tooltips for long-duration game sessions.",
+    changelog_v144_item3: "Localization: Full translation of profile metrics and lastPenaltyDate persistence fix.",
+    changelog_v143_title: "Version 1.4.3",
     changelog_v138_title: "Version 1.3.8",
     changelog_v138_date: "04/21/2026",
     changelog_v138_item1: "Vertical layout optimization for 768px screens (Condensed header and scroll removal).",
