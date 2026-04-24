@@ -24,6 +24,8 @@ let potentialDragTarget = null;
 let dragStartX = 0;
 let dragStartY = 0;
 const DRAG_THRESHOLD = 5; // px
+let undoStack = [];
+let redoStack = [];
 
 export function initJigsaw(elements) {
   boardContainer = elements.boardContainer;
@@ -38,8 +40,20 @@ export function initJigsaw(elements) {
   const btnReset = document.getElementById("btn-jigsaw-reset");
   if (btnReset) {
     btnReset.addEventListener("click", () => {
+      // Save state before reset to allow undoing the reset
+      saveStateToUndo();
       resetJigsaw();
     });
+  }
+
+  const btnUndo = document.getElementById("btn-jigsaw-undo");
+  if (btnUndo) {
+    btnUndo.addEventListener("click", () => undo());
+  }
+
+  const btnRedo = document.getElementById("btn-jigsaw-redo");
+  if (btnRedo) {
+    btnRedo.addEventListener("click", () => redo());
   }
 
   // Initialize resizing listener for Jigsaw pieces
@@ -385,6 +399,8 @@ export function handlePieceSelect(pieceElement) {
 
     // If Target is Occupied -> SWAP
     if (!isTargetEmpty && targetContent) {
+      // SWAP
+      saveStateToUndo();
       // Move Target Content -> Source
       source.innerHTML = "";
       source.appendChild(targetContent);
@@ -422,6 +438,7 @@ export function handlePieceSelect(pieceElement) {
     }
     // If Target is Empty -> MOVE
     else {
+      saveStateToUndo();
       target.appendChild(sourceContent);
 
       // Update Target State (Panel)
@@ -523,6 +540,7 @@ export function handleSlotClick_v2(slotIndex) {
 
     if (isTargetFilled && targetContent) {
       // SWAP
+      saveStateToUndo();
       // Move Target -> Source
       source.innerHTML = "";
       source.appendChild(targetContent);
@@ -556,6 +574,7 @@ export function handleSlotClick_v2(slotIndex) {
       deselectPiece();
     } else {
       // MOVE (Target Empty)
+      saveStateToUndo();
       target.innerHTML = "";
       target.appendChild(sourceContent);
       target.classList.add("filled");
@@ -602,6 +621,11 @@ export function transitionToJigsaw() {
   // CRITICAL GUARD: Do not proceed if user navigated away from #game
   if (!memorySection || memorySection.classList.contains("hidden")) return;
   if (!isAtGameRoute()) return;
+  
+  // Reset history stacks for the new session
+  undoStack = [];
+  redoStack = [];
+  updateHistoryButtons();
 
   console.log("Transitioning to Jigsaw Stage...");
   const lang = getCurrentLang();
@@ -876,6 +900,7 @@ export function handlePointerUp(e) {
 
   if (dropTarget && dropTarget !== selectedPieceElement) {
     // Execute Move/Swap
+    saveStateToUndo();
     // 1. Get Source Content (from dragClone or source)
     // Source is `selectedPieceElement`
 
@@ -928,6 +953,7 @@ export function handlePointerUp(e) {
     const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
 
     if (available && sourceContent) {
+      saveStateToUndo();
       available.innerHTML = "";
       available.appendChild(sourceContent);
       available.classList.remove("placeholder");
@@ -1294,6 +1320,11 @@ export function resumeJigsawState() {
     boardContainer = document.getElementById("memory-board");
   }
 
+  // Reset history stacks when resuming
+  undoStack = [];
+  redoStack = [];
+  updateHistoryButtons();
+
   const state = gameManager.getState();
   const placedChunks = state.jigsaw?.placedChunks || [];
 
@@ -1343,4 +1374,108 @@ function clearBoardErrors() {
   document
     .querySelectorAll(".error-number")
     .forEach((el) => el.classList.remove("error-number"));
+}
+
+// =========================================
+// History Management (Undo/Redo)
+// =========================================
+
+function captureCurrentState() {
+  const slots = Array.from(boardContainer.querySelectorAll(".sudoku-chunk-slot"));
+  return slots.map((slot) => {
+    const content = slot.querySelector(".mini-sudoku-grid");
+    return content ? parseInt(content.dataset.chunkIndex) : -1;
+  });
+}
+
+function saveStateToUndo() {
+  const current = captureCurrentState();
+  // Avoid duplicate states
+  if (undoStack.length > 0 && JSON.stringify(undoStack[undoStack.length - 1]) === JSON.stringify(current)) {
+    return;
+  }
+  undoStack.push(current);
+  // Cap history at 50 moves
+  if (undoStack.length > 50) undoStack.shift();
+  
+  redoStack = []; // New action clears redo
+  updateHistoryButtons();
+}
+
+function updateHistoryButtons() {
+  const btnUndo = document.getElementById("btn-jigsaw-undo");
+  const btnRedo = document.getElementById("btn-jigsaw-redo");
+  if (btnUndo) btnUndo.disabled = undoStack.length === 0;
+  if (btnRedo) btnRedo.disabled = redoStack.length === 0;
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  const current = captureCurrentState();
+  redoStack.push(current);
+  const previous = undoStack.pop();
+  applyHistoryState(previous);
+  updateHistoryButtons();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  const current = captureCurrentState();
+  undoStack.push(current);
+  const next = redoStack.pop();
+  applyHistoryState(next);
+  updateHistoryButtons();
+}
+
+function applyHistoryState(placedChunks) {
+  // First, move all board pieces back to panel to have a clean start (or use resume logic)
+  // But moving everything back to panel is safer to avoid "piece already in slot" conflicts
+  const filledSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot.filled");
+  filledSlots.forEach(slot => {
+    const sIndex = parseInt(slot.dataset.slotIndex);
+    if (sIndex === 4) return; // Locked center must not move
+    
+    const content = slot.querySelector(".mini-sudoku-grid");
+    if (!content) return;
+    
+    const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
+    const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
+    if (available) {
+      available.appendChild(content);
+      available.classList.remove("placeholder");
+      available.classList.add("collected-piece");
+      available.dataset.chunkIndex = content.dataset.chunkIndex;
+      slot.innerHTML = "";
+      slot.classList.remove("filled");
+    }
+  });
+
+  // Now place pieces according to the state
+  placedChunks.forEach((chunkIndex, slotIndex) => {
+    if (chunkIndex === -1 || chunkIndex === 4) return;
+
+    const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
+    const piece = Array.from(document.querySelectorAll(".mini-sudoku-grid")).find(
+      (el) => parseInt(el.dataset.chunkIndex) === chunkIndex
+    );
+
+    if (slot && piece) {
+      const sourceParent = piece.parentElement;
+      slot.innerHTML = "";
+      slot.appendChild(piece);
+      slot.classList.add("filled");
+      piece.style.width = "100%";
+      piece.style.height = "100%";
+
+      if (sourceParent && sourceParent.classList.contains("collected-piece")) {
+        sourceParent.classList.add("placeholder");
+        delete sourceParent.dataset.chunkIndex;
+      }
+    }
+  });
+
+  fitCollectedPieces();
+  checkBoardCompletion();
+  syncJigsawState();
+  gameManager.save();
 }

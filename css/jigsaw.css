@@ -328,6 +328,8 @@
 .jigsaw-controls {
   display: none;
   justify-content: center;
+  align-items: center;
+  gap: 12px;
   margin-top: 15px;
   width: 100%;
   opacity: 0;
@@ -381,6 +383,56 @@
   transform: translateY(0);
 }
 
+.btn-jigsaw-action {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  padding: 0; /* Reset for flex centering */
+}
+
+.dark-mode .btn-jigsaw-action {
+  background: #2d333b;
+  border-color: #444c56;
+  color: #adbac7;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-jigsaw-action:hover {
+  background: var(--accent-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: transparent;
+}
+
+.dark-mode .btn-jigsaw-action:hover {
+  background: var(--accent-color);
+  color: #1e2329;
+}
+
+.btn-jigsaw-action:active {
+  transform: translateY(0);
+}
+
+.btn-jigsaw-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 @media (max-width: 768px) {
   /* On mobile, we use display: contents to "unroll" board-wrapper 
      so its children become direct children of the main column layout. */
@@ -405,5 +457,13 @@
   .btn-jigsaw-reset {
     padding: 10px 24px;
     font-size: 0.9rem;
+    flex: 1; /* Allow reset to take more space */
+    max-width: 200px;
+  }
+
+  .btn-jigsaw-action {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
   }
 }
