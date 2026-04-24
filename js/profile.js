@@ -824,19 +824,19 @@ function renderWeekdayStats(stats) {
     // A. Time
     const avgTime = d.count > 0 ? d.sum / d.count : 0;
     let timeStr = formatTime(avgTime);
-    const timeCol = createMetricCol("⏱️", timeStr, "Tiempo Promedio");
+    const timeCol = createMetricCol("⏱️", timeStr, translations[lang]?.stat_avg_time || "Tiempo Promedio");
 
     // B. Errors
     const avgErrors = d.count > 0 ? d.sumErrors / d.count : 0;
     const errorStr = d.count > 0 ? avgErrors.toFixed(1) : "--";
-    const errorCol = createMetricCol("❌", errorStr, "Errores Promedio");
+    const errorCol = createMetricCol("❌", errorStr, translations[lang]?.stat_avg_errors || "Errores Promedio");
 
     // C. Score
     // Calculate raw avg first, then convert to RP scale? Or convert each?
     // Conversion is linear, so avg(RP) == convert(avg(Score))
     const avgScoreRaw = d.count > 0 ? d.sumScore / d.count : 0;
     const avgScoreRP = d.count > 0 ? calculateRP(avgScoreRaw).toFixed(2) : "--";
-    const scoreCol = createMetricCol("⭐", avgScoreRP, "Puntaje Promedio");
+    const scoreCol = createMetricCol("⭐", avgScoreRP, translations[lang]?.stat_avg_score || "Puntaje Promedio");
 
     metricsGrid.appendChild(scoreCol);
     metricsGrid.appendChild(timeCol);

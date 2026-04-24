@@ -571,6 +571,9 @@ export const translations = {
     p_game_peaks: "Picos y Valles",
     p_game_search: "Sopa de Números",
     p_game_code: "El Código",
+    stat_avg_time: "Tiempo Promedio",
+    stat_avg_errors: "Errores Promedio",
+    stat_avg_score: "Puntaje Promedio",
 
     // Support & Share
     share_text:
@@ -1338,6 +1341,9 @@ export const translations = {
     p_game_peaks: "Peaks & Valleys",
     p_game_search: "Number Search",
     p_game_code: "The Code",
+    stat_avg_time: "Average Time",
+    stat_avg_errors: "Average Errors",
+    stat_avg_score: "Average Score",
 
     // Auth Modals & Toasts
     modal_change_name_title: "Change Username",

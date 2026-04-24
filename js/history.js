@@ -7,6 +7,7 @@ import { router } from "./router.js?v=1.4.3";
 
 import { getJigsudoDate } from "./utils/time.js?v=1.4.3";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.3";
+import { formatTime } from "./ui.js?v=1.4.3";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
@@ -560,13 +561,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
     ${(!isComparison && data?.status === "won") ? "<span>👑</span>" : ""}
   </div>`;
 
-  const fmt = (ms) => {
-    if (!ms || ms < 0) return "--:--";
-    const totalSec = Math.floor(ms / 1000);
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
+  const fmt = (ms) => formatTime(ms);
 
   const getTrend = (f, o, type) => {
       if (f === undefined || o === undefined || f === null || o === null) return "";
