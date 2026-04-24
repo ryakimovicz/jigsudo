@@ -574,12 +574,16 @@ export async function saveUserStats(
       // v1.5.30: ROBUST RP PROPAGATION
       // The client now writes all three RP levels to the root document to ensure
       // session continuity and backup the cloud functions' authority.
-      updateData.dailyRP = s.dailyRP || 0;
-      updateData.monthlyRP = s.monthlyRP || 0;
-      updateData.totalRP = s.totalRP || 0;
-      updateData.careerRP = s.careerRP || 0;
-      updateData.lastDayRP = s.lastDayRP || 0;
-      updateData.lastMonthRP = s.lastMonthRP || 0;
+      if (s.dailyRP !== undefined) updateData.dailyRP = s.dailyRP;
+      if (s.monthlyRP !== undefined) updateData.monthlyRP = s.monthlyRP;
+      if (s.totalRP !== undefined) updateData.totalRP = s.totalRP;
+      if (s.careerRP !== undefined) updateData.careerRP = s.careerRP;
+      
+      // v1.4.3: Optional Persistence for Historical Data
+      // We only send these to the cloud if they have a non-zero value.
+      // This prevents 'Ghost Wipe' if the local memory is temporarily empty.
+      if ((s.lastDayRP || 0) > 0) updateData.lastDayRP = s.lastDayRP;
+      if ((s.lastMonthRP || 0) > 0) updateData.lastMonthRP = s.lastMonthRP;
 
       updateData.lastDailyUpdate = s.lastDailyUpdate || nowDoc;
       updateData.lastMonthlyUpdate = s.lastMonthlyUpdate || nowMonth;

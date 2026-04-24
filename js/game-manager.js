@@ -1720,9 +1720,8 @@ export class GameManager {
       stats.monthlyRP = monthlyNet;
       stats.totalRP = totalNet;
 
-      // Ensure the dates are updated to avoid repeated resets
-      stats.lastDailyUpdate = today;
-      stats.lastMonthlyUpdate = currentMonth;
+      // v1.4.3: Redundant updates removed.
+      // Dates are managed by the Reset process or the Activity markers.
     }
 
     this.stats = stats;
@@ -1985,7 +1984,22 @@ export class GameManager {
    */
   _resetDailyStats(stats, today) {
     console.log(`[GameManager] Performing Daily Reset for ${today}`);
-    stats.lastDayRP = stats.dailyRP || 0;
+    
+    // v1.4.3: Resilience Lock - Only move current points to 'Yesterday' if we are 
+    // strictly transitioning from the day immediately before. 
+    // This prevents overwriting 'lastDayRP' with 0 if _ensureStats triggers mid-session.
+    if (stats.lastDailyUpdate) {
+        const diff = getJigsudoDayDiff(stats.lastDailyUpdate, today);
+        if (diff === 1) {
+            stats.lastDayRP = stats.dailyRP || 0;
+        } else if (diff > 1) {
+            stats.lastDayRP = 0; // Missed yesterday completely
+        }
+        // if diff < 1 (impossible here) or diff == 0, we don't touch lastDayRP
+    } else {
+        // First time ever
+        stats.lastDayRP = 0;
+    }
     
     stats.dailyWinsAccumulated = 0;
     stats.dailyBonusesAccumulated = 0;
@@ -2363,6 +2377,14 @@ export class GameManager {
           newStats.wins = Math.max(newStats.wins || 0, localAtoms.w);
           newStats.bestScore = Math.max(newStats.bestScore || 0, localAtoms.bs);
           newStats.careerRP = Math.max(newStats.careerRP || 0, localAtoms.cr);
+
+          // v1.4.3: Historical Resilience Shield
+          // If we have points from yesterday locally, but the cloud response has 0,
+          // we PROTECT our local truth from being wiped by a ghost sync.
+          if ((this.stats.lastDayRP || 0) > 0 && (newStats.lastDayRP || 0) === 0) {
+            console.log("[Sync] Shielding lastDayRP from ghost wipe. Preserving local points from yesterday.");
+            newStats.lastDayRP = this.stats.lastDayRP;
+          }
           
           // Merge Stage Maps
           if (!newStats.stageWinsAccumulated) newStats.stageWinsAccumulated = {};
