@@ -23,11 +23,17 @@ let dragOffsetY = 0;
 let potentialDragTarget = null;
 let dragStartX = 0;
 let dragStartY = 0;
+let isDragging = false; // v1.6.8: Protect click handlers after drag
 const DRAG_THRESHOLD = 5; // px
 let undoStack = [];
 let redoStack = [];
+let initialJigsawState = null;
+let isJigsawInitialized = false;
 
 export function initJigsaw(elements) {
+  if (isJigsawInitialized) return;
+  isJigsawInitialized = true;
+
   boardContainer = elements.boardContainer;
   collectedLeft = elements.collectedLeft;
   collectedRight = elements.collectedRight;
@@ -40,8 +46,6 @@ export function initJigsaw(elements) {
   const btnReset = document.getElementById("btn-jigsaw-reset");
   if (btnReset) {
     btnReset.addEventListener("click", () => {
-      // Save state before reset to allow undoing the reset
-      saveStateToUndo();
       resetJigsaw();
     });
   }
@@ -351,9 +355,10 @@ function getCollectedPieceSize(isJigsaw = false) {
 }
 
 export function handlePieceSelect(pieceElement) {
+  // v1.6.8: Guard against ghost clicks after drag
+  if (isDragging) return;
+
   // GUARD: Only in Jigsaw Mode
-  if (!memorySection || !memorySection.classList.contains("jigsaw-mode"))
-    return;
 
   // If we click the same piece, deselect
   if (selectedPieceElement === pieceElement) {
@@ -485,9 +490,10 @@ function deselectPiece() {
 
 // Updated V2: Handles Panel Pieces AND Board Pieces
 export function handleSlotClick_v2(slotIndex) {
+  // v1.6.8: Guard against ghost clicks after drag
+  if (isDragging) return;
+
   // GUARD: Only in Jigsaw Mode
-  if (!memorySection || !memorySection.classList.contains("jigsaw-mode"))
-    return;
 
   const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
   if (!slot) return;
@@ -741,6 +747,7 @@ export function transitionToJigsaw() {
   undoStack = [];
   redoStack = [];
   saveStateToUndo();
+  initialJigsawState = undoStack[0];
 }
 
 // =========================================
@@ -793,6 +800,7 @@ export function handlePointerMove(e) {
 
     if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
       // START DRAG
+      isDragging = true;
       const target = potentialDragTarget;
 
       // Now we take over interactions
@@ -991,6 +999,11 @@ export function handlePointerUp(e) {
     .querySelectorAll(".drop-hover")
     .forEach((el) => el.classList.remove("drop-hover"));
   deselectPiece();
+
+  // Reset dragging state with a small delay to catch subsequent click events
+  setTimeout(() => {
+    isDragging = false;
+  }, 100);
 }
 
 function updateDragPosition(x, y) {
@@ -1269,54 +1282,22 @@ export function syncJigsawState() {
  * Resets the Jigsaw board, moving all pieces from slots back to the panel.
  */
 export function resetJigsaw() {
-  const filledSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot.filled");
-  let movedCount = 0;
-
-  filledSlots.forEach((slot) => {
-    const sIndex = parseInt(slot.dataset.slotIndex);
-    if (sIndex === 4) return; // Locked center
-
-    const content = slot.querySelector(".mini-sudoku-grid");
-    if (!content) return;
-
-    // Capture starting position for animation
-    const fromRect = content.getBoundingClientRect();
-
-    // Find first available placeholder
-    const allPlaceholders = document.querySelectorAll(
-      ".collected-piece.placeholder",
-    );
-    const available = Array.from(allPlaceholders).find(
-      (p) => !p.hasChildNodes(),
-    );
-
-    if (available) {
-      available.appendChild(content);
-      available.classList.remove("placeholder");
-      available.classList.add("collected-piece");
-      available.dataset.chunkIndex = content.dataset.chunkIndex;
-
-      slot.innerHTML = "";
-      slot.classList.remove("filled");
-
-      // Animate the piece returning to the panel
-      animateMove(content, fromRect, 400); // Slightly slower for mass movement clarity
-
-      movedCount++;
-    }
-  });
-
-  if (movedCount > 0) {
-    fitCollectedPieces();
-    checkBoardCompletion();
-    syncJigsawState();
-    gameManager.save();
-    
-    // Optional: show a subtle toast
-    // const { translations } = await import("./translations.js?v=1.4.5");
-    // const lang = getCurrentLang();
-    // showToast(translations[lang].toast_jigsaw_reset || "Tablero reiniciado");
+  if (!initialJigsawState) {
+    console.warn("[Jigsaw] No initial state captured. Resetting manually.");
+    // Fallback to old reset logic if needed, but initialJigsawState should be there
+    return;
   }
+
+  // First, save current state to undo stack before resetting
+  saveStateToUndo();
+
+  // Apply the initial state
+  applyHistoryState(initialJigsawState);
+  
+  // Optional: show a subtle toast
+  // const { translations } = await import("./translations.js?v=1.4.5");
+  // const lang = getCurrentLang();
+  // showToast(translations[lang].toast_jigsaw_reset || "Tablero reiniciado");
 }
 
 /**
@@ -1405,13 +1386,8 @@ function captureCurrentState() {
 }
 
 let lastUndoSaveTime = 0;
-const UNDO_DEBOUNCE = 100; // ms
 
 function saveStateToUndo() {
-  const now = Date.now();
-  if (now - lastUndoSaveTime < UNDO_DEBOUNCE) return;
-  lastUndoSaveTime = now;
-
   const current = captureCurrentState();
   // Avoid duplicate states
   if (undoStack.length > 0 && JSON.stringify(undoStack[undoStack.length - 1]) === JSON.stringify(current)) {
@@ -1468,14 +1444,17 @@ function applyHistoryState(state) {
 
   console.log("[Jigsaw] Applying history state...", { board, panel });
 
-  // 1. Collect all piece elements currently in the DOM
+  // 1. Collect all piece elements currently in the DOM and capture their positions
   const piecesMap = new Map();
+  const rectsMap = new Map();
+
   document.querySelectorAll(".mini-sudoku-grid").forEach(p => {
     const idx = parseInt(p.dataset.chunkIndex);
     // NEVER remove or redistribute the locked center piece (4)
     if (idx === 4) return;
 
     piecesMap.set(idx, p);
+    rectsMap.set(idx, p.getBoundingClientRect());
     // Temporarily remove from DOM to avoid "parent child" conflicts during move
     p.remove();
   });
@@ -1510,6 +1489,9 @@ function applyHistoryState(state) {
       piece.style.width = "100%";
       piece.style.height = "100%";
       piece.style.opacity = "";
+      
+      // Animate from previous position
+      animateMove(piece, rectsMap.get(chunkIndex));
     }
   });
 
@@ -1533,6 +1515,9 @@ function applyHistoryState(state) {
       piece.style.height = "";
       piece.style.opacity = "";
       placedOnBoard.add(chunkIndex);
+
+      // Animate from previous position
+      animateMove(piece, rectsMap.get(chunkIndex));
     }
   });
 
@@ -1549,6 +1534,9 @@ function applyHistoryState(state) {
       piece.style.width = "";
       piece.style.height = "";
       piece.style.opacity = "";
+      
+      // Animate from previous position
+      animateMove(piece, rectsMap.get(chunkIndex));
     }
   });
 
