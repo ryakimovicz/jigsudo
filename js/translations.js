@@ -614,6 +614,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v145_title: "Versión 1.4.5",
+    changelog_v145_date: "24/04/2026",
+    changelog_v145_item1: "Sincronización Atómica: Eliminación de doble contabilización de puntos y corrección del nivel Code.",
+    changelog_v145_item2: "Blindaje: Refuerzo del Exorcismo para impedir campos duplicados en la base de datos.",
+    changelog_v145_item3: "Integridad: Gestión centralizada de acumuladores globales durante la victoria.",
     changelog_v144_title: "Versión 1.4.4",
     changelog_v144_date: "24/04/2026",
     changelog_v144_item1: "Integridad: Blindaje de puntos históricos (Ayer) contra borrados accidentales en la nube.",
@@ -1478,6 +1483,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v145_title: "Version 1.4.5",
+    changelog_v145_date: "April 24, 2026",
+    changelog_v145_item1: "Atomic Sync: Eliminated double-counting of points and fixed Code stage points gap.",
+    changelog_v145_item2: "Hardened Data: Reinforced Exorcism to prevent duplicate fields in the database.",
+    changelog_v145_item3: "Integrity: Centralized management of global accumulators during victory validation.",
     changelog_v144_title: "Version 1.4.4",
     changelog_v144_date: "April 24, 2026",
     changelog_v144_item1: "Integrity: Shielded historical points (Yesterday) against accidental cloud wipes.",
