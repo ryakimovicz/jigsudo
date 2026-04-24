@@ -736,6 +736,11 @@ export function transitionToJigsaw() {
 
   // 3. Update Tooltip Info
   updateGameHelp("jigsaw");
+
+  // v1.6.5: Initialize History Stack
+  undoStack = [];
+  redoStack = [];
+  saveStateToUndo();
 }
 
 // =========================================
@@ -942,11 +947,14 @@ export function handlePointerUp(e) {
         }
       }
 
-      fitCollectedPieces();
+    fitCollectedPieces();
     }
 
     // Check Board State after drop
     checkBoardCompletion();
+  } else if (dropTarget === selectedPieceElement) {
+    // DROPPED ON ITSELF: Do nothing, just let the source restore opacity
+    console.log("[Jigsaw] Dropped on self. Ignoring.");
   } else if (dragClone) {
     // DROPPED OUTSIDE: Snap to first available placeholder in panel
     const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
@@ -1382,13 +1390,28 @@ function clearBoardErrors() {
 
 function captureCurrentState() {
   const slots = Array.from(boardContainer.querySelectorAll(".sudoku-chunk-slot"));
-  return slots.map((slot) => {
+  const board = slots.map((slot) => {
     const content = slot.querySelector(".mini-sudoku-grid");
     return content ? parseInt(content.dataset.chunkIndex) : -1;
   });
+
+  const panelSlots = Array.from(document.querySelectorAll(".collected-piece"));
+  const panel = panelSlots.map((slot) => {
+    const content = slot.querySelector(".mini-sudoku-grid");
+    return content ? parseInt(content.dataset.chunkIndex) : -1;
+  });
+
+  return { board, panel };
 }
 
+let lastUndoSaveTime = 0;
+const UNDO_DEBOUNCE = 100; // ms
+
 function saveStateToUndo() {
+  const now = Date.now();
+  if (now - lastUndoSaveTime < UNDO_DEBOUNCE) return;
+  lastUndoSaveTime = now;
+
   const current = captureCurrentState();
   // Avoid duplicate states
   if (undoStack.length > 0 && JSON.stringify(undoStack[undoStack.length - 1]) === JSON.stringify(current)) {
@@ -1427,50 +1450,105 @@ function redo() {
   updateHistoryButtons();
 }
 
-function applyHistoryState(placedChunks) {
-  // First, move all board pieces back to panel to have a clean start (or use resume logic)
-  // But moving everything back to panel is safer to avoid "piece already in slot" conflicts
-  const filledSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot.filled");
-  filledSlots.forEach(slot => {
-    const sIndex = parseInt(slot.dataset.slotIndex);
-    if (sIndex === 4) return; // Locked center must not move
-    
-    const content = slot.querySelector(".mini-sudoku-grid");
-    if (!content) return;
-    
-    const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
-    const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
-    if (available) {
-      available.appendChild(content);
-      available.classList.remove("placeholder");
-      available.classList.add("collected-piece");
-      available.dataset.chunkIndex = content.dataset.chunkIndex;
-      slot.innerHTML = "";
-      slot.classList.remove("filled");
-    }
+function applyHistoryState(state) {
+  // v1.6.3: Non-Destructive Reconstruction
+  let board = [];
+  let panel = [];
+
+  if (Array.isArray(state)) {
+    board = state;
+    console.warn("[Jigsaw] Legacy array state detected in history.");
+  } else if (state && state.board) {
+    board = state.board;
+    panel = state.panel || [];
+  } else {
+    console.error("[Jigsaw] Invalid state format:", state);
+    return;
+  }
+
+  console.log("[Jigsaw] Applying history state...", { board, panel });
+
+  // 1. Collect all piece elements currently in the DOM
+  const piecesMap = new Map();
+  document.querySelectorAll(".mini-sudoku-grid").forEach(p => {
+    const idx = parseInt(p.dataset.chunkIndex);
+    // NEVER remove or redistribute the locked center piece (4)
+    if (idx === 4) return;
+
+    piecesMap.set(idx, p);
+    // Temporarily remove from DOM to avoid "parent child" conflicts during move
+    p.remove();
   });
 
-  // Now place pieces according to the state
-  placedChunks.forEach((chunkIndex, slotIndex) => {
-    if (chunkIndex === -1 || chunkIndex === 4) return;
+  // 2. Clear all slots and placeholders visually (EXCEPT Center Slot 4)
+  const boardSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
+  boardSlots.forEach(slot => {
+    const sIndex = parseInt(slot.dataset.slotIndex);
+    if (sIndex === 4) return; // Keep center slot intact
+
+    slot.innerHTML = "";
+    slot.classList.remove("filled");
+  });
+
+  const panelSlots = document.querySelectorAll(".collected-piece");
+  panelSlots.forEach(p => {
+    p.innerHTML = "";
+    p.classList.add("placeholder");
+    delete p.dataset.chunkIndex;
+  });
+
+  // 3. Redistribute pieces to the BOARD (EXCEPT Slot 4)
+  board.forEach((chunkIndex, slotIndex) => {
+    if (chunkIndex === -1 || chunkIndex === 4 || slotIndex === 4) return;
 
     const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
-    const piece = Array.from(document.querySelectorAll(".mini-sudoku-grid")).find(
-      (el) => parseInt(el.dataset.chunkIndex) === chunkIndex
-    );
+    const piece = piecesMap.get(chunkIndex);
 
     if (slot && piece) {
-      const sourceParent = piece.parentElement;
-      slot.innerHTML = "";
       slot.appendChild(piece);
       slot.classList.add("filled");
       piece.style.width = "100%";
       piece.style.height = "100%";
+      piece.style.opacity = "";
+    }
+  });
 
-      if (sourceParent && sourceParent.classList.contains("collected-piece")) {
-        sourceParent.classList.add("placeholder");
-        delete sourceParent.dataset.chunkIndex;
-      }
+  const placedOnBoard = new Set(board);
+
+  // 4. Redistribute pieces to the PANEL in their EXACT slots
+  const allPanelSlots = document.querySelectorAll(".collected-piece");
+  
+  panel.forEach((chunkIndex, pIndex) => {
+    if (chunkIndex === -1 || chunkIndex === 4) return;
+    
+    const slot = allPanelSlots[pIndex];
+    const piece = piecesMap.get(chunkIndex);
+
+    if (slot && piece) {
+      slot.appendChild(piece);
+      slot.classList.remove("placeholder");
+      slot.classList.add("collected-piece");
+      slot.dataset.chunkIndex = chunkIndex;
+      piece.style.width = "";
+      piece.style.height = "";
+      piece.style.opacity = "";
+      placedOnBoard.add(chunkIndex);
+    }
+  });
+
+  // Fallback: Pieces that should be in panel but aren't in the saved indices
+  piecesMap.forEach((piece, chunkIndex) => {
+    if (chunkIndex === 4 || placedOnBoard.has(chunkIndex)) return;
+
+    const available = Array.from(allPanelSlots).find(s => s.classList.contains("placeholder") && !s.hasChildNodes());
+    if (available) {
+      available.appendChild(piece);
+      available.classList.remove("placeholder");
+      available.classList.add("collected-piece");
+      available.dataset.chunkIndex = chunkIndex;
+      piece.style.width = "";
+      piece.style.height = "";
+      piece.style.opacity = "";
     }
   });
 
