@@ -1685,6 +1685,13 @@ export class GameManager {
         stats.dailyPeaksErrorsAccumulated = sessionErrors;
         stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + delta;
         stats.totalPeaksErrorsAccumulated = (stats.totalPeaksErrorsAccumulated || 0) + delta;
+        
+        // v1.4.3: Apply error penalty to all RP tracks (but NOT to totalScoreAccumulated)
+        const penalty = delta * (SCORING.ERROR_PENALTY_RP || 0.5);
+        stats.dailyRP = Number((Math.max(0, (stats.dailyRP || 0) - penalty)).toFixed(3));
+        stats.monthlyRP = Number((Math.max(0, (stats.monthlyRP || 0) - penalty)).toFixed(3));
+        stats.totalRP = Number((Math.max(0, (stats.totalRP || 0) - penalty)).toFixed(3));
+        stats.careerRP = Number((Math.max(0, (stats.careerRP || 0) - penalty)).toFixed(3));
     }
     
     // 1. Daily Scope (The 'Game Day' Net)
@@ -3150,6 +3157,7 @@ export class GameManager {
               stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomBonus).toFixed(3));
               stats.totalRP = Number(((stats.totalRP || 0) + atomBonus).toFixed(3));
               stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3));
+              stats.careerRP = Number(((stats.careerRP || 0) + atomBonus).toFixed(3));
 
               this.state.progress.won = true;
               this.stats = stats;
@@ -3197,6 +3205,7 @@ export class GameManager {
                 stats.monthlyRP = Number(((stats.monthlyRP || 0) + deltaRP).toFixed(3));
                 stats.totalRP = Number(((stats.totalRP || 0) + deltaRP).toFixed(3));
                 stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + stats.lastBonus).toFixed(3));
+                stats.careerRP = Number(((stats.careerRP || 0) + stats.lastBonus).toFixed(3));
             }
 
             this.stats = stats;
