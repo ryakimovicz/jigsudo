@@ -348,7 +348,7 @@ export class GameManager {
     this.stats.lastDailyUpdate = dateStr;
     this.stats.lastDecayCheck = dateStr;
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
-    delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
+    // lastPenaltyDate is now persistent.
 
     const { getCurrentUser } = await import("./auth.js?v=1.4.3");
     const user = getCurrentUser();
@@ -372,7 +372,7 @@ export class GameManager {
     }
 
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
-    delete this.stats.lastPenaltyDate; // Clear penalty anchor when actively playing
+    // lastPenaltyDate is now persistent.
     
     // v1.4.6: Update lastPlayed upon hitting the "Play" button
     if (this.state && this.state.meta) {
@@ -1952,7 +1952,8 @@ export class GameManager {
         // Update anchor date so we don't repeat this tomorrow
         const anchorDate = new Date(currDate.getTime());
         anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
-        stats.lastPenaltyDate = anchorDate.toISOString().substring(0, 10);
+        // v1.4.3: REMOVED unconditional lastPenaltyDate update to maintain semantic integrity.
+        // It is now only updated inside the decay loop when points are actually lost.
       } else if (!lastCheck) {
       // NEW USER: Fundamental initialization of date markers
       console.log("[Decay] Initializing date markers for new user.");

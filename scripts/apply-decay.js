@@ -102,6 +102,9 @@ snapshot.docs.forEach((doc) => {
           currentMonthlyRP = Number((currentMonthlyRP - realizedPenalty).toFixed(3));
           totalPenaltyAccumulatedThisRun += realizedPenalty;
           monthlyPenaltyAccumulatedThisRun = Number((monthlyPenaltyAccumulatedThisRun + realizedPenalty).toFixed(3));
+          
+          // v1.4.3: Record the anchor for this penalty (the day of inactivity)
+          updateObj["stats.lastPenaltyDate"] = dayBeforeStr;
         }
 
         // B. Month Transition (Reset AFTER penalty)
@@ -123,8 +126,8 @@ snapshot.docs.forEach((doc) => {
       updateObj["stats.totalPenaltyAccumulated"] = FieldValue.increment(Number(totalPenaltyAccumulatedThisRun.toFixed(3)));
       updateObj["stats.monthlyPenaltyAccumulated"] = monthlyPenaltyAccumulatedThisRun;
       
-      const yesterdayStr = new Date(new Date(todayStr + "T12:00:00Z").getTime() - 86400000).toISOString().substring(0, 10);
-      updateObj["stats.lastPenaltyDate"] = yesterdayStr;
+      // v1.4.3: REMOVED unconditional update. Anchors are now handled by lastDecayCheck 
+      // and lastPenaltyDate is only set inside the loop when points are lost.
 
       // 3. Streak Reset (Win anchor)
       const lastWin = stats.lastPlayedDate || data.lastDailyUpdate; 
