@@ -101,13 +101,17 @@
 }
 
 .sudoku-controls {
-  order: 2 !important; /* Always below board (order 1) */
+  --btn-size: 62px;
+  --btn-gap: 6px;
+  --grid-width: calc(var(--btn-size) * 3 + var(--btn-gap) * 2);
+
+  order: 2 !important;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* v2.8.0: Tight gap */
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto 5px auto !important; /* v2.8.0: Ultra-compact */
+  align-items: center;
+  gap: var(--btn-gap);
+  width: var(--grid-width);
+  margin: 0 auto 5px auto !important;
   animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -115,35 +119,38 @@
   display: none !important;
 }
 
+/* Both rows share the same width */
 .control-row {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: var(--btn-gap);
+  width: var(--grid-width);
 }
 
-/* Secondary row (Actions) */
+/* Action buttons: 4 in a row, each equal size */
 .btn-sudoku-action {
   background: var(--bg-tertiary);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
-  padding: 10px 20px;
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  flex: 1;
-  max-width: 80px;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  flex: none;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .btn-sudoku-action:hover {
-  background: var(--bg-secondary);
-  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--accent-color) 15%, var(--bg-tertiary));
+  border-color: var(--accent-color);
 }
 
 .btn-sudoku-action:active {
-  transform: translateY(0);
+  transform: scale(0.95);
+  background: color-mix(in srgb, var(--accent-color) 25%, var(--bg-tertiary));
 }
 
 .btn-sudoku-action.active {
@@ -152,19 +159,21 @@
   border-color: var(--accent-color);
 }
 
-/* Primary row (Numbers) - Default: Single Row (9x1) */
+/* Number grid: 3x3 */
 .numbers {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 6px;
-  width: 100%;
+  grid-template-columns: repeat(3, var(--btn-size));
+  grid-template-rows: repeat(3, var(--btn-size));
+  gap: var(--btn-gap);
+  width: var(--grid-width);
 }
 
 .sudoku-num {
-  aspect-ratio: 1;
+  width: var(--btn-size);
+  height: var(--btn-size);
   background: var(--bg-tertiary);
   border: 1px solid var(--glass-border);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-main);
@@ -173,13 +182,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
+
 }
 
-/* 3x3 Grid & Height-based Scaling - Mobile Transition */
+/* Mobile: slightly smaller buttons */
 @media (max-width: 768px) {
   .sudoku-mode .memory-grid-layout,
   .peaks-mode .memory-grid-layout {
-    flex: 1 !important; /* Take all available space between header and timer */
+    flex: 1 !important;
     min-height: 0;
     width: 100% !important;
     display: flex !important;
@@ -187,15 +197,13 @@
     justify-content: flex-start !important;
     align-items: center !important;
     gap: 8px !important;
-    padding-bottom: 2px !important; /* Tightest gap */
-    max-height: calc(
-      100dvh - var(--header-height) - var(--footer-height)
-    ) !important;
+    padding-bottom: 2px !important;
+    max-height: calc(100dvh - var(--header-height) - var(--footer-height)) !important;
     overflow: hidden !important;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Ultra-Short Screens optimizations */
+  /* Ultra-Short Screens */
   @media (max-height: 660px) {
     .sudoku-mode .memory-grid-layout,
     .peaks-mode .memory-grid-layout {
@@ -204,50 +212,16 @@
       justify-content: space-between !important;
     }
     .sudoku-controls {
-      max-height: 32dvh !important;
-      gap: 2px !important;
-      margin-bottom: 0 !important;
+      --btn-size: clamp(44px, 12vw, 54px);
     }
   }
 
-  /* Compact Keypad for Mobile (Re-declaring explicitly since we split the complex query) */
   .sudoku-controls {
-    flex: 1;
-    min-height: 0;
-    max-height: 25dvh;
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: repeat(4, 1fr) !important;
-    gap: 5px !important;
-    width: auto !important;
-    aspect-ratio: 3 / 4 !important;
-    margin: 0 auto !important;
-    height: 100% !important;
-    align-self: center !important;
-    justify-content: center !important;
-    justify-items: center !important;
-  }
-
-  .control-row {
-    display: contents !important;
-  }
-
-  .btn-sudoku-action,
-  .sudoku-num {
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    aspect-ratio: 1 / 1 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    font-size: clamp(0.9rem, 3vh, 1.4rem) !important;
+    --btn-size: clamp(52px, 15vw, 64px);
   }
 }
 
-/* 3x3 Grid & Height-based Scaling - Large Desktop */
-/* 3x3 Grid - Desktop Defaults */
+/* Desktop */
 @media (min-width: 769px) {
   .sudoku-mode .memory-grid-layout,
   .peaks-mode .memory-grid-layout {
@@ -262,67 +236,20 @@
   }
 
   .sudoku-controls {
-    /* Desktop Default: Flexible sizing to fit standard laptop screens */
-    max-width: 200px !important;
-    max-height: 267px !important;
-    width: auto !important;
-    height: 100% !important;
-
-    flex: 1;
-    min-height: 0;
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: repeat(4, 1fr) !important;
-    gap: 5px !important;
-    aspect-ratio: 3 / 4 !important;
-    margin: 0 auto !important;
-    align-self: center !important;
-    justify-content: center !important;
-    justify-items: center !important;
+    --btn-size: 58px;
+    align-self: center;
   }
 
-  /* High-Res Pad Sizing */
+  /* High-Res Pad */
   @media (min-height: 880px) and (min-width: 801px) {
     .sudoku-controls {
-      width: 200px !important;
-      height: 267px !important;
-      max-width: none !important;
-      max-height: none !important;
-      flex: 0 0 auto !important;
+      --btn-size: 64px;
     }
   }
 }
 
-  .control-row {
-    display: contents !important;
-  }
 
-  .btn-sudoku-action,
-  .sudoku-num {
-    background: var(--bg-tertiary) !important;
-    color: var(--text-main) !important;
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    aspect-ratio: 1 / 1 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    font-size: 1.2rem !important;
-    border-radius: 8px !important;
-  }
 
-  .btn-sudoku-action {
-    max-width: none !important;
-  }
-}
-
-/* Keypad - Mobile Specific (already handled separately in lines 196+ previously, 
-   but we are replacing the combined query, so we need to ensure Mobile rules stick) 
-   The original code had mobile rules inside the combined query which was messy.
-   Let's check the mobile rules block above in the file structure. 
-*/
 
 .dark-mode .sudoku-num {
   background: #333;

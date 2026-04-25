@@ -138,6 +138,8 @@ export function initSudoku() {
     .getElementById("sudoku-pencil")
     ?.addEventListener("click", togglePencilMode);
   document.getElementById("sudoku-back")?.addEventListener("click", handleUndo);
+  document.getElementById("sudoku-forward")?.addEventListener("click", handleRedo);
+  updateHistoryButtons(); // Start with redo disabled
 
   // Clear Button with Long Press Logic
   const clearBtn = document.getElementById("sudoku-clear");
@@ -184,6 +186,7 @@ export function initSudoku() {
     .getElementById("modal-confirm")
     ?.addEventListener("click", confirmClearBoard);
   document.getElementById("sudoku-back")?.addEventListener("click", handleUndo);
+  document.getElementById("sudoku-forward")?.addEventListener("click", handleRedo);
 
   /* Help button handled centrally by memory.js */
 
@@ -208,6 +211,7 @@ export function initSudoku() {
     const isBoard = e.target.closest("#memory-board");
     const isPencil = e.target.closest("#sudoku-pencil");
     const isUndo = e.target.closest("#sudoku-back");
+    const isRedo = e.target.closest("#sudoku-forward");
     const isClear = e.target.closest("#sudoku-clear");
     const isModal = e.target.closest(".modal");
 
@@ -216,6 +220,7 @@ export function initSudoku() {
       !isBoard &&
       !isPencil &&
       !isUndo &&
+      !isRedo &&
       !isClear &&
       !isModal
     ) {
@@ -262,6 +267,12 @@ export function initSudoku() {
     // Q -> Undo, Backspace (if just navigation)
     if (lowerKey === "q") {
       handleUndo();
+      return;
+    }
+
+    // R -> Redo
+    if (lowerKey === "r") {
+      handleRedo();
       return;
     }
 
@@ -598,8 +609,19 @@ function clearSelectedCell() {
   updateNoteVisibility(); // Recalculate visibility (restore suppressed notes)
 }
 
-// History for Undo
+// History for Undo / Redo
 let undoStack = [];
+let redoStack = [];
+
+function updateHistoryButtons() {
+  const redoBtn = document.getElementById("sudoku-forward");
+  if (redoBtn) {
+    const hasRedo = redoStack.length > 0;
+    redoBtn.disabled = !hasRedo;
+    redoBtn.style.opacity = hasRedo ? "" : "0.35";
+    redoBtn.style.pointerEvents = hasRedo ? "" : "none";
+  }
+}
 
 function pushAction(cell) {
   // Capture snapshot BEFORE change
@@ -615,6 +637,8 @@ function pushAction(cell) {
     previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
   };
   undoStack.push(action);
+  redoStack = []; // Any new action clears the redo stack
+  updateHistoryButtons();
 }
 
 function handleUndo() {
@@ -625,6 +649,15 @@ function handleUndo() {
 
   const action = undoStack.pop();
   const cell = action.cell;
+
+  // Capture current state for redo BEFORE restoring
+  const hasNotes = !!cell.querySelector(".notes-grid");
+  redoStack.push({
+    cell,
+    previousText: hasNotes ? "" : cell.textContent,
+    previousClasses: [...cell.classList],
+    previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
+  });
 
   // Restore State
   cell.textContent = action.previousText;
@@ -645,6 +678,44 @@ function handleUndo() {
   // Re-validate to clear any global error states potentially caused by this move
   validateBoard();
   updateNoteVisibility();
+  updateHistoryButtons();
+}
+
+function handleRedo() {
+  if (redoStack.length === 0) {
+    console.log("Nothing to redo");
+    return;
+  }
+
+  const action = redoStack.pop();
+  const cell = action.cell;
+
+  // Capture current state for undo BEFORE restoring
+  const hasNotes = !!cell.querySelector(".notes-grid");
+  undoStack.push({
+    cell,
+    previousText: hasNotes ? "" : cell.textContent,
+    previousClasses: [...cell.classList],
+    previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
+  });
+
+  // Restore State
+  cell.textContent = action.previousText;
+  cell.className = "";
+  action.previousClasses.forEach((c) => cell.classList.add(c));
+
+  // Restore Notes if any
+  const existingNotes = cell.querySelector(".notes-grid");
+  if (existingNotes) existingNotes.remove();
+
+  if (action.previousNotes) {
+    cell.appendChild(action.previousNotes);
+  }
+
+  selectCell(cell, true);
+  validateBoard();
+  updateNoteVisibility();
+  updateHistoryButtons();
 }
 
 function toggleNote(cell, num, skipHistory = true) {
@@ -1115,6 +1186,8 @@ function clearBoard() {
   // For now, let's keep it simple mostly because undoing a full board clear is heavy.
   // But strictly we should probably clear the history stack to avoid inconsistencies
   undoStack = []; // Reset history on full clear
+  redoStack = [];
+  updateHistoryButtons();
 
   const slots = Array.from(board.querySelectorAll(".sudoku-chunk-slot"));
   let changesMade = false;

@@ -377,6 +377,7 @@ export function handlePieceSelect(pieceElement) {
   if (isDragging) return;
 
   // GUARD: Only in Jigsaw Mode
+  if (!memorySection || !memorySection.classList.contains("jigsaw-mode")) return;
 
   // If we click the same piece, deselect
   if (selectedPieceElement === pieceElement) {
