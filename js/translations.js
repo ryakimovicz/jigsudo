@@ -616,6 +616,15 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v146_title: "Versión 1.4.6",
+    changelog_v146_date: "25/04/2026",
+    changelog_v146_item1: "Rompecabezas: Implementación de sistema Deshacer/Rehacer.",
+    changelog_v146_item2: "Integridad: Inclusión de Career RP en la reconstrucción de puntos de seguridad.",
+    changelog_v146_item3: "Rompecabezas: Corrección de error al arrastrar piezas fuera del área de juego.",
+    changelog_v146_item4: "Rompecabezas: El botón de reinicio ahora devuelve las piezas a su posición inicial.",
+    changelog_v146_item5: "Rompecabezas: Nueva función para bloquear piezas en el tablero.",
+    changelog_v146_item6: "Sudoku: Implementación del botón Rehacer y mejoras en el teclado numérico.",
+    changelog_v146_item7: "Interfaz: Rediseño estético y corrección de centrado del cronómetro.",
     changelog_v145_title: "Versión 1.4.5",
     changelog_v145_date: "24/04/2026",
     changelog_v145_item1: "Sincronización Atómica: Eliminación de doble contabilización de puntos y corrección del nivel Code.",
@@ -1487,6 +1496,15 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v146_title: "Version 1.4.6",
+    changelog_v146_date: "April 25, 2026",
+    changelog_v146_item1: "Jigsaw: Implementation of Undo/Redo system.",
+    changelog_v146_item2: "Integrity: Career RP included in security point reconstruction.",
+    changelog_v146_item3: "Jigsaw: Fixed issue when dragging pieces outside the game area.",
+    changelog_v146_item4: "Jigsaw: Reset button now returns pieces to their initial positions.",
+    changelog_v146_item5: "Jigsaw: New feature to lock pieces on the board.",
+    changelog_v146_item6: "Sudoku: Implementation of Redo button and numeric keypad improvements.",
+    changelog_v146_item7: "UI: Aesthetic redesign and centering fixes for the timer.",
     changelog_v145_title: "Version 1.4.5",
     changelog_v145_date: "April 24, 2026",
     changelog_v145_item1: "Atomic Sync: Eliminated double-counting of points and fixed Code stage points gap.",
