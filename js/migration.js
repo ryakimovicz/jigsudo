@@ -1,7 +1,7 @@
-import { CONFIG } from "./config.js?v=1.4.6";
-import { performSeasonReset } from "./db.js?v=1.4.6";
-import { getCurrentUser } from "./auth.js?v=1.4.6";
-import { updateTexts, setLanguage } from "./i18n.js?v=1.4.6";
+import { CONFIG } from "./config.js?v=1.4.7";
+import { performSeasonReset } from "./db.js?v=1.4.7";
+import { getCurrentUser } from "./auth.js?v=1.4.7";
+import { updateTexts, setLanguage } from "./i18n.js?v=1.4.7";
 
 export async function checkSeasonMigration() {
   // v1.3.4: IMMEDIATE FREEZE to prevent any sync logic from running
@@ -37,14 +37,14 @@ export async function checkSeasonMigration() {
   // If there IS a user, checking cloud schema...
   let cloudSchema = 0;
   if (user && !user.isAnonymous) {
-     const { fetchLatestUserData } = await import("./db.js?v=1.4.6");
+     const { fetchLatestUserData } = await import("./db.js?v=1.4.7");
      const cloudData = await fetchLatestUserData(user.uid);
      // v1.3.11: New Account Detection
      // If there is no cloudData at all, it's a brand new account.
      // We explicitly skip migration for these to avoid showing the Season 1 modal.
       if (!cloudData) {
          console.log("[Migration] No cloud data found. Creating initial profile document...");
-         const { saveUserStats } = await import("./db.js?v=1.4.6");
+         const { saveUserStats } = await import("./db.js?v=1.4.7");
          // v1.3.12: Force initial creation with basic metadata to satisfy security rules
          const initialName = user.displayName || user.email?.split("@")[0] || "Player";
          await saveUserStats(user.uid, stats, initialName, false);
@@ -104,7 +104,7 @@ export async function checkSeasonMigration() {
  * @returns {Promise<Object|null>}
  */
 async function waitForUser() {
-  const { auth } = await import("./firebase-config.js?v=1.4.6");
+  const { auth } = await import("./firebase-config.js?v=1.4.7");
   return new Promise((resolve) => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       unsubscribe();
@@ -173,7 +173,7 @@ document.addEventListener("click", async (e) => {
     if (loader) loader.classList.remove("hidden");
 
     console.warn("[Migration] Fetching Auth...");
-    const { auth } = await import("./firebase-config.js?v=1.4.6");
+    const { auth } = await import("./firebase-config.js?v=1.4.7");
     const user = auth.currentUser;
     
     const lang = localStorage.getItem("jigsudo_lang");

@@ -616,6 +616,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v147_title: "Versión 1.4.7",
+    changelog_v147_date: "25/04/2026",
+    changelog_v147_item1: "Migración Temporada 1: Corregido el bloqueo del botón 'Actualizar' mediante delegación de eventos global.",
+    changelog_v147_item2: "Protección de Sesión: Los puntos ganados durante una partida ahora están blindados contra el reseteo diario si el día cambia mientras juegas.",
+    changelog_v147_item3: "Integridad: Restaurado el campo 'totalScoreAccumulated' y corregido el desfase de puntos (doble conteo) al ganar.",
     changelog_v146_title: "Versión 1.4.6",
     changelog_v146_date: "25/04/2026",
     changelog_v146_item1: "Rompecabezas: Implementación de sistema Deshacer/Rehacer.",
@@ -1496,6 +1501,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v147_title: "Version 1.4.7",
+    changelog_v147_date: "April 25, 2026",
+    changelog_v147_item1: "Season 1 Migration: Fixed the 'Update' button unresponsive state using global event delegation.",
+    changelog_v147_item2: "Mid-Session Protection: Points earned during a game are now shielded from the daily reset if the day changes while playing.",
+    changelog_v147_item3: "Integrity: Restored 'totalScoreAccumulated' field and fixed point discrepancies (double-counting) upon victory.",
     changelog_v146_title: "Version 1.4.6",
     changelog_v146_date: "April 25, 2026",
     changelog_v146_item1: "Jigsaw: Implementation of Undo/Redo system.",
