@@ -1988,24 +1988,29 @@ export class GameManager {
     
     // v1.4.3: Resilience Lock - Only move current points to 'Yesterday' if we are 
     // strictly transitioning from the day immediately before. 
-    // This prevents overwriting 'lastDayRP' with 0 if _ensureStats triggers mid-session.
     if (stats.lastDailyUpdate) {
         const diff = getJigsudoDayDiff(stats.lastDailyUpdate, today);
         if (diff === 1) {
             stats.lastDayRP = stats.dailyRP || 0;
         } else if (diff > 1) {
-            stats.lastDayRP = 0; // Missed yesterday completely
+            stats.lastDayRP = 0;
         }
-        // if diff < 1 (impossible here) or diff == 0, we don't touch lastDayRP
     } else {
-        // First time ever
         stats.lastDayRP = 0;
     }
     
-    stats.dailyWinsAccumulated = 0;
-    stats.dailyBonusesAccumulated = 0;
-    stats.dailyPeaksErrorsAccumulated = 0;
-    stats.dailyRP = 0;
+    // v1.4.9: Mid-Session Protection
+    // If the user already has points/wins in the current object, it means they 
+    // started playing just before or during the day change. We MUST NOT wipe them.
+    if ((stats.dailyRP || 0) > 0 || (stats.dailyWinsAccumulated || 0) > 0) {
+        console.warn("[GameManager] Day changed mid-session. Preserving current progress.");
+    } else {
+        stats.dailyWinsAccumulated = 0;
+        stats.dailyBonusesAccumulated = 0;
+        stats.dailyPeaksErrorsAccumulated = 0;
+        stats.dailyRP = 0;
+    }
+    
     stats.lastDailyUpdate = today;
   }
 
@@ -3168,18 +3173,26 @@ export class GameManager {
                 console.log(`[Referee] Bonus confirmed: ${stats.lastBonus}. Server handles global totals.`);
               }
 
-              // v1.4.5: UI-Only Local Update
-              // We only update the track pointers for immediate UI feedback.
-              // Persistence of these increments was already handled by the server.
+              // v1.4.8: REFINED ATOMIC UPDATE
+              // Base points (6.0) are already added stage-by-stage in awardStagePoints.
+              // Here we ONLY add the time bonus to complete the session score.
               const atomBonus = Number((stats.lastBonus || 0).toFixed(3));
+
               if (!isLateCompletion) {
                 stats.dailyRP = Number(((stats.dailyRP || 0) + atomBonus).toFixed(3));
               }
+              
+              // stats.monthlyRP and stats.totalRP were already incremented by base points 
+              // during stages. Now we add the bonus to match the server's global update.
               stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomBonus).toFixed(3));
               stats.totalRP = Number(((stats.totalRP || 0) + atomBonus).toFixed(3));
+              
+              // Career RP (Performance tracking)
               stats.careerRP = Number(((stats.careerRP || 0) + atomBonus).toFixed(3));
               
-              // stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3)); // MOVED TO SERVER
+              // v1.4.8: Restore and update totalScoreAccumulated with the bonus
+              // (The 6.0 base points were already added during awardStagePoints)
+              stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3));
 
               this.state.progress.won = true;
               this.stats = stats;

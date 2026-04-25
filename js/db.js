@@ -1107,8 +1107,6 @@ export async function performSeasonReset(userId) {
     }
 
     // 2. Perform Surgical Hard Reset (Respecting Security Rules)
-    const { updateDoc, deleteField } =
-      await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
 
     const resetUpdate = {
       // RESET STATS (Root)

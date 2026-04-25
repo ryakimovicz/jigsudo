@@ -156,54 +156,61 @@ function showSeasonOverlay() {
   // Re-translate in real time if user switches language while overlay is open
   const onLangChange = () => updateTexts();
   window.addEventListener("languageChanged", onLangChange);
+}
 
-  const btn = document.getElementById("btn-update-season");
-  btn.onclick = async () => {
-    try {
-      console.log("[Migration] BUTTON CLICKED: Starting migration sequence...");
-      btn.disabled = true;
-      btn.classList.add("hidden");
-      document.getElementById("migration-loader").classList.remove("hidden");
+// v1.4.7: Global Event Delegation to ensure the button works even if references are lost
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("#btn-update-season");
+  if (!btn) return;
 
-      console.log("[Migration] Awaiting Auth state...");
-      const user = await waitForUser();
-      
-      const dbPath = "./db.js?v=1.3.0";
-      console.log(`[Migration] Importing DB logic from ${dbPath}...`);
-      const { performSeasonReset } = await import(dbPath);
-      
-      const lang = localStorage.getItem("jigsudo_lang");
-      const theme = localStorage.getItem("jigsudo_theme");
-      const uid = localStorage.getItem("jigsudo_uid"); 
-      
-      console.log("[Migration] Executing local wipe...");
-      localStorage.clear();
-      
-      if (lang) localStorage.setItem("jigsudo_lang", lang);
-      if (theme) localStorage.setItem("jigsudo_theme", theme);
-      if (uid) localStorage.setItem("jigsudo_uid", uid);
+  try {
+    console.warn("[Migration] GLOBAL CLICK DETECTED on #btn-update-season");
+    alert("Iniciando migración... Por favor, no cierres la página.");
 
-      localStorage.setItem("jigsudo_user_stats", JSON.stringify({ schemaVersion: CONFIG.schemaVersion }));
+    btn.disabled = true;
+    btn.classList.add("hidden");
+    const loader = document.getElementById("migration-loader");
+    if (loader) loader.classList.remove("hidden");
 
-      if (user && !user.isAnonymous) {
-        console.log(`[Migration] Calling performSeasonReset for ${user.uid}...`);
-        const result = await performSeasonReset(user.uid);
-        if (result && result.success) {
-           console.log("[Migration] Cloud remote wipe logic finished successfully.");
-        } else {
-           throw new Error(result ? result.error : "Unknown error in performSeasonReset");
-        }
+    console.warn("[Migration] Fetching Auth...");
+    const { auth } = await import("./firebase-config.js?v=1.4.6");
+    const user = auth.currentUser;
+    
+    const lang = localStorage.getItem("jigsudo_lang");
+    const theme = localStorage.getItem("jigsudo_theme");
+    const uid = localStorage.getItem("jigsudo_uid"); 
+    
+    console.warn("[Migration] Clearing local storage...");
+    localStorage.clear();
+    
+    if (lang) localStorage.setItem("jigsudo_lang", lang);
+    if (theme) localStorage.setItem("jigsudo_theme", theme);
+    if (uid) localStorage.setItem("jigsudo_uid", uid);
+
+    localStorage.setItem("jigsudo_user_stats", JSON.stringify({ schemaVersion: CONFIG.schemaVersion }));
+
+    if (user && !user.isAnonymous) {
+      console.warn(`[Migration] Calling performSeasonReset for ${user.uid}...`);
+      const result = await performSeasonReset(user.uid);
+      if (result && result.success) {
+         console.warn("[Migration] Cloud remote wipe logic finished successfully.");
+      } else {
+         throw new Error(result ? result.error : "Unknown error in performSeasonReset");
       }
+    }
 
-      localStorage.setItem("jigsudo_last_wipe_ack", Date.now().toString());
-      console.log("[Migration] ALL SUCCESSFUL. Reloading page now.");
-      window.location.reload();
-    } catch (err) {
-      console.error("[Migration] CRITICAL ERROR IN BUTTON HANDLER:", err);
-      alert("Error al actualizar la temporada: " + err.message);
+    localStorage.setItem("jigsudo_last_wipe_ack", Date.now().toString());
+    console.warn("[Migration] ALL SUCCESSFUL. Reloading page now.");
+    window.location.reload();
+  } catch (err) {
+    console.error("[Migration] CRITICAL ERROR:", err);
+    alert("Error crítico: " + err.message);
+    const btn = document.getElementById("btn-update-season");
+    if (btn) {
       btn.disabled = false;
       btn.classList.remove("hidden");
-      document.getElementById("migration-loader").classList.add("hidden");
     }
-  };
-}
+    const loader = document.getElementById("migration-loader");
+    if (loader) loader.classList.add("hidden");
+  }
+});

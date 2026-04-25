@@ -26,12 +26,12 @@ service cloud.firestore {
       // Helper: whitelisted keys for root document updates/creation
       function isWhitelistedUpdate() {
         return request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['schemaVersion', 'username', 'username_lc', 'dailyRP', 'monthlyRP', 'totalRP', 'careerRP', 'lastDayRP', 'lastMonthRP', 'isPublic', 'stats', 'progress', 'lastUpdated', 'lastDailyUpdate', 'lastMonthlyUpdate', 'lastLocalUpdate', 'registeredAt', 'isVerified', 'activeSessionId', 'totalPenaltyAccumulated', 'monthlyPenaltyAccumulated', 'currentRP']);
+          .hasOnly(['schemaVersion', 'username', 'username_lc', 'dailyRP', 'monthlyRP', 'totalRP', 'careerRP', 'lastDayRP', 'lastMonthRP', 'isPublic', 'stats', 'progress', 'lastUpdated', 'lastDailyUpdate', 'lastMonthlyUpdate', 'lastLocalUpdate', 'registeredAt', 'isVerified', 'activeSessionId', 'totalPenaltyAccumulated', 'monthlyPenaltyAccumulated', 'currentRP', 'forceWipeAt', 'lastDecayCheck', 'lastPenaltyDate', 'lastPlayedDate']);
       }
 
       function isWhitelistedCreate() {
         return request.resource.data.keys()
-          .hasOnly(['schemaVersion', 'username', 'username_lc', 'dailyRP', 'monthlyRP', 'totalRP', 'careerRP', 'lastDayRP', 'lastMonthRP', 'isPublic', 'stats', 'progress', 'lastUpdated', 'lastDailyUpdate', 'lastMonthlyUpdate', 'lastLocalUpdate', 'registeredAt', 'isVerified', 'activeSessionId', 'totalPenaltyAccumulated', 'monthlyPenaltyAccumulated', 'currentRP']);
+          .hasOnly(['schemaVersion', 'username', 'username_lc', 'dailyRP', 'monthlyRP', 'totalRP', 'careerRP', 'lastDayRP', 'lastMonthRP', 'isPublic', 'stats', 'progress', 'lastUpdated', 'lastDailyUpdate', 'lastMonthlyUpdate', 'lastLocalUpdate', 'registeredAt', 'isVerified', 'activeSessionId', 'totalPenaltyAccumulated', 'monthlyPenaltyAccumulated', 'currentRP', 'forceWipeAt', 'lastDecayCheck', 'lastPenaltyDate', 'lastPlayedDate']);
       }
       
       allow create: if request.auth != null && request.auth.uid == userId 
