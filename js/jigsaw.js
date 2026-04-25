@@ -30,6 +30,10 @@ let redoStack = [];
 let initialJigsawState = null;
 let isJigsawInitialized = false;
 
+// Long Press for Locking
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 600; // ms
+
 export function initJigsaw(elements) {
   if (isJigsawInitialized) return;
   isJigsawInitialized = true;
@@ -45,14 +49,20 @@ export function initJigsaw(elements) {
   // Initialize Reset Button
   const btnReset = document.getElementById("btn-jigsaw-reset");
   if (btnReset) {
-    btnReset.addEventListener("click", () => {
+    btnReset.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       resetJigsaw();
     });
   }
 
   const btnUndo = document.getElementById("btn-jigsaw-undo");
   if (btnUndo) {
-    btnUndo.addEventListener("click", () => undo());
+    btnUndo.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      undo();
+    });
   }
 
   const btnRedo = document.getElementById("btn-jigsaw-redo");
@@ -151,7 +161,9 @@ function createPlaceholder(container, index) {
 export function placeInPanel(chunkIndex) {
   // v1.9.9: Resilience Guard
   if (isNaN(parseInt(chunkIndex))) {
-    console.warn(`[Jigsaw] Attempted to place invalid chunkIndex: ${chunkIndex}. Aborting.`);
+    console.warn(
+      `[Jigsaw] Attempted to place invalid chunkIndex: ${chunkIndex}. Aborting.`,
+    );
     return;
   }
 
@@ -268,9 +280,12 @@ export function fitCollectedPieces() {
   // Use the exact same dimensioning as the CSS (--v-budget: 50vw) for stability
   let zoneHeight;
   if (isJigsaw) {
-    zoneHeight = window.innerWidth * 0.50; /* 50vw */
+    zoneHeight = window.innerWidth * 0.5; /* 50vw */
   } else {
-    zoneHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.13;
+    zoneHeight =
+      (window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight) * 0.13;
   }
   const rowWidth = (size + gap) * 4;
 
@@ -324,9 +339,12 @@ function getCollectedPieceSize(isJigsaw = false) {
   const containerWidth = window.innerWidth;
   let zoneHeight;
   if (isJigsaw) {
-    zoneHeight = containerWidth * 0.50; // Sync with CSS 50vw
+    zoneHeight = containerWidth * 0.5; // Sync with CSS 50vw
   } else {
-    zoneHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.13;
+    zoneHeight =
+      (window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight) * 0.13;
   }
   const gap = isJigsaw ? 12 : 4;
   const padding = 10;
@@ -383,6 +401,16 @@ export function handlePieceSelect(pieceElement) {
         return;
       }
       // Target is an empty placeholder in panel -> Proceed to MOVE logic below
+    }
+
+    // v1.6.8: Protect locked pieces
+    if (
+      source.classList.contains("user-locked") ||
+      target.classList.contains("user-locked")
+    ) {
+      console.log("[Jigsaw] Interaction blocked: Piece is locked.");
+      deselectPiece();
+      return;
     }
 
     // --- CASE: Interactions involving the board (Source or Target) ---
@@ -514,6 +542,16 @@ export function handleSlotClick_v2(slotIndex) {
       return;
     }
 
+    // v1.6.8: Protect locked pieces
+    if (
+      selectedPieceElement.classList.contains("user-locked") ||
+      slot.classList.contains("user-locked")
+    ) {
+      console.log("[Jigsaw] Interaction blocked: Piece is locked.");
+      deselectPiece();
+      return;
+    }
+
     const source = selectedPieceElement;
     const target = slot;
     const isTargetFilled = target.classList.contains("filled");
@@ -627,7 +665,7 @@ export function transitionToJigsaw() {
   // CRITICAL GUARD: Do not proceed if user navigated away from #game
   if (!memorySection || memorySection.classList.contains("hidden")) return;
   if (!isAtGameRoute()) return;
-  
+
   // Reset history stacks for the new session
   undoStack = [];
   redoStack = [];
@@ -693,7 +731,11 @@ export function transitionToJigsaw() {
 
         // UI/Layout updates MUST happen inside the transition callback
         // v1.3.2: Use silent update during VT to avoid I/O blocking the main thread
-        gameManager.updateProgress("progress", { currentStage: "jigsaw" }, true);
+        gameManager.updateProgress(
+          "progress",
+          { currentStage: "jigsaw" },
+          true,
+        );
         deselectPiece();
 
         if (CONFIG.debugMode) console.time("[Perf] fitCollectedPieces");
@@ -730,6 +772,12 @@ export function transitionToJigsaw() {
         document
           .querySelectorAll(".collected-piece")
           .forEach((p) => (p.style.transition = ""));
+
+        // v1.7.8: Initialize Jigsaw History AFTER transition completes
+        undoStack = [];
+        redoStack = [];
+        saveStateToUndo();
+        initialJigsawState = undoStack[0];
       });
     } else {
       memorySection.classList.add("jigsaw-mode");
@@ -743,11 +791,7 @@ export function transitionToJigsaw() {
   // 3. Update Tooltip Info
   updateGameHelp("jigsaw");
 
-  // v1.6.5: Initialize History Stack
-  undoStack = [];
-  redoStack = [];
-  saveStateToUndo();
-  initialJigsawState = undoStack[0];
+  // v1.7.8: Initialize History Stack moved to transition/resume
 }
 
 // =========================================
@@ -775,14 +819,16 @@ export function handlePointerDown(e) {
   // Center locked
   if (target.dataset.slotIndex === "4") return;
 
-  // Only drag/select if it has content (and not a placeholder)
-  // Actually, for pure selection we might want to allow selecting placeholders?
-  // No, selection logic currently ignores placeholders unless dropping.
-  if (target.classList.contains("placeholder") || target.children.length === 0)
-    return;
-
-  // STOP: Do NOT prevent default yet. Allow Click to propagate.
-  // e.preventDefault();
+  // v1.6.8: Start Long Press Timer for Locking (only on Board pieces)
+  if (
+    target.classList.contains("sudoku-chunk-slot") &&
+    target.classList.contains("filled")
+  ) {
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      togglePieceLock(target);
+    }, LONG_PRESS_DURATION);
+  }
 
   // Store Potential Drag
   potentialDragTarget = target;
@@ -800,6 +846,14 @@ export function handlePointerMove(e) {
 
     if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
       // START DRAG
+      clearTimeout(longPressTimer); // Cancel lock if moving
+
+      // Protect locked pieces from dragging
+      if (potentialDragTarget.classList.contains("user-locked")) {
+        potentialDragTarget = null;
+        return;
+      }
+
       isDragging = true;
       const target = potentialDragTarget;
 
@@ -875,7 +929,8 @@ export function handlePointerMove(e) {
     (el) =>
       (el.classList.contains("sudoku-chunk-slot") ||
         el.classList.contains("collected-piece")) &&
-      el.dataset.slotIndex !== "4", // Not center
+      el.dataset.slotIndex !== "4" &&
+      !el.classList.contains("user-locked"), // v1.7.4: No hover on locked slots
   );
 
   document
@@ -887,6 +942,8 @@ export function handlePointerMove(e) {
 }
 
 export function handlePointerUp(e) {
+  clearTimeout(longPressTimer); // Cancel lock timer
+
   // Clear Potential
   potentialDragTarget = null;
 
@@ -904,7 +961,8 @@ export function handlePointerUp(e) {
     (el) =>
       (el.classList.contains("sudoku-chunk-slot") ||
         el.classList.contains("collected-piece")) &&
-      el.dataset.slotIndex !== "4",
+      el.dataset.slotIndex !== "4" &&
+      !el.classList.contains("user-locked"), // v1.7.4: Cannot drop on locked slots
   );
 
   // Restore Opacity (Always)
@@ -919,7 +977,9 @@ export function handlePointerUp(e) {
 
     // sourceContent is already defined above
     const targetContent = dropTarget.querySelector(".mini-sudoku-grid"); // Might be null
-    const targetRect = targetContent ? targetContent.getBoundingClientRect() : null;
+    const targetRect = targetContent
+      ? targetContent.getBoundingClientRect()
+      : null;
 
     if (sourceContent) {
       // Move Source -> Target
@@ -955,44 +1015,83 @@ export function handlePointerUp(e) {
         }
       }
 
-    fitCollectedPieces();
+      fitCollectedPieces();
     }
 
     // Check Board State after drop
     checkBoardCompletion();
-  } else if (dropTarget === selectedPieceElement) {
-    // DROPPED ON ITSELF: Do nothing, just let the source restore opacity
-    console.log("[Jigsaw] Dropped on self. Ignoring.");
-  } else if (dragClone) {
-    // DROPPED OUTSIDE: Snap to first available placeholder in panel
-    const allPlaceholders = document.querySelectorAll(".collected-piece.placeholder");
-    const available = Array.from(allPlaceholders).find(p => !p.hasChildNodes());
+  } else {
+    // FAILED DROP (Locked Slot or Outside)
+    // Check if we were over a LOCKED slot specifically
+    const anySlot = document
+      .elementsFromPoint(e.clientX, e.clientY)
+      .find(
+        (el) =>
+          (el.classList.contains("sudoku-chunk-slot") ||
+            el.classList.contains("collected-piece")) &&
+          el.dataset.slotIndex !== "4",
+      );
 
-    if (available && sourceContent) {
-      saveStateToUndo();
-      available.innerHTML = "";
-      available.appendChild(sourceContent);
-      available.classList.remove("placeholder");
-      available.classList.add("collected-piece");
-      available.dataset.chunkIndex = sourceContent.dataset.chunkIndex;
+    if (
+      anySlot &&
+      (anySlot.classList.contains("user-locked") ||
+        anySlot === selectedPieceElement ||
+        anySlot.dataset.slotIndex === "4")
+    ) {
+      // Case A: Dropped on self, locked slot, or center piece -> Return to Origin
+      console.log(
+        "[Jigsaw] Dropped on self, locked, or center. Returning to origin.",
+      );
+    } else {
+      // Check if drop occurred within the board's bounding box
+      const boardRect = boardContainer.getBoundingClientRect();
+      const isInsideBoard =
+        e.clientX >= boardRect.left &&
+        e.clientX <= boardRect.right &&
+        e.clientY >= boardRect.top &&
+        e.clientY <= boardRect.bottom;
 
-      // Clear Source
-      selectedPieceElement.innerHTML = "";
-      if (selectedPieceElement.classList.contains("sudoku-chunk-slot")) {
-        selectedPieceElement.classList.remove("filled");
-      } else {
-        selectedPieceElement.classList.add("placeholder");
-        delete selectedPieceElement.dataset.chunkIndex;
+      if (isInsideBoard) {
+        // Case B: Dropped on board dividers/lines -> Return to Origin
+        console.log("[Jigsaw] Dropped on board dividers. Returning to origin.");
+      } else if (dragClone) {
+        // Case C: Dropped truly outside -> Send to Panel (if not already there)
+        console.log("[Jigsaw] Dropped outside board. Sending to panel.");
+        const allPlaceholders = document.querySelectorAll(
+          ".collected-piece.placeholder",
+        );
+        const available = Array.from(allPlaceholders).find(
+          (p) => !p.hasChildNodes(),
+        );
+
+        if (
+          available &&
+          sourceContent &&
+          !selectedPieceElement.classList.contains("collected-piece")
+        ) {
+          saveStateToUndo();
+          available.innerHTML = "";
+          available.appendChild(sourceContent);
+          available.classList.remove("placeholder");
+          available.classList.add("filled");
+          available.dataset.chunkIndex = sourceContent.dataset.chunkIndex;
+
+          // Clear Board Slot
+          selectedPieceElement.innerHTML = "";
+          selectedPieceElement.classList.remove("filled");
+
+          fitCollectedPieces();
+          checkBoardCompletion();
+        }
       }
-      
-      fitCollectedPieces();
-      checkBoardCompletion();
     }
   }
 
   // Cleanup
-  dragClone.remove();
-  dragClone = null;
+  if (dragClone) {
+    dragClone.remove();
+    dragClone = null;
+  }
   if (selectedPieceElement)
     selectedPieceElement.classList.remove("dragging-source");
   document
@@ -1004,6 +1103,37 @@ export function handlePointerUp(e) {
   setTimeout(() => {
     isDragging = false;
   }, 100);
+}
+
+function togglePieceLock(slot) {
+  if (
+    !slot ||
+    !slot.classList.contains("sudoku-chunk-slot") ||
+    !slot.classList.contains("filled")
+  )
+    return;
+
+  // v1.7.6: Save state BEFORE toggling so we can undo the lock/unlock
+  saveStateToUndo();
+
+  const isLocked = slot.classList.toggle("user-locked");
+  console.log(
+    `[Jigsaw] Piece at slot ${slot.dataset.slotIndex} is now ${isLocked ? "LOCKED" : "UNLOCKED"}`,
+  );
+
+  // Feedback
+  if (isLocked) {
+    // Subtle vibration or flash
+    slot.style.transition = "transform 0.1s";
+    slot.style.transform = "scale(0.95)";
+    setTimeout(() => {
+      slot.style.transform = "";
+      slot.style.transition = "";
+    }, 100);
+  }
+
+  // Clear any active selection to prevent conflicts
+  deselectPiece();
 }
 
 function updateDragPosition(x, y) {
@@ -1094,7 +1224,8 @@ export async function checkBoardCompletion() {
   // Guard 0: Prevent double-trigger logic
   const state = gameManager.getState();
   // v1.9.7: Resilience Guard
-  const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
+  const currentStage =
+    state?.progress?.currentStage || state?.currentStage || "memory";
   if (currentStage !== "jigsaw") return;
   if (
     document
@@ -1245,7 +1376,7 @@ export async function checkBoardCompletion() {
       // Timer Transition
       gameManager.stopStageTimer();
       // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
-      await gameManager.advanceStage(); 
+      await gameManager.advanceStage();
       gameManager.startStageTimer("sudoku");
 
       transitionToSudoku();
@@ -1293,7 +1424,7 @@ export function resetJigsaw() {
 
   // Apply the initial state
   applyHistoryState(initialJigsawState);
-  
+
   // Optional: show a subtle toast
   // const { translations } = await import("./translations.js?v=1.4.5");
   // const lang = getCurrentLang();
@@ -1305,7 +1436,9 @@ export function resetJigsaw() {
  */
 export function resumeJigsawState() {
   if (!boardContainer) {
-    console.warn("[Jigsaw] boardContainer was undefined in resumeJigsawState. Attempting recovery...");
+    console.warn(
+      "[Jigsaw] boardContainer was undefined in resumeJigsawState. Attempting recovery...",
+    );
     boardContainer = document.getElementById("memory-board");
   }
 
@@ -1349,13 +1482,22 @@ export function resumeJigsawState() {
   // v1.9.9: Auto-Advance Protection
   // If the board is already solved upon hydration, trigger the next stage transition.
   // We use a small delay to ensure DOM is settled.
-  const filledCount = document.querySelectorAll(".sudoku-chunk-slot.filled").length;
+  const filledCount = document.querySelectorAll(
+    ".sudoku-chunk-slot.filled",
+  ).length;
   if (filledCount === 9) {
     console.log("[Jigsaw] Auto-advance triggered: Board already full.");
     setTimeout(() => {
-        checkBoardCompletion();
+      checkBoardCompletion();
     }, 500);
   }
+
+  // v1.7.8: Initialize History Stack on Resume
+  undoStack = [];
+  redoStack = [];
+  saveStateToUndo();
+  initialJigsawState = undoStack[0];
+  updateHistoryButtons();
 }
 
 function clearBoardErrors() {
@@ -1370,11 +1512,18 @@ function clearBoardErrors() {
 // =========================================
 
 function captureCurrentState() {
-  const slots = Array.from(boardContainer.querySelectorAll(".sudoku-chunk-slot"));
+  const slots = Array.from(
+    boardContainer.querySelectorAll(".sudoku-chunk-slot"),
+  );
   const board = slots.map((slot) => {
     const content = slot.querySelector(".mini-sudoku-grid");
     return content ? parseInt(content.dataset.chunkIndex) : -1;
   });
+
+  // v1.7.5: Capture locked slots indices
+  const locked = slots
+    .filter((slot) => slot.classList.contains("user-locked"))
+    .map((slot) => parseInt(slot.dataset.slotIndex));
 
   const panelSlots = Array.from(document.querySelectorAll(".collected-piece"));
   const panel = panelSlots.map((slot) => {
@@ -1382,7 +1531,7 @@ function captureCurrentState() {
     return content ? parseInt(content.dataset.chunkIndex) : -1;
   });
 
-  return { board, panel };
+  return { board, panel, locked };
 }
 
 let lastUndoSaveTime = 0;
@@ -1390,13 +1539,16 @@ let lastUndoSaveTime = 0;
 function saveStateToUndo() {
   const current = captureCurrentState();
   // Avoid duplicate states
-  if (undoStack.length > 0 && JSON.stringify(undoStack[undoStack.length - 1]) === JSON.stringify(current)) {
+  if (
+    undoStack.length > 0 &&
+    JSON.stringify(undoStack[undoStack.length - 1]) === JSON.stringify(current)
+  ) {
     return;
   }
   undoStack.push(current);
   // Cap history at 50 moves
   if (undoStack.length > 50) undoStack.shift();
-  
+
   redoStack = []; // New action clears redo
   updateHistoryButtons();
 }
@@ -1430,6 +1582,7 @@ function applyHistoryState(state) {
   // v1.6.3: Non-Destructive Reconstruction
   let board = [];
   let panel = [];
+  let locked = [];
 
   if (Array.isArray(state)) {
     board = state;
@@ -1437,111 +1590,147 @@ function applyHistoryState(state) {
   } else if (state && state.board) {
     board = state.board;
     panel = state.panel || [];
+    locked = state.locked || [];
   } else {
     console.error("[Jigsaw] Invalid state format:", state);
     return;
   }
 
-  console.log("[Jigsaw] Applying history state...", { board, panel });
+  // v1.7.9: Concurrent Execution Guard
+  if (window._isApplyingHistory) return;
+  window._isApplyingHistory = true;
 
-  // 1. Collect all piece elements currently in the DOM and capture their positions
-  const piecesMap = new Map();
-  const rectsMap = new Map();
+  try {
+    const lockedIndices = new Set(locked);
+    const boardSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
+    const panelSlots = document.querySelectorAll(".collected-piece");
+    const currentState = captureCurrentState();
 
-  document.querySelectorAll(".mini-sudoku-grid").forEach(p => {
-    const idx = parseInt(p.dataset.chunkIndex);
-    // NEVER remove or redistribute the locked center piece (4)
-    if (idx === 4) return;
+    console.log("[Jigsaw] Applying history state...", { board, panel, locked });
 
-    piecesMap.set(idx, p);
-    rectsMap.set(idx, p.getBoundingClientRect());
-    // Temporarily remove from DOM to avoid "parent child" conflicts during move
-    p.remove();
-  });
+    // v1.7.7: OPTIMIZATION - If no pieces moved, just sync the locks to avoid flicker
+    const boardChanged =
+      JSON.stringify(currentState.board) !== JSON.stringify(board);
+    const panelChanged =
+      JSON.stringify(currentState.panel) !== JSON.stringify(panel);
 
-  // 2. Clear all slots and placeholders visually (EXCEPT Center Slot 4)
-  const boardSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
-  boardSlots.forEach(slot => {
-    const sIndex = parseInt(slot.dataset.slotIndex);
-    if (sIndex === 4) return; // Keep center slot intact
-
-    slot.innerHTML = "";
-    slot.classList.remove("filled");
-  });
-
-  const panelSlots = document.querySelectorAll(".collected-piece");
-  panelSlots.forEach(p => {
-    p.innerHTML = "";
-    p.classList.add("placeholder");
-    delete p.dataset.chunkIndex;
-  });
-
-  // 3. Redistribute pieces to the BOARD (EXCEPT Slot 4)
-  board.forEach((chunkIndex, slotIndex) => {
-    if (chunkIndex === -1 || chunkIndex === 4 || slotIndex === 4) return;
-
-    const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
-    const piece = piecesMap.get(chunkIndex);
-
-    if (slot && piece) {
-      slot.appendChild(piece);
-      slot.classList.add("filled");
-      piece.style.width = "100%";
-      piece.style.height = "100%";
-      piece.style.opacity = "";
-      
-      // Animate from previous position
-      animateMove(piece, rectsMap.get(chunkIndex));
+    if (!boardChanged && !panelChanged) {
+      console.log("[Jigsaw] Quick sync: Only locks changed.");
+      boardSlots.forEach((slot) => {
+        const sIndex = parseInt(slot.dataset.slotIndex);
+        if (lockedIndices.has(sIndex)) {
+          slot.classList.add("user-locked");
+        } else {
+          slot.classList.remove("user-locked");
+        }
+      });
+      return;
     }
-  });
 
-  const placedOnBoard = new Set(board);
+    // v1.7.5: Sync DOM locks with state BEFORE redistribution
+    boardSlots.forEach((slot) => {
+      const sIndex = parseInt(slot.dataset.slotIndex);
+      if (lockedIndices.has(sIndex)) {
+        slot.classList.add("user-locked");
+      } else {
+        slot.classList.remove("user-locked");
+      }
+    });
 
-  // 4. Redistribute pieces to the PANEL in their EXACT slots
-  const allPanelSlots = document.querySelectorAll(".collected-piece");
-  
-  panel.forEach((chunkIndex, pIndex) => {
-    if (chunkIndex === -1 || chunkIndex === 4) return;
-    
-    const slot = allPanelSlots[pIndex];
-    const piece = piecesMap.get(chunkIndex);
+    // 1. Identify what needs to move and capture positions
+    const piecesToMove = new Map();
+    const rectsMap = new Map();
 
-    if (slot && piece) {
-      slot.appendChild(piece);
-      slot.classList.remove("placeholder");
-      slot.classList.add("collected-piece");
-      slot.dataset.chunkIndex = chunkIndex;
-      piece.style.width = "";
-      piece.style.height = "";
-      piece.style.opacity = "";
-      placedOnBoard.add(chunkIndex);
+    // Map of chunkIndex -> current parent element
+    const currentPositions = new Map();
+    document.querySelectorAll(".mini-sudoku-grid").forEach((p) => {
+      const idx = parseInt(p.dataset.chunkIndex);
+      if (idx === 4) return; // Center piece is static
+      currentPositions.set(idx, p.parentElement);
+    });
 
-      // Animate from previous position
+    // Decide what needs to change
+    // We check board first
+    board.forEach((targetChunkIndex, slotIndex) => {
+      if (targetChunkIndex === -1 || targetChunkIndex === 4 || slotIndex === 4)
+        return;
+
+      const targetSlot = boardSlots[slotIndex];
+      const currentParent = currentPositions.get(targetChunkIndex);
+
+      if (currentParent !== targetSlot) {
+        const piece = document.querySelector(
+          `.mini-sudoku-grid[data-chunk-index="${targetChunkIndex}"]`,
+        );
+        if (piece) {
+          rectsMap.set(targetChunkIndex, piece.getBoundingClientRect());
+          piecesToMove.set(targetChunkIndex, { piece, target: targetSlot });
+        }
+      }
+    });
+
+    // Then check panel
+    panel.forEach((targetChunkIndex, panelIdx) => {
+      if (targetChunkIndex === -1 || targetChunkIndex === 4) return;
+
+      const targetSlot = panelSlots[panelIdx];
+      const currentParent = currentPositions.get(targetChunkIndex);
+
+      if (currentParent !== targetSlot) {
+        const piece = document.querySelector(
+          `.mini-sudoku-grid[data-chunk-index="${targetChunkIndex}"]`,
+        );
+        if (piece) {
+          rectsMap.set(targetChunkIndex, piece.getBoundingClientRect());
+          piecesToMove.set(targetChunkIndex, { piece, target: targetSlot });
+        }
+      }
+    });
+
+    // 2. Perform the moves
+    piecesToMove.forEach(({ piece, target }, chunkIndex) => {
+      // Surgical Move
+      if (target.classList.contains("sudoku-chunk-slot")) {
+        target.innerHTML = "";
+        target.appendChild(piece);
+        target.classList.add("filled");
+        piece.style.width = "100%";
+        piece.style.height = "100%";
+      } else {
+        target.innerHTML = "";
+        target.appendChild(piece);
+        target.classList.remove("placeholder");
+        target.classList.add("filled");
+        target.dataset.chunkIndex = chunkIndex;
+        piece.style.width = "";
+        piece.style.height = "";
+      }
+
+      // Animate
       animateMove(piece, rectsMap.get(chunkIndex));
-    }
-  });
+    });
 
-  // Fallback: Pieces that should be in panel but aren't in the saved indices
-  piecesMap.forEach((piece, chunkIndex) => {
-    if (chunkIndex === 4 || placedOnBoard.has(chunkIndex)) return;
+    // 3. Cleanup placeholders for slots that became empty
+    boardSlots.forEach((slot) => {
+      const sIndex = parseInt(slot.dataset.slotIndex);
+      if (sIndex === 4 || lockedIndices.has(sIndex)) return;
+      if (!slot.querySelector(".mini-sudoku-grid")) {
+        slot.classList.remove("filled");
+      }
+    });
 
-    const available = Array.from(allPanelSlots).find(s => s.classList.contains("placeholder") && !s.hasChildNodes());
-    if (available) {
-      available.appendChild(piece);
-      available.classList.remove("placeholder");
-      available.classList.add("collected-piece");
-      available.dataset.chunkIndex = chunkIndex;
-      piece.style.width = "";
-      piece.style.height = "";
-      piece.style.opacity = "";
-      
-      // Animate from previous position
-      animateMove(piece, rectsMap.get(chunkIndex));
-    }
-  });
+    panelSlots.forEach((slot) => {
+      if (!slot.querySelector(".mini-sudoku-grid")) {
+        slot.classList.add("placeholder");
+        delete slot.dataset.chunkIndex;
+      }
+    });
 
-  fitCollectedPieces();
-  checkBoardCompletion();
-  syncJigsawState();
-  gameManager.save();
+    fitCollectedPieces();
+    checkBoardCompletion();
+    syncJigsawState();
+    gameManager.save();
+  } finally {
+    window._isApplyingHistory = false;
+  }
 }

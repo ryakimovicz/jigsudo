@@ -111,6 +111,63 @@
   border-radius: 10px; /* Match the parent slot's curvature */
 }
 
+/* User-Locked & Center Piece Style (v1.7.3: Subtle Overlay Lock) */
+.jigsaw-mode .sudoku-chunk-slot.user-locked,
+.jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"] {
+  position: relative;
+}
+
+.jigsaw-mode .sudoku-chunk-slot.user-locked {
+  border: 2px solid var(--accent-color) !important;
+}
+
+/* Clear everything inside to show our overlay lock correctly if needed, 
+   but we want to PRESERVE the piece color. So we don't force transparency anymore. */
+
+.jigsaw-mode .sudoku-chunk-slot.user-locked .mini-sudoku-grid::before,
+.jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"] .mini-sudoku-grid::before {
+  display: none; /* Remove background lock */
+}
+
+.jigsaw-mode .sudoku-chunk-slot.user-locked .mini-sudoku-grid::after,
+.jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"] .mini-sudoku-grid::after {
+  content: "🔒";
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+  opacity: 0.12; /* Subtle watermark */
+  color: #888;
+  z-index: 10; /* OVER numbers but very transparent */
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+/* Dark Mode adjustment */
+.dark-mode .jigsaw-mode .sudoku-chunk-slot.user-locked .mini-sudoku-grid::after,
+.dark-mode
+  .jigsaw-mode
+  .sudoku-chunk-slot[data-slot-index="4"]
+  .mini-sudoku-grid::after {
+  opacity: 0.08;
+  color: #fff;
+}
+
+.jigsaw-mode .sudoku-chunk-slot.user-locked .mini-sudoku-grid,
+.jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"] .mini-sudoku-grid {
+  /* Remove dull filters */
+  filter: none !important;
+}
+
+.jigsaw-mode .sudoku-chunk-slot.user-locked::after {
+  display: none; /* Remove old floating lock */
+}
+
 /* Dark Mode Override for Center Slot */
 .dark-mode .jigsaw-mode .sudoku-chunk-slot[data-slot-index="4"]::after {
   background: rgba(0, 0, 0, 0.3); /* Darker for proper contrast in Dark Mode */
