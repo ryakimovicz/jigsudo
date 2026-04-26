@@ -1426,8 +1426,9 @@ export class GameManager {
             stats.totalRP = Number(((stats.totalRP || 0) + points).toFixed(3));
             stats.careerRP = Number(((stats.careerRP || 0) + points).toFixed(3));
             
-            // v2.9.0: Historical Sync - Feed the atoms
+            // v2.9.0: Historical Sync - Feed the atoms (using local stats variable to avoid overwrite)
             stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + points).toFixed(3));
+            if (stats.totalBonusesAccumulated === undefined) stats.totalBonusesAccumulated = 0;
             stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
             stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
 
@@ -1687,6 +1688,12 @@ export class GameManager {
         stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + delta;
         stats.totalPeaksErrorsAccumulated = (stats.totalPeaksErrorsAccumulated || 0) + delta;
         
+        // v1.4.8: Ensure accumulators are initialized for new accounts
+        if (stats.totalScoreAccumulated === undefined) stats.totalScoreAccumulated = 0;
+        if (stats.totalBonusesAccumulated === undefined) stats.totalBonusesAccumulated = 0;
+        if (stats.totalPeaksErrorsAccumulated === undefined) stats.totalPeaksErrorsAccumulated = 0;
+        if (stats.totalPenaltyAccumulated === undefined) stats.totalPenaltyAccumulated = 0;
+
         // v1.4.3: Apply error penalty to all RP tracks (but NOT to totalScoreAccumulated)
         const penalty = delta * (SCORING.ERROR_PENALTY_RP || 0.5);
         stats.dailyRP = Number((Math.max(0, (stats.dailyRP || 0) - penalty)).toFixed(3));
@@ -3190,9 +3197,13 @@ export class GameManager {
               // Career RP (Performance tracking)
               stats.careerRP = Number(((stats.careerRP || 0) + atomBonus).toFixed(3));
               
-              // v1.4.8: Restore and update totalScoreAccumulated with the bonus
-              // (The 6.0 base points were already added during awardStagePoints)
+              // v1.4.8: Finalizing the perfect score (Gross) and total bonuses
+              // atomBonus (from lastBonus) is already the gross/perfect bonus.
+              // Error penalties are subtracted later in _recalculateNetStats for RP tracks.
               stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + atomBonus).toFixed(3));
+              stats.totalBonusesAccumulated = Number(((stats.totalBonusesAccumulated || 0) + atomBonus).toFixed(3));
+              stats.dailyBonusesAccumulated = Number(((stats.dailyBonusesAccumulated || 0) + atomBonus).toFixed(3));
+              stats.monthlyBonusesAccumulated = Number(((stats.monthlyBonusesAccumulated || 0) + atomBonus).toFixed(3));
 
               this.state.progress.won = true;
               this.stats = stats;

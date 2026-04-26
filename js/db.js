@@ -143,26 +143,11 @@ export function reconstructStats(data) {
     lastPenalty: scavengeNum("lastPenalty", s.lastPenalty || 0), // Added explicit scavenge for the counter
 
     // v1.4.1: Accumulation fields recovery (Targeting Hybrid v7.1)
-    totalTimeAccumulated: scavengeNum(
-      "totalTimeAccumulated",
-      s.totalTimeAccumulated || 0,
-    ),
-    totalScoreAccumulated: scavengeNum(
-      "totalScoreAccumulated",
-      s.totalScoreAccumulated || 0,
-    ),
-    totalBonusesAccumulated: scavengeNum(
-      "totalBonusesAccumulated",
-      s.totalBonusesAccumulated || 0,
-    ), // v1.5.56: Missing Bonus Fix
-    totalPeaksErrorsAccumulated: scavengeNum(
-      "totalPeaksErrorsAccumulated",
-      s.totalPeaksErrorsAccumulated || 0,
-    ),
-    totalPenaltyAccumulated: scavengeNum(
-      "totalPenaltyAccumulated",
-      s.totalPenaltyAccumulated || 0,
-    ), // v1.5.61: Decay Tracking
+    totalTimeAccumulated: Number((s.totalTimeAccumulated || 0).toFixed(0)),
+    totalScoreAccumulated: Number((s.totalScoreAccumulated || 0).toFixed(3)),
+    totalBonusesAccumulated: Number((s.totalBonusesAccumulated || 0).toFixed(3)),
+    totalPeaksErrorsAccumulated: Number((s.totalPeaksErrorsAccumulated || 0).toFixed(0)),
+    totalPenaltyAccumulated: Number((s.totalPenaltyAccumulated || 0).toFixed(0)),
 
     // v1.5.56: Periodic Atoms (Ensures unified scoring across all ranking tables)
     dailyWinsAccumulated: scavengeNum(
@@ -605,16 +590,17 @@ export async function saveUserStats(
         maxStreak: s.maxStreak || 0,
         bestScore: s.bestScore || 0,
         bestTime: s.bestTime || 0,
-        totalTimeAccumulated: s.totalTimeAccumulated || 0,
-        totalScoreAccumulated: s.totalScoreAccumulated || 0,
-        totalPeaksErrorsAccumulated: s.totalPeaksErrorsAccumulated || 0,
-        totalBonusesAccumulated: s.totalBonusesAccumulated || 0,
-        monthlyWinsAccumulated: s.monthlyWinsAccumulated || 0,
-        monthlyPeaksErrorsAccumulated: s.monthlyPeaksErrorsAccumulated || 0,
-        monthlyBonusesAccumulated: s.monthlyBonusesAccumulated || 0,
-        dailyWinsAccumulated: s.dailyWinsAccumulated || 0,
-        dailyBonusesAccumulated: s.dailyBonusesAccumulated || 0,
-        dailyPeaksErrorsAccumulated: s.dailyPeaksErrorsAccumulated || 0,
+        totalTimeAccumulated: Number((s.totalTimeAccumulated || 0).toFixed(0)),
+        totalScoreAccumulated: Number((s.totalScoreAccumulated || 0).toFixed(3)),
+        totalBonusesAccumulated: Number((s.totalBonusesAccumulated || 0).toFixed(3)),
+        totalPeaksErrorsAccumulated: Number((s.totalPeaksErrorsAccumulated || 0).toFixed(0)),
+        totalPenaltyAccumulated: Number((s.totalPenaltyAccumulated || 0).toFixed(0)),
+        monthlyWinsAccumulated: Number((s.monthlyWinsAccumulated || 0).toFixed(0)),
+        monthlyPeaksErrorsAccumulated: Number((s.monthlyPeaksErrorsAccumulated || 0).toFixed(0)),
+        monthlyBonusesAccumulated: Number((s.monthlyBonusesAccumulated || 0).toFixed(3)),
+        dailyWinsAccumulated: Number((s.dailyWinsAccumulated || 0).toFixed(0)),
+        dailyBonusesAccumulated: Number((s.dailyBonusesAccumulated || 0).toFixed(3)),
+        dailyPeaksErrorsAccumulated: Number((s.dailyPeaksErrorsAccumulated || 0).toFixed(0)),
         lastBonus: s.lastBonus || 0,
         lastPenalty: s.lastPenalty || 0,
         lastDecayCheck: s.lastDecayCheck || null,
@@ -651,11 +637,7 @@ export async function saveUserStats(
         "score",
         "lastDayRP",
         "lastMonthRP",
-        "careerRP",
-        "totalScoreAccumulated",
-        "totalBonusesAccumulated",
-        "monthlyBonusesAccumulated",
-        "dailyBonusesAccumulated"
+        "careerRP"
       ];
       exorcismKeys.forEach((k) => {
         updateData[`stats.${k}`] = deleteField();
