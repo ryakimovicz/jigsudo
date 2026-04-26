@@ -2017,16 +2017,18 @@ export class GameManager {
         stats.lastDayRP = 0;
     }
     
-    // v1.4.9: Mid-Session Protection
-    // If the user already has points/wins in the current object, it means they 
-    // started playing just before or during the day change. We MUST NOT wipe them.
-    if ((stats.dailyRP || 0) > 0 || (stats.dailyWinsAccumulated || 0) > 0) {
-        console.warn("[GameManager] Day changed mid-session. Preserving current progress.");
-    } else {
+    // v1.4.10: Mid-Session Protection Fix
+    // Only preserve points if the update anchor is ALREADY today (meaning they were earned 
+    // after a reset already happened). If transitioning from the past, we MUST wipe.
+    const isTransition = !stats.lastDailyUpdate || stats.lastDailyUpdate < today;
+
+    if (isTransition) {
         stats.dailyWinsAccumulated = 0;
         stats.dailyBonusesAccumulated = 0;
         stats.dailyPeaksErrorsAccumulated = 0;
         stats.dailyRP = 0;
+    } else {
+        console.log("[GameManager] dailyRP already marked for today. Preserving mid-session progress.");
     }
     
     stats.lastDailyUpdate = today;
