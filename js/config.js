@@ -1,6 +1,6 @@
 export const CONFIG = {
-  version: "1.4.7",
-  fechaUpdate: "2026-04-25",
+  version: "1.4.8",
+  fechaUpdate: "2026-04-26",
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
   debugMode: false, // Toggle to true to see logs
