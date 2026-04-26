@@ -616,6 +616,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v149_title: "Versión 1.4.9",
+    changelog_v149_date: "26/04/2026",
+    changelog_v149_item1: "Integridad: Desacople total del anclaje de sesión respecto a la intención de juego (Escudo de Inactividad).",
+    changelog_v149_item2: "Protección: Los puzzles del historial (replays) ya no marcan intención ni protegen contra el decaimiento de puntos.",
     changelog_v148_title: "Versión 1.4.8",
     changelog_v148_date: "26/04/2026",
     changelog_v148_item1: "Integridad: Sincronización de acumuladores faltantes en la base de datos.",
@@ -1505,6 +1509,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v149_title: "Version 1.4.9",
+    changelog_v149_date: "April 26, 2026",
+    changelog_v149_item1: "Integrity: Full decoupling of session anchoring from game intent (Inactivity Shield).",
+    changelog_v149_item2: "Protection: History puzzles (replays) no longer mark intent or protect against RP decay.",
     changelog_v148_title: "Version 1.4.8",
     changelog_v148_date: "April 26, 2026",
     changelog_v148_item1: "Integrity: Synchronized missing accumulators in the database.",
