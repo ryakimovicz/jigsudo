@@ -257,12 +257,8 @@ export function resumePeaksState() {
 
 function handleIncorrectClick(cell) {
   // v1.3.31: Error Atómico
-  // Guardamos el error directamente en el objeto 'peaks' para asegurar que la nube lo acepte
-  const state = gameManager.getState();
-  if (!state.peaks) state.peaks = {};
-  state.peaks.errors = (state.peaks.errors || 0) + 1;
-  
-  peaksErrors = state.peaks.errors;
+  // v1.4.11: No modificamos el estado directamente aquí para que updateProgress detecte el cambio
+  peaksErrors = (peaksErrors || 0) + 1;
   updateErrorCounter();
 
   // Sync with GameManager State

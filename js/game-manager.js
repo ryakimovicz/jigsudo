@@ -1329,7 +1329,7 @@ export class GameManager {
     }
   }
 
-  updateProgress(section, data, silent = false) {
+  async updateProgress(section, data, silent = false) {
     if (!this.state || !this.state[section]) {
       if (section === "stats") this.state.stats = {};
       else return;
@@ -1345,14 +1345,24 @@ export class GameManager {
     if (newErrors > oldErrors) {
       const delta = newErrors - oldErrors;
       if (this.stats) {
+        // v1.4.9: Manual Atomic Penalty
+        const penalty = delta * (SCORING.ERROR_PENALTY_RP || 0.5);
+        
         this.stats.dailyPeaksErrorsAccumulated = (this.stats.dailyPeaksErrorsAccumulated || 0) + delta;
         this.stats.monthlyPeaksErrorsAccumulated = (this.stats.monthlyPeaksErrorsAccumulated || 0) + delta;
         this.stats.totalPeaksErrorsAccumulated = (this.stats.totalPeaksErrorsAccumulated || 0) + delta;
+
+        // Apply to all RP tracks immediately
+        this.stats.dailyRP = Number((Math.max(0, (this.stats.dailyRP || 0) - penalty)).toFixed(3));
+        this.stats.monthlyRP = Number((Math.max(0, (this.stats.monthlyRP || 0) - penalty)).toFixed(3));
+        this.stats.totalRP = Number((Math.max(0, (this.stats.totalRP || 0) - penalty)).toFixed(3));
+        this.stats.careerRP = Number((Math.max(0, (this.stats.careerRP || 0) - penalty)).toFixed(3));
       }
-      this._recalculateNetStats(true);
       
-      // v1.3.31+: Error Priority Sync
-      this.forceCloudSave();
+      await this._recalculateNetStats();
+      
+      // v1.4.10: Pass isPenalty=true to bypass the cloud Anti-Regression guard
+      await this.forceCloudSave(false, true);
     } else {
         // v1.5.44: Even if no direct error, ensure we save progress changes
         if (this.state.meta) {
@@ -1362,15 +1372,15 @@ export class GameManager {
             // v1.6.6: If we are changing levels, FORCE an immediate cloud save.
             if (data.currentStage) {
                 console.log(`[GM] Level transition detected (${data.currentStage}). Forcing cloud save.`);
-                this.forceCloudSave();
+                await this.forceCloudSave();
             } else {
-      // v1.3.31: Error Priority Sync
-      // Si el cambio es un error o progreso en picos, forzamos un guardado más agresivo
-      if (section === "peaks") {
-          this.forceCloudSave();
-      } else {
-          this.save();
-      }
+                // v1.5.0: If we are in peaks and have errors, treat as potential penalty to bypass guards
+                const hasAnyErrors = (this.state.peaks?.errors || 0) > 0;
+                if (section === "peaks") {
+                    await this.forceCloudSave(false, hasAnyErrors);
+                } else {
+                    this.save();
+                }
             }
         }
     }
