@@ -616,6 +616,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v148_title: "Versión 1.4.8",
+    changelog_v148_date: "26/04/2026",
+    changelog_v148_item1: "Integridad: Sincronización de acumuladores faltantes en la base de datos.",
+    changelog_v148_item2: "Scoring: Aplicación instantánea de penalidades por error en tiempo real.",
     changelog_v147_title: "Versión 1.4.7",
     changelog_v147_date: "25/04/2026",
     changelog_v147_item1: "Migración Temporada 1: Corregido el bloqueo del botón 'Actualizar' mediante delegación de eventos global.",
@@ -1501,6 +1505,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v148_title: "Version 1.4.8",
+    changelog_v148_date: "April 26, 2026",
+    changelog_v148_item1: "Integrity: Synchronized missing accumulators in the database.",
+    changelog_v148_item2: "Scoring: Instant application of error penalties in real-time.",
     changelog_v147_title: "Version 1.4.7",
     changelog_v147_date: "April 25, 2026",
     changelog_v147_item1: "Season 1 Migration: Fixed the 'Update' button unresponsive state using global event delegation.",
