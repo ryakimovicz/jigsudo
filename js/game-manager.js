@@ -90,7 +90,7 @@ export class GameManager {
         if (localStorage.getItem("jigsudo_force_throne") === "true") {
             console.log("[GM] Auth Ready & Force Throne detected. Claiming session...");
             localStorage.removeItem("jigsudo_force_throne");
-            await this.ensureSessionStarted();
+            await this.ensureSessionStarted(false); // v1.6.10: Throne takeover does NOT mark intent
         }
     });
   }
@@ -359,7 +359,8 @@ export class GameManager {
         const { callJigsudoFunction } = await import("./db.js?v=1.4.7");
         const result = await callJigsudoFunction("startJigsudoSession", {
           seed: this.currentSeed,
-          sessionId: this.localSessionId
+          sessionId: this.localSessionId,
+          markIntent: true // v1.6.10: Explicit Play Button Intent
         });
         
         if (result.status === "started" || result.status === "already_started") {
@@ -2099,7 +2100,7 @@ export class GameManager {
     }
     
     // Safety: Ensure server knows we are playing today if logged in
-    this.ensureSessionStarted();
+    this.ensureSessionStarted(true); // v1.6.10: Starting a stage IS intent
   }
 
   /**
@@ -2119,14 +2120,17 @@ export class GameManager {
     }
   }
 
-  async ensureSessionStarted() {
+  async ensureSessionStarted(markIntent = false) {
+    if (this.isReplay) return; // v1.6.11: Replays are local-only, do not mark intent or anchor sessions.
+
     const { getCurrentUser } = await import("./auth.js?v=1.4.7");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
         try {
             const { callJigsudoFunction } = await import("./db.js?v=1.4.7");
             const result = await callJigsudoFunction("startJigsudoSession", {
-                sessionId: this.localSessionId
+                sessionId: this.localSessionId,
+                markIntent: markIntent // v1.6.10: Decoupled takeover from intent
             });
             console.log("[Sync] Server Session Anchor:", result);
 

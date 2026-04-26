@@ -89,10 +89,14 @@ exports.startJigsudoSession = onCall({ cors: true }, async (request) => {
 
     // 2. MARK INTENT (THE SHIELD) & SESSION LOCK (v1.5.0)
     // Full Play Button click: user gets the shield and takes control of the session.
+    const markIntent = request.data.markIntent || false;
     const updateData = {
-      "stats.lastIntentDate": today,
       "stats.lastDecayCheck": today,
     };
+
+    if (markIntent) {
+      updateData["stats.lastIntentDate"] = today;
+    }
 
     if (sessionId) {
       updateData["stats.activeSessionId"] = sessionId;
