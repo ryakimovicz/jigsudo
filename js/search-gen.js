@@ -2,8 +2,8 @@ import {
   isPeakOrValley,
   getNeighbors,
   getOrthogonalNeighbors,
-} from "./peaks-logic.js?v=1.4.8";
-import { CONFIG } from "./config.js?v=1.4.8";
+} from "./peaks-logic.js?v=1.4.9";
+import { CONFIG } from "./config.js?v=1.4.9";
 
 // Deterministic RNG (Linear Congruential Generator)
 class SeededRNG {
