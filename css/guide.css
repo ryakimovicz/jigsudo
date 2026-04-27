@@ -348,38 +348,58 @@ body:not(.dark-mode) .peaks-stats {
 }
 
 .tutorial-sudoku-controls {
-  flex: 0 0 160px !important; /* Narrower keypad */
+  --btn-size: 50px;
+  --btn-gap: 6px;
+  --grid-width: calc(var(--btn-size) * 3 + var(--btn-gap) * 2);
+
+  flex: 0 0 auto !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
-  padding-top: 5px !important;
+  align-items: center !important;
+  gap: var(--btn-gap) !important;
+  width: auto !important;
+  min-width: var(--grid-width);
 }
 
-/* Keypad Grid for Side Layout */
+.tutorial-sudoku-controls .control-row {
+  display: flex !important;
+  justify-content: center !important;
+  gap: var(--btn-gap) !important;
+  width: 100% !important;
+}
+
+/* Action buttons row (Top) */
+.tutorial-sudoku-controls .control-row.secondary {
+  display: flex !important;
+  gap: var(--btn-gap) !important;
+  justify-content: center !important;
+}
+
+/* Numbers grid (Bottom) */
 .tutorial-sudoku-controls .control-row.primary.numbers {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 6px !important;
+  grid-template-columns: repeat(3, var(--btn-size)) !important;
+  grid-template-rows: repeat(3, var(--btn-size)) !important;
+  gap: var(--btn-gap) !important;
+  width: var(--grid-width) !important;
 }
 
 .tutorial-sudoku-controls .sudoku-num {
-  width: 100% !important;
-  aspect-ratio: 1/1 !important;
-  height: auto !important;
-  font-size: 1.2rem !important; /* Smaller text */
-  border-radius: 10px !important;
-}
-
-.tutorial-sudoku-controls .control-row.secondary {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 6px !important;
+  width: var(--btn-size) !important;
+  height: var(--btn-size) !important;
+  font-size: 1.2rem !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
 .tutorial-sudoku-controls .btn-sudoku-action {
-  aspect-ratio: 1/1 !important;
-  height: auto !important;
-  width: 100% !important;
+  width: var(--btn-size) !important;
+  height: var(--btn-size) !important;
+  font-size: 1.1rem !important;
+  border-radius: 8px !important;
+  flex: none !important;
 }
 
 .tutorial-sudoku-board .mini-cell.user-filled {
@@ -399,26 +419,21 @@ body:not(.dark-mode) .peaks-stats {
     max-width: 310px !important;
   }
   .tutorial-sudoku-controls {
+    --btn-size: clamp(48px, 14vw, 60px);
     flex: none !important;
-    width: 56vw !important;
-    max-width: 180px !important;
-    gap: 4px !important;
+    width: auto !important;
+    max-width: none !important;
+    gap: var(--btn-gap) !important;
   }
   .tutorial-sudoku-controls .control-row.primary.numbers {
-    gap: 4px !important;
-  }
-  .tutorial-sudoku-controls .control-row.secondary {
-    gap: 4px !important;
+    grid-template-columns: repeat(3, var(--btn-size)) !important;
+    grid-template-rows: repeat(3, var(--btn-size)) !important;
   }
   .tutorial-sudoku-controls .sudoku-num {
-    aspect-ratio: 1/1 !important;
-    height: auto !important;
-    font-size: 0.85rem !important;
+    font-size: 1.1rem !important;
   }
   .tutorial-sudoku-controls .btn-sudoku-action {
-    aspect-ratio: 1/1 !important;
-    height: auto !important;
-    font-size: 0.9rem !important;
+    font-size: 1rem !important;
   }
 }
 

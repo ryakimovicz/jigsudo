@@ -21,9 +21,9 @@ export const translations = {
     tutorial_stage_3_rules:
       "<strong>Reglas del Sudoku:</strong> No puede haber números repetidos en la misma fila, columna o bloque de 3x3.",
     tutorial_stage_3_btns:
-      "<strong>Botones de ayuda:</strong> ↩️ Deshace el último cambio, ✏️ Activa el modo notas, 🗑️ Borra la celda (mantén presionado para limpiar todo).",
+      "<strong>Botones de ayuda:</strong> ↩️ Deshace el último cambio, ↪️ Rehace el movimiento, ✏️ Activa el modo notas, 🗑️ Borra la celda (mantén presionado para limpiar todo).",
     tutorial_stage_3_kb:
-      "<strong>Atajos de teclado:</strong> 1-9 (Ingresar), Q (Deshacer), W/N (Notas), E/Borrar (Limpiar), Esc (Deseleccionar).",
+      "<strong>Atajos de teclado:</strong> 1-9 (Ingresar), Q (Deshacer), R (Rehacer), W/N (Notas), E/Borrar (Limpiar), Esc (Deseleccionar).",
 
     guide_title: "Guía de Juego",
     guide_tab_general: "General",
@@ -75,7 +75,7 @@ export const translations = {
       "{objective}<br><strong>Controles:</strong> {action}. Además, puedes bloquear y desbloquear piezas manteniendo el {lock_action}.",
     tutorial_stage_3_title: "Etapa 3: Sudoku",
     tutorial_stage_3_desc:
-      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}.",
+      "{rules}<br>{buttons}{keyboard}<strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}. Mantén presionado un número en el pad para bloquearlo y colocarlo rápidamente al tocar celdas.",
     tutorial_stage_4_title: "Etapa 4: Picos y Valles",
     tutorial_stage_4_desc:
       "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparándolos con los números que tienen pegados alrededor (incluyendo las diagonales). Algunos ya están marcados para ayudarte; debes encontrar los 5 restantes para avanzar.<br><strong>Controles:</strong> {Action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
@@ -914,9 +914,9 @@ export const translations = {
     tutorial_stage_3_rules:
       "<strong>Sudoku Rules:</strong> No numbers can be duplicated in the same row, column, or 3x3 block.",
     tutorial_stage_3_btns:
-      "<strong>Action buttons:</strong> ↩️ Undoes the last change, ✏️ Toggles pencil (notes) mode, 🗑️ Clears the cell (long press to clear board).",
+      "<strong>Action buttons:</strong> ↩️ Undoes the last change, ↪️ Redoes the last undo, ✏️ Toggles pencil (notes) mode, 🗑️ Clears the cell (long press to clear board).",
     tutorial_stage_3_kb:
-      "<strong>Keyboard Shortcuts:</strong> 1-9 (Input), Q (Undo), W/N (Notes), E/Backspace (Clear), Esc (Deselect).",
+      "<strong>Keyboard Shortcuts:</strong> 1-9 (Input), Q (Undo), R (Redo), W/N (Notes), E/Backspace (Clear), Esc (Deselect).",
 
     guide_title: "Game Guide",
     guide_tab_general: "General",
@@ -966,7 +966,7 @@ export const translations = {
       "{objective}<br><strong>Controls:</strong> {action}. Besides, you can lock and unlock pieces by holding the {lock_action}.",
     tutorial_stage_3_title: "Stage 3: Sudoku",
     tutorial_stage_3_desc:
-      "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers {input_method}.",
+      "{rules}<br>{buttons}{keyboard}<strong>Controls:</strong> Select a cell and input numbers {input_method}. Long press a number in the pad to lock it and quickly fill cells by clicking them.",
     tutorial_stage_4_title: "Stage 4: Peaks and Valleys",
     tutorial_stage_4_desc:
       "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to those immediately surrounding them (including diagonals). Some are already marked to help you; find the remaining 5 to move on.<br><strong>Controls:</strong> {Action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",

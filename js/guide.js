@@ -56,7 +56,7 @@ function getTutorialStageDescription(stage, t) {
     desc = desc.replace("{buttons}", t.tutorial_stage_3_btns);
     desc = desc.replace(
       "{keyboard}",
-      caps.isKeyboard ? t.tutorial_stage_3_kb : "",
+      caps.isKeyboard ? `<br>${t.tutorial_stage_3_kb}<br>` : "<br>",
     );
     desc = desc.replace(
       "{input_method}",
@@ -90,6 +90,7 @@ let selectedCell = null;
 let tutorialPencilMode = false;
 let undoStack = [];
 let lockedNumber = null;
+let redoStack = []; // v1.8.4: Track redo actions
 
 // Search Stage State
 let isSearchSelecting = false;
@@ -237,6 +238,8 @@ document.addEventListener("keydown", (e) => {
     toggleTutorialPencilMode();
   } else if (lowerKey === "q") {
     handleTutorialUndo();
+  } else if (lowerKey === "r") {
+    handleTutorialRedo();
   } else if (lowerKey === "e") {
     clearTutorialSelectedCell();
   }
@@ -1083,6 +1086,12 @@ function renderTutorialSudoku() {
   btnPencil.innerHTML = '<span class="icon">✏️</span>';
   btnPencil.onclick = toggleTutorialPencilMode;
 
+  const btnRedo = document.createElement("button");
+  btnRedo.id = "tutorial-forward";
+  btnRedo.className = "btn-sudoku-action";
+  btnRedo.innerHTML = '<span class="icon">↪️</span>';
+  btnRedo.onclick = handleTutorialRedo;
+
   const btnClear = document.createElement("button");
   btnClear.className = "btn-sudoku-action";
   btnClear.innerHTML = '<span class="icon">🗑️</span>';
@@ -1114,8 +1123,11 @@ function renderTutorialSudoku() {
   btnClear.addEventListener("touchend", cancelClearPress);
 
   actionsRow.appendChild(btnUndo);
+  actionsRow.appendChild(btnRedo);
   actionsRow.appendChild(btnPencil);
   actionsRow.appendChild(btnClear);
+
+  keypad.appendChild(actionsRow);
 
   // Numbers Row
   const numbersRow = document.createElement("div");
@@ -1126,8 +1138,16 @@ function renderTutorialSudoku() {
     btn.textContent = i;
     btn.className = "sudoku-num";
     btn.dataset.value = i;
+    
+    // --- Keypad Logic (Parity with sudoku.js) ---
+    btn.onclick = (e) => {
+      if (btn.dataset.longPressed === "true") {
+        btn.dataset.longPressed = "false";
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
 
-    btn.onclick = () => {
       if (lockedNumber) {
         if (lockedNumber === i.toString()) unlockTutorialNumber();
         else lockTutorialNumber(i.toString());
@@ -1137,16 +1157,26 @@ function renderTutorialSudoku() {
     };
 
     // Long Press to Lock
-    let pressTimer;
     const startPress = () => {
-      pressTimer = setTimeout(() => lockTutorialNumber(i.toString()), 600);
+      btn.dataset.longPressed = "false";
+      btn.classList.add("active"); // Visual feedback
+      btn.dataset.pressTimer = setTimeout(() => {
+        btn.dataset.longPressed = "true";
+        lockTutorialNumber(i.toString());
+      }, 600);
     };
-    const cancelPress = () => clearTimeout(pressTimer);
-    btn.onmousedown = startPress;
-    btn.ontouchstart = startPress;
-    btn.onmouseup = cancelPress;
-    btn.onmouseleave = cancelPress;
-    btn.ontouchend = cancelPress;
+
+    const cancelPress = () => {
+      btn.classList.remove("active");
+      const timer = btn.dataset.pressTimer;
+      if (timer) clearTimeout(parseInt(timer));
+    };
+
+    btn.addEventListener("mousedown", startPress);
+    btn.addEventListener("touchstart", startPress, { passive: true });
+    btn.addEventListener("mouseup", cancelPress);
+    btn.addEventListener("mouseleave", cancelPress);
+    btn.addEventListener("touchend", cancelPress);
 
     numbersRow.appendChild(btn);
   }
@@ -1154,9 +1184,10 @@ function renderTutorialSudoku() {
   keypad.appendChild(actionsRow);
   keypad.appendChild(numbersRow);
 
-  board.onclick = () => {
+  board.addEventListener("click", (e) => {
+    e.stopPropagation();
     deselectTutorialCell();
-  };
+  });
 
   sudokuWrapper.appendChild(board);
   sudokuWrapper.appendChild(keypad);
@@ -1164,6 +1195,17 @@ function renderTutorialSudoku() {
 
   // Initial UI sync
   updateTutorialKeypadHighlights();
+  updateTutorialHistoryButtons();
+}
+
+function updateTutorialHistoryButtons() {
+  const redoBtn = document.getElementById("tutorial-forward");
+  if (redoBtn) {
+    const hasRedo = redoStack.length > 0;
+    redoBtn.disabled = !hasRedo;
+    redoBtn.style.opacity = hasRedo ? "" : "0.35";
+    redoBtn.style.pointerEvents = hasRedo ? "" : "none";
+  }
 }
 
 /**
@@ -2324,7 +2366,9 @@ function executeClearTutorialBoard() {
   const board = document.getElementById("tutorial-sudoku-grid");
   if (!board) return;
 
-  undoStack = []; // Reset history on full clear (Standard Jigsudo behavior)
+  undoStack = []; 
+  redoStack = []; // v1.8.4: Reset redo too
+  updateTutorialHistoryButtons();
 
   const cells = board.querySelectorAll(".mini-cell");
   cells.forEach((cell) => {
@@ -2350,12 +2394,23 @@ function pushTutorialAction(cell) {
     previousClasses: [...cell.classList],
     previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
   });
+  redoStack = []; // Clear redo on new action
+  updateTutorialHistoryButtons();
 }
 
 function handleTutorialUndo() {
   if (undoStack.length === 0) return;
   const action = undoStack.pop();
   const cell = action.cell;
+
+  // Capture for Redo
+  const hasNotes = !!cell.querySelector(".notes-grid");
+  redoStack.push({
+    cell,
+    previousText: hasNotes ? "" : cell.textContent,
+    previousClasses: [...cell.classList],
+    previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
+  });
 
   cell.textContent = action.previousText;
   cell.className = "mini-cell";
@@ -2369,6 +2424,38 @@ function handleTutorialUndo() {
 
   selectTutorialCell(cell, true);
   validateTutorialBoard();
+  updateTutorialNoteVisibility();
+  updateTutorialHistoryButtons();
+}
+
+function handleTutorialRedo() {
+  if (redoStack.length === 0) return;
+  const action = redoStack.pop();
+  const cell = action.cell;
+
+  // Capture for Undo
+  const hasNotes = !!cell.querySelector(".notes-grid");
+  undoStack.push({
+    cell,
+    previousText: hasNotes ? "" : cell.textContent,
+    previousClasses: [...cell.classList],
+    previousNotes: cell.querySelector(".notes-grid")?.cloneNode(true),
+  });
+
+  cell.textContent = action.previousText;
+  cell.className = "mini-cell";
+  action.previousClasses.forEach((c) => {
+    if (c !== "selected-cell") cell.classList.add(c);
+  });
+
+  const existingNotes = cell.querySelector(".notes-grid");
+  if (existingNotes) existingNotes.remove();
+  if (action.previousNotes) cell.appendChild(action.previousNotes);
+
+  selectTutorialCell(cell, true);
+  validateTutorialBoard();
+  updateTutorialNoteVisibility();
+  updateTutorialHistoryButtons();
 }
 
 function lockTutorialNumber(num) {
@@ -2421,7 +2508,18 @@ function updateTutorialKeypadHighlights() {
     .querySelectorAll(".tutorial-sudoku-controls .sudoku-num")
     .forEach((btn) => {
       const val = btn.dataset.value;
-      btn.classList.remove("key-completed", "key-present", "key-disabled");
+      btn.classList.remove(
+        "key-completed",
+        "key-present",
+        "key-disabled",
+        "locked-num",
+      );
+
+      // Restore locked-num if applicable
+      if (lockedNumber === val) {
+        btn.classList.add("locked-num");
+      }
+
       btn.title = ""; // Reset tooltip
 
       if (globalCounts[val] >= 9) {
