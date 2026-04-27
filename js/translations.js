@@ -8,8 +8,8 @@ export const translations = {
     label_click_touch: "haz clic o toca",
     label_drag: "arrastra",
     label_place:
-      "Haz clic en la pieza y luego en el tablero o arrástrala a su lugar",
-    label_place_mobile: "Haz clic en la pieza y luego en el tablero",
+      "{Action} en la pieza y luego en el tablero o {drag} a su lugar",
+    label_place_mobile: "{Action} en la pieza y luego en el tablero",
     label_input_method: "con el pad en pantalla o el teclado",
     label_input_method_mobile: "con el pad en pantalla",
 
@@ -67,7 +67,7 @@ export const translations = {
       "Este tutorial te guiará por todas las etapas del juego con un tablero simplificado.",
     tutorial_stage_1_title: "Etapa 1: Juego de Memoria",
     tutorial_stage_1_desc:
-      "<strong>Objetivo:</strong> Encuentra los pares de bloques 3x3. Cada bloque es una sección del Sudoku final.<br><strong>Controles:</strong> Haz clic en dos cartas para revelarlas. Usa el botón 'Memorizar' para echar un vistazo rápido.",
+      "<strong>Objetivo:</strong> Encuentra los pares de bloques 3x3. Cada bloque es una sección del Sudoku final.<br><strong>Controles:</strong> {Action} en dos cartas para revelarlas. Usa el botón 'Memorizar' para echar un vistazo rápido.",
     tutorial_stage_2_title: "Etapa 2: Rompecabezas",
     tutorial_stage_2_desc:
       "{objective}<br><strong>Controles:</strong> {action}.",
@@ -76,13 +76,13 @@ export const translations = {
       "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}.",
     tutorial_stage_4_title: "Etapa 4: Picos y Valles",
     tutorial_stage_4_desc:
-      "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparándolos con los números que tienen pegados alrededor (incluyendo las diagonales). Algunos ya están marcados para ayudarte; debes encontrar los 5 restantes para avanzar.<br><strong>Controles:</strong> {action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
+      "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparándolos con los números que tienen pegados alrededor (incluyendo las diagonales). Algunos ya están marcados para ayudarte; debes encontrar los 5 restantes para avanzar.<br><strong>Controles:</strong> {Action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
     tutorial_stage_5_title: "Etapa 5: Sopa de Números",
     tutorial_stage_5_desc:
-      "<strong>Objetivo:</strong> Localiza las secuencias ocultas en el tablero. Pueden doblar en vertical u horizontal, pero no en diagonal.<br><strong>Controles:</strong> Haz clic y arrastra sobre las celdas que forman la secuencia completa.",
+      "<strong>Objetivo:</strong> Localiza las secuencias ocultas en el tablero. Pueden doblar en vertical u horizontal, pero no en diagonal.<br><strong>Controles:</strong> {Action} y {drag} sobre las celdas que forman la secuencia completa.",
     tutorial_stage_6_title: "Etapa 6: El Código",
     tutorial_stage_6_desc:
-      "<strong>Objetivo:</strong> Se revelará un patrón de seguridad. Memorízalo y repítelo exactamente en el tablero.<br><strong>Controles:</strong> {action} las celdas en el orden correcto.",
+      "<strong>Objetivo:</strong> Se revelará un patrón de seguridad. Memorízalo y repítelo exactamente en el tablero.<br><strong>Controles:</strong> {Action} las celdas en el orden correcto.",
     tutorial_stage_7_title: "¡Tutorial Completado!",
     tutorial_stage_7_desc:
       "Felicidades, has dominado todas las mecánicas de Jigsudo. ¡Ya puedes enfrentarte al desafío de hoy!",
@@ -899,8 +899,8 @@ export const translations = {
     label_click_touch: "click or tap",
     label_drag: "drag",
     label_place:
-      "click the piece and then the board position, or drag it to its spot",
-    label_place_mobile: "click the piece and then the board position",
+      "{Action} the piece and then the board position, or {drag} it to its spot",
+    label_place_mobile: "{Action} the piece and then the board position",
     label_input_method: "with the on-screen pad or keyboard",
     label_input_method_mobile: "with the on-screen pad",
 
@@ -956,7 +956,7 @@ export const translations = {
       "This tutorial will guide you through all stages of the game with a simplified board.",
     tutorial_stage_1_title: "Stage 1: Memory Game",
     tutorial_stage_1_desc:
-      "<strong>Goal:</strong> Find the 3x3 block pairs. Each block is a section of the final Sudoku.<br><strong>Controls:</strong> Click two cards to reveal them. Use 'Memorize' for a quick peek.",
+      "<strong>Goal:</strong> Find the 3x3 block pairs. Each block is a section of the final Sudoku.<br><strong>Controls:</strong> {Action} two cards to reveal them. Use 'Memorize' for a quick peek.",
     tutorial_stage_2_title: "Stage 2: Jigsaw",
     tutorial_stage_2_desc:
       "{objective}<br><strong>Controls:</strong> {action}.",
@@ -965,13 +965,13 @@ export const translations = {
       "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers {input_method}.",
     tutorial_stage_4_title: "Stage 4: Peaks and Valleys",
     tutorial_stage_4_desc:
-      "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to those immediately surrounding them (including diagonals). Some are already marked to help you; find the remaining 5 to move on.<br><strong>Controls:</strong> {action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",
+      "<strong>Goal:</strong> Identify the highest (Peaks) and lowest (Valleys) numbers compared to those immediately surrounding them (including diagonals). Some are already marked to help you; find the remaining 5 to move on.<br><strong>Controls:</strong> {Action} the cell: it marks <strong>orange</strong> for a peak and <strong>blue</strong> for a valley.",
     tutorial_stage_5_title: "Stage 5: Number Search",
     tutorial_stage_5_desc:
-      "<strong>Goal:</strong> Locate the hidden sequences on the board. They can turn vertically or horizontally, but not diagonally.<br><strong>Controls:</strong> Click and drag over the cells that form the sequence.",
+      "<strong>Goal:</strong> Locate the hidden sequences on the board. They can turn vertically or horizontally, but not diagonally.<br><strong>Controls:</strong> {Action} and {drag} over the cells that form the sequence.",
     tutorial_stage_6_title: "Stage 6: The Code",
     tutorial_stage_6_desc:
-      "<strong>Goal:</strong> A security pattern will be revealed. Memorize and repeat it exactly on the board.<br><strong>Controls:</strong> {action} the cells in the correct order.",
+      "<strong>Goal:</strong> A security pattern will be revealed. Memorize and repeat it exactly on the board.<br><strong>Controls:</strong> {Action} the cells in the correct order.",
     tutorial_stage_7_title: "Tutorial Completed!",
     tutorial_stage_7_desc:
       "Congratulations, you've mastered Jigsudo! You're ready for today's challenge.",

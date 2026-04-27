@@ -16,7 +16,12 @@ let currentTutorialStage = 1;
 let tutorialState = null;
 
 function getDeviceCapabilities() {
-  const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const isTouch =
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
   const isMouse = window.matchMedia("(pointer: fine)").matches;
   // Heuristic for keyboard: not a mobile UA or has hover (usually laptops/desktops)
   const isKeyboard =
@@ -31,6 +36,15 @@ function getTutorialStageDescription(stage, t) {
   const caps = getDeviceCapabilities();
   let desc = t[`tutorial_stage_${stage}_desc`] || "Descripción";
 
+  // 1. Resolve Action and Drag labels based on capabilities
+  let action = t.label_click;
+  if (caps.isTouch && caps.isMouse) {
+    action = t.label_click_touch;
+  } else if (caps.isTouch) {
+    action = t.label_touch;
+  }
+
+  // 2. Stage-Specific Content Preparation (Injecting sub-strings that might contain placeholders)
   if (stage === 2) {
     desc = desc.replace("{objective}", t.tutorial_stage_2_obj);
     desc = desc.replace(
@@ -48,15 +62,14 @@ function getTutorialStageDescription(stage, t) {
       "{input_method}",
       caps.isTouch ? t.label_input_method_mobile : t.label_input_method,
     );
-  } else if (stage === 4 || stage === 6) {
-    let action = t.label_click;
-    if (caps.isTouch && caps.isMouse) {
-      action = t.label_click_touch;
-    } else if (caps.isTouch) {
-      action = t.label_touch;
-    }
-    desc = desc.replace("{action}", action);
   }
+
+  // 3. Universal Placeholder Replacement (Generic Pass)
+  // This handles stages like 1, 4, 5, 6 and also processes placeholders inside label_place
+  const Action = action.charAt(0).toUpperCase() + action.slice(1);
+  desc = desc.replaceAll("{Action}", Action);
+  desc = desc.replaceAll("{action}", action);
+  desc = desc.replaceAll("{drag}", t.label_drag);
 
   return desc;
 }
@@ -81,6 +94,10 @@ let lockedNumber = null;
 let isSearchSelecting = false;
 let currentSearchCells = [];
 let currentSearchPath = [];
+
+// Long Press for Locking (Tutorial Stage 2)
+let longPressTimer;
+const LONG_PRESS_DURATION = 600;
 
 export function initGuide() {
   setupTutorialListeners();
@@ -472,6 +489,7 @@ function resetSpecificStageState(stage) {
     case 2: // Jigsaw
       tutorialState.jigsawSlots = [0, null, 2, null, 4, null, 6, null, 8];
       tutorialState.piecesToPlace = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+      tutorialState.userLockedSlots = new Set(); // v1.8.2: Track manual locks
       // Reset drag state
       selectedPieceElement = null;
       potentialDragTarget = null;
@@ -519,6 +537,12 @@ function resetSpecificStageState(stage) {
 function loadStage(stage) {
   // CRITICAL: Reset the specific stage's state before rendering so it starts from zero
   resetSpecificStageState(stage);
+
+  // Cleanup global classes
+  const gameArea = document.getElementById("tutorial-game-area");
+  if (gameArea) {
+    gameArea.classList.remove("jigsaw-mode", "selection-active");
+  }
 
   const modal = document.getElementById("tutorial-modal");
   if (modal) modal.scrollTop = 0;
@@ -759,18 +783,35 @@ function renderTutorialMemory() {
         console.log(`[Tutorial] Comparing: ${index1} and ${index2}`);
 
         if (index1 === index2) {
-          firstCard.classList.add("matched");
-          card.classList.add("matched");
-          tutorialState.matchesFound++;
-          console.log(`[Tutorial] MATCH SUCCESS! Total matches: ${tutorialState.matchesFound}/4`);
+          // 1. Success Animation (Green Glow)
+          firstCard.classList.add("match-anim");
+          card.classList.add("match-anim");
+
+          const c1 = firstCard;
+          const c2 = card;
           firstCard = null;
-          
-          if (tutorialState.matchesFound === 4) {
-            console.log("[Tutorial] ALL STAGE 1 MATCHES COMPLETE! Advancing to Stage 2 in 1s...");
-            setTimeout(() => {
-              loadStage(2);
-            }, 1000);
-          }
+
+          // 2. Wait for animation, then finalize
+          setTimeout(() => {
+            c1.classList.remove("match-anim");
+            c2.classList.remove("match-anim");
+            c1.classList.add("matched");
+            c2.classList.add("matched");
+
+            tutorialState.matchesFound++;
+            console.log(
+              `[Tutorial] MATCH SUCCESS! Total matches: ${tutorialState.matchesFound}/4`,
+            );
+
+            if (tutorialState.matchesFound === 4) {
+              console.log(
+                "[Tutorial] ALL STAGE 1 MATCHES COMPLETE! Advancing to Stage 2 in 1s...",
+              );
+              setTimeout(() => {
+                loadStage(2);
+              }, 1000);
+            }
+          }, 450); // Match duration of CSS animation
         } else {
           console.log("[Tutorial] MATCH FAILED. Unflipping cards...");
           canClick = false;
@@ -817,16 +858,54 @@ function getBlockTable(pieceIdx, slotIdx = null, conflicts = null) {
         }
       }
 
-      html += `<div class="${cellClass}">${isEmpty ? "" : val}</div>`;
+  html += `<div class="${cellClass}">${isEmpty ? "" : val}</div>`;
     }
   }
   return html + "</div>";
+}
+
+/**
+ * Animates an element from a starting position (rect) to its current DOM position.
+ */
+function animateTutorialMove(element, fromRect, duration = 300) {
+  if (!element || !fromRect) return;
+
+  const toRect = element.getBoundingClientRect();
+  const dx = fromRect.left - toRect.left;
+  const dy = fromRect.top - toRect.top;
+
+  // Only animate if there is a significant move
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+  // Invert
+  element.style.transition = "none";
+  element.style.transform = `translate(${dx}px, ${dy}px)`;
+  element.style.zIndex = "2000"; // Ensure it stays on top during animation
+
+  // Force reflow
+  void element.offsetWidth;
+
+  // Play
+  element.style.transition = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+  element.style.transform = "translate(0, 0)";
+
+  // Cleanup
+  setTimeout(() => {
+    element.style.transition = "";
+    element.style.transform = "";
+    element.style.zIndex = "";
+  }, duration);
 }
 
 // --- STAGE 2: JIGSAW ---
 function renderTutorialJigsaw() {
   const container = document.getElementById("tutorial-board-container");
   container.innerHTML = "";
+
+  const gameArea = document.getElementById("tutorial-game-area");
+  if (gameArea) {
+    gameArea.classList.add("jigsaw-mode");
+  }
 
   const jigsawWrapper = document.createElement("div");
   jigsawWrapper.className = "jigsaw-tutorial-wrapper";
@@ -838,7 +917,7 @@ function renderTutorialJigsaw() {
 
   for (let i = 0; i < 9; i++) {
     const slot = document.createElement("div");
-    slot.className = "jigsaw-slot glass-panel";
+    slot.className = "sudoku-chunk-slot glass-panel"; // Use standard class
     slot.dataset.index = i;
 
     const pieceIdx = tutorialState.jigsawSlots[i];
@@ -849,7 +928,12 @@ function renderTutorialJigsaw() {
       // Fixed pieces: Corners (0, 2, 6, 8) and Center (4)
       const isFixed = [0, 2, 4, 6, 8].includes(i);
       if (isFixed) {
-        slot.classList.add("locked");
+        slot.classList.add("fixed-piece"); // Use fixed-piece class for tutorial given pieces
+      }
+
+      // v1.8.2: Restore manual locks from state
+      if (tutorialState.userLockedSlots && tutorialState.userLockedSlots.has(i)) {
+        slot.classList.add("user-locked");
       }
     } else {
       slot.innerHTML = '<div class="slot-placeholder"></div>';
@@ -857,15 +941,16 @@ function renderTutorialJigsaw() {
 
     slot.onclick = () => {
       // Locked pieces cannot be selected or interact with selection
-      if (slot.classList.contains("locked")) return;
+      if (slot.classList.contains("user-locked") || slot.classList.contains("fixed-piece")) return;
 
       const selected = document.querySelector(
-        ".jigsaw-piece.selected, .jigsaw-slot.selected",
+        ".collected-piece.selected, .sudoku-chunk-slot.selected",
       );
       if (!selected) {
         if (slot.classList.contains("filled")) {
           deselectGeneric();
           slot.classList.add("selected");
+          if (gameArea) gameArea.classList.add("selection-active");
         }
         return;
       }
@@ -893,7 +978,7 @@ function renderTutorialJigsaw() {
 
     if (!placedPieceIndices.includes(pieceIdx)) {
       const piece = document.createElement("div");
-      piece.className = "jigsaw-piece glass-panel";
+      piece.className = "collected-piece glass-panel"; // Use standard class
       piece.innerHTML = getBlockTable(pieceIdx);
       piece.dataset.pieceIdx = pieceIdx;
 
@@ -901,7 +986,6 @@ function renderTutorialJigsaw() {
         e.stopPropagation(); // prevent slot click
         deselectGeneric();
         piece.classList.add("selected");
-        const gameArea = document.getElementById("tutorial-game-area");
         if (gameArea) gameArea.classList.add("selection-active");
       };
       slot.appendChild(piece);
@@ -911,7 +995,7 @@ function renderTutorialJigsaw() {
 
     slot.onclick = () => {
       const selected = document.querySelector(
-        ".jigsaw-piece.selected, .jigsaw-slot.selected",
+        ".collected-piece.selected, .sudoku-chunk-slot.selected",
       );
       if (selected) {
         handleDrop(selected, slot);
@@ -1079,6 +1163,46 @@ function renderTutorialSudoku() {
 
   // Initial UI sync
   updateTutorialKeypadHighlights();
+}
+
+/**
+ * Toggles the user-locked state of a piece in Tutorial Stage 2.
+ */
+function toggleTutorialPieceLock(slot) {
+  if (
+    !slot ||
+    !slot.classList.contains("sudoku-chunk-slot") ||
+    !slot.classList.contains("filled")
+  )
+    return;
+
+  // CRITICAL: Fixed tutorial pieces (corners/center) cannot be unlocked
+  if (slot.classList.contains("fixed-piece")) return;
+
+  const isLocked = slot.classList.toggle("user-locked");
+
+  // v1.8.2: Persist lock state to tutorialState
+  const slotIdx = parseInt(slot.dataset.index);
+  if (tutorialState.userLockedSlots) {
+    if (isLocked) {
+      tutorialState.userLockedSlots.add(slotIdx);
+    } else {
+      tutorialState.userLockedSlots.delete(slotIdx);
+    }
+  }
+
+  // Feedback
+  if (isLocked) {
+    slot.style.transition = "transform 0.1s";
+    slot.style.transform = "scale(0.95)";
+    setTimeout(() => {
+      slot.style.transform = "";
+      slot.style.transition = "";
+    }, 100);
+  }
+
+  // Deselect if it was selected to avoid confusion
+  deselectGeneric();
 }
 
 // --- STAGE 4: PEAKS & VALLEYS ---
@@ -1608,8 +1732,12 @@ function initTutorialDragAndDrop() {
 }
 
 function handlePointerDown(e) {
-  // Only Mouse or Pen (Except for Search stage which allows touch)
-  if (e.pointerType === "touch" && currentTutorialStage !== 5) return;
+  // Only Mouse or Pen (Except for Jigsaw/Search stage which allows touch for locking/selecting)
+  if (
+    e.pointerType === "touch" &&
+    ![2, 5].includes(currentTutorialStage)
+  )
+    return;
 
   if (e.pointerType === "touch" && currentTutorialStage === 5) {
     e.preventDefault();
@@ -1617,22 +1745,40 @@ function handlePointerDown(e) {
 
   // Interaction based on Stage
   if (currentTutorialStage === 2) {
-    const target = e.target.closest(".jigsaw-piece, .jigsaw-slot");
+    const target = e.target.closest(".collected-piece, .sudoku-chunk-slot");
     if (!target) return;
 
     // If slot is empty, ignore
     if (
-      target.classList.contains("jigsaw-slot") &&
+      target.classList.contains("sudoku-chunk-slot") &&
       !target.classList.contains("filled")
     )
       return;
 
-    // Prevent dragging locked pieces
-    if (target.classList.contains("locked")) return;
+    // Prevent dragging fixed tutorial pieces
+    if (target.classList.contains("fixed-piece")) return;
 
-    potentialDragTarget = target;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
+    // Start Long Press Timer for Locking (only on Board pieces)
+    if (
+      target.classList.contains("sudoku-chunk-slot") &&
+      target.classList.contains("filled") &&
+      !target.classList.contains("fixed-piece")
+    ) {
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        toggleTutorialPieceLock(target);
+      }, LONG_PRESS_DURATION);
+    }
+
+    // Store Potential Drag (Only if it has content to avoid selecting empty slots)
+    const isFilledBoard = target.classList.contains("sudoku-chunk-slot") && target.classList.contains("filled");
+    const isFilledPanel = target.classList.contains("collected-piece") && !target.classList.contains("placeholder");
+
+    if (isFilledBoard || isFilledPanel) {
+      potentialDragTarget = target;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+    }
   } else if (currentTutorialStage === 5) {
     // Search Selection Start
     const cell = e.target.closest(".mini-cell");
@@ -1668,6 +1814,20 @@ function handlePointerMove(e) {
       const dy = Math.abs(e.clientY - dragStartY);
 
       if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+        clearTimeout(longPressTimer); // Cancel lock if moving
+
+        // v1.8.2: Only Mouse or Pen can drag in Stage 2 (Touch is for scroll/long-press only)
+        if (e.pointerType === "touch") {
+          potentialDragTarget = null;
+          return;
+        }
+
+        // Prevent dragging user-locked pieces
+        if (potentialDragTarget.classList.contains("user-locked")) {
+          potentialDragTarget = null;
+          return;
+        }
+
         startDragging(e);
       }
     }
@@ -1681,8 +1841,8 @@ function handlePointerMove(e) {
     const elements = document.elementsFromPoint(e.clientX, e.clientY);
     const dropTarget = elements.find(
       (el) =>
-        el.classList.contains("jigsaw-slot") ||
-        el.classList.contains("jigsaw-piece") ||
+        el.classList.contains("sudoku-chunk-slot") ||
+        el.classList.contains("collected-piece") ||
         el.classList.contains("jigsaw-panel-slot") ||
         el.classList.contains("tutorial-jigsaw-panel"),
     );
@@ -1760,6 +1920,7 @@ function startDragging(e) {
 }
 
 function handlePointerUp(e) {
+  clearTimeout(longPressTimer); // Cancel lock timer
   if (currentTutorialStage === 2) {
     potentialDragTarget = null;
 
@@ -1769,8 +1930,8 @@ function handlePointerUp(e) {
     const elements = document.elementsFromPoint(e.clientX, e.clientY);
     const dropTarget = elements.find(
       (el) =>
-        el.classList.contains("jigsaw-slot") ||
-        el.classList.contains("jigsaw-piece") ||
+        el.classList.contains("sudoku-chunk-slot") ||
+        el.classList.contains("collected-piece") ||
         el.classList.contains("jigsaw-panel-slot") ||
         el.classList.contains("tutorial-jigsaw-panel"),
     );
@@ -1779,7 +1940,7 @@ function handlePointerUp(e) {
       selectedPieceElement.querySelector(".mini-sudoku-grid");
 
     if (dropTarget) {
-      handleDrop(selectedPieceElement, dropTarget);
+      handleDrop(selectedPieceElement, dropTarget, true);
     } else {
       // Return to source
       if (sourceContent) sourceContent.style.opacity = "1";
@@ -1870,15 +2031,15 @@ function deselectGeneric() {
   if (gameArea) gameArea.classList.remove("selection-active");
 }
 
-function handleDrop(source, target) {
+function handleDrop(source, target, skipAnimation = false) {
   if (source === target) {
     const content = source.querySelector(".mini-sudoku-grid");
     if (content) content.style.opacity = "1";
     return;
   }
 
-  const isSourceBoard = source.classList.contains("jigsaw-slot");
-  const isTargetBoard = target.classList.contains("jigsaw-slot");
+  const isSourceBoard = source.classList.contains("sudoku-chunk-slot");
+  const isTargetBoard = target.classList.contains("sudoku-chunk-slot");
 
   const sourceIdx = parseInt(
     isSourceBoard ? source.dataset.index : source.dataset.pieceIdx,
@@ -1891,7 +2052,7 @@ function handleDrop(source, target) {
 
   if (isTargetBoard) {
     // Prevent dropping into locked slots
-    if (target.classList.contains("locked")) {
+    if (target.classList.contains("user-locked") || target.classList.contains("fixed-piece")) {
       const content = source.querySelector(".mini-sudoku-grid");
       if (content) content.style.opacity = "1";
       deselectGeneric();
@@ -1912,8 +2073,26 @@ function handleDrop(source, target) {
     }
   }
 
+  const movingPieceIdx = pieceIdx;
+  const sourceGrid = source.querySelector(".mini-sudoku-grid");
+  const fromRect = sourceGrid ? sourceGrid.getBoundingClientRect() : null;
+
   deselectGeneric();
   renderTutorialJigsaw();
+
+  // Animate the moved piece to its new position
+  if (!skipAnimation && fromRect) {
+    const targetSlot = isTargetBoard
+      ? document.querySelector(`.sudoku-chunk-slot[data-index="${targetIdx}"]`)
+      : document.querySelector(`.collected-piece[data-piece-idx="${movingPieceIdx}"]`);
+
+    if (targetSlot) {
+      const newGrid = targetSlot.querySelector(".mini-sudoku-grid");
+      if (newGrid) {
+        animateTutorialMove(newGrid, fromRect);
+      }
+    }
+  }
 
   // Win condition: Slots match piece indices (Identity map)
   const isWin = tutorialState.jigsawSlots.every(

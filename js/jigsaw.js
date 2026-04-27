@@ -809,7 +809,7 @@ export function initDragAndDrop() {
 }
 
 export function handlePointerDown(e) {
-  if (e.pointerType === "touch") return; // Mouse/Pen only
+  // Allow Mouse, Pen, and Touch (v1.8.0: Touch enabled for long-press locking)
 
   // GUARD: Only allow interaction in Jigsaw Mode
   if (!memorySection || !memorySection.classList.contains("jigsaw-mode"))
@@ -831,10 +831,15 @@ export function handlePointerDown(e) {
     }, LONG_PRESS_DURATION);
   }
 
-  // Store Potential Drag
-  potentialDragTarget = target;
-  dragStartX = e.clientX;
-  dragStartY = e.clientY;
+  // Store Potential Drag (Only if it has content to avoid selecting empty slots)
+  const isFilledBoard = target.classList.contains("sudoku-chunk-slot") && target.classList.contains("filled");
+  const isFilledPanel = target.classList.contains("collected-piece") && !target.classList.contains("placeholder");
+
+  if (isFilledBoard || isFilledPanel) {
+    potentialDragTarget = target;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+  }
 
   // Do NOT select immediately. Wait for Click (handled by click listeners) OR Drag (handled by pointermove).
 }
@@ -848,6 +853,12 @@ export function handlePointerMove(e) {
     if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
       // START DRAG
       clearTimeout(longPressTimer); // Cancel lock if moving
+
+      // v1.8.3: Only Mouse or Pen can drag in Jigsaw (Touch is for scroll/long-press only)
+      if (e.pointerType === "touch") {
+        potentialDragTarget = null;
+        return;
+      }
 
       // Protect locked pieces from dragging
       if (potentialDragTarget.classList.contains("user-locked")) {
