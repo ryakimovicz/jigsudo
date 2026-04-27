@@ -948,6 +948,9 @@ function renderTutorialJigsaw() {
       // Locked pieces cannot be selected or interact with selection
       if (slot.classList.contains("user-locked") || slot.classList.contains("fixed-piece")) return;
 
+      // v1.9.9c: Lock interaction if complete
+      if (document.querySelector(".tutorial-jigsaw-board")?.classList.contains("board-complete")) return;
+
       const selected = document.querySelector(
         ".collected-piece.selected, .sudoku-chunk-slot.selected",
       );
@@ -988,6 +991,9 @@ function renderTutorialJigsaw() {
       piece.dataset.pieceIdx = pieceIdx;
 
       piece.onclick = (e) => {
+        // v1.9.9c: Lock interaction if complete
+        if (document.querySelector(".tutorial-jigsaw-board")?.classList.contains("board-complete")) return;
+
         e.stopPropagation(); // prevent slot click
         deselectGeneric();
         piece.classList.add("selected");
@@ -1792,6 +1798,9 @@ function handlePointerDown(e) {
     const target = e.target.closest(".collected-piece, .sudoku-chunk-slot");
     if (!target) return;
 
+    // v1.9.9c: Lock interaction if complete
+    if (document.querySelector(".tutorial-jigsaw-board")?.classList.contains("board-complete")) return;
+
     // If slot is empty, ignore
     if (
       target.classList.contains("sudoku-chunk-slot") &&
@@ -2143,6 +2152,8 @@ function handleDrop(source, target, skipAnimation = false) {
     (idx, slotIdx) => idx === slotIdx,
   );
   if (isWin) {
+    const board = document.querySelector(".tutorial-jigsaw-board");
+    if (board) board.classList.add("board-complete");
     setTimeout(() => nextTutorialStage(), 1000);
   }
 }

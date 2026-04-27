@@ -50,6 +50,7 @@ export function initJigsaw(elements) {
   const btnReset = document.getElementById("btn-jigsaw-reset");
   if (btnReset) {
     btnReset.addEventListener("click", (e) => {
+      if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
       e.preventDefault();
       e.stopPropagation();
       resetJigsaw();
@@ -59,6 +60,7 @@ export function initJigsaw(elements) {
   const btnUndo = document.getElementById("btn-jigsaw-undo");
   if (btnUndo) {
     btnUndo.addEventListener("click", (e) => {
+      if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
       e.preventDefault();
       e.stopPropagation();
       undo();
@@ -67,7 +69,10 @@ export function initJigsaw(elements) {
 
   const btnRedo = document.getElementById("btn-jigsaw-redo");
   if (btnRedo) {
-    btnRedo.addEventListener("click", () => redo());
+    btnRedo.addEventListener("click", () => {
+      if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
+      redo();
+    });
   }
 
   // Initialize resizing listener for Jigsaw pieces
@@ -379,6 +384,9 @@ export function handlePieceSelect(pieceElement) {
   // GUARD: Only in Jigsaw Mode
   if (!memorySection || !memorySection.classList.contains("jigsaw-mode")) return;
 
+  // v1.9.9c: Lock interaction if transitioning or complete
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
+
   // If we click the same piece, deselect
   if (selectedPieceElement === pieceElement) {
     deselectPiece();
@@ -523,6 +531,7 @@ export function handleSlotClick_v2(slotIndex) {
   if (isDragging) return;
 
   // GUARD: Only in Jigsaw Mode
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
 
   const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
   if (!slot) return;
@@ -814,6 +823,9 @@ export function handlePointerDown(e) {
   // GUARD: Only allow interaction in Jigsaw Mode
   if (!memorySection || !memorySection.classList.contains("jigsaw-mode"))
     return;
+
+  // v1.9.9c: Lock interaction if transitioning or complete
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
 
   const target = e.target.closest(".collected-piece, .sudoku-chunk-slot");
   if (!target) return;
@@ -1118,6 +1130,7 @@ export function handlePointerUp(e) {
 }
 
 function togglePieceLock(slot) {
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
   if (
     !slot ||
     !slot.classList.contains("sudoku-chunk-slot") ||
@@ -1425,6 +1438,7 @@ export function syncJigsawState() {
  * Resets the Jigsaw board, moving all pieces from slots back to the panel.
  */
 export function resetJigsaw() {
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
   if (!initialJigsawState) {
     console.warn("[Jigsaw] No initial state captured. Resetting manually.");
     // Fallback to old reset logic if needed, but initialJigsawState should be there
@@ -1573,6 +1587,7 @@ function updateHistoryButtons() {
 }
 
 function undo() {
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
   if (undoStack.length === 0) return;
   const current = captureCurrentState();
   redoStack.push(current);
@@ -1582,6 +1597,7 @@ function undo() {
 }
 
 function redo() {
+  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
   if (redoStack.length === 0) return;
   const current = captureCurrentState();
   undoStack.push(current);
