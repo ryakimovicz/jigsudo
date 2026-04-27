@@ -7,6 +7,8 @@ export const translations = {
     label_touch: "toca",
     label_click_touch: "haz clic o toca",
     label_drag: "arrastra",
+    label_click_noun: "clic",
+    label_touch_noun: "toque",
     label_place:
       "{Action} en la pieza y luego en el tablero o {drag} a su lugar",
     label_place_mobile: "{Action} en la pieza y luego en el tablero",
@@ -70,7 +72,7 @@ export const translations = {
       "<strong>Objetivo:</strong> Encuentra los pares de bloques 3x3. Cada bloque es una sección del Sudoku final.<br><strong>Controles:</strong> {Action} en dos cartas para revelarlas. Usa el botón 'Memorizar' para echar un vistazo rápido.",
     tutorial_stage_2_title: "Etapa 2: Rompecabezas",
     tutorial_stage_2_desc:
-      "{objective}<br><strong>Controles:</strong> {action}.",
+      "{objective}<br><strong>Controles:</strong> {action}. Además, puedes bloquear y desbloquear piezas manteniendo el {lock_action}.",
     tutorial_stage_3_title: "Etapa 3: Sudoku",
     tutorial_stage_3_desc:
       "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}.",
@@ -898,6 +900,8 @@ export const translations = {
     label_touch: "tap",
     label_click_touch: "click or tap",
     label_drag: "drag",
+    label_click_noun: "click",
+    label_touch_noun: "touch",
     label_place:
       "{Action} the piece and then the board position, or {drag} it to its spot",
     label_place_mobile: "{Action} the piece and then the board position",
@@ -959,7 +963,7 @@ export const translations = {
       "<strong>Goal:</strong> Find the 3x3 block pairs. Each block is a section of the final Sudoku.<br><strong>Controls:</strong> {Action} two cards to reveal them. Use 'Memorize' for a quick peek.",
     tutorial_stage_2_title: "Stage 2: Jigsaw",
     tutorial_stage_2_desc:
-      "{objective}<br><strong>Controls:</strong> {action}.",
+      "{objective}<br><strong>Controls:</strong> {action}. Besides, you can lock and unlock pieces by holding the {lock_action}.",
     tutorial_stage_3_title: "Stage 3: Sudoku",
     tutorial_stage_3_desc:
       "{rules}<br>{buttons}<br>{keyboard}<br><strong>Controls:</strong> Select a cell and input numbers {input_method}.",

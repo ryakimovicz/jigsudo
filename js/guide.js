@@ -70,6 +70,7 @@ function getTutorialStageDescription(stage, t) {
   desc = desc.replaceAll("{Action}", Action);
   desc = desc.replaceAll("{action}", action);
   desc = desc.replaceAll("{drag}", t.label_drag);
+  desc = desc.replaceAll("{lock_action}", caps.isTouch ? t.label_touch_noun : t.label_click_noun);
 
   return desc;
 }
