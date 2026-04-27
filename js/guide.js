@@ -409,13 +409,14 @@ function initTutorialState() {
       isRequired: true,
     },
     {
-      id: "s2", // 4 digits
-      numbers: [4, 9, 8, 3],
+      id: "s2", // 5 digits
+      numbers: [7, 3, 8, 9, 4],
       path: [
-        { r: 2, c: 3 },
-        { r: 2, c: 4 },
-        { r: 2, c: 5 },
+        { r: 3, c: 6 },
         { r: 2, c: 6 },
+        { r: 2, c: 5 },
+        { r: 2, c: 4 },
+        { r: 2, c: 3 },
       ],
       isRequired: true,
     },
