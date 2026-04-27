@@ -618,6 +618,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1410_title: "Versión 1.4.10",
+    changelog_v1410_date: "27 de abril de 2026",
+    changelog_v1410_item1: "Tutorial: Refinada la secuencia en Sopa de Números y paridad de botones en Etapa 3 (Deshacer/Rehacer).",
+    changelog_v1410_item2: "Integridad: Implementado el bloqueo de interacciones al completar el Rompecabezas para evitar pérdida de piezas.",
+    changelog_v1410_item3: "Móvil: Corregidos espacios en descripciones del tutorial y mejorada la detección de pulsación larga en el pad.",
     changelog_v149_title: "Versión 1.4.9",
     changelog_v149_date: "26/04/2026",
     changelog_v149_item1: "Integridad: Desacople total del anclaje de sesión respecto a la intención de juego (Escudo de Inactividad).",
@@ -1514,6 +1519,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1410_title: "Version 1.4.10",
+    changelog_v1410_date: "April 27, 2026",
+    changelog_v1410_item1: "Tutorial: Refined sequence in Number Search and fixed Stage 3 keypad parity (Undo/Redo).",
+    changelog_v1410_item2: "Integrity: Implemented interaction locking upon Jigsaw completion to prevent piece loss.",
+    changelog_v1410_item3: "Mobile: Fixed UI spacing in tutorial descriptions and improved long-press detection for keypad locking.",
     changelog_v149_title: "Version 1.4.9",
     changelog_v149_date: "April 26, 2026",
     changelog_v149_item1: "Integrity: Full decoupling of session anchoring from game intent (Inactivity Shield).",
