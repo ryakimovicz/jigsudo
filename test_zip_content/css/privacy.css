@@ -1,0 +1,23 @@
+#privacy-section {
+  min-height: 100dvh;
+  padding-top: var(--header-height);
+  padding-bottom: 50px;
+  box-sizing: border-box;
+}
+
+/* Styles consolidated in global.css */
+
+/* Footer Wrapper */
+.privacy-footer {
+  text-align: center;
+  margin-top: 30px;
+  margin-bottom: 50px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  #privacy-section {
+    padding: 15px;
+    /* width override removed */
+  }
+}

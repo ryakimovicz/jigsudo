@@ -1,0 +1,463 @@
+/* El Código (The Code) Styles */
+
+/* =========================================
+   Layout Inheritance (Matches Search/Sudoku)
+   ========================================= */
+
+/* Main Layout Stack */
+.code-mode .memory-grid-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 15px !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+  padding-top: 0.2rem !important; /* v2.8.0: Compact top */
+
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
+}
+
+.dark-mode .code-mode .memory-grid-layout {
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
+}
+
+/* Board Styling - Ensure it stays exactly like Search/Sudoku */
+.code-mode .memory-board {
+  background: var(--bg-secondary) !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 4px solid var(--bg-secondary) !important;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1/1 !important;
+}
+
+/* Remove internal rounding */
+.code-mode .sudoku-chunk-slot,
+.code-mode .mini-sudoku-grid {
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Internal Grid Borders */
+.code-mode .sudoku-chunk-slot {
+  border-right: 3px solid var(--sudoku-grid-line);
+  border-bottom: 3px solid var(--sudoku-grid-line);
+}
+
+.code-mode .sudoku-chunk-slot:nth-child(3n) {
+  border-right: none !important;
+}
+
+.code-mode .sudoku-chunk-slot:nth-child(n + 7) {
+  border-bottom: none !important;
+}
+
+/* Hide Unused Elements (Jigsaw Panels, Cards) */
+.code-mode .collected-zone,
+.code-mode .collected-wrapper,
+.code-mode .cards-area {
+  display: none !important;
+}
+
+/* Center Board Wrapper */
+.code-mode .board-wrapper {
+  order: 1 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Mobile Responsive Adjustments (Same as Search) */
+@media (max-width: 768px) {
+  .code-mode .memory-grid-layout {
+    flex: 1 !important;
+    min-height: 0;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 2px !important;
+    max-height: calc(
+      100dvh - var(--header-height) - var(--footer-height)
+    ) !important;
+    overflow: hidden !important;
+  }
+
+  .code-mode .memory-board {
+    --v-budget: calc(100dvh - var(--header-height) - var(--footer-height) - 130px);
+    width: min(95vw, var(--v-budget));
+    max-height: var(--v-budget);
+  }
+}
+
+@media (min-width: 769px) {
+  .code-mode .memory-board {
+    width: min(420px, 45vw) !important;
+    height: auto !important;
+    aspect-ratio: 1/1 !important;
+  }
+}
+
+/* =========================================
+   Interactive Elements
+   ========================================= */
+
+/* Active Cell Logic */
+
+/* 1. Base disabled state for ALL cells in code mode */
+.code-mode .mini-cell {
+  background-color: transparent !important; /* Let board bg show through or dark */
+  color: #555 !important;
+  border-color: #333 !important;
+  opacity: 0.6;
+  pointer-events: none; /* Disable interaction on non-game cells */
+}
+
+.dark-mode .code-mode .mini-cell {
+  color: #444 !important;
+  border-color: #222 !important;
+}
+
+/* 2. Active Game Cells (Survivors) */
+/* 2. Active Game Cells (Survivors) */
+.code-mode .mini-cell.code-cell {
+  background-color: var(--bg-secondary) !important;
+  background: #ffffff !important; /* Fixed: Pure white instead of gray */
+  color: #000000 !important; /* Light mode: Black text */
+  text-shadow: none;
+  font-weight: 800;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  border: 2px solid #000000 !important; /* Black border instead of orange */
+  z-index: 5;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+  transition: color 0.4s ease;
+}
+
+/* Return to theme color during win animation */
+.code-mode .victory-final .code-cell {
+  color: var(--text-main) !important;
+}
+
+.dark-mode .code-mode .mini-cell.code-cell {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: white !important;
+  color: #ffffff !important; /* Dark mode: White text */
+  text-shadow: 0 0 2px black;
+}
+
+/* Override previous game styles (Peaks/Valleys) to be colorless in Code Mode */
+.code-mode .peak-found,
+.code-mode .valley-found {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #555 !important;
+  border-color: #333 !important;
+  box-shadow: none !important;
+}
+
+.dark-mode .code-mode .peak-found,
+.dark-mode .code-mode .valley-found {
+  color: #444 !important;
+  border-color: #222 !important;
+}
+
+.code-cell {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.code-cell:active {
+  transform: scale(0.9);
+}
+
+/* Active Blink State (Simon Says) */
+/* High Specificity to override .code-cell !important rules */
+.code-mode .mini-cell.simon-active {
+  background-color: var(--accent-color) !important; /* Orange */
+  color: black !important; /* Fixed: Black numbers on orange blink for better Light Contrast */
+  box-shadow: 0 0 25px var(--accent-color) !important;
+  transform: scale(1.15) !important;
+  z-index: 20 !important;
+  border-color: #000000 !important; /* Solid black border for high definition */
+  text-shadow: none; /* Removed white shadow for clarity */
+}
+
+.dark-mode .code-mode .mini-cell.simon-active {
+  background-color: var(--accent-color) !important;
+  box-shadow: 0 0 30px var(--accent-color) !important;
+  color: white !important; /* Dark mode: still uses white text for high glow look */
+  border-color: white !important;
+  text-shadow: 0 0 4px black;
+}
+
+/* Error State */
+@keyframes shake-simon {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.simon-error {
+  animation: shake-simon 0.4s ease-in-out;
+  background-color: #ff3333 !important;
+  box-shadow: 0 0 15px #ff0000;
+  color: white !important;
+}
+
+/* Win State */
+.simon-win {
+  background-color: #ffd700 !important; /* Gold */
+  color: #000 !important;
+  box-shadow: 0 0 20px #ffd700;
+  animation: pulse-gold 1s infinite alternate;
+}
+
+@keyframes pulse-gold {
+  from {
+    box-shadow: 0 0 10px #ffd700;
+  }
+  to {
+    box-shadow: 0 0 25px #ffd700;
+  }
+}
+/* =========================================
+   Victory Animation (Disintegration + Glitch)
+   ========================================= */
+
+/* Disintegration Effect - Board & Non-Code Cells */
+.disintegrate {
+  animation: disintegrate 1.5s forwards ease-in;
+  pointer-events: none;
+}
+
+@keyframes disintegrate {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+    filter: blur(0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+    filter: blur(10px);
+  }
+}
+
+.victory-code-container {
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Use a shared class for both the old flying cells and the new in-place wheels */
+.victory-code-cell, .wheel-digit.victory-digit {
+  width: 100%; /* v1.2.7: Use 100% to fit the safe-wheel container */
+  max-width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent-color); 
+  background: transparent;
+  text-shadow: 0 0 5px var(--accent-color);
+  font-family: "Courier New", monospace; 
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease,
+    transform 0.3s ease;
+  
+  /* Reset wheel specific styles if needed */
+  border: none !important;
+  box-shadow: none !important;
+
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Flash White on Lock-in */
+.victory-code-cell.locked, .wheel-digit.victory-digit.locked {
+  color: var(--accent-color);
+  /* Base static shadow (doesn't animate) */
+  /* Base static shadow (doesn't animate) */
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 5px var(--accent-color); /* Dark drop shadow + smaller glow */
+  position: relative; /* Ensure it can hold abs pseudo */
+
+  animation:
+    lock-flash 0.4s ease-out forwards,
+    pulse-glow-direct 2s infinite alternate 0.4s;
+}
+
+.dark-mode .victory-code-cell.locked {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 5px var(--accent-color); /* More subtle definition */
+}
+
+
+/***** Victory Pulse Animation *****/
+@keyframes pulse-glow-direct {
+  from {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 5px var(--accent-color);
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-color), 0 0 40px var(--accent-color);
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+@keyframes lock-flash {
+  0% {
+    color: #fff;
+    text-shadow: 0 0 20px #fff;
+    transform: scale3d(1.5, 1.5, 1);
+  }
+  100% {
+    color: var(--accent-color);
+    /* Base Shadow Only */
+    /* Base Shadow Only */
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 0 5px var(--accent-color);
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+/* Optimization: Opacity is cheap! Pulse the overlay */
+@keyframes pulse-glow-opacity {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scale text subtly too, via main element (cheap transform) */
+@keyframes pulse-scale-only {
+  from {
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+/* Glitch Effect - Refined for themes */
+
+/* Victory glitch animation is now consolidated in lock.css for theme-awareness */
+
+@keyframes glitch-anim {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+/* Spawning extra characters smoothly */
+.spawn-in {
+  animation: spawn-pop 0.5s ease-out forwards;
+}
+
+@keyframes spawn-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+    width: 0;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+    width: 60px;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    width: 60px;
+  }
+}
+
+/* Final Victory Text State */
+.victory-final, .wheel-digit.victory-digit.victory-final {
+  /* Animation handled by .locked combined class now for better entrance */
+  font-family: "Montserrat", sans-serif; /* Back to clean font */
+}
+
+/* Responsive Overrides for Victory Animation */
+@media (max-width: 600px) {
+  .victory-code-container {
+    gap: 1px !important;
+    width: 95vw !important;
+    justify-content: center !important;
+  }
+
+  .victory-code-cell {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.2rem !important;
+  }
+
+  /* Adjust spawn animation width for mobile */
+  @keyframes spawn-pop {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+      width: 0;
+    }
+    60% {
+      transform: scale(1.2);
+      opacity: 1;
+      width: 40px;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+      width: 40px;
+    }
+  }
+}

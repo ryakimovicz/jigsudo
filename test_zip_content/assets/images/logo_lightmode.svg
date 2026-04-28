@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <line x1="170.6" y1="20" x2="170.6" y2="492" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+    <line x1="341.3" y1="20" x2="341.3" y2="492" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+    <line x1="20" y1="170.6" x2="492" y2="170.6" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+    <line x1="20" y1="341.3" x2="492" y2="341.3" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+    <text x="85.3" y="105" text-anchor="middle" dominant-baseline="middle" fill="#185b93" font-family="Outfit, sans-serif" font-size="160" font-weight="700">J</text>
+    <text x="256" y="105" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-family="Outfit, sans-serif" font-size="160" font-weight="700">1</text>
+    <text x="426.6" y="105" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-family="Outfit, sans-serif" font-size="160" font-weight="700">6</text>
+    <text x="85.3" y="275" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-family="Outfit, sans-serif" font-size="160" font-weight="700">5</text>
+    <text x="256" y="275" text-anchor="middle" dominant-baseline="middle" fill="#185b93" font-family="Outfit, sans-serif" font-size="160" font-weight="700">U</text>
+    <text x="256" y="445" text-anchor="middle" dominant-baseline="middle" fill="#185b93" font-family="Outfit, sans-serif" font-size="160" font-weight="700">D</text>
+    <text x="426.6" y="445" text-anchor="middle" dominant-baseline="middle" fill="#f97316" font-family="Outfit, sans-serif" font-size="160" font-weight="700">0</text>
+</svg>

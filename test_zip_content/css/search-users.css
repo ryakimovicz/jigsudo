@@ -1,0 +1,218 @@
+/* Search Users Premium Design */
+
+.search-users-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.search-users-wrapper .page-title {
+    font-size: 2rem;
+    margin-bottom: 24px;
+    text-align: center;
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.search-box-container {
+    padding: 12px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+}
+
+.search-icon {
+    font-size: 1.2rem;
+    opacity: 0.6;
+}
+
+#user-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 12px 0;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    outline: none;
+}
+
+#user-search-input::placeholder {
+    color: var(--text-color-muted);
+    opacity: 0.5;
+}
+
+/* Loader Tiny */
+.loader-tiny {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--text-color-muted);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.user-search-card {
+    padding: 20px;
+    border-radius: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.user-search-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.user-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-placeholder {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+    border: 2px solid var(--glass-border);
+}
+
+.user-id-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.verified-badge {
+    font-size: 0.8rem;
+}
+
+.user-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 12px;
+}
+
+.dark-mode .user-card-stats {
+    background: rgba(255,255,255,0.05);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-val {
+    font-weight: 700;
+    color: var(--accent-color);
+    font-size: 1rem;
+}
+
+.stat-lbl {
+    font-size: 0.75rem;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Premium Profile Button */
+.btn-view-profile-search {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-secondary);
+    color: var(--text-main);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dark-mode .btn-view-profile-search {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-view-profile-search:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.3);
+}
+
+.btn-view-profile-search:active {
+    transform: translateY(0);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    opacity: 0.7;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 16px;
+}
+
+#search-message {
+    color: var(--text-color-muted);
+    font-size: 1.1rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out backwards;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js?v=1.4.10";
+import { CONFIG } from "./config.js";
 export function updateSidebarActiveState(activeId) {
   const navItems = document.querySelectorAll(".nav-item");
   navItems.forEach((item) => {
@@ -151,7 +151,7 @@ export function initSidebar() {
 
   // v1.6.0: Reactive Admin Access
   window.addEventListener("authReady", async ({ detail }) => {
-    const { isAdmin } = await import("./auth.js?v=1.4.10");
+    const { isAdmin } = await import("./auth.js");
     const adminNavItem = document.getElementById("nav-admin");
     if (adminNavItem) {
       const show = isAdmin(detail.user) && !CONFIG.isDemo;

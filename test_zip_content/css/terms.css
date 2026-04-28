@@ -1,0 +1,23 @@
+#terms-section {
+  min-height: 100dvh;
+  padding-top: var(--header-height);
+  padding-bottom: 50px;
+  box-sizing: border-box;
+}
+
+/* Styles consolidated in global.css */
+
+/* Footer Wrapper */
+.terms-footer {
+  text-align: center;
+  margin-top: 30px;
+  margin-bottom: 50px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  #terms-section {
+    padding: 15px;
+    /* width override removed */
+  }
+}

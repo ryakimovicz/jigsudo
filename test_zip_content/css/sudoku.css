@@ -1,0 +1,438 @@
+/* Sudoku Main Layout - Unified Vertical Stack for ALL devices */
+.sudoku-mode .memory-grid-layout,
+.peaks-mode .memory-grid-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important; /* Horizontal centering */
+  justify-content: flex-start !important; /* Pull to top */
+  gap: 15px !important; /* Tight spacing "just below board" */
+  width: 100% !important;
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+  padding-top: 0.2rem !important; /* v2.8.0: Compact top for standard screens */
+}
+
+@media (min-width: 801px) and (min-height: 880px) {
+  .sudoku-mode .memory-grid-layout,
+  .peaks-mode .memory-grid-layout {
+    padding-top: 0 !important;
+  }
+}
+
+.sudoku-mode .memory-grid-layout,
+.peaks-mode .memory-grid-layout {
+  /* Swapped Contrast Logic: Light mode gets DARK lines */
+  --sudoku-grid-line: #000;
+  --sudoku-inner-line: #bbb;
+}
+
+/* Correct selector: space between body class and game class */
+.dark-mode .sudoku-mode .memory-grid-layout,
+.dark-mode .peaks-mode .memory-grid-layout {
+  /* Swapped Contrast Logic: Dark mode gets LIGHT lines */
+  --sudoku-grid-line: #fff;
+  --sudoku-inner-line: #444;
+}
+
+/* Also swap the board background which forms the "thick" lines (gap) 
+   But KEEP the outer border consistent with the background */
+/* Also swap the board background which forms the "thick" lines (gap) 
+   But KEEP the outer border consistent with the background */
+.sudoku-mode .memory-board,
+.peaks-mode .memory-board {
+  background: var(--bg-secondary) !important; /* Back to theme background */
+  padding: 0 !important;
+  gap: 0 !important; /* REMOVE GAP: Borders provide better precision */
+  border: 4px solid var(--bg-secondary) !important;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1/1 !important; /* REINFORCE SYMMETRY */
+}
+
+/* Remove internal rounding to prevent background bleed at edges */
+/* Remove internal rounding to prevent background bleed at edges */
+.sudoku-mode .sudoku-chunk-slot,
+.sudoku-mode .mini-sudoku-grid,
+.peaks-mode .sudoku-chunk-slot,
+.peaks-mode .mini-sudoku-grid {
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* PIXEL-PERFECT SYMMETRY: Use borders instead of gaps to avoid rounding errors */
+/* PIXEL-PERFECT SYMMETRY: Use borders instead of gaps to avoid rounding errors */
+.sudoku-mode .sudoku-chunk-slot,
+.peaks-mode .sudoku-chunk-slot {
+  border-right: 3px solid var(--sudoku-grid-line);
+  border-bottom: 3px solid var(--sudoku-grid-line);
+}
+
+/* Remove borders on the edges of the board */
+/* Remove borders on the edges of the board */
+.sudoku-mode .sudoku-chunk-slot:nth-child(3n),
+.peaks-mode .sudoku-chunk-slot:nth-child(3n) {
+  border-right: none !important;
+}
+
+.sudoku-mode .sudoku-chunk-slot:nth-child(n + 7),
+.peaks-mode .sudoku-chunk-slot:nth-child(n + 7) {
+  border-bottom: none !important;
+}
+
+/* Ensure side panels and cards are completely gone */
+/* Ensure side panels and cards are completely gone */
+.sudoku-mode .collected-zone,
+.sudoku-mode .collected-wrapper,
+.sudoku-mode .cards-area,
+.peaks-mode .collected-zone,
+.peaks-mode .collected-wrapper,
+.peaks-mode .cards-area {
+  display: none !important;
+}
+
+/* Center elements within the stack */
+/* Center elements within the stack */
+.sudoku-mode .board-wrapper,
+.peaks-mode .board-wrapper {
+  order: 1 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sudoku-controls {
+  --btn-size: 62px;
+  --btn-gap: 6px;
+  --grid-width: calc(var(--btn-size) * 3 + var(--btn-gap) * 2);
+
+  order: 2 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--btn-gap);
+  width: var(--grid-width);
+  margin: 0 auto 5px auto !important;
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sudoku-controls.hidden {
+  display: none !important;
+}
+
+/* Both rows share the same width */
+.control-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--btn-gap);
+  width: var(--grid-width);
+}
+
+/* Action buttons: 4 in a row, each equal size */
+.btn-sudoku-action {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-sudoku-action:hover {
+  background: color-mix(in srgb, var(--accent-color) 15%, var(--bg-tertiary));
+  border-color: var(--accent-color);
+}
+
+.btn-sudoku-action:active {
+  transform: scale(0.95);
+  background: color-mix(in srgb, var(--accent-color) 25%, var(--bg-tertiary));
+}
+
+.btn-sudoku-action.active {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+/* Number grid: 3x3 */
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(3, var(--btn-size));
+  grid-template-rows: repeat(3, var(--btn-size));
+  gap: var(--btn-gap);
+  width: var(--grid-width);
+}
+
+.sudoku-num {
+  width: var(--btn-size);
+  height: var(--btn-size);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+}
+
+/* Mobile: slightly smaller buttons */
+@media (max-width: 768px) {
+  .sudoku-mode .memory-grid-layout,
+  .peaks-mode .memory-grid-layout {
+    flex: 1 !important;
+    min-height: 0;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 2px !important;
+    max-height: calc(100dvh - var(--header-height) - var(--footer-height)) !important;
+    overflow: hidden !important;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Ultra-Short Screens */
+  @media (max-height: 660px) {
+    .sudoku-mode .memory-grid-layout,
+    .peaks-mode .memory-grid-layout {
+      gap: 4px !important;
+      padding-bottom: 0 !important;
+      justify-content: space-between !important;
+    }
+    .sudoku-controls {
+      --btn-size: clamp(44px, 12vw, 54px);
+    }
+  }
+
+  .sudoku-controls {
+    --btn-size: clamp(52px, 15vw, 64px);
+  }
+}
+
+/* Desktop */
+@media (min-width: 769px) {
+  .sudoku-mode .memory-grid-layout,
+  .peaks-mode .memory-grid-layout {
+    flex: 1 !important;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    padding-bottom: 30px !important;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sudoku-controls {
+    --btn-size: 58px;
+    align-self: center;
+  }
+
+  /* High-Res Pad */
+  @media (min-height: 880px) and (min-width: 801px) {
+    .sudoku-controls {
+      --btn-size: 64px;
+    }
+  }
+}
+
+
+
+
+.dark-mode .sudoku-num {
+  background: #333;
+  border-color: #444;
+  color: #eee;
+}
+
+.sudoku-num:hover {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.sudoku-num:active {
+  transform: scale(0.95);
+}
+
+/* Feedback: Number is present in selected cell */
+.sudoku-num.key-present {
+  background: #e2e8f0; /* Light slate */
+  color: var(--text-main);
+  border-color: #cbd5e1;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .sudoku-num.key-present {
+  background: #475569; /* Slate 600 */
+  color: white;
+  border-color: #64748b;
+}
+
+/* Disabled Key (Notes Constraint) */
+.sudoku-num.key-disabled {
+  opacity: 0.2;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+/* Completed Number (9 instances) */
+.sudoku-num.key-completed {
+  opacity: 0.5;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #cbd5e1;
+  /* Important: Clickable for highlighting */
+  pointer-events: auto;
+  cursor: help;
+}
+
+.dark-mode .sudoku-num.key-completed {
+  background: #1e293b;
+  color: #64748b;
+  border-color: #334155;
+}
+
+/* LOCKED STATE (Must be last to override others) */
+.sudoku-num.locked-num {
+  background: var(--accent-color) !important;
+  color: white !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+  font-weight: 800;
+  z-index: 10;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .sudoku-num {
+    font-size: 1.1rem;
+  }
+
+  .btn-sudoku-action {
+    padding: 8px 15px;
+  }
+}
+
+/* Cell Selection */
+.sudoku-mode .mini-cell:not(.has-number),
+.sudoku-mode .mini-cell.user-filled {
+  cursor: pointer;
+}
+
+.mini-cell.selected-cell {
+  background: rgba(var(--accent-rgb), 0.2) !important;
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+  z-index: 5;
+}
+
+/* Default user-filled numbers are theme-colored (Memory/Jigsaw) */
+/* Default user-filled numbers are theme-colored (Memory/Jigsaw) */
+.mini-cell.user-filled {
+  color: var(--text-main);
+  font-weight: 900;
+}
+
+/* Orange user numbers ONLY during Sudoku modes */
+.sudoku-mode .mini-cell.user-filled {
+  color: var(--accent-color);
+}
+
+/* Orange notes ONLY during Sudoku modes - heightened specificity to beat theme defaults */
+.sudoku-mode .mini-sudoku-grid .note-slot {
+  color: var(--accent-color);
+}
+
+/* Return to theme color during win animation (Smoothly) */
+.sudoku-mode .memory-board.board-complete .mini-cell.user-filled,
+.sudoku-mode .memory-board.board-complete .note-slot {
+  color: var(--text-main);
+  transition: color 0.6s ease-out;
+}
+
+/* Matching Numbers Highlight */
+.mini-cell.highlight-match {
+  background: rgba(var(--accent-rgb), 0.15) !important;
+  font-weight: 800;
+}
+
+/* ERROR FEEDBACK */
+.mini-cell.error {
+  color: #f44336 !important; /* Red for incorrect numbers */
+}
+
+/* SUCCESS FEEDBACK */
+@keyframes sudokuPulseGreen {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(76, 175, 80, 0.6);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    transform: scale(1);
+  }
+}
+
+.sudoku-mode .memory-board.board-complete {
+  animation: sudokuPulseGreen 0.6s ease-out 1; /* Match memory: 1 pulse */
+}
+
+/* Notes Grid */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.note-slot {
+  font-size: 8px; /* Use container relative sizing if needed: 3cqw? */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #666;
+  line-height: 1;
+}
+
+.dark-mode .note-slot {
+  color: #aaa;
+}
+
+/* Base transition removed to prevent entry delay */
+
+.mini-cell {
+  position: relative; /* For notes-grid positioning */
+}

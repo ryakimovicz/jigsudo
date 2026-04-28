@@ -1,0 +1,228 @@
+#side-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  width: var(--sidebar-width); /* Narrow state */
+  background: var(--bg-paper);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: var(--paper-shadow);
+  transition:
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 200000; /* High priority (Ads are 99999) */
+  display: flex;
+  flex-direction: column;
+  overflow: visible; /* Allow dropdowns to pop out */
+  will-change: top, height, width;
+}
+
+#side-sidebar.expanded {
+  width: var(--sidebar-expanded-width);
+}
+
+/* Toggle Buttons (Shared logic) */
+.sidebar-toggle {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+  z-index: 30001;
+}
+
+.sidebar-toggle:hover {
+  background: var(--bg-secondary);
+}
+
+.sidebar-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--text-main);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+/* Hamburger Animation (Linked to body state) */
+body.sidebar-expanded .sidebar-toggle span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+body.sidebar-expanded .sidebar-toggle span:nth-child(2) {
+  opacity: 0;
+}
+body.sidebar-expanded .sidebar-toggle span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Container Logic */
+.desktop-toggle-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: var(--sidebar-width);
+  height: var(--header-height-condensed);
+}
+
+/* Sidebar Body (Content Area) */
+.sidebar-content {
+  flex: 1;
+  padding: calc(var(--header-height-condensed) + 10px) 0 10px; /* Clear fixed toggle */
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-section-label {
+  padding: 0 10px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+#side-sidebar.expanded .sidebar-section-label {
+  opacity: 1;
+}
+
+.sidebar-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  gap: 10px;
+  width: 100%;
+  overflow: hidden; /* Clip hover background and hidden labels */
+}
+
+.nav-item:hover {
+  background: var(--bg-secondary);
+}
+
+.nav-icon {
+  font-size: 1.4rem;
+  min-width: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#btn-auth .nav-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 1.1rem;
+  margin-left: -1px; /* Center adjustment */
+}
+
+.nav-label {
+  font-weight: 500;
+  font-size: 1rem;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  pointer-events: none;
+  /* Don't affect parent width when collapsed */
+  width: 0;
+  display: inline-block;
+}
+
+#side-sidebar.expanded .nav-label {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  width: auto;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  margin-top: auto; /* Push to bottom */
+  padding-bottom: 20px;
+  position: relative; /* Context for nested dropdowns to align to footer bottom */
+}
+
+.sidebar-footer .dropdown-divider {
+  margin: 10px 0; /* Full width with padding handled by the sidebar itself */
+  width: 100%;
+  border-top: 1px solid var(--glass-border);
+  box-sizing: border-box;
+}
+
+/* Dark Mode override if needed (most handled by vars) */
+body.dark-mode #side-sidebar {
+  background: var(--bg-paper);
+}
+
+/* Sidebar Overlay (Backdrop) - MOBILE ONLY */
+#sidebar-overlay {
+  display: none; /* Hidden on Desktop */
+}
+.mobile-toggle-container {
+  display: none; /* Hide mobile-header toggle on Desktop */
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-expanded-width: 280px; /* Wider for better mobile touch/reading and Account menu fit */
+  }
+
+  #sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
+    z-index: 199999; /* Below sidebar but above ads (99999) */
+    transition:
+      opacity 0.3s,
+      visibility 0.3s;
+  }
+
+  #sidebar-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  #side-sidebar {
+    width: var(--sidebar-expanded-width);
+    transform: translateX(-100%);
+    box-shadow: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Dedicated transform transition */
+  }
+
+  #side-sidebar.expanded {
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .mobile-toggle-container {
+    display: flex; /* Show the top header toggle when on mobile! */
+  }
+  .desktop-toggle-container {
+    display: none; /* Hide the sidebar toggle when on mobile to avoid duplication */
+  }
+}
