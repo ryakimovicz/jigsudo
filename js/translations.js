@@ -589,19 +589,16 @@ export const translations = {
     p_game_peaks: "Picos y Valles",
     p_game_search: "Sopa de Números",
     p_game_code: "El Código",
-    stat_avg_time: "Tiempo Promedio",
-    stat_avg_errors: "Errores Promedio",
-    stat_avg_score: "Puntaje Promedio",
-
-    // Support & Share
     share_text:
       "¡Desafía tu mente con Jigsudo! 🧩✨ ¿Podrás resolver el puzzle del día?",
+    share_text_basic: "¡Prueba la Edición Básica de Jigsudo! 🧩✨",
     toast_share_success: "¡Enlace copiado al portapapeles! 📋✨",
     toast_email_copied: "Email copiado al portapapeles 📋",
 
     // Stats Sharing
     btn_share_stats: "Compartir Estadísticas",
     share_stats_msg: "¡Mira mi progreso en Jigsudo! 🧩✨",
+    share_stats_msg_basic: "¡Mira mi progreso en la Edición Básica de Jigsudo! 🧩✨",
 
     // SEO/Home Info
     seo_title: "El Desafío Jigsudo: Entrena tu mente cada día",
@@ -776,7 +773,7 @@ export const translations = {
     changelog_v1118_item4: "Seguro de Registro: Los nuevos usuarios ya no aparecen automáticamente en las tablas al crear su cuenta; ahora el sistema espera a su primera interacción real con el botón Jugar.",
     changelog_v1118_item5: "Corrección de Penalizaciones: Se implementó 'lastPenaltyDate' resolviendo dos fallos críticos: el cobro de multas duplicadas y la inactividad infinita por la amnesia del bot de mantenimiento.",
     changelog_v1118_item6: "Modo Ninja (Perfiles Ocultos): Al ocultar tu perfil ya no aparecerás públicamente en el Salón de la Fama, permitiéndote competir en las sombras viéndote a ti mismo en la tabla sin revelar tus estadísticas a los demás.",
-    changelog_v1118_item7: "Estabilidad en la Privacidad: Solucionado un comportamiento de pérdida de estado donde el indicador de privacidad parecía reiniciarse erróneamente al recargar la página debido a lecturas asíncronas parciales en los servidores.",
+    changelog_v1118_item7: "Estabilidad de la Privacidad: Solucionado un comportamiento de pérdida de estado donde el indicador de privacidad parecía reiniciarse erróneamente al recargar la página debido a lecturas asíncronas parciales en los servidores.",
     
     // Multi-device Sync (Spanish)
     sync_exclusive_title: "Cuenta en uso",
@@ -1270,6 +1267,8 @@ export const translations = {
     code_win: "CODE CRACKED!",
     label_security_bypass: "Master Code",
     lock_need_all_levels: "You need to complete all 6 levels to discover the master code.",
+    share_text: "Challenge your mind with Jigsudo. Daily logic and memory puzzles.",
+    share_text_basic: "Try the Jigsudo Basic Edition! 🧩✨",
 
     sudoku_key_completed: "This number has already been used 9 times.",
 
@@ -1521,6 +1520,7 @@ export const translations = {
     // Stats Sharing
     btn_share_stats: "Share Stats",
     share_stats_msg: "Check out my progress in Jigsudo! 🧩✨",
+    share_stats_msg_basic: "Check out my progress in the Jigsudo Basic Edition! 🧩✨",
 
     // SEO/Home Info (English)
     seo_title: "The Jigsudo Challenge: Train your mind every day",

@@ -1,12 +1,12 @@
-import { auth } from "./firebase-config.js";
+import { auth } from "./firebase-config.js?v=1.4.10";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { initLanguage, getCurrentLang } from "./i18n.js";
-import { initSidebar, closeSidebar } from "./sidebar.js";
-import { translations } from "./translations.js";
-import { CONFIG } from "./config.js";
-import { toggleModal, showToast } from "./ui.js";
-import { getRankData } from "./ranks.js";
-import { loginUser, registerUser, loginWithGoogle, initForgotPasswordUI } from "./auth.js";
+import { initLanguage, getCurrentLang } from "./i18n.js?v=1.4.10";
+import { initSidebar, closeSidebar } from "./sidebar.js?v=1.4.10";
+import { translations } from "./translations.js?v=1.4.10";
+import { CONFIG } from "./config.js?v=1.4.10";
+import { toggleModal, showToast } from "./ui.js?v=1.4.10";
+import { getRankData } from "./ranks.js?v=1.4.10";
+import { loginUser, registerUser, loginWithGoogle, initForgotPasswordUI } from "./auth.js?v=1.4.10";
 
 
 // Initialize Sidebar
@@ -150,7 +150,7 @@ function initSettingsToggles() {
   const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
   const showVibration = hasVibration && isTouchDevice;
 
-  if (vibrationContainer && !showVibration) {
+  if (vibrationContainer && (!showVibration || CONFIG.isDemo)) {
     vibrationContainer.style.display = "none";
   }
 
@@ -238,7 +238,7 @@ function initAuthListener() {
     // v1.5.2: Proactive maintenance for data consistency on legal pages
     // We use onlyMaintenance: true to avoid claiming the "throne" (Exclusive Session)
     if (!isGuest && user) {
-        import("./db.js").then(({ callJigsudoFunction }) => {
+        import("./db.js?v=1.4.10").then(({ callJigsudoFunction }) => {
             callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true })
                 .then(() => console.log("[Maintenance] Proactive check (legal) complete."))
                 .catch(e => console.warn("[Maintenance] check failed:", e));
@@ -311,17 +311,50 @@ window.shareApp = async () => {
   const t = translations[lang] || translations["es"];
   const shareData = {
     title: "Jigsudo",
-    text: t.share_msg || "¡Desafía tu mente con Jigsudo!",
-    url: "https://jigsudo.com",
+    text: CONFIG.isDemo ? t.share_text_basic : (t.share_msg || "¡Desafía tu mente con Jigsudo!"),
+    url: CONFIG.isDemo ? "https://corolado.itch.io/jigsudo" : "https://jigsudo.com",
   };
 
   try {
     if (navigator.share) {
       await navigator.share(shareData);
     } else {
-      // Fallback: Copy to clipboard
-      await navigator.clipboard.writeText(shareData.url);
-      alert(t.share_copied || "Enlace copiado al portapapeles");
+      const textToCopy = shareData.url;
+      
+      // Robust Fallback: Try navigator.clipboard, then manual fallback
+      let success = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          success = true;
+        } catch (err) {
+          console.warn("navigator.clipboard failed, trying fallback...");
+        }
+      }
+
+      if (!success) {
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          success = document.execCommand("copy");
+        } catch (err) {
+          console.error("Manual copy failed:", err);
+        }
+        document.body.removeChild(textArea);
+      }
+
+      if (success) {
+        const msg = navigator.share
+          ? (t.share_copied || "Enlace copiado al portapapeles")
+          : (lang === "es" ? "Enlace copiado (Compartir requiere HTTPS) 📋" : "Link copied (Sharing requires HTTPS) 📋");
+        alert(msg);
+      }
     }
   } catch (err) {
     console.error("Error sharing:", err);
@@ -341,6 +374,12 @@ function updateHeaderInfo() {
   const lang = getCurrentLang();
   const t = translations[lang];
   const locale = t ? t.date_locale : "es-ES";
+
+  if (CONFIG.isDemo) {
+    dateEl.textContent = t.header_basic_edition || "Edición Básica";
+    challengeEl.textContent = "";
+    return;
+  }
 
   // Date
   const dateStr = now.toLocaleDateString(locale, {

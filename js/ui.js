@@ -1,9 +1,10 @@
-import { translations } from "./translations.js";
-import { getCurrentLang, updateTexts } from "./i18n.js";
-import { getCurrentUser } from "./auth.js";
-import { getRankData } from "./ranks.js";
-import { formatJigsudoDate } from "./utils/time.js";
-import { masterLock } from "./lock.js";
+import { translations } from "./translations.js?v=1.4.10";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.10";
+import { getCurrentUser } from "./auth.js?v=1.4.10";
+import { getRankData } from "./ranks.js?v=1.4.10";
+import { formatJigsudoDate } from "./utils/time.js?v=1.4.10";
+import { masterLock } from "./lock.js?v=1.4.10";
+import { CONFIG } from "./config.js?v=1.4.10";
  
 let lastVictoryStats = null;
 let lastVictoryIsHome = false;
@@ -210,8 +211,8 @@ export async function showUpdateAlert(isSticky = false) {
 
   if (!modal || !titleEl || !msgEl || !closeBtn) return;
 
-  const { translations } = await import("./translations.js");
-  const { getCurrentLang } = await import("./i18n.js");
+  const { translations } = await import("./translations.js?v=1.4.10");
+  const { getCurrentLang } = await import("./i18n.js?v=1.4.10");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -256,8 +257,8 @@ export async function showUpdateAlert(isSticky = false) {
  * Stage 1: Non-intrusive Toast for initial update attempt
  */
 export async function showUpdateToast() {
-  const { translations } = await import("./translations.js");
-  const { getCurrentLang } = await import("./i18n.js");
+  const { translations } = await import("./translations.js?v=1.4.10");
+  const { getCurrentLang } = await import("./i18n.js?v=1.4.10");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -328,14 +329,14 @@ export async function showVictorySummary(stats, isHome = false) {
       if (!isHome) {
         // 1. Refresh Rankings immediately if possible (via home logic listener)
         try {
-          const { clearRankingCache } = await import("./ranking.js");
+          const { clearRankingCache } = await import("./ranking.js?v=1.4.10");
           clearRankingCache();
         } catch (err) {
           console.warn("Failed to clear ranking cache:", err);
         }
 
         // 2. Navigate based on mode
-        const { router } = await import("./router.js");
+        const { router } = await import("./router.js?v=1.4.10");
         if (stats.isReplay && stats.date) {
           // stats.date is YYYY-MM-DD
           const [y, m] = stats.date.split("-");
@@ -426,7 +427,7 @@ async function refreshVictorySummaryUI(stats, isHome) {
     descEl.dataset.i18n = "victory_desc";
   }
 
-  const { updateTexts } = await import("./i18n.js");
+  const { updateTexts } = await import("./i18n.js?v=1.4.10");
   updateTexts();
 }
 
@@ -627,17 +628,31 @@ async function handleShareVictory(stats) {
         "#f8fafc",
       scale: 2,
       useCORS: true,
-      allowTaint: true,
+      allowTaint: false, // Changed to false for better CORS compatibility
       logging: false,
       windowWidth: 1080,
       onclone: (clonedDoc) => {
-        // v1.9.9p: Fix relative CSS paths for Itch.io (avoids 403 Forbidden)
+        // v1.9.9s: Advanced CSS cleanup for Itch.io
         const links = clonedDoc.querySelectorAll('link[rel="stylesheet"]');
         links.forEach(link => {
           const href = link.getAttribute('href');
-          if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('//')) {
-            // Resolve relative to current base URL
+          if (!href) return;
+
+          // Resolve relative paths to absolute to prevent 404/403
+          if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('//')) {
             link.href = new URL(href, window.location.href).href;
+          }
+
+          // CRITICAL: Remove specific CSS files that are NOT needed for the card 
+          // and are known to cause 403 Forbidden in Itch.io's environment.
+          const blacklist = [
+            'memory.css', 'sudoku.css', 'peaks.css', 'search.css', 'code.css', 
+            'jigsaw.css', 'search-users.css', 'admin.css', 'changelog.css', 
+            'support.css', 'guide.css', 'auth.css', 'privacy.css', 'terms.css'
+          ];
+          
+          if (blacklist.some(css => href.includes(css))) {
+            link.remove();
           }
         });
       }
@@ -654,11 +669,11 @@ async function handleShareVictory(stats) {
       if (!blob) return;
 
       const file = new File([blob], fileName, { type: "image/png" });
-      const shareUrl = "https://jigsudo.com";
+      const shareUrl = CONFIG.isDemo ? "https://corolado.itch.io/jigsudo" : "https://jigsudo.com";
       const shareData = {
         title: t.victory_share_title || "DESAFÍO COMPLETADO",
         text:
-          (t.share_stats_msg || "¡Mira mi progreso en Jigsudo! 🧩✨") +
+          (CONFIG.isDemo ? (t.share_stats_msg_basic || "¡Prueba la Edición Básica de Jigsudo! 🧩✨") : (t.share_stats_msg || "¡Mira mi progreso en Jigsudo! 🧩✨")) +
           `\n\n${shareUrl}`,
         files: [file],
       };

@@ -1,14 +1,14 @@
-import { getCurrentLang, updateTexts } from "./i18n.js";
-import { translations } from "./translations.js";
-import { gameManager } from "./game-manager.js";
-import { startDailyGame } from "./home.js";
-import { updateSidebarActiveState } from "./sidebar.js";
-import { router } from "./router.js";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.10";
+import { translations } from "./translations.js?v=1.4.10";
+import { gameManager } from "./game-manager.js?v=1.4.10";
+import { startDailyGame } from "./home.js?v=1.4.10";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.4.10";
+import { router } from "./router.js?v=1.4.10";
 
-import { getJigsudoDate } from "./utils/time.js";
-import { isAtGameRoute } from "./utils/route-utils.js";
-import { formatTime } from "./ui.js";
-import { CONFIG } from "./config.js";
+import { getJigsudoDate } from "./utils/time.js?v=1.4.10";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.10";
+import { formatTime } from "./ui.js?v=1.4.10";
+import { CONFIG } from "./config.js?v=1.4.10";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
@@ -29,7 +29,7 @@ export async function fetchPuzzleIndex() {
   if (CONFIG.isDemo) {
     console.log("[History] Demo mode detected. Using local puzzle index directly.");
     try {
-      const { default: index } = await import("./puzzles_index.js");
+      const { default: index } = await import("./puzzles_index.js?v=1.4.10");
       return index;
     } catch (err) {
       return [];
@@ -43,7 +43,7 @@ export async function fetchPuzzleIndex() {
   } catch (e) {
     console.warn("[History] Could not fetch puzzle index, using ES module fallback.");
     try {
-      const { default: index } = await import("./puzzles_index.js");
+      const { default: index } = await import("./puzzles_index.js?v=1.4.10");
       return index;
     } catch (err) {
       console.error("[History] Fatal: No puzzle index available.", err);
@@ -241,7 +241,7 @@ export async function updateHistoryUI() {
     let monthHistory = historyCache[monthKey];
     if (!monthHistory) {
         monthHistory = {};
-        const { auth } = await import("./firebase-config.js");
+        const { auth } = await import("./firebase-config.js?v=1.4.10");
         const user = auth.currentUser;
         
         if (user) {

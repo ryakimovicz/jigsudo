@@ -1,10 +1,10 @@
-import { gameManager } from "./game-manager.js";
-import { translations } from "./translations.js";
-import { getCurrentLang } from "./i18n.js";
-import { CONFIG } from "./config.js";
-import { transitionToPeaks } from "./peaks.js";
-import { createMiniGrid, getChunksFromBoard } from "./memory.js";
-import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js";
+import { gameManager } from "./game-manager.js?v=1.4.10";
+import { translations } from "./translations.js?v=1.4.10";
+import { getCurrentLang } from "./i18n.js?v=1.4.10";
+import { CONFIG } from "./config.js?v=1.4.10";
+import { transitionToPeaks } from "./peaks.js?v=1.4.10";
+import { createMiniGrid, getChunksFromBoard } from "./memory.js?v=1.4.10";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.10";
 // State
 let selectedCell = null;
 let pencilMode = false;
@@ -1166,8 +1166,8 @@ async function confirmClearBoard() {
     if (toggle) toggle.checked = false;
 
     // Sync to cloud
-    const { getCurrentUser } = await import("./auth.js");
-    const { updateUserPreference } = await import("./db.js");
+    const { getCurrentUser } = await import("./auth.js?v=1.4.10");
+    const { updateUserPreference } = await import("./db.js?v=1.4.10");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
       // DB key: confirmClear (true = Ask, false = Skip)

@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js";
+import { CONFIG } from "./config.js?v=1.4.10";
 /**
  * Centralized Router Module
  * Handles specific views based on URL Hash.
@@ -72,7 +72,7 @@ export const router = {
 
     // v1.6.0: ADMIN PROTECTION
     if (baseRoute === "#admin") {
-      const { isAdmin } = await import("./auth.js");
+      const { isAdmin } = await import("./auth.js?v=1.4.10");
       if (!isAdmin()) {
         console.warn("[Router] Unprivileged access to #admin. Redirecting...");
         history.replaceState(null, null, "#home");
@@ -201,8 +201,8 @@ export const router = {
         // If we are navigating AWAY from a game (or landed on a menu),
         // ensure any victory modal/animation is removed.
         const cleanup = async () => {
-          const { cleanupVictoryUI } = await import("./ui.js");
-          const { stopVictoryAnimations } = await import("./code.js");
+          const { cleanupVictoryUI } = await import("./ui.js?v=1.4.10");
+          const { stopVictoryAnimations } = await import("./code.js?v=1.4.10");
           cleanupVictoryUI();
           stopVictoryAnimations();
         };
@@ -231,12 +231,12 @@ export const router = {
 
     // v1.6.0: Admin Init
     if (activeId === "admin-section") {
-      import("./admin.js").then((mod) => {
+      import("./admin.js?v=1.4.10").then((mod) => {
         mod.initAdmin();
         mod.showAdminPanel();
       });
     } else {
-      import("./admin.js").then((mod) => mod.hideAdminPanel());
+      import("./admin.js?v=1.4.10").then((mod) => mod.hideAdminPanel());
     }
 
     // 4. Update Sidebar
@@ -255,7 +255,7 @@ export const router = {
     // v1.7.9: Sidebar Profile state should ONLY show active if it is OUR profile
     if (activeId === "profile-section" && baseRoute === "#profile" && params.length > 0) {
       try {
-        const { getCurrentUser } = await import("./auth.js");
+        const { getCurrentUser } = await import("./auth.js?v=1.4.10");
         const user = getCurrentUser();
         const ownName = (user && user.displayName) || "";
         const targetName = decodeURIComponent(params[0]).toLowerCase();

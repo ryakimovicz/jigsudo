@@ -1,12 +1,12 @@
 /* Peaks Logic */
-import { gameManager } from "./game-manager.js";
-import { translations } from "./translations.js";
-import { getCurrentLang } from "./i18n.js";
-import { transitionToSearch } from "./search.js";
-import { getAllTargets } from "./peaks-logic.js";
-import { resumeSudokuState } from "./sudoku.js";
-import { resetUI } from "./memory.js";
-import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js";
+import { gameManager } from "./game-manager.js?v=1.4.10";
+import { translations } from "./translations.js?v=1.4.10";
+import { getCurrentLang } from "./i18n.js?v=1.4.10";
+import { transitionToSearch } from "./search.js?v=1.4.10";
+import { getAllTargets } from "./peaks-logic.js?v=1.4.10";
+import { resumeSudokuState } from "./sudoku.js?v=1.4.10";
+import { resetUI } from "./memory.js?v=1.4.10";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.10";
 
 // State
 let peaksErrors = 0;
