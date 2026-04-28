@@ -8,6 +8,7 @@ import { router } from "./router.js?v=1.4.10";
 import { getJigsudoDate } from "./utils/time.js?v=1.4.10";
 import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.10";
 import { formatTime } from "./ui.js?v=1.4.10";
+import { CONFIG } from "./config.js?v=1.4.10";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
@@ -35,6 +36,9 @@ export async function fetchPuzzleIndex() {
 }
 
 export function isPuzzleAvailable(dateStr) {
+  if (CONFIG.isDemo) {
+    return dateStr === CONFIG.demoDate;
+  }
   return !!puzzleExistsCache[dateStr];
 }
 
@@ -99,11 +103,16 @@ export function initHistory() {
       // If we have exactly 3 params (YYYY/MM/DD), skip calendar normalization as it's a deep-link to a game.
       if (detail.params.length === 3) return;
 
-      const [yearStr, monthStr] = detail.params || [];
-      const year = parseInt(yearStr, 10);
-      const month = parseInt(monthStr, 10) - 1; // 0-indexed internally
-
       const now = getJigsudoDate();
+      if (CONFIG.isDemo) {
+        // Force April 2026
+        histViewDate = new Date(2026, 3, 1); // 3 is April (0-indexed)
+        const currentY = histViewDate.getFullYear();
+        const currentM = String(histViewDate.getMonth() + 1).padStart(2, "0");
+        history.replaceState(null, null, `/#history/${currentY}/${currentM}`);
+        updateHistoryUI();
+        return;
+      }
       let isValidDate = false;
 
       if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
@@ -187,7 +196,13 @@ export async function updateHistoryUI() {
   const now = getJigsudoDate();
 
   // 1. Fetch available puzzles index
-  const availableDates = await fetchPuzzleIndex();
+  let availableDates = await fetchPuzzleIndex();
+  
+  if (CONFIG.isDemo) {
+      // Force only April 5, 2026
+      availableDates = ["2026-04-05"];
+  }
+
   puzzleExistsCache = {};
   
   if (availableDates.length > 0) {
@@ -205,91 +220,83 @@ export async function updateHistoryUI() {
     if (histViewDate > maxNavMonth) histViewDate = new Date(maxNavMonth);
   }
 
-  // 2. Fetch History for the current month from Sub-collection
-  let monthHistory = historyCache[monthKey];
-  if (!monthHistory) {
-      console.log(`[History] Fetching history for ${monthKey} from Firestore...`);
-      const { auth } = await import("./firebase-config.js?v=1.4.10");
-      const { getFirestore, collection, query, where, getDocs, doc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
-      
-      const user = auth.currentUser;
-      if (user) {
-          const db = getFirestore();
-          // Seed range for the month: YYYYMM01 to YYYYMM31
-          const startSeed = parseInt(monthKey.replace(/-/g, "") + "01");
-          const endSeed = parseInt(monthKey.replace(/-/g, "") + "31");
-          
-          const q = query(
-              collection(db, "users", user.uid, "history"),
-              where("seed", ">=", startSeed),
-              where("seed", "<=", endSeed)
-          );
-          
-          const snap = await getDocs(q);
-          monthHistory = {};
-          snap.forEach(d => {
-              const data = d.data();
-              const s = data.seed.toString();
-              const dateStr = `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
-              
-              monthHistory[dateStr] = {
-                  status: data.status || "played",
-                  originalWon: data.original?.won === true,
-                  hasOriginal: !!data.original,
-                  score: data.best?.score || 0,
-                  totalTime: data.best?.totalTime || 0,
-                  original: data.original || null,
-                  best: data.best || null
-              };
-          });
-          
-          // v1.6.6: HYBRID MERGE. If the root stats.history has more data for these days (e.g. from a recent session), use it.
-          // This fixes cases where the sub-collection might have incomplete migration data (like 0 errors).
-          const localHistory = gameManager.stats?.history || {};
-          Object.keys(localHistory).forEach(dateStr => {
-              if (dateStr.startsWith(monthKey)) {
-                  const localEntry = localHistory[dateStr];
-                  const cloudEntry = monthHistory[dateStr];
-                  
-                  if (!cloudEntry) {
-                      // Day exists locally but not in the fetched cloud month? (Rare)
-                      monthHistory[dateStr] = {
-                          status: localEntry.status || "played",
-                          originalWon: localEntry.original?.won === true,
-                          hasOriginal: !!localEntry.original,
-                          score: localEntry.best?.score || 0,
-                          totalTime: localEntry.best?.totalTime || 0,
-                          original: localEntry.original || null,
-                          best: localEntry.best || null
-                      };
-                  } else {
-                      // MERGE: Prefer root stats if they have more errors or better scores
-                      if (localEntry.original) {
-                          if (!cloudEntry.original) cloudEntry.original = localEntry.original;
-                          else {
-                              // If cloud has 0 errors but local has > 0, trust local (migration fix)
-                              const localOErr = localEntry.original.errors || localEntry.original.peaksErrors || 0;
-                              const cloudOErr = cloudEntry.original.errors || cloudEntry.original.peaksErrors || 0;
-                              if (localOErr > cloudOErr) cloudEntry.original.errors = localOErr;
-                          }
-                      }
-                      if (localEntry.best) {
-                          if (!cloudEntry.best) cloudEntry.best = localEntry.best;
-                          else {
-                              const localBErr = localEntry.best.errors || localEntry.best.peaksErrors || 0;
-                              const cloudBErr = cloudEntry.best.errors || cloudEntry.best.peaksErrors || 0;
-                              if (localBErr > cloudBErr) cloudEntry.best.errors = localBErr;
-                          }
-                      }
-                  }
-              }
-          });
+    // 2. Fetch History for the current month
+    let monthHistory = historyCache[monthKey];
+    if (!monthHistory) {
+        monthHistory = {};
+        const { auth } = await import("./firebase-config.js?v=1.4.10");
+        const user = auth.currentUser;
+        
+        if (user) {
+            console.log(`[History] Fetching history for ${monthKey} from Firestore...`);
+            const { getFirestore, collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
+            const db = getFirestore();
+            const startSeed = parseInt(monthKey.replace(/-/g, "") + "01");
+            const endSeed = parseInt(monthKey.replace(/-/g, "") + "31");
+            
+            const q = query(
+                collection(db, "users", user.uid, "history"),
+                where("seed", ">=", startSeed),
+                where("seed", "<=", endSeed)
+            );
+            
+            const snap = await getDocs(q);
+            snap.forEach(d => {
+                const data = d.data();
+                const s = data.seed.toString();
+                const dateStr = `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
+                
+                monthHistory[dateStr] = {
+                    status: data.status || "played",
+                    originalWon: data.original?.won === true,
+                    hasOriginal: (!!data.original || data.played === true),
+                    score: data.best?.score || 0,
+                    totalTime: data.best?.totalTime || 0,
+                    original: data.original || null,
+                    best: data.best || null
+                };
+            });
+        }
 
-          historyCache[monthKey] = monthHistory;
-      } else {
-          monthHistory = {};
-      }
-  }
+        // v1.6.6: HYBRID MERGE. Use local data (crucial for Demo/Guest mode)
+        const localHistory = gameManager.stats?.history || {};
+        Object.keys(localHistory).forEach(dateStr => {
+            if (dateStr.startsWith(monthKey)) {
+                const localEntry = localHistory[dateStr];
+                const cloudEntry = monthHistory[dateStr];
+                
+                if (!cloudEntry) {
+                    monthHistory[dateStr] = {
+                        status: localEntry.status || "played",
+                        originalWon: localEntry.original?.won === true,
+                        hasOriginal: (!!localEntry.original || localEntry.played === true),
+                        score: localEntry.best?.score || 0,
+                        totalTime: localEntry.best?.totalTime || 0,
+                        original: localEntry.original || null,
+                        best: localEntry.best || null
+                    };
+                } else {
+                    if (localEntry.original) {
+                        if (!cloudEntry.original) cloudEntry.original = localEntry.original;
+                        else {
+                            const localOErr = localEntry.original.errors || localEntry.original.peaksErrors || 0;
+                            const cloudOErr = cloudEntry.original.errors || cloudEntry.original.peaksErrors || 0;
+                            if (localOErr > cloudOErr) cloudEntry.original.errors = localOErr;
+                        }
+                    }
+                    if (localEntry.best) {
+                        if (!cloudEntry.best) cloudEntry.best = localEntry.best;
+                        else {
+                            const localBErr = localEntry.best.errors || localEntry.best.peaksErrors || 0;
+                            const cloudBErr = cloudEntry.best.errors || cloudEntry.best.peaksErrors || 0;
+                            if (localBErr > cloudBErr) cloudEntry.best.errors = localBErr;
+                        }
+                    }
+                }
+            }
+        });
+        historyCache[monthKey] = monthHistory;
+    }
 
   updateNavButtonsState();
   renderHistoryCalendar(monthHistory);
@@ -424,7 +431,7 @@ function renderHistoryCalendar(history = {}) {
         }
 
         // DOT MARKER (Any completion)
-        if (dayData.status === "won") {
+        if (dayData.status === "won" && !CONFIG.isDemo) {
           const dot = document.createElement("span");
           dot.className = "completed-dot";
           dot.textContent = "👑"; // Use crown emoji instead of dot
@@ -439,17 +446,9 @@ function renderHistoryCalendar(history = {}) {
         const isToday = dateStr === todayStr;
         const isCompleted = dayData && dayData.status === "won";
 
-        // Per user request:
         // Today is NOT clickable from history until won.
-        if (isToday) {
-            if (isCompleted) {
-                // Allow deep link if won (v1.9.4)
-                const y = dateObj.getUTCFullYear();
-                const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
-                const dStr = String(dateObj.getUTCDate()).padStart(2, "0");
-                window.location.hash = `#history/${y}/${m}/${dStr}`;
-            }
-            return; // Do nothing for today if not completed
+        if (isToday && !isCompleted) {
+          return;
         }
         
         // Otherwise, use deep-link with date.
@@ -558,7 +557,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
 
   html += `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
     <span>${dateTitle}</span>
-    ${(!isComparison && data?.status === "won") ? "<span>👑</span>" : ""}
+    ${(!isComparison && data?.status === "won" && !CONFIG.isDemo) ? "<span>👑</span>" : ""}
   </div>`;
 
   const fmt = (ms) => formatTime(ms);
@@ -641,7 +640,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
                 <div class="history-comp-col">
                     <div class="history-comp-header" style="color: ${color}; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #ffffff11; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
                         <span>${name}</span>
-                        ${isWon ? '<span style="font-size: 0.9rem;">👑</span>' : ''}
+                        ${(isWon && !CONFIG.isDemo) ? '<span style="font-size: 0.9rem;">👑</span>' : ''}
                     </div>`;
               
               if (!hasData) {

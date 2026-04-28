@@ -1013,3 +1013,89 @@ body.dark-mode .btn-loading::after {
   border-color: rgba(255, 255, 255, 0.1);
   border-top-color: var(--accent-color);
 }
+
+/* Demo CTA Panel - Responsive Themes */
+.demo-cta-panel {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 45px 30px;
+  text-align: center;
+  background: #fff9e6; /* Lighter warm background */
+  border: 1.5px solid rgba(245, 158, 11, 0.2); /* Softer border */
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInPromo 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.demo-cta-panel h3 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #1e293b; /* Dark title for light theme */
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.demo-cta-panel p {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #64748b; /* Slate text for light theme */
+  max-width: 650px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.demo-cta-btn {
+  margin-top: 15px;
+  background-color: #ffa726 !important;
+  color: #ffffff !important; /* White text on orange for light theme */
+  font-weight: 700;
+  padding: 16px 48px !important;
+  border-radius: 18px !important;
+  text-decoration: none;
+  font-size: 1.2rem;
+  text-transform: uppercase !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 20px rgba(255, 167, 38, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.demo-cta-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(255, 167, 38, 0.5);
+  background-color: #ffb74d !important;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode .demo-cta-panel {
+  background: #333333; /* Lightened from charcoal */
+  border-color: rgba(255, 167, 38, 0.4);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .demo-cta-panel h3 {
+  color: #e2e8f0;
+}
+
+body.dark-mode .demo-cta-panel p {
+  color: #94a3b8;
+}
+
+body.dark-mode .demo-cta-btn {
+  color: #1a1a1a !important; /* Dark text on orange for dark theme */
+}
+
+.home-promo {
+  width: calc(100% - 40px);
+}
+
+@keyframes fadeInPromo {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -353,7 +353,7 @@ export class GameManager {
     const { getCurrentUser } = await import("./auth.js?v=1.4.10");
     const user = getCurrentUser();
 
-    if (user && !user.isAnonymous) {
+    if (user && !user.isAnonymous && !CONFIG.isDemo) {
       console.log("[Referee] Registering game start and maintenance check on server...");
       try {
         const { callJigsudoFunction } = await import("./db.js?v=1.4.10");
@@ -387,13 +387,17 @@ export class GameManager {
       // Local Guest History
       if (!this.stats.history) this.stats.history = {};
       if (!this.stats.history[dateStr]) {
-        this.stats.history[dateStr] = { seed: this.currentSeed, played: true };
+        this.stats.history[dateStr] = { seed: this.currentSeed, played: true, original: { won: false } };
       } else {
         this.stats.history[dateStr].played = true;
+        if (!this.stats.history[dateStr].original) {
+          this.stats.history[dateStr].original = { won: false };
+        }
       }
     }
     
     this.save(); 
+    window.dispatchEvent(new CustomEvent("jigsudoHistoryUpdated"));
 
     if (user && !user.isAnonymous) {
       console.log(`[GameManager] Game started for ${dateStr} (Session active).`);
@@ -892,6 +896,9 @@ export class GameManager {
 
   async save(syncToCloud = true, isPenalty = false, updateTimestamp = true, isReset = false) {
     if (!this.state || this.isWiping) return;
+    
+    // v1.9.9d: Block all cloud sync in Demo Mode
+    if (CONFIG.isDemo) syncToCloud = false;
 
     // --- CRITICAL FIX: Ensure local timestamp is updated ONLY on real progress ---
     // v1.6.9: Added updateTimestamp flag to prevent maintenance tasks from making 
@@ -926,6 +933,7 @@ export class GameManager {
   }
 
   async forceCloudSave(isWonNow = false, isPenalty = false, isReset = false) {
+    if (CONFIG.isDemo) return;
     if (this.isWiping && !isReset) return;
     const { getCurrentUser } = await import("./auth.js?v=1.4.10");
     const user = getCurrentUser();
@@ -950,7 +958,7 @@ export class GameManager {
       const user = getCurrentUser();
       if (user) uid = user.uid;
 
-      if (uid) {
+      if (uid && !CONFIG.isDemo) {
         // Skip cloud save for anonymous users unless it's an explicit override (migration)
         if (user && user.isAnonymous) {
           return;
@@ -2123,7 +2131,7 @@ export class GameManager {
   }
 
   async ensureSessionStarted(markIntent = false) {
-    if (this.isReplay) return; // v1.6.11: Replays are local-only, do not mark intent or anchor sessions.
+    if (CONFIG.isDemo || this.isReplay) return;
 
     const { getCurrentUser } = await import("./auth.js?v=1.4.10");
     const user = getCurrentUser();
@@ -2253,6 +2261,7 @@ export class GameManager {
   }
 
   async handleCloudSync(remoteProgress, remoteStats, isSnapshot = false, remoteSettings = null) {
+    if (CONFIG.isDemo) return;
     const urlParams = new URLSearchParams(window.location.search);
     const forceResetSeed = urlParams.get("forceReset");
     
@@ -3427,6 +3436,7 @@ export class GameManager {
         localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
       }
       await this.forceCloudSave();
+      window.dispatchEvent(new CustomEvent("jigsudoHistoryUpdated"));
 
       // --- 6. UX & NOTIFICATION ---
       const { stopTimer } = await import("./timer.js?v=1.4.10");

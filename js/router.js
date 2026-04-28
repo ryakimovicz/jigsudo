@@ -1,3 +1,4 @@
+import { CONFIG } from "./config.js?v=1.4.10";
 /**
  * Centralized Router Module
  * Handles specific views based on URL Hash.
@@ -74,6 +75,17 @@ export const router = {
       const { isAdmin } = await import("./auth.js?v=1.4.10");
       if (!isAdmin()) {
         console.warn("[Router] Unprivileged access to #admin. Redirecting...");
+        history.replaceState(null, null, "#home");
+        this.handleRoute();
+        return;
+      }
+    }
+
+    // v1.9.9d: DEMO MODE PROTECTION
+    if (CONFIG.isDemo) {
+      const restrictedRoutes = ["#search-users", "#changelog", "#profile"];
+      if (restrictedRoutes.includes(baseRoute)) {
+        console.warn(`[Router] Access to ${baseRoute} is blocked in Demo Mode. Redirecting...`);
         history.replaceState(null, null, "#home");
         this.handleRoute();
         return;

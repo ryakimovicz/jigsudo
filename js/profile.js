@@ -6,6 +6,7 @@ import { getRankData, calculateRP } from "./ranks.js?v=1.4.10";
 import { formatTime } from "./ui.js?v=1.4.10";
 import { getJigsudoDate, formatJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.4.10";
 import { fetchPuzzleIndex } from "./history.js?v=1.4.10";
+import { CONFIG } from "./config.js?v=1.4.10";
 
 export let currentViewDate = getJigsudoDate();
 let minNavMonth = null;
@@ -498,7 +499,13 @@ function renderProfileStats(stats, isOwn = true) {
   }
 
   // SHOW ALL STATS UI
-  statsContainers.forEach((el) => el.classList.remove("hidden"));
+  statsContainers.forEach((el) => {
+      if (CONFIG.isDemo && el.classList.contains("rank-display")) {
+          el.classList.add("hidden");
+          return;
+      }
+      el.classList.remove("hidden");
+  });
 
   // v1.4.5: Robust Hybrid Detection. Root fields (v7.1) vs Inner Map (Legacy/Partial)
   // We prefer the values at the root if available, otherwise look into the 'stats' map.

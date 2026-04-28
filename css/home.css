@@ -1866,7 +1866,7 @@ body.dark-mode .current-user-row {
 
 .victory-stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
   margin: 25px 0;
 }

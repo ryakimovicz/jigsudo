@@ -75,7 +75,7 @@ export const translations = {
       "{objective}<br><strong>Controles:</strong> {action}. Además, puedes bloquear y desbloquear piezas manteniendo el {lock_action}.",
     tutorial_stage_3_title: "Etapa 3: Sudoku",
     tutorial_stage_3_desc:
-      "{rules}<br>{buttons}{keyboard}<strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}. Mantén presionado un número en el pad para bloquearlo y colocarlo rápidamente al tocar celdas.",
+      "{rules}<br>{buttons}<br>{keyboard}<strong>Controles:</strong> Selecciona una celda e ingresa números {input_method}. Mantén presionado un número en el pad para bloquearlo y colocarlo rápidamente al tocar celdas.",
     tutorial_stage_4_title: "Etapa 4: Picos y Valles",
     tutorial_stage_4_desc:
       "<strong>Objetivo:</strong> Identifica los números más altos (Picos) y más bajos (Valles) comparándolos con los números que tienen pegados alrededor (incluyendo las diagonales). Algunos ya están marcados para ayudarte; debes encontrar los 5 restantes para avanzar.<br><strong>Controles:</strong> {Action} en la celda: se marcará en <strong>naranja</strong> si es un pico y en <strong>azul</strong> si es un valle.",
@@ -87,7 +87,7 @@ export const translations = {
       "<strong>Objetivo:</strong> Se revelará un patrón de seguridad. Memorízalo y repítelo exactamente en el tablero.<br><strong>Controles:</strong> {Action} las celdas en el orden correcto.",
     tutorial_stage_7_title: "¡Tutorial Completado!",
     tutorial_stage_7_desc:
-      "Felicidades, has dominado todas las mecánicas de Jigsudo. ¡Ya puedes enfrentarte al desafío de hoy!",
+      "Felicidades, has dominado todas las mecánicas de Jigsudo. ¡Ya puedes enfrentarte al desafío de la Edición Básica!",
     btn_finish_tutorial: "Finalizar",
 
     header_profile_label: "Perfil",
@@ -208,6 +208,20 @@ export const translations = {
     about_vision_text: "Entiendo los puzzles como una forma de ejercitar la mente y desconectar del ruido cotidiano. Por eso, mantengo Jigsudo libre de publicidad intrusiva y registros obligatorios, buscando ofrecer un refugio diario puramente recreativo.",
     about_github_title: "Código Abierto",
     about_github_text: "Jigsudo es un proyecto transparente. Si eres desarrollador o tienes curiosidad por cómo funciona por dentro, puedes revisar todo el código fuente en <a href=\"https://github.com/ryakimovicz/jigsudo\" target=\"_blank\" style=\"color: var(--accent-color); font-weight: bold;\">GitHub</a> e incluso proponer mejoras.",
+    basic_edition_label: "Edición Básica",
+    header_basic_edition: "Edición Básica",
+    seo_faq_demo_1_q: "¿Qué es la Edición Básica?",
+    seo_faq_demo_1_a: "Es una versión ligera y portátil de Jigsudo diseñada para jugar de forma rápida y sin necesidad de registros.",
+    seo_faq_demo_2_q: "¿Por qué solo incluye un puzzle?",
+    seo_faq_demo_2_a: "Esta edición está enfocada en mostrar las mecánicas del juego usando el tablero del 05/04/2026. En la versión completa, se genera un desafío único y diferente cada día.",
+    seo_faq_demo_3_q: "¿Dónde juego la versión completa?",
+    seo_faq_demo_3_a: "Puedes acceder a la experiencia completa con rankings globales, perfiles de usuario y desafíos diarios ilimitados en <a href='https://jigsudo.com' target='_blank' class='faq-link'>Jigsudo.com</a>.",
+    seo_faq_demo_4_q: "¿Se guarda mi progreso?",
+    seo_faq_demo_4_a: "¡Sí! Tu progreso e historial se guardan localmente en este navegador. Ten en cuenta que si borras los datos del sitio, el progreso de la demo se perderá.",
+    
+    demo_cta_title: "¡Juega la Experiencia Completa!",
+    demo_cta_desc: "Disfruta de perfiles, ranking global, historial completo y desafíos ilimitados.",
+    demo_cta_btn: "Ver Versión Completa",
     
     privacy_intro_text: "Tu privacidad es importante. Esta Política de Privacidad explica cómo se recopila, utiliza y protege tu información cuando utilizas esta aplicación web.",
     privacy_sec1_h: "1. Información que se Recopila",
@@ -289,11 +303,9 @@ export const translations = {
     history_title: "Historial de Jigsudos",
     history_select_date: "Selecciona una fecha para jugar",
     hist_legend_title: "Referencias",
-    hist_legend_nav: "Usa las flechas para navegar entre los meses disponibles.",
-    hist_legend_gray: "Jigsudo no jugado en su día original.",
-    hist_legend_yellow: "Jigsudo iniciado pero no terminado en su día.",
-    hist_legend_green: "Jigsudo terminado en su día original.",
-    hist_legend_crown: "Jigsudo terminado (en su día o posteriormente).",
+    hist_legend_gray: "Jigsudo no jugado.",
+    hist_legend_yellow: "Jigsudo iniciado pero no terminado.",
+    hist_legend_green: "Jigsudo ganado.",
     history_no_stat: "Sin estadísticas registradas",
     not_played: "No jugado",
     stats_original: "Desempeño Original",
@@ -593,7 +605,7 @@ export const translations = {
     seo_title: "El Desafío Jigsudo: Entrena tu mente cada día",
     seo_summary: "¿Qué es Jigsudo?",
     seo_summary_text:
-      "Jigsudo es un desafío mental diario que fusiona mecánicas de Sudoku, Memoria y Rompecabezas y otros minijuegos en un único tablero inteligente. Cada día a las 06:00 UTC cambia el tablero para un nuevo reto. Desde encontrar pares en el Juego de Memoria hasta descifrar El Código, el juego te guía por seis etapas interconectadas que pondrán a prueba tu razonamiento.",
+      "Jigsudo es un desafío mental que fusiona mecánicas de Sudoku, Memoria y Rompecabezas en un único tablero inteligente. En la versión completa de Jigsudo.com, cada día a las 06:00 UTC cambia el tablero para un nuevo reto, guiándote por seis etapas interconectadas que pondrán a prueba tu razonamiento.",
     seo_benefits: "¿Por qué resolver puzzles de lógica?",
     seo_benefits_text:
       "Resolver acertijos y puzzles de lógica es una forma fantástica de ejercitar la mente mientras te diviertes. Jigsudo te ofrece un espacio para poner a prueba tu paciencia y razonamiento personal de una manera envolvente. Algunos de los motivos para aceptar el desafío son:",
@@ -983,7 +995,7 @@ export const translations = {
       "<strong>Goal:</strong> A security pattern will be revealed. Memorize and repeat it exactly on the board.<br><strong>Controls:</strong> {Action} the cells in the correct order.",
     tutorial_stage_7_title: "Tutorial Completed!",
     tutorial_stage_7_desc:
-      "Congratulations, you've mastered Jigsudo! You're ready for today's challenge.",
+      "Congratulations, you've mastered all the mechanics of Jigsudo. You're now ready to face the Basic Edition challenge!",
     btn_finish_tutorial: "Finish",
 
     header_profile_label: "Profile",
@@ -1075,6 +1087,20 @@ export const translations = {
     // Footer
     footer_rights_html:
       '© 2026 <a href="https://github.com/ryakimovicz/jigsudo" target="_blank">Román Yakimovicz</a>',
+    basic_edition_label: "Basic Edition",
+    header_basic_edition: "Basic Edition",
+    seo_faq_demo_1_q: "What is the Basic Edition?",
+    seo_faq_demo_1_a: "It is a lightweight and portable version of Jigsudo designed for quick play without the need for an account.",
+    seo_faq_demo_2_q: "Why does it only include one puzzle?",
+    seo_faq_demo_2_a: "This edition is focused on showing the game mechanics using the April 5, 2026 board. In the full version, a unique different challenge is generated every day.",
+    seo_faq_demo_3_q: "Where do I play the full version?",
+    seo_faq_demo_3_a: "You can access the full experience with global rankings, user profiles, and unlimited daily challenges at <a href='https://jigsudo.com' target='_blank' class='faq-link'>Jigsudo.com</a>.",
+    seo_faq_demo_4_q: "Is my progress saved?",
+    seo_faq_demo_4_a: "Yes! Your progress and history are saved locally in this browser. Keep in mind that if you clear the site data, the demo progress will be lost.",
+    
+    demo_cta_title: "Play the Full Experience!",
+    demo_cta_desc: "Enjoy profiles, global ranking, full history, and unlimited challenges.",
+    demo_cta_btn: "View Full Version",
     footer_about: "About",
     footer_privacy: "Privacy",
     footer_terms: "Terms",
@@ -1093,12 +1119,10 @@ export const translations = {
     // History
     history_title: "Puzzle History",
     history_select_date: "Select a date to play",
-    hist_legend_title: "History Guide",
-    hist_legend_nav: "Use the arrows to navigate through available months.",
-    hist_legend_gray: "Jigsudo not played on its original day.",
-    hist_legend_yellow: "Jigsudo started but not finished on its day.",
-    hist_legend_green: "Jigsudo finished on its original day.",
-    hist_legend_crown: "Jigsudo finished (on its day or later).",
+    hist_legend_title: "References",
+    hist_legend_gray: "Jigsudo not played.",
+    hist_legend_yellow: "Jigsudo started but not finished.",
+    hist_legend_green: "Jigsudo won.",
     history_no_stat: "No stats recorded",
     not_played: "Not played",
     stats_original: "Original Performance",
@@ -1437,6 +1461,10 @@ export const translations = {
     sidebar_history: "History",
     history_title: "Jigsudos History",
     history_select_date: "Select a date to play",
+    hist_legend_title: "References",
+    hist_legend_gray: "Jigsudo not played.",
+    hist_legend_yellow: "Jigsudo started but not finished.",
+    hist_legend_green: "Jigsudo won.",
 
     toast_email_invalid: "The email is invalid.",
     toast_name_empty: "Username cannot be empty.",

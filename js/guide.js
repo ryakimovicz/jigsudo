@@ -56,7 +56,7 @@ function getTutorialStageDescription(stage, t) {
     desc = desc.replace("{buttons}", t.tutorial_stage_3_btns);
     desc = desc.replace(
       "{keyboard}",
-      caps.isKeyboard ? `<br>${t.tutorial_stage_3_kb}<br>` : "<br>",
+      caps.isKeyboard ? `${t.tutorial_stage_3_kb}<br>` : "",
     );
     desc = desc.replace(
       "{input_method}",

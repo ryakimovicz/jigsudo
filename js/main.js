@@ -29,7 +29,7 @@ import { initSearchUsers } from "./search-users.js?v=1.4.10";
 // "Cloud Echo" saves from background modules like GameManager.
 // v1.3.0: Season Transition Barrier
 // Start migration check in background (non-blocking for UI)
-const migrationCheck = checkSeasonMigration();
+const migrationCheck = !CONFIG.isDemo ? checkSeasonMigration() : Promise.resolve();
 
 // Boot Sequence
 // Capture native logging before suppression
@@ -55,6 +55,7 @@ function isNewerVersion(a, b) {
  * Checks the server for a newer version by fetching config.js with a cache-buster.
  */
 async function checkForUpdates() {
+  if (CONFIG.isDemo) return;
   try {
     // 1. Prevent update-loop-spam (10s cooldown)
     const lastAttempt = sessionStorage.getItem("jigsudo_last_update_attempt");

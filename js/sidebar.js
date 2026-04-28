@@ -1,3 +1,4 @@
+import { CONFIG } from "./config.js?v=1.4.10";
 export function updateSidebarActiveState(activeId) {
   const navItems = document.querySelectorAll(".nav-item");
   navItems.forEach((item) => {
@@ -121,7 +122,8 @@ export function initSidebar() {
         !sidebar.contains(e.target) &&
         !clickedOnToggle
       ) {
-        closeSidebar();
+        const isLink = e.target.closest("a");
+        closeSidebar(!isLink);
       }
     });
 
@@ -152,7 +154,7 @@ export function initSidebar() {
     const { isAdmin } = await import("./auth.js?v=1.4.10");
     const adminNavItem = document.getElementById("nav-admin");
     if (adminNavItem) {
-      const show = isAdmin(detail.user);
+      const show = isAdmin(detail.user) && !CONFIG.isDemo;
       adminNavItem.classList.toggle("hidden", !show);
       
       if (show && !adminNavItem.dataset.listenerAttached) {
@@ -163,4 +165,13 @@ export function initSidebar() {
       }
     }
   });
+
+  // v1.9.9d: Hide restricted items in Demo Mode
+  if (CONFIG.isDemo) {
+    const restrictedIds = ["nav-changelog", "nav-search-users", "btn-auth"];
+    restrictedIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("hidden");
+    });
+  }
 }

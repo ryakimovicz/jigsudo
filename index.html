@@ -230,7 +230,7 @@
                 >
               </li>
               <li
-                class="nav-item"
+                class="nav-item hidden"
                 id="nav-search-users"
                 title="Buscar Usuarios"
                 data-i18n-title="sidebar_search_users"
@@ -248,7 +248,7 @@
                 <span class="nav-label" data-i18n="sidebar_how_to">Guía</span>
               </li>
               <li
-                class="nav-item"
+                class="nav-item hidden"
                 id="nav-changelog"
                 title="Historial de Cambios"
                 data-i18n-title="changelog_title"
@@ -276,7 +276,7 @@
           <div class="auth-wrapper sidebar-item-wrapper">
             <button
               id="btn-auth"
-              class="nav-item"
+              class="nav-item hidden"
               title="Cuenta"
               data-i18n-title="menu_account"
             >
@@ -535,19 +535,6 @@
         </div>
 
         <div class="tabs-group">
-          <div class="home-tabs">
-            <button
-              class="tab-btn active"
-              data-tab="daily"
-              data-i18n="tab_daily"
-            >
-              Diario
-            </button>
-            <button class="tab-btn" data-tab="custom" data-i18n="tab_custom">
-              Personalizado
-            </button>
-          </div>
-
           <!-- Panels Container -->
           <div class="home-panels">
             <!-- Daily Panel (Default) -->
@@ -680,7 +667,7 @@
 
 
 
-        <section id="ranking-container" class="ranking-container-multi">
+        <section id="ranking-container" class="ranking-container-multi hidden">
           <div class="ranking-header-main">
             <h3 data-i18n="ranking_title">Clasificación</h3>
             <button
@@ -740,26 +727,6 @@
           </div>
         </section>
 
-        <!-- Support / Donation Card -->
-        <section id="support-container" class="support-card glass-panel" style="margin-top: 24px;">
-          <h3 data-i18n="support_title">Apoya el Proyecto</h3>
-          <p data-i18n="support_desc">Si disfrutas de Jigsudo y quieres que siga siendo gratuito y sin publicidad, puedes invitarnos un café.</p>
-          <div class="support-buttons">
-            <div class="support-item">
-              <span class="support-tag" data-i18n="support_global">Global / Resto del Mundo</span>
-              <a href="https://ko-fi.com/corolado" target="_blank" class="btn-support btn-kofi">
-                <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
-                <span>Ko-fi</span>
-              </a>
-            </div>
-            <div class="support-item">
-              <span class="support-tag" data-i18n="support_argentina">Argentina</span>
-              <a href='https://cafecito.app/corolado' rel='noopener' target='_blank' class="btn-cafecito-raw">
-                <img srcset='https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x' src='https://cdn.cafecito.app/imgs/buttons/button_1.png' alt='Invitame un café en cafecito.app' />
-              </a>
-            </div>
-          </div>
-        </section>
 
         <!-- SEO Rich Content Block -->
         <article
@@ -794,11 +761,7 @@
               ¿Qué es Jigsudo?
             </h3>
             <p data-i18n-html="seo_summary_text" style="margin-bottom: 12px">
-              Jigsudo es un desafío mental diario que fusiona mecánicas de 
-              Sudoku, Memoria y Rompecabezas y otros minijuegos en un único tablero inteligente. 
-              Cada día a las 06:00 UTC cambia el tablero para un nuevo reto. 
-              Desde encontrar pares en el Juego de Memoria hasta descifrar El Código, 
-              el juego te guía por seis etapas interconectadas que pondrán a prueba tu razonamiento.
+              Jigsudo es un desafío mental que fusiona mecánicas de Sudoku, Memoria y Rompecabezas en un único tablero inteligente. En la versión completa de Jigsudo.com, cada día a las 06:00 UTC cambia el tablero para un nuevo reto, guiándote por seis etapas interconectadas que pondrán a prueba tu razonamiento.
             </p>
 
             <h3
@@ -826,229 +789,48 @@
                 Enfoque y paciencia: La lógica de todos los minijuegos exige concentración y calma.
               </li>
               <li data-i18n-html="seo_benefit_3" style="margin-bottom: 4px">
-                Desconexión del estrés: Sumergirte en el juego actúa como una "meditación activa" para tu día.
+                Desconexión del estrés: Sumergirte en el juego actúa como una 'meditación activa' para tu día.
               </li>
             </ul>
 
-            <h3
-              data-i18n="seo_ranking"
-              style="
-                font-size: 1.1rem;
-                color: var(--text-color);
-                margin: 16px 0 8px;
-              "
-            >
-              Sube en el Ranking Global
-            </h3>
-            <p data-i18n="seo_ranking_text" style="margin-bottom: 16px">
-              Al crear una cuenta, puedes medir tu destreza contra jugadores de
-              todo el mundo. Jigsudo cuenta con un sistema de puntos de rango (RP)
-              que penaliza la inactividad y recompensa la velocidad y la
-              precisión. ¡No faltes a tu cita diaria y alcanza el rango
-              Galáctico!
-            </p>
 
             <h3
               data-i18n="seo_faq"
               style="
                 font-size: 1.1rem;
                 color: var(--text-color);
-                margin: 16px 0 8px;
+                margin: 24px 0 12px;
               "
             >
-              Preguntas Frecuentes (FAQ)
+              Preguntas Frecuentes
             </h3>
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_1_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Cuándo se actualiza el puzzle diario?
-              </summary>
-              <p data-i18n-html="seo_faq_1_a" style="margin: 8px 0 0 0">
-                El juego se actualiza y sincroniza para todo el mundo a las 06:00 UTC. Si no juegas en el día, perderás puntos de rango (RP) en el perfil y la tabla de clasificación debido a la inactividad.
-              </p>
-            </details>
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_2_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Es gratis jugar a Jigsudo?
-              </summary>
-              <p data-i18n-html="seo_faq_2_a" style="margin: 8px 0 0 0">
-                Sí, el puzzle diario es 100% gratuito.
-              </p>
-            </details>
-
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_3_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Puedo jugar puzzles de días anteriores?
-              </summary>
-              <p data-i18n-html="seo_faq_3_a" style="margin: 8px 0 0 0">
-                ¡Sí! En la sección de <strong>Historial</strong> puedes acceder a los tableros de días pasados. Ten en cuenta que solo el puzzle del día actual cuenta para tu racha y para el ranking global.
-              </p>
-            </details>
-
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_4_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Qué ventajas tiene crear una cuenta?
-              </summary>
-              <p data-i18n-html="seo_faq_4_a" style="margin: 8px 0 0 0">
-                Al registrarte, tu progreso, estadísticas y racha se sincronizan automáticamente en la nube. Además, es necesario estar autenticado para aparecer en la tabla de clasificación y competir por los mejores rangos.
-              </p>
-            </details>
-
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_5_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Cómo funcionan las rachas?
-              </summary>
-              <p data-i18n-html="seo_faq_5_a" style="margin: 8px 0 0 0">
-                Para mantener tu racha, debes completar el desafío antes del próximo reset (06:00 UTC). Si dejas pasar un día sin jugar, la racha volverá a cero.
-              </p>
-            </details>
-
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_6_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Cómo se calculan los puntos de rango (RP)?
-              </summary>
-              <p data-i18n-html="seo_faq_6_a" style="margin: 8px 0 0 0">
-                El sistema premia la <strong>velocidad</strong> de resolución en todas las etapas y la <strong>precisión</strong> específicamente en el minijuego de Picos y Valles. Los puntos de rango (RP) se actualizan diariamente en el ranking global.
-              </p>
-            </details>
-
-            <details
-              class="seo-faq-item"
-              style="
-                margin-bottom: 8px;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_7_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Puedo jugar Jigsudo en mi celular?
-              </summary>
-              <p data-i18n-html="seo_faq_7_a" style="margin: 8px 0 0 0">
-                ¡Totalmente! Jigsudo está diseñado para ser 100% responsiva (móvil y tablet). Puedes usarlo desde tu navegador e incluso añadirlo a tu pantalla de inicio.
-              </p>
-            </details>
-
-            <details
-              class="seo-faq-item"
-              style="
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px;
-              "
-            >
-              <summary
-                data-i18n="seo_faq_8_q"
-                style="
-                  cursor: pointer;
-                  font-weight: 600;
-                  color: var(--text-color);
-                "
-              >
-                ¿Jigsudo tiene anuncios o micro-pagos?
-              </summary>
-              <p data-i18n-html="seo_faq_8_a" style="margin: 8px 0 0 0">
-                Jigsudo no tiene micro-pagos y el acceso siempre será gratuito para todos. El proyecto se mantiene de forma independiente y sin publicidad. Las donaciones son opcionales, no otorgan ventajas competitivas, ¡pero las agradezco enormemente!
-              </p>
-            </details>
+            <div id="faq-demo-container">
+              <details class="seo-faq-item" style="margin-bottom: 8px; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <summary data-i18n="seo_faq_demo_1_q" style="cursor: pointer; font-weight: 600; color: var(--text-color);">¿Qué es la Edición Básica?</summary>
+                <p data-i18n-html="seo_faq_demo_1_a" style="margin: 8px 0 0 0">Es una versión ligera y portátil de Jigsudo diseñada para jugar de forma rápida y sin necesidad de registros.</p>
+              </details>
+              <details class="seo-faq-item" style="margin-bottom: 8px; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <summary data-i18n="seo_faq_demo_2_q" style="cursor: pointer; font-weight: 600; color: var(--text-color);">¿Por qué solo incluye un puzzle?</summary>
+                <p data-i18n-html="seo_faq_demo_2_a" style="margin: 8px 0 0 0">Esta edición está enfocada en mostrar las mecánicas del juego usando el tablero del 05/04/2026. En la versión completa, se genera un desafío único y diferente cada día.</p>
+              </details>
+              <details class="seo-faq-item" style="margin-bottom: 8px; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <summary data-i18n="seo_faq_demo_3_q" style="cursor: pointer; font-weight: 600; color: var(--text-color);">¿Dónde juego la versión completa?</summary>
+                <p data-i18n-html="seo_faq_demo_3_a" style="margin: 8px 0 0 0">Puedes acceder a la experiencia completa con rankings globales en <a href="https://jigsudo.com" target="_blank">Jigsudo.com</a>.</p>
+              </details>
+              <details class="seo-faq-item" style="margin-bottom: 8px; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <summary data-i18n="seo_faq_demo_4_q" style="cursor: pointer; font-weight: 600; color: var(--text-color);">¿Se guarda mi progreso?</summary>
+                <p data-i18n-html="seo_faq_demo_4_a" style="margin: 8px 0 0 0">¡Sí! Tu progreso e historial se guardan localmente en este navegador.</p>
+              </details>
+            </div>
           </div>
         </article>
+
+        <!-- Demo Call to Action (Home) -->
+        <div class="demo-cta-panel home-promo">
+          <h3 data-i18n="demo_cta_title">¡Juega la Experiencia Completa!</h3>
+          <p data-i18n="demo_cta_desc">Disfruta de perfiles, ranking global, historial completo y desafíos ilimitados.</p>
+          <a href="https://jigsudo.com" target="_blank" class="demo-cta-btn" data-i18n="demo_cta_btn">Ver Versión Completa</a>
+        </div>
       </main>
 
       <!-- Profile Section -->
@@ -1413,9 +1195,9 @@
           </h1>
           <div class="history-card">
             <div class="history-header">
-              <button id="hist-prev-btn" class="icon-btn-medium">←</button>
+              <button id="hist-prev-btn" class="icon-btn-medium hidden">←</button>
               <h2 id="hist-month-label">Mes</h2>
-              <button id="hist-next-btn" class="icon-btn-medium">→</button>
+              <button id="hist-next-btn" class="icon-btn-medium hidden">→</button>
             </div>
             <p class="history-subtitle" data-i18n="history_select_date">
               Selecciona una fecha para jugar
@@ -1428,9 +1210,6 @@
           <!-- History Legend -->
           <div class="history-legend-card glass-panel">
             <h3 data-i18n="hist_legend_title">Referencias</h3>
-            <p class="legend-nav-info" data-i18n="hist_legend_nav">
-              Usa las flechas para navegar entre los meses disponibles.
-            </p>
             <ul class="legend-list">
               <li>
                 <span class="legend-box gray"></span>
@@ -1444,11 +1223,14 @@
                 <span class="legend-box green"></span>
                 <span data-i18n="hist_legend_green">Jigsudo terminado en su día original.</span>
               </li>
-              <li>
-                <span class="legend-icon">👑</span>
-                <span data-i18n="hist_legend_crown">Jigsudo terminado (en su día o posteriormente).</span>
-              </li>
             </ul>
+          </div>
+
+          <!-- Demo Call to Action (History) -->
+          <div class="demo-cta-panel">
+            <h3 data-i18n="demo_cta_title">¡Juega la Experiencia Completa!</h3>
+            <p data-i18n="demo_cta_desc">Disfruta de perfiles, ranking global, historial completo y desafíos ilimitados.</p>
+            <a href="https://jigsudo.com" target="_blank" class="demo-cta-btn" data-i18n="demo_cta_btn">Ver Versión Completa</a>
           </div>
         </div>
       </section>
@@ -1484,14 +1266,14 @@
               >
                 <!-- Scoring Rules -->
                 <div class="info-card glass-panel">
-                  <h3 data-i18n="guide_scoring_title">📊 Sistema de Puntuación (RP)</h3>
+                  <h3 data-i18n="guide_scoring_title">📊 Sistema de Puntuación</h3>
                   <p data-i18n="guide_scoring_p1">
-                    Cada juego otorga puntos base (RP) al completarlo. Además,
-                    puedes ganar bonificaciones por velocidad y consistencia.
+                    Cada juego otorga puntos al completarlo. Además,
+                    puedes ganar bonificaciones por velocidad.
                   </p>
                   <ul>
                     <li>
-                      <strong data-i18n="guide_base_rp">Base RP:</strong>
+                      <strong data-i18n="guide_base_rp">Puntos Base:</strong>
                       <span data-i18n="guide_base_rp_desc">6.0 puntos garantizados por terminar:</span>
                       <ul
                         class="sub-list"
@@ -1528,33 +1310,21 @@
                     </li>
                     <li>
                       <strong data-i18n="guide_penalty">Penalización:</strong>
-                      <span data-i18n="guide_penalty_desc">En Picos y Valles, -0.5 RP por cada error. La precisión es clave.</span>
-                    </li>
-                    <li>
-                      <strong data-i18n="guide_streak">Racha Diaria:</strong>
-                      <span data-i18n="guide_streak_desc">Juega todos los días para demostrar tu constancia.</span>
-                    </li>
-                    <li>
-                      <strong data-i18n="guide_absence">Ausencia:</strong>
-                      <span data-i18n="guide_absence_desc">-10.0 RP por cada día sin jugar.</span>
+                      <span data-i18n="guide_penalty_desc">En Picos y Valles, -0.5 puntos por cada error. La precisión es clave.</span>
                     </li>
                   </ul>
                 </div>
 
-                <!-- Ranks System -->
-                <div class="info-card glass-panel">
-                  <h3 data-i18n="guide_ranks_title">🏆 Sistema de Rangos</h3>
-                  <p data-i18n="guide_ranks_p1">
-                    Acumula RP para subir de nivel y desbloquear nuevos rangos.
-                    Cada rango representa tu maestría en Jigsudo.
-                  </p>
-                  <div id="ranks-table-container">
-                    <!-- Populated by JS -->
-                  </div>
-                </div>
 
               </div>
             </div>
+          </div>
+
+          <!-- Demo Call to Action (Guide) -->
+          <div class="demo-cta-panel">
+            <h3 data-i18n="demo_cta_title">¡Juega la Experiencia Completa!</h3>
+            <p data-i18n="demo_cta_desc">Disfruta de perfiles, ranking global, historial completo y desafíos ilimitados.</p>
+            <a href="https://jigsudo.com" target="_blank" class="demo-cta-btn" data-i18n="demo_cta_btn">Ver Versión Completa</a>
           </div>
         </div>
       </section>
@@ -2161,28 +1931,6 @@
               </div>
             </div>
 
-            <!-- Donations -->
-            <div class="privacy-card">
-              <h3 data-i18n="support_donate_title" style="color: var(--accent-color); margin-bottom: 15px;">¿Quieres apoyar el proyecto?</h3>
-              <p data-i18n="support_donate_desc">
-                Jigsudo es y será siempre gratuito. Si te gusta el desafío y quieres ayudarnos con los costos del servidor, puedes invitarnos un café.
-              </p>
-              <div class="support-donation-links" style="display: flex; gap: 30px; justify-content: center; align-items: flex-start; margin-top: 25px; flex-wrap: wrap;">
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                  <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="support_global">Global (PayPal)</span>
-                  <a href="https://ko-fi.com/corolado" target="_blank" class="btn-support btn-kofi">
-                    <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
-                    <span>Ko-fi</span>
-                  </a>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                  <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="support_argentina">Argentina (MP)</span>
-                  <a href='https://cafecito.app/corolado' rel='noopener' target='_blank' class="btn-cafecito-raw">
-                    <img srcset='https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x' src='https://cdn.cafecito.app/imgs/buttons/button_1.png' alt='Invitame un café en cafecito.app' />
-                  </a>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -2191,12 +1939,6 @@
       <footer class="main-footer">
         <div class="footer-links">
           <a href="#about" data-i18n="footer_about">Acerca de</a>
-          <span class="footer-sep">|</span>
-          <a href="#privacy" data-i18n="footer_privacy">Privacidad</a>
-          <span class="footer-sep">|</span>
-          <a href="#terms" data-i18n="footer_terms">Términos</a>
-          <span class="footer-sep">|</span>
-          <a href="#support" data-i18n="footer_support">Soporte</a>
         </div>
         <div class="footer-bottom">
           <span data-i18n-html="footer_rights_html"
@@ -2682,15 +2424,6 @@
             </div>
           </div>
           <div class="victory-stat-card">
-            <span class="stat-icon">🔥</span>
-            <div class="stat-info">
-              <span class="stat-label" data-i18n="victory_stat_streak"
-                >Racha Actual</span
-              >
-              <span id="victory-streak" class="stat-value">--</span>
-            </div>
-          </div>
-          <div class="victory-stat-card">
             <span class="stat-icon">❌</span>
             <div class="stat-info">
               <span class="stat-label" data-i18n="victory_stat_errors"
@@ -2717,24 +2450,6 @@
           </div>
         </div>
 
-        <div class="victory-support">
-          <p data-i18n="victory_support_p">¿Te gustó la partida? Apoya el proyecto:</p>
-          <div class="support-buttons">
-            <div class="support-item">
-              <span class="support-tag" data-i18n="support_global">Global</span>
-              <a href="https://ko-fi.com/corolado" target="_blank" class="btn-support btn-kofi">
-                 <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
-                 <span>Ko-fi</span>
-              </a>
-            </div>
-            <div class="support-item">
-              <span class="support-tag" data-i18n="support_argentina">Argentina</span>
-              <a href='https://cafecito.app/corolado' rel='noopener' target='_blank' class="btn-cafecito-raw">
-                <img srcset='https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x' src='https://cdn.cafecito.app/imgs/buttons/button_1.png' alt='Invitame un café en cafecito.app' />
-              </a>
-            </div>
-          </div>
-        </div>
 
         <div class="modal-actions" style="display: flex; gap: 10px">
           <button
@@ -2839,12 +2554,8 @@
           <div id="vsc-logo-container" class="sc-logo-container"></div>
           <div class="sc-app-info">
             <h1 class="sc-app-title">JIGSUDO</h1>
-            <p id="vsc-date" class="sc-date">Febrero 2026</p>
+            <p id="vsc-date" class="sc-date" data-i18n="basic_edition_label">EDICIÓN BÁSICA</p>
           </div>
-        </div>
-        <div class="sc-user-box">
-          <h2 id="vsc-username" class="sc-username">Usuario</h2>
-          <p id="vsc-rank" class="sc-rank-name">Novato</p>
         </div>
       </div>
 
@@ -2861,12 +2572,6 @@
             <span class="sc-stat-val" id="vsc-stat-time">00:00</span>
             <span class="sc-stat-lbl" data-i18n="victory_stat_time"
               >Tiempo Total</span
-            >
-          </div>
-          <div class="sc-stat-item">
-            <span class="sc-stat-val" id="vsc-stat-streak">0</span>
-            <span class="sc-stat-lbl" data-i18n="victory_stat_streak"
-              >Racha Actual</span
             >
           </div>
           <div class="sc-stat-item">
@@ -3035,19 +2740,5 @@
     <div id="history-tooltip-container" class="history-tooltip-container"></div>
     <div id="history-tooltip" class="history-tooltip hidden"></div>
 
-    <!-- Cookie Consent Banner -->
-    <div id="cookie-banner" class="cookie-banner">
-      <div class="cookie-content">
-        <h4 data-i18n="cookies_title">Configuración de Cookies 🍪</h4>
-        <p>
-          <span data-i18n="cookies_text">Utilizamos cookies técnicas y analíticas para mejorar tu experiencia y la seguridad del sitio.</span>
-          <a href="#privacy" class="cookie-link" data-i18n="cookies_link_policy">Política de Privacidad</a>
-        </p>
-      </div>
-      <div class="cookie-actions">
-        <button id="cookie-deny" class="cookie-btn btn-deny" data-i18n="cookies_btn_deny">Solo técnicas</button>
-        <button id="cookie-accept" class="cookie-btn btn-accept" data-i18n="cookies_btn_accept">Aceptar todas</button>
-      </div>
-    </div>
   </body>
 </html>

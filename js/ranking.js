@@ -12,6 +12,8 @@ import { translations } from "./translations.js?v=1.4.10";
 import { getCurrentLang } from "./i18n.js?v=1.4.10";
 import { encryptData, decryptData } from "./utils/crypto.js?v=1.4.10";
 
+import { CONFIG } from "./config.js?v=1.4.10";
+
 const dbMod = await import("./db.js?v=1.4.10");
 import { getCurrentUser } from "./auth.js?v=1.4.10";
 import { getRankData, SCORING } from "./ranks.js?v=1.4.10";
@@ -56,6 +58,7 @@ function saveRankingsToCache(rankings, userId, today, isAuthenticated) {
 }
 
 export async function fetchRankings(forceRefresh = false) {
+  if (CONFIG.isDemo) return { daily: { top: [], personal: null }, yesterday: { top: [], personal: null }, monthly: { top: [], personal: null }, lastMonth: { top: [], personal: null }, allTime: { top: [], personal: null }, career: { top: [], personal: null } };
   // Ensure gameManager is ready so local stats are up to date for score comparison
   await gameManager.ready;
 

@@ -4,6 +4,8 @@
  * A Jigsudo Day resets at 06:00 UTC (03:00 AM Argentina).
  */
 
+import { CONFIG } from "../config.js?v=1.4.10";
+
 export const JIGSUDO_OFFSET_HOURS = 6;
 
 /**
@@ -14,6 +16,10 @@ export const JIGSUDO_OFFSET_HOURS = 6;
  * @returns {Date} Shifted Jigsudo Date object
  */
 export function getJigsudoDate() {
+  if (CONFIG.isDemo && CONFIG.demoDate) {
+    // Return the fixed demo date (as a Date object at noon UTC to avoid edge case issues)
+    return new Date(CONFIG.demoDate + "T12:00:00Z");
+  }
   return new Date(Date.now() - JIGSUDO_OFFSET_HOURS * 3600 * 1000);
 }
 

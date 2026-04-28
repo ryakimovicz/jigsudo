@@ -1020,6 +1020,10 @@ body.dark-mode .light-only {
   gap: 24px;
 }
 
+#victory-social-card .sc-stats-row {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .sc-stat-item {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);

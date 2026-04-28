@@ -124,11 +124,16 @@ export function formatTime(ms) {
 
   // v1.2.5: Rounding to nearest integer, but 0.5 rounds DOWN. Logic: Math.ceil(secs - 0.5)
   const totalSeconds = Math.ceil(ms / 1000 - 0.5);
-  const hrs = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hrs = Math.floor((totalSeconds % 86400) / 3600);
   const mins = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;
 
-  if (hrs > 0) {
+  if (days > 0) {
+    return `${days}d ${hrs.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  } else if (hrs > 0) {
     return `${hrs.toString().padStart(2, "0")}:${mins
       .toString()
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
@@ -520,6 +525,7 @@ async function handleShareVictory(stats) {
       logoContainer.innerHTML = isDarkMode ? svgDark : svgLight;
     }
 
+    /* Disabled for Basic Edition as per user request
     if (usernameEl)
       usernameEl.textContent = user
         ? user.displayName || t.user_default || "Usuario"
@@ -537,6 +543,7 @@ async function handleShareVictory(stats) {
     if (dateEl) {
       dateEl.textContent = formatJigsudoDate(t.date_locale || "es-ES");
     }
+    */
 
     // 2. Populate Session Stats
     const sessionScoreFormat = new Intl.NumberFormat(
@@ -617,15 +624,9 @@ async function handleShareVictory(stats) {
 
     card.style.display = ""; // REVERT
 
-    // 5. Filename Generation
-    const dateStr = new Date().toISOString().split("T")[0];
-    const fallbackName = user
-      ? t.user_default || "Usuario"
-      : t.guest || "Invitado";
-    const nameClean = (user ? user.displayName || fallbackName : fallbackName)
-      .replace(/[^a-z0-9]/gi, "_")
-      .toLowerCase();
-    const fileName = `jigsudo-victory-${nameClean}-${dateStr}.png`;
+    // 5. Filename Generation (Basic Edition)
+    const baseName = lang === "es" ? "edicion-basica" : "basic-edition";
+    const fileName = `jigsudo-${baseName}.png`;
 
     // 6. Share or Download
     canvas.toBlob(async (blob) => {

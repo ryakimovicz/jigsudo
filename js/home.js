@@ -141,16 +141,26 @@ export function initHome() {
 
   // Close dropdowns when clicking outside
   document.addEventListener("click", (e) => {
+    const isLink = e.target.closest("a");
     if (profileDropdown && !profileDropdown.classList.contains("hidden")) {
       if (!profileDropdown.contains(e.target) && e.target !== btnProfile) {
-        closeDropdown(profileDropdown);
+        // v1.9.9e: If clicking a SPA link (starts with #), close immediately 
+        // without history.back() to avoid double-handling or race conditions.
+        closeDropdown(profileDropdown, !isLink);
       }
     }
     if (authDropdown && !authDropdown.classList.contains("hidden")) {
       if (!authDropdown.contains(e.target) && e.target !== btnAuth) {
-        closeDropdown(authDropdown);
+        // v1.9.9e: Safer close for SPA links
+        closeDropdown(authDropdown, !isLink);
       }
     }
+  });
+
+  // v1.4.11: Close dropdowns on route change (e.g. footer links)
+  window.addEventListener("routeChanged", () => {
+    closeDropdown(profileDropdown, false);
+    closeDropdown(authDropdown, false);
   });
 
   // Prevent closing when clicking inside the dropdowns
@@ -286,9 +296,16 @@ export function initHome() {
 
     if (!dateEl || !challengeEl) return;
 
+    const lang = getCurrentLang();
+
+    if (CONFIG.isDemo) {
+      dateEl.textContent = translations[lang]?.header_basic_edition || "Edición Básica";
+      challengeEl.textContent = "";
+      return;
+    }
+
     // Use Jigsudo Day (06:00 UTC Cutoff)
     const now = getJigsudoDate();
-    const lang = getCurrentLang();
     const t = translations[lang];
     const locale = t ? t.date_locale : "es-ES";
 
@@ -893,7 +910,7 @@ export function initHome() {
 
   const rankingObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      if (entry.isIntersecting && !rankingsInitialized) {
+      if (entry.isIntersecting && !rankingsInitialized && !CONFIG.isDemo) {
         console.log("[Home] Ranking area visible, initializing load...");
         rankingsInitialized = true;
         loadAndRenderAllRankings(false);
@@ -911,7 +928,7 @@ export function initHome() {
   // Refresh Listener
   if (refreshBtn) {
     refreshBtn.addEventListener("click", () => {
-      loadAndRenderAllRankings(true);
+      if (!CONFIG.isDemo) loadAndRenderAllRankings(true);
     });
   }
 
