@@ -296,8 +296,18 @@ export async function showVictorySummary(stats, isHome = false) {
   if (!stats) return;
 
   const modal = document.getElementById("victory-summary-modal");
+  const modalContent = modal?.querySelector(".modal-content");
   const btnHome = document.getElementById("btn-victory-home");
   if (!modal) return;
+
+  // v1.9.9r: Handle long game layout (time > 1 hour)
+  if (modalContent) {
+    if (stats.totalTime >= 3600000) {
+      modalContent.classList.add("long-game");
+    } else {
+      modalContent.classList.remove("long-game");
+    }
+  }
 
   lastVictoryStats = stats;
   lastVictoryIsHome = isHome;
@@ -620,6 +630,17 @@ async function handleShareVictory(stats) {
       allowTaint: true,
       logging: false,
       windowWidth: 1080,
+      onclone: (clonedDoc) => {
+        // v1.9.9p: Fix relative CSS paths for Itch.io (avoids 403 Forbidden)
+        const links = clonedDoc.querySelectorAll('link[rel="stylesheet"]');
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('//')) {
+            // Resolve relative to current base URL
+            link.href = new URL(href, window.location.href).href;
+          }
+        });
+      }
     });
 
     card.style.display = ""; // REVERT

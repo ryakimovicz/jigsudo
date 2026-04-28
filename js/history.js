@@ -25,13 +25,30 @@ async function checkPuzzleExists(dateStr) {
 }
 
 export async function fetchPuzzleIndex() {
+  // v1.9.9m: Skip fetch in Demo mode to avoid 403 console noise on Itch.io
+  if (CONFIG.isDemo) {
+    console.log("[History] Demo mode detected. Using local puzzle index directly.");
+    try {
+      const { default: index } = await import("./puzzles_index.js");
+      return index;
+    } catch (err) {
+      return [];
+    }
+  }
+
   try {
     const response = await fetch("public/puzzles/index.json");
-    if (!response.ok) return [];
+    if (!response.ok) throw new Error("Fetch failed");
     return await response.json();
   } catch (e) {
-    console.warn("[History] Could not fetch puzzle index, falling back to empty.");
-    return [];
+    console.warn("[History] Could not fetch puzzle index, using ES module fallback.");
+    try {
+      const { default: index } = await import("./puzzles_index.js");
+      return index;
+    } catch (err) {
+      console.error("[History] Fatal: No puzzle index available.", err);
+      return [];
+    }
   }
 }
 

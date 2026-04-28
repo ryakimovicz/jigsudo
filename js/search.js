@@ -6,6 +6,8 @@ import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js";
 import { isAtGameRoute } from "./utils/route-utils.js";
 import { resetUI } from "./memory.js";
 import { initCode } from "./code.js";
+import { resumeSudokuState } from "./sudoku.js";
+import { resumePeaksState } from "./peaks.js";
 
 let isSelecting = false;
 let currentPath = []; // Array of {r, c}
@@ -487,14 +489,17 @@ export async function transitionToSearch() {
   const state = gameManager.getState();
   const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
   if (currentStage !== "search") {
-    gameManager.updateProgress("progress", { currentStage: "search" });
+    gameManager.updateProgress("currentStage", "search");
   }
 
   // 7. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js");
-  const { resumePeaksState } = await import("./peaks.js");
   resumeSudokuState();
   resumePeaksState();
+
+  // v1.9.9j: Release transition flag
+  setTimeout(() => {
+    window.isGameTransitioning = false;
+  }, 1000);
 }
 
 export function provideSearchHint() {
@@ -548,7 +553,7 @@ export async function transitionToCode() {
   const state = gameManager.getState();
   const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
   if (currentStage !== "code") {
-    gameManager.updateProgress("progress", { currentStage: "code" });
+    gameManager.updateProgress("currentStage", "code");
   }
 
   // 6. Hydrate Previous Progress (Fix for login restoration)
@@ -562,6 +567,11 @@ export async function transitionToCode() {
 
   // 7. Initialize Code Game AFTER hydration
   initCode();
+
+  // v1.9.9k: Release transition flag
+  setTimeout(() => {
+    window.isGameTransitioning = false;
+  }, 1000);
 }
 
 function triggerEasterEgg(overrideEmoji = null, cells = []) {

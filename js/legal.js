@@ -136,7 +136,7 @@ function initSettingsToggles() {
 
   // Sound Visibility: Always show but as disabled/unchecked
   if (soundContainer) {
-    soundContainer.style.display = "flex";
+    // Hidden by default in HTML for Demo
   }
 
   if (soundToggle) {

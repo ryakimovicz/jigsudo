@@ -466,7 +466,7 @@
                 <h4 class="settings-subhead" data-i18n="settings_gameplay">
                   Jugabilidad
                 </h4>
-                <div class="setting-item" id="setting-sound-container-modal">
+                <div class="setting-item" id="setting-sound-container-modal" style="display: none;">
                   <span class="setting-label"
                     ><span class="icon-label">🔊</span
                     ><span data-i18n="setting_sound">Sonido</span></span
@@ -1710,6 +1710,13 @@
             <h2 data-i18n="about_title">Acerca de</h2>
           </header>
           <div class="section-body">
+            <!-- v1.4.10_fix_v13: Demo Note -->
+            <div id="about-demo-note" class="privacy-card demo-only-block" style="display: none; border: 1px solid var(--accent-color); background: rgba(var(--accent-rgb), 0.05);">
+              <h2 data-i18n="about_demo_note_title">Nota sobre la Edición Básica</h2>
+              <p data-i18n="about_demo_note_p">
+                Esta es la Edición Básica de Jigsudo...
+              </p>
+            </div>
             <div class="privacy-card">
               <h2 data-i18n="about_intro_title">Sobre Jigsudo</h2>
               <p data-i18n="about_intro_p">

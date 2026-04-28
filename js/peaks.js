@@ -4,6 +4,7 @@ import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
 import { transitionToSearch } from "./search.js";
 import { getAllTargets } from "./peaks-logic.js";
+import { resumeSudokuState } from "./sudoku.js";
 import { resetUI } from "./memory.js";
 import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js";
 
@@ -89,16 +90,19 @@ export async function transitionToPeaks() {
   const state = gameManager.getState();
   const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
   if (currentStage !== "peaks") {
-    gameManager.updateProgress("progress", { currentStage: "peaks" });
+    gameManager.updateProgress("currentStage", "peaks");
   }
 
   // 6. Initialize Peaks Logic
   initPeaks();
 
-  // 7. Hydrate Previous Progress (Fix for login restoration)
-  const { resumeSudokuState } = await import("./sudoku.js");
   resumeSudokuState();
   resumePeaksState();
+
+  // v1.9.9i: Release transition flag
+  setTimeout(() => {
+    window.isGameTransitioning = false;
+  }, 1000);
 }
 
 function prepareGameLogic() {

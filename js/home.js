@@ -67,9 +67,6 @@ export function initHome() {
 
   // Show sound settings by default (will be disabled/unchecked via HTML and logic)
   const soundModalRow = document.getElementById("setting-sound-container-modal");
-  if (soundModalRow) {
-    soundModalRow.style.display = "flex";
-  }
 
   // --- Dropdown Management (History Aware) ---
   const openDropdown = (el) => {

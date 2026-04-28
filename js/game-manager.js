@@ -14,7 +14,6 @@ import { masterLock } from "./lock.js";
 export class GameManager {
   constructor() {
     this.currentSeed = getDailySeed();
-    this.ready = this.prepareDaily(); // Initial Load
     this.cloudSaveTimeout = null;
     this.isWiping = false;
     this.isReplay = false;
@@ -93,6 +92,8 @@ export class GameManager {
             await this.ensureSessionStarted(false); // v1.6.10: Throne takeover does NOT mark intent
         }
     });
+
+    this.ready = this.prepareDaily(); // Initial Load (Ensures all props are ready)
   }
 
   async prepareDaily() {
@@ -579,11 +580,31 @@ export class GameManager {
     
     const url = `${prefix}public/puzzles/daily-${dateStr}.json`;
 
+    // v1.3.2: Short-circuit network requests for Demo to prevent 403 Forbidden on Itch.io
+    if (CONFIG.isDemo) {
+        if (CONFIG.debugMode) console.log("[GameManager] Demo Mode detected. Attempting ES Module fallback for puzzle data.");
+        try {
+            const fbModule = await import("./board_data.js");
+            if (fbModule && fbModule.default) return fbModule.default;
+        } catch (fbErr) {
+            console.warn("[GameManager] ES Module fallback failed, proceeding with network fetch:", fbErr);
+        }
+    }
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (e) {
+      // Final fallback for any network error in Demo mode
+      if (CONFIG.isDemo) {
+          try {
+              const fbModule = await import("./board_data.js");
+              return fbModule.default;
+          } catch (err) {
+              return null;
+          }
+      }
       return null;
     }
   }
@@ -815,8 +836,19 @@ export class GameManager {
       this.state.search.targets = variationData.targets.map((snake, idx) => {
         if (!Array.isArray(snake) && snake.path && snake.numbers) return snake;
         if (!Array.isArray(snake)) return { id: idx, numbers: [], path: [] };
-        const numbers = snake.map((pos) => solvedBoard[pos.r][pos.c]);
-        return { id: idx, path: snake, numbers: numbers };
+        
+        // v1.4.10_fix_v13: Specific patch for Demo Puzzle (2026-04-05) Variation 0, Target 5
+        // Coordinate {r:4, c:9} is out of bounds; should be {r:4, c:3} to complete "3-8-9-6-9"
+        let finalSnake = snake;
+        if (Number(this.currentSeed) === 20260405 && variationKey === "0" && idx === 5) {
+            if (finalSnake[0] && finalSnake[0].r === 4 && finalSnake[0].c === 9) {
+                finalSnake = JSON.parse(JSON.stringify(snake));
+                finalSnake[0].c = 3;
+            }
+        }
+
+        const numbers = finalSnake.map((pos) => solvedBoard[pos.r][pos.c]);
+        return { id: idx, path: finalSnake, numbers: numbers };
       });
       this.state.simon.coordinates = variationData.simon || [];
     } else {
@@ -911,7 +943,8 @@ export class GameManager {
     // We do NOT save the board state locally if we are in a history replay.
     if (this.isReplay) return;
 
-    localStorage.setItem(this.storageKey, encryptData(this.state));
+    const dataString = CONFIG.isDemo ? JSON.stringify(this.state) : encryptData(this.state);
+    localStorage.setItem(this.storageKey, dataString);
     if (syncToCloud) this.saveCloudDebounced(500, isPenalty, false, isReset);
   }
 
@@ -1432,35 +1465,43 @@ export class GameManager {
     // to ensure the final stage (code) always awards its 1.0 point.
 
     // v2.8.0: Atomic Stats Update via Queue
-    await this.enqueueStatsUpdate(async () => {
-        let stats = this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats")) || {};
-
-        if (!this.isReplay) {
-            if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
-            if (!stats.stagePointsAccumulated) stats.stagePointsAccumulated = {};
-            
-            // v2.2.0: Direct Mutation Architecture
-            stats.dailyRP = Number(((stats.dailyRP || 0) + points).toFixed(3));
-            stats.monthlyRP = Number(((stats.monthlyRP || 0) + points).toFixed(3));
-            stats.totalRP = Number(((stats.totalRP || 0) + points).toFixed(3));
-            stats.careerRP = Number(((stats.careerRP || 0) + points).toFixed(3));
-            
-            // v2.9.0: Historical Sync - Feed the atoms (using local stats variable to avoid overwrite)
-            stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + points).toFixed(3));
-            if (stats.totalBonusesAccumulated === undefined) stats.totalBonusesAccumulated = 0;
-            stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
-            stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
-
-            // Increment specific stage stats for historical record
-            stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
-            stats.stagePointsAccumulated[stage] = Number(((stats.stagePointsAccumulated[stage] || 0) + points).toFixed(3));
-            
-            this.stats = stats;
-            await this.save(true);
-        }
-
+    if (CONFIG.isDemo) {
+        // Simple synchronous-like update for Demo to save memory/CPU
+        let stats = this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats")) || { history: {}, totalRP: 0 };
+        stats.totalRP = Number(((stats.totalRP || 0) + points).toFixed(3));
+        this.stats = stats;
+        localStorage.setItem("jigsudo_user_stats", JSON.stringify(stats));
         this.save();
-    });
+    } else {
+        await this.enqueueStatsUpdate(async () => {
+            let stats = this.stats || JSON.parse(localStorage.getItem("jigsudo_user_stats")) || {};
+
+            if (!this.isReplay) {
+                if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
+                if (!stats.stagePointsAccumulated) stats.stagePointsAccumulated = {};
+                
+                // v2.2.0: Direct Mutation Architecture
+                stats.dailyRP = Number(((stats.dailyRP || 0) + points).toFixed(3));
+                stats.monthlyRP = Number(((stats.monthlyRP || 0) + points).toFixed(3));
+                stats.totalRP = Number(((stats.totalRP || 0) + points).toFixed(3));
+                stats.careerRP = Number(((stats.careerRP || 0) + points).toFixed(3));
+                
+                // v2.9.0: Historical Sync
+                stats.totalScoreAccumulated = Number(((stats.totalScoreAccumulated || 0) + points).toFixed(3));
+                if (stats.totalBonusesAccumulated === undefined) stats.totalBonusesAccumulated = 0;
+                stats.dailyWinsAccumulated = (stats.dailyWinsAccumulated || 0) + 1;
+                stats.monthlyWinsAccumulated = (stats.monthlyWinsAccumulated || 0) + 1;
+
+                stats.stageWinsAccumulated[stage] = (stats.stageWinsAccumulated[stage] || 0) + 1;
+                stats.stagePointsAccumulated[stage] = Number(((stats.stagePointsAccumulated[stage] || 0) + points).toFixed(3));
+                
+                this.stats = stats;
+                await this.save(true);
+            }
+
+            this.save();
+        });
+    }
 
     // v1.4.1: ASYNC REFEREE (Background Validation)
     if (!this.isReplay) {
@@ -1495,8 +1536,12 @@ export class GameManager {
     });
     localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
 
-    console.log(`[Referee] Stage ${stage} queued for background validation.`);
-    this._processValidationQueue();
+    if (!CONFIG.isDemo) {
+      console.log(`[Referee] Stage ${stage} queued for background validation.`);
+      this._processValidationQueue();
+    } else {
+      console.log(`[Referee] Demo mode: Skipping background validation.`);
+    }
   }
 
   /**
@@ -1504,114 +1549,109 @@ export class GameManager {
    * Ensures sequential delivery to the server to avoid race conditions.
    */
   async _processValidationQueue() {
+    if (CONFIG.isDemo) return;
     if (this.isProcessingQueue || this.validationQueue.length === 0) return;
-    
     this.isProcessingQueue = true;
-    
-    const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js");
-    const functions = getFunctions();
-    const submitStageResult = httpsCallable(functions, "submitStageResult");
-    const { getCurrentUser } = await import("./auth.js");
-    const { saveUserStats } = await import("./db.js");
 
-    while (this.validationQueue.length > 0) {
-      const task = this.validationQueue[0];
-      const user = getCurrentUser();
+    try {
+      const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js");
+      const functions = getFunctions();
+      const submitStageResult = httpsCallable(functions, "submitStageResult");
+      const { getCurrentUser } = await import("./auth.js");
 
-      if (!user || user.isAnonymous) {
-        console.warn("[Referee] Background validation skipped: No registered user.");
-        this.validationQueue.shift();
-        continue;
-      }
-      
-      if (task.seed !== this.currentSeed) {
-        console.warn(`[Referee] Task seed ${task.seed} doesn't match current seed ${this.currentSeed}. Skipping stale task.`);
-        this.validationQueue.shift();
-        localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
-        continue;
-      }
+      while (this.validationQueue.length > 0) {
+        const task = this.validationQueue[0];
+        const user = getCurrentUser();
 
-      try {
-        console.log(`[Referee] Validating stage ${task.stage} (Asynchronous)...`);
-        
-        const result = await submitStageResult({
-          stage: task.stage,
-          seed: task.seed,
-          stageTime: task.stageTime,
-          peaksErrors: task.peaksErrors
-        });
-
-        if (result.data.status === "success" || result.data.status === "already_verified") {
-          console.log(`[Referee] Stage ${task.stage} verified by server! Points awarded.`);
-          this.validationQueue.shift(); // Remove from queue only on success
-          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
-          
-          // v1.5.29: Instant point adoption. Update local stats immediately so ranking updates.
-          await this._recalculateNetStats();
-
-          // Trigger a global event so UI components (like Ranking) know they can refresh
-          window.dispatchEvent(new CustomEvent("stageVerified", { detail: task }));
-        } else {
-          console.warn("[Referee] Server rejected stage validation:", result.data);
-          
-          // v1.6.0: Automated Fraud Reporting
-          const { sendRefereeReport } = await import("./db.js");
-          const { getCurrentUser } = await import("./auth.js");
-          const user = getCurrentUser();
-          
-          sendRefereeReport({
-            userId: user?.uid || "anonymous",
-            username: user?.displayName || "Anónimo",
-            seed: task.seed,
-            stage: task.stage,
-            timeMs: task.stageTime,
-            reason: result.data.message || "Rejected by server"
-          });
-
-          this.validationQueue.shift(); // Remove anyway to avoid infinite loops, but log it
-          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
-        }
-      } catch (error) {
-        // v1.2.6: UNCLOGGER - Distinguish between connectivity issues and logical rejections
-        // Logic errors shouldn't be retried because they will fail again (clean up the queue)
-        const logicCodes = ["out-of-range", "failed-precondition", "invalid-argument"];
-        const isLogicError = logicCodes.includes(error.code) || 
-                             (error.message && (error.message.includes("too fast") || error.message.includes("sequence") || error.message.includes("Missing stages")));
-
-        if (isLogicError) {
-          console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
-          
-          // v1.6.0: Report Logic Errors too (The "Too Fast" etc)
-          const { sendRefereeReport } = await import("./db.js");
-          const { getCurrentUser } = await import("./auth.js");
-          const user = getCurrentUser();
-
-          sendRefereeReport({
-            userId: user?.uid || "anonymous",
-            username: user?.displayName || "Anónimo",
-            seed: task.seed,
-            stage: task.stage,
-            timeMs: task.stageTime,
-            reason: error.message || "Logic rejection"
-          });
-
-          this.validationQueue.shift(); // Remove permanent failure
-          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
-          continue; // Proceed with next item
+        if (!user || user.isAnonymous) {
+          console.warn("[Referee] Background validation skipped: No registered user.");
+          this.validationQueue.shift();
+          continue;
         }
 
-        console.error(`[Referee] Connection error during stage ${task.stage} validation. Retrying later...`, error);
-        // On network error, stop processing this turn to allow retries later
-        this.isProcessingQueue = false;
-        break; 
-      }
+        if (task.seed !== this.currentSeed) {
+          console.warn(`[Referee] Task seed ${task.seed} doesn't match current seed ${this.currentSeed}. Skipping stale task.`);
+          this.validationQueue.shift();
+          localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
+          continue;
+        }
 
-      // v1.5.31: REDUNDANT SAVE REMOVED. 
-      // RP updates are now handled exclusively by _recalculateNetStats() above.
-      // progressMap updates are handled by standard save() calls during gameplay.
+        try {
+          console.log(`[Referee] Validating stage ${task.stage} (Asynchronous)...`);
+
+          const result = await submitStageResult({
+            stage: task.stage,
+            seed: task.seed,
+            stageTime: task.stageTime,
+            peaksErrors: task.peaksErrors
+          });
+
+          if (result.data.status === "success" || result.data.status === "already_verified") {
+            console.log(`[Referee] Stage ${task.stage} verified by server! Points awarded.`);
+            this.validationQueue.shift(); // Remove from queue only on success
+            localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
+
+            // v1.5.29: Instant point adoption. Update local stats immediately so ranking updates.
+            await this._recalculateNetStats();
+
+            // Trigger a global event so UI components (like Ranking) know they can refresh
+            window.dispatchEvent(new CustomEvent("stageVerified", { detail: task }));
+          } else {
+            console.warn("[Referee] Server rejected stage validation:", result.data);
+
+            // v1.6.0: Automated Fraud Reporting
+            const { sendRefereeReport } = await import("./db.js");
+            const { getCurrentUser: getRefUser } = await import("./auth.js");
+            const refUser = getRefUser();
+
+            sendRefereeReport({
+              userId: refUser?.uid || "anonymous",
+              username: refUser?.displayName || "Anónimo",
+              seed: task.seed,
+              stage: task.stage,
+              timeMs: task.stageTime,
+              reason: result.data.message || "Rejected by server"
+            });
+
+            this.validationQueue.shift(); // Remove anyway to avoid infinite loops, but log it
+            localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
+          }
+        } catch (error) {
+          // v1.2.6: UNCLOGGER - Distinguish between connectivity issues and logical rejections
+          const logicCodes = ["out-of-range", "failed-precondition", "invalid-argument"];
+          const isLogicError = logicCodes.includes(error.code) ||
+            (error.message && (error.message.includes("too fast") || error.message.includes("sequence") || error.message.includes("Missing stages")));
+
+          if (isLogicError) {
+            console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
+
+            const { sendRefereeReport } = await import("./db.js");
+            const { getCurrentUser: getRefUser2 } = await import("./auth.js");
+            const refUser2 = getRefUser2();
+
+            sendRefereeReport({
+              userId: refUser2?.uid || "anonymous",
+              username: refUser2?.displayName || "Anónimo",
+              seed: task.seed,
+              stage: task.stage,
+              timeMs: task.stageTime,
+              reason: error.message || "Logic rejection"
+            });
+
+            this.validationQueue.shift(); // Remove permanent failure
+            localStorage.setItem("jigsudo_validation_queue", JSON.stringify(this.validationQueue));
+            continue; // Proceed with next item
+          }
+
+          console.error(`[Referee] Connection error during stage ${task.stage} validation. Retrying later...`, error);
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn("[Referee] Validation processor failed to initialize (Firebase blocked?):", e);
+    } finally {
+      this.isProcessingQueue = false;
     }
-
-    this.isProcessingQueue = false;
   }
 
   /**
@@ -1638,7 +1678,8 @@ export class GameManager {
       console.log(`[Score] New Best Score (Partial): ${currentScore}`);
       this.stats.bestScore = currentScore;
       if (this.state) {
-        localStorage.setItem(this.storageKey, encryptData(this.state));
+        const dataString = CONFIG.isDemo ? JSON.stringify(this.state) : encryptData(this.state);
+    localStorage.setItem(this.storageKey, dataString);
       }
     }
   }

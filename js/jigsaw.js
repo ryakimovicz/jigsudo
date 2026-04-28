@@ -672,6 +672,9 @@ export function handleSlotClick_v2(slotIndex) {
 }
 
 export function transitionToJigsaw() {
+  if (window.isGameTransitioning) return;
+  window.isGameTransitioning = true;
+
   // CRITICAL GUARD: Do not proceed if user navigated away from #game
   if (!memorySection || memorySection.classList.contains("hidden")) return;
   if (!isAtGameRoute()) return;
@@ -689,7 +692,7 @@ export function transitionToJigsaw() {
 
   // 2. Add Jigsaw Mode Class
   if (memorySection) {
-    if (document.startViewTransition) {
+    if (document.startViewTransition && !CONFIG.isDemo) {
       const leftPieces = collectedLeft.querySelectorAll(".collected-piece");
       const rightPieces = collectedRight.querySelectorAll(".collected-piece");
 
@@ -741,9 +744,10 @@ export function transitionToJigsaw() {
 
         // UI/Layout updates MUST happen inside the transition callback
         // v1.3.2: Use silent update during VT to avoid I/O blocking the main thread
+        // v1.9.9f: CORRECTED KEY: progress.currentStage, not progress.progress
         gameManager.updateProgress(
-          "progress",
-          { currentStage: "jigsaw" },
+          "currentStage",
+          "jigsaw",
           true,
         );
         deselectPiece();
@@ -782,20 +786,25 @@ export function transitionToJigsaw() {
         document
           .querySelectorAll(".collected-piece")
           .forEach((p) => (p.style.transition = ""));
-
-        // v1.7.8: Initialize Jigsaw History AFTER transition completes
-        undoStack = [];
-        redoStack = [];
-        saveStateToUndo();
-        initialJigsawState = undoStack[0];
       });
     } else {
       memorySection.classList.add("jigsaw-mode");
       // Fallback update
-      gameManager.updateProgress("progress", { currentStage: "jigsaw" });
+      gameManager.updateProgress("currentStage", "jigsaw");
       deselectPiece(); // Ensure clear state
       fitCollectedPieces(); // Force layout update
     }
+
+    // v1.7.8 / fix_v8: Initialize Jigsaw History ALWAYS (regardless of VT)
+    undoStack = [];
+    redoStack = [];
+    saveStateToUndo();
+    initialJigsawState = undoStack[0];
+    
+    // v1.9.9g: Ensure transition flag is released after reasonable delay
+    setTimeout(() => {
+        window.isGameTransitioning = false;
+    }, 1000);
   }
 
   // 3. Update Tooltip Info
@@ -1190,7 +1199,7 @@ export function debugJigsawPlace() {
 
       // 1. Find the Correct Piece
       const correctGrid = Array.from(
-        document.querySelectorAll(".mini-sudoku-grid"),
+        memorySection.querySelectorAll(".mini-sudoku-grid"),
       ).find((el) => el.dataset.chunkIndex == i);
 
       if (!correctGrid) {
@@ -1266,8 +1275,9 @@ export async function checkBoardCompletion() {
     .querySelectorAll(".error-slot")
     .forEach((el) => el.classList.remove("error-slot"));
 
-  const slots = document.querySelectorAll(".sudoku-chunk-slot");
-  const filledCount = document.querySelectorAll(
+  // v1.9.9h: Restrict search to boardContainer to avoid picking up tutorial slots
+  const slots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
+  const filledCount = boardContainer.querySelectorAll(
     ".sudoku-chunk-slot.filled",
   ).length;
 
@@ -1284,7 +1294,15 @@ export async function checkBoardCompletion() {
     if (!content) return;
 
     // Identify which chunk of numbers this is.
-    const chunkId = parseInt(content.dataset.chunkIndex);
+    const chunkIdStr = content.dataset.chunkIndex;
+    const chunkId = parseInt(chunkIdStr);
+    
+    // v1.9.9h: NaN Resilience Guard
+    if (isNaN(chunkId)) {
+        console.warn(`[Jigsaw] Found piece with NaN ID in slot ${sIndex}. Skipping validation for this slot.`);
+        return;
+    }
+
     const state = gameManager.getState();
     const chunkData = state.data.chunks[chunkId]; // Use pre-calculated untransformed chunks
 
@@ -1488,7 +1506,7 @@ export function resumeJigsawState() {
       `[data-slot-index="${slotIndex}"]`,
     );
     const panelItem = Array.from(
-      document.querySelectorAll(".mini-sudoku-grid"),
+      memorySection.querySelectorAll(".mini-sudoku-grid"),
     ).find((el) => parseInt(el.dataset.chunkIndex) === chunkIndex);
 
     if (slot && panelItem) {
@@ -1508,7 +1526,7 @@ export function resumeJigsawState() {
   // v1.9.9: Auto-Advance Protection
   // If the board is already solved upon hydration, trigger the next stage transition.
   // We use a small delay to ensure DOM is settled.
-  const filledCount = document.querySelectorAll(
+  const filledCount = boardContainer.querySelectorAll(
     ".sudoku-chunk-slot.filled",
   ).length;
   if (filledCount === 9) {
@@ -1551,7 +1569,7 @@ function captureCurrentState() {
     .filter((slot) => slot.classList.contains("user-locked"))
     .map((slot) => parseInt(slot.dataset.slotIndex));
 
-  const panelSlots = Array.from(document.querySelectorAll(".collected-piece"));
+  const panelSlots = Array.from(memorySection.querySelectorAll(".collected-piece"));
   const panel = panelSlots.map((slot) => {
     const content = slot.querySelector(".mini-sudoku-grid");
     return content ? parseInt(content.dataset.chunkIndex) : -1;
@@ -1671,7 +1689,7 @@ function applyHistoryState(state) {
 
     // Map of chunkIndex -> current parent element
     const currentPositions = new Map();
-    document.querySelectorAll(".mini-sudoku-grid").forEach((p) => {
+    memorySection.querySelectorAll(".mini-sudoku-grid").forEach((p) => {
       const idx = parseInt(p.dataset.chunkIndex);
       if (idx === 4) return; // Center piece is static
       currentPositions.set(idx, p.parentElement);

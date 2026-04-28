@@ -141,6 +141,17 @@ body.dark-mode .support-card {
   font-size: 1rem;
 }
 
+.faq-link, .faq-link:visited {
+  color: var(--accent-color) !important;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.faq-link:hover {
+  color: var(--accent-hover) !important;
+}
+
 * {
   margin: 0;
   padding: 0;

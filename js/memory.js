@@ -115,7 +115,7 @@ export function initMemoryGame() {
     collectedRight.innerHTML = "";
 
     // Reset Board Slots
-    setupBoard(state.data.initialPuzzle);
+    setupBoard();
     createPanelPlaceholders(); // <--- Imported from jigsaw.js
 
     // 5. Setup Cards
@@ -761,10 +761,11 @@ export function handleMatchSuccess(e) {
     ? (typeof e === 'object' ? e.target?.dataset?.chunkIndex : e)
     : null;
 
-  // If e is null, we are triggering a check for already-completed stage
-  if (e !== null) {
-    if (chunkIndex === null || chunkIndex === undefined) return;
-
+  
+  // v1.9.9c: Robust Guard against NaN/Null indices (Fix for auto-advance crash)
+  if (chunkIndex === null || chunkIndex === undefined || isNaN(parseInt(chunkIndex))) {
+    console.log("[Memory] Victory logic triggered without specific piece.");
+  } else {
     matchesFound++;
 
     // SYNC STATE: Save matches count and indices
@@ -780,21 +781,15 @@ export function handleMatchSuccess(e) {
       pairsFound: [...new Set(state.memory.matchedIndices)].length,
       matchedIndices: state.memory.matchedIndices,
     });
-  }
-  
-  // v1.3.2: Only save if we haven't won yet. If we won, awardStagePoints will handle the final save.
-  const TOTAL_PAIRS = 9;
-  if (matchesFound < TOTAL_PAIRS) {
-    gameManager.save();
-  }
 
-  console.log(`Matched Pair for Chunk ${chunkIndex}!`);
+    console.log(`Matched Pair for Chunk ${chunkIndex}!`);
 
-  const idx = parseInt(chunkIndex);
-  if (idx === 4) {
-    placeInBoard(idx);
-  } else {
-    placeInPanel(idx);
+    const idx = parseInt(chunkIndex);
+    if (idx === 4) {
+      placeInBoard(idx);
+    } else {
+      placeInPanel(idx);
+    }
   }
 
   // Check Win
@@ -807,13 +802,15 @@ export function handleMatchSuccess(e) {
     if (boardContainer) boardContainer.classList.add("board-complete");
 
     // 3. Transition to Jigsaw (Keep Timer Running!)
-    setTimeout(async () => {
+    setTimeout(() => {
       if (boardContainer) boardContainer.classList.remove("board-complete");
 
       // Timer Transition
       gameManager.stopStageTimer();
       // v2.1.0: Atomic Advance - Advance stage (which awards points and forces cloud save)
-      await gameManager.advanceStage(); 
+      // v2.1.1: Non-blocking advance to prevent UI hang if cloud sync is slow
+      gameManager.advanceStage().catch(err => console.warn("[GM] Advance Stage failed background:", err));
+      
       gameManager.startStageTimer("jigsaw");
 
       transitionToJigsaw();

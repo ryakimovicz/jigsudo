@@ -142,6 +142,12 @@ async function startApp() {
 
   console.log("Jigsudo App Starting...");
 
+  // v1.4.10_fix_v13: Show demo note in About section if applicable
+  if (CONFIG.isDemo) {
+    const demoNote = document.getElementById("about-demo-note");
+    if (demoNote) demoNote.style.display = "block";
+  }
+
   // v1.7.9: Start App UI Immediately
   // We no longer block the whole startApp for GameManager.ready or Migration.
   // This lets the user see the page and navigate while data fetches.

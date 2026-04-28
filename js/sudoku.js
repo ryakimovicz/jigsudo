@@ -1,6 +1,7 @@
 import { gameManager } from "./game-manager.js";
 import { translations } from "./translations.js";
 import { getCurrentLang } from "./i18n.js";
+import { CONFIG } from "./config.js";
 import { transitionToPeaks } from "./peaks.js";
 import { createMiniGrid, getChunksFromBoard } from "./memory.js";
 import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js";
@@ -24,7 +25,7 @@ export function transitionToSudoku() {
   const sudokuControls = document.getElementById("sudoku-controls");
 
   if (gameSection) {
-    if (document.startViewTransition) {
+    if (document.startViewTransition && !CONFIG.isDemo) {
       document.startViewTransition(() => {
         gameSection.classList.remove("jigsaw-mode");
         gameSection.classList.add("sudoku-mode");
@@ -45,7 +46,7 @@ export function transitionToSudoku() {
         // Update Title/Text instantly here so it cross-fades with the view transition
         updateGameHelp("sudoku");
 
-        gameManager.updateProgress("progress", { currentStage: "sudoku" });
+        gameManager.updateProgress("currentStage", "sudoku");
       });
     } else {
       // Fallback
@@ -65,7 +66,7 @@ export function transitionToSudoku() {
 
       updateGameHelp("sudoku");
 
-      gameManager.updateProgress("progress", { currentStage: "sudoku" });
+      gameManager.updateProgress("currentStage", "sudoku");
     }
   }
 

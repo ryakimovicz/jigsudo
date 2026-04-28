@@ -1871,6 +1871,19 @@ body.dark-mode .current-user-row {
   margin: 25px 0;
 }
 
+/* v1.9.9r: Adaptive width for long durations */
+.victory-summary-content.long-game {
+  max-width: 580px !important;
+}
+
+.victory-summary-content.long-game .victory-stats-grid {
+  grid-template-columns: auto 1fr 1fr;
+}
+
+.victory-summary-content.long-game .victory-stat-card {
+  padding: 15px 10px; /* Slimmer padding to fit 3 items comfortably */
+}
+
 .victory-stat-card {
   background: rgba(var(--accent-rgb), 0.05);
   padding: 15px;
@@ -1934,6 +1947,16 @@ body.dark-mode .current-user-row {
   gap: 10px;
 }
 
+.victory-summary-content.long-game .stage-times-grid {
+  grid-template-columns: 1.1fr 0.9fr; /* Slight bias towards the first column if needed, or keep 1fr 1fr if width is enough */
+}
+
+/* Ensure time values don't wrap */
+.stage-time-row .stage-val {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .stage-time-row {
   display: flex;
   justify-content: space-between;
@@ -1945,10 +1968,6 @@ body.dark-mode .current-user-row {
 
 .stage-time-row .stage-name {
   color: var(--text-muted);
-}
-
-.stage-time-row .stage-val {
-  font-weight: 600;
 }
 
 @media (max-width: 480px) {
