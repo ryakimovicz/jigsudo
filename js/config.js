@@ -4,7 +4,7 @@ export const CONFIG = {
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
   debugMode: false, // Toggle to true to see logs
-  betaMode: true, // Toggle to true to enable "Ayuda" button
+  betaMode: false, // Toggle to true to enable "Ayuda" button
   isDemo: true, // Itch.io Demo Mode
   demoDate: "2026-04-05", // Sunday, April 5, 2026
 
