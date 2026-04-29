@@ -199,7 +199,7 @@ export const translations = {
     // Static Pages Content
     about_title: "Acerca de",
     about_intro_title: "Sobre Jigsudo",
-    about_intro_p: "Jigsudo es un desafío mental diario que fusiona mecánicas de lógica, memoria y rompecabezas en una experiencia única. Cada día a las 06:00 UTC se genera un nuevo tablero, ofreciendo un momento de enfoque y entrenamiento inteligente directamente en tu navegador.",
+    about_intro_p: "Jigsudo es un desafío mental diario que mezcla lógica, memoria y rompecabezas en una experiencia única. Cada día a las 06:00 UTC se genera un nuevo tablero con 6 etapas para desafiar tu mente directamente en tu navegador.",
     about_origin_title: "El Origen",
     about_origin_text: "La idea comenzó con un concepto simple: ¿qué pasaría si mezclamos los rompecabezas tradicionales con el Sudoku? A partir de esa premisa, el proyecto evolucionó hasta convertirse en un recorrido completo de seis desafíos secuenciales que conviven sobre un mismo tablero. Fue entonces cuando, buscando el nombre perfecto, descubrí que existía un título para una consola que exploraba una combinación similar, pero limitado a esa plataforma y sin la variedad de minijuegos que hoy integran Jigsudo.",
     about_author_title: "Acerca del Autor",
@@ -593,7 +593,7 @@ export const translations = {
     seo_title: "El Desafío Jigsudo: Entrena tu mente cada día",
     seo_summary: "¿Qué es Jigsudo?",
     seo_summary_text:
-      "Jigsudo es un desafío mental diario que fusiona mecánicas de Sudoku, Memoria y Rompecabezas y otros minijuegos en un único tablero inteligente. Cada día a las 06:00 UTC cambia el tablero para un nuevo reto. Desde encontrar pares en el Juego de Memoria hasta descifrar El Código, el juego te guía por seis etapas interconectadas que pondrán a prueba tu razonamiento.",
+      "Un puzzle diario que combina Rompecabezas, Memoria y Sudoku. Cada día a las 06:00 UTC se genera un nuevo tablero con 6 etapas interconectadas para desafiar tu mente.",
     seo_benefits: "¿Por qué resolver puzzles de lógica?",
     seo_benefits_text:
       "Resolver acertijos y puzzles de lógica es una forma fantástica de ejercitar la mente mientras te diviertes. Jigsudo te ofrece un espacio para poner a prueba tu paciencia y razonamiento personal de una manera envolvente. Algunos de los motivos para aceptar el desafío son:",
@@ -1155,7 +1155,7 @@ export const translations = {
     greeting_prefix: "Hello,",
     about_title: "About",
     about_intro_title: "About Jigsudo",
-    about_intro_p: "Jigsudo is a daily mental challenge that merges mechanics from logic, memory, and jigsaw puzzles into a unique experience. Every day at 06:00 UTC, a new board is generated, offering a moment of focus and smart training directly in your browser.",
+    about_intro_p: "Jigsudo is a daily mental challenge that blends logic, memory, and jigsaw puzzles into a unique experience. Every day at 06:00 UTC, a new board is generated with 6 stages to test your mind directly in your browser.",
     about_origin_title: "The Origin",
     about_origin_text: "The idea started with a simple concept: what if we mixed traditional jigsaw puzzles with Sudoku? From that premise, the project evolved into a full journey of six sequential challenges that live on the same board. It was then that, while searching for the perfect name, I discovered a console title that explored a similar combination, but it was limited to that platform and lacked the variety of mini-games that now make up Jigsudo.",
     about_author_title: "About the Author",
@@ -1494,7 +1494,7 @@ export const translations = {
     seo_title: "The Jigsudo Challenge: Train your mind every day",
     seo_summary: "What is Jigsudo?",
     seo_summary_text:
-      "Jigsudo is a daily mental challenge that merges mechanics from Sudoku, Memory, Jigsaw, and other mini-games into a single smart board. Every day at 06:00 UTC, the board changes for a new challenge. From finding pairs in the Memory Game to cracking The Code, the game guides you through six interconnected stages that will test your reasoning.",
+      "A daily puzzle that blends Jigsaw, Memory, and Sudoku. Every day at 06:00 UTC, a new board is generated with 6 interconnected stages to test your mind.",
     seo_benefits: "Why solve logic puzzles?",
     seo_benefits_text:
       "Solving riddles and logic puzzles is a fantastic way to exercise your mind while having fun. Jigsudo offers you a space to test your patience and personal reasoning in an immersive way. Some of the reasons to take on the challenge are:",
