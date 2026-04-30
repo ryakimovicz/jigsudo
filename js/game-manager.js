@@ -1345,7 +1345,7 @@ export class GameManager {
     // If errors increased, update the 3-track atoms and recalculate
     if (newErrors > oldErrors) {
       const delta = newErrors - oldErrors;
-      if (this.stats) {
+      if (this.stats && !this.isReplay) {
         // v1.4.9: Manual Atomic Penalty
         const penalty = delta * (SCORING.ERROR_PENALTY_RP || 0.5);
         
@@ -1693,7 +1693,7 @@ export class GameManager {
     // v1.3.34: Total Atom Self-Healing
     // If the session has more errors than recorded in the daily accumulator, 
     // we bump ALL levels to ensure the penalty is recorded everywhere.
-    if (sessionErrors > (stats.dailyPeaksErrorsAccumulated || 0)) {
+    if (!this.isReplay && sessionErrors > (stats.dailyPeaksErrorsAccumulated || 0)) {
         const delta = sessionErrors - (stats.dailyPeaksErrorsAccumulated || 0);
         stats.dailyPeaksErrorsAccumulated = sessionErrors;
         stats.monthlyPeaksErrorsAccumulated = (stats.monthlyPeaksErrorsAccumulated || 0) + delta;

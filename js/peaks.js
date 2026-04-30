@@ -22,8 +22,7 @@ export function initPeaks() {
   const state = gameManager.getState();
   // v1.3.31: Sincronización Total de Errores (Nueva Ubicación)
   const sessionErrors = state.peaks?.errors || state.stats?.peaksErrors || 0;
-  const globalErrors = gameManager.isReplay ? 0 : (gameManager.stats?.dailyPeaksErrorsAccumulated || 0);
-  peaksErrors = Math.max(sessionErrors, globalErrors);
+  peaksErrors = sessionErrors;
   
   foundTargets = 0; // v2.9.2: Reset local counter to prevent session pollution
   currentHintRow = 0; // Reset hint progress
@@ -233,9 +232,7 @@ export function resumePeaksState() {
 
   // v1.3.31: Sincronización Total de Errores (Nueva Ubicación)
   const sessionErrors = state.peaks?.errors || state.stats?.peaksErrors || 0;
-  const globalErrors = gameManager.isReplay ? 0 : (gameManager.stats?.dailyPeaksErrorsAccumulated || 0);
-  
-  peaksErrors = Math.max(sessionErrors, globalErrors);
+  peaksErrors = sessionErrors;
   updateErrorCounter();
 
   foundCoords.forEach((key) => {
