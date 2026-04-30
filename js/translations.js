@@ -618,8 +618,11 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1411_title: "Versión 1.4.11",
+    changelog_v1411_date: "30/04/2026",
+    changelog_v1411_item1: "Aislamiento: Se corrigió un error que permitía que las penalizaciones de las partidas del historial afectaran las estadísticas globales y el estado visual de nuevas partidas.",
     changelog_v1410_title: "Versión 1.4.10",
-    changelog_v1410_date: "27 de abril de 2026",
+    changelog_v1410_date: "27/04/2026",
     changelog_v1410_item1: "Tutorial: Refinada la secuencia en Sopa de Números y paridad de botones en Etapa 3 (Deshacer/Rehacer).",
     changelog_v1410_item2: "Integridad: Implementado el bloqueo de interacciones al completar el Rompecabezas para evitar pérdida de piezas.",
     changelog_v1410_item3: "Móvil: Corregidos espacios en descripciones del tutorial y mejorada la detección de pulsación larga en el pad.",
@@ -1519,6 +1522,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1411_title: "Version 1.4.11",
+    changelog_v1411_date: "April 30, 2026",
+    changelog_v1411_item1: "Isolation: Fixed a bug where penalties from history replay games were affecting global statistics and the visual state of new games.",
     changelog_v1410_title: "Version 1.4.10",
     changelog_v1410_date: "April 27, 2026",
     changelog_v1410_item1: "Tutorial: Refined sequence in Number Search and fixed Stage 3 keypad parity (Undo/Redo).",
