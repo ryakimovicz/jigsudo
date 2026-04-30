@@ -1,4 +1,4 @@
-import { db, functions } from "./firebase-config.js?v=1.4.10";
+import { db, functions } from "./firebase-config.js?v=1.4.11";
 import {
   doc,
   setDoc,
@@ -19,13 +19,13 @@ import {
   increment,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js";
-import { gameManager } from "./game-manager.js?v=1.4.10";
-import { getCurrentUser } from "./auth.js?v=1.4.10";
-import { showAlertModal } from "./ui.js?v=1.4.10";
+import { gameManager } from "./game-manager.js?v=1.4.11";
+import { getCurrentUser } from "./auth.js?v=1.4.11";
+import { showAlertModal } from "./ui.js?v=1.4.11";
 import {
   getJigsudoDateString,
   getJigsudoYearMonth,
-} from "./utils/time.js?v=1.4.10";
+} from "./utils/time.js?v=1.4.11";
 
 /**
  * Helper to call a Jigsudo Cloud Function (Referee)
@@ -389,7 +389,7 @@ export async function saveUserStats(
     const { setDoc, updateDoc, serverTimestamp, getDoc, deleteField } =
       await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
 
-    const { auth } = await import("./firebase-config.js?v=1.4.10");
+    const { auth } = await import("./firebase-config.js?v=1.4.11");
     const currentUser = auth.currentUser;
 
     const updateData = {
