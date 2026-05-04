@@ -618,6 +618,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1412_title: "Versión 1.4.12",
+    changelog_v1412_date: "04/05/2026",
+    changelog_v1412_item1: "Navegación del Historial: Se resolvió un error de huso horario (UTC) que impedía navegar correctamente entre ciertos meses en el historial.",
+    changelog_v1412_item2: "Estabilidad de Puntajes: Se corrigió un problema visual transitorio donde la tabla de clasificación mensual podía mostrar puntos negativos para usuarios inactivos.",
     changelog_v1411_title: "Versión 1.4.11",
     changelog_v1411_date: "30/04/2026",
     changelog_v1411_item1: "Aislamiento: Se corrigió un error que permitía que las penalizaciones de las partidas del historial afectaran las estadísticas globales y el estado visual de nuevas partidas.",
@@ -1522,6 +1526,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1412_title: "Version 1.4.12",
+    changelog_v1412_date: "May 4, 2026",
+    changelog_v1412_item1: "History Navigation: Resolved a timezone (UTC) issue that prevented correctly navigating between certain months in the history view.",
+    changelog_v1412_item2: "Score Stability: Fixed a transient visual issue where the monthly leaderboard could display negative points for inactive users.",
     changelog_v1411_title: "Version 1.4.11",
     changelog_v1411_date: "April 30, 2026",
     changelog_v1411_item1: "Isolation: Fixed a bug where penalties from history replay games were affecting global statistics and the visual state of new games.",
