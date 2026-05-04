@@ -195,9 +195,9 @@ async function _performUserMaintenance(userRef, userData, today) {
       const penalty = 5 + level;
       const realizedPenalty = Math.min(currentTotalRP, penalty);
 
-      currentTotalRP = Number((currentTotalRP - realizedPenalty).toFixed(3));
+      currentTotalRP = Number(Math.max(0, currentTotalRP - realizedPenalty).toFixed(3));
       currentMonthlyRP = Number(
-        (currentMonthlyRP - realizedPenalty).toFixed(3),
+        Math.max(0, currentMonthlyRP - realizedPenalty).toFixed(3),
       );
       currentPenaltyAcc += realizedPenalty;
 

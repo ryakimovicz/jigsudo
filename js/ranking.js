@@ -205,7 +205,7 @@ async function getTopRankings(
 
     // UI Robustness: Use gameManager.stats (Source of truth)
     const stats = gameManager.stats;
-    let userScore = (stats && stats[fieldName]) || 0;
+    let userScore = Math.max(0, (stats && stats[fieldName]) || 0);
 
     // v1.5.12 Diagnostic: If score is 0 but we are in a session, log for debugging
     if (userScore === 0 && stats && (stats.monthlyRP > 0 || stats.totalRP > 0)) {

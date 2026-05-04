@@ -3630,6 +3630,7 @@ export class GameManager {
         // v1.6.0: Monthly/Total RP are net outcomes (Career - Penalties)
         const totalPenalties = stats.totalPenaltyAccumulated || 0;
         stats.totalRP = Number((Math.max(0, stats.careerRP - totalPenalties)).toFixed(3));
+        stats.monthlyRP = Number((Math.max(0, stats.monthlyRP || 0)).toFixed(3));
         stats.currentRP = stats.totalRP; // Legacy support
       }
       stats.integrityChecked = "1.5.62";
