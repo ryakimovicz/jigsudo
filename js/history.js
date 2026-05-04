@@ -46,24 +46,12 @@ export function initHistory() {
 
   if (prevBtn) {
     prevBtn.addEventListener("click", () => {
-      if (minNavMonth) {
-        const prevDate = new Date(histViewDate);
-        prevDate.setMonth(prevDate.getMonth() - 1);
-        if (prevDate >= minNavMonth) {
-          changeHistMonth(-1);
-        }
-      }
+      changeHistMonth(-1);
     });
   }
   if (nextBtn) {
     nextBtn.addEventListener("click", () => {
-      if (maxNavMonth) {
-        const nextDate = new Date(histViewDate);
-        nextDate.setMonth(nextDate.getMonth() + 1);
-        if (nextDate <= maxNavMonth) {
-          changeHistMonth(1);
-        }
-      }
+      changeHistMonth(1);
     });
   }
 
@@ -107,7 +95,7 @@ export function initHistory() {
       let isValidDate = false;
 
       if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
-        const reqDate = new Date(year, month, 1);
+        const reqDate = new Date(Date.UTC(year, month, 1));
         
         // If limits aren't loaded yet, we can't fully validate. 
         // But we'll let it slide and let updateHistoryUI normalize it later.
@@ -118,9 +106,10 @@ export function initHistory() {
       }
 
       if (!isValidDate) {
-        histViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentY = histViewDate.getFullYear();
-        const currentM = String(histViewDate.getMonth() + 1).padStart(2, "0");
+        // v1.9.11: Use UTC methods on 'now' (getJigsudoDate result) to get the correct Jigsudo Month
+        histViewDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        const currentY = histViewDate.getUTCFullYear();
+        const currentM = String(histViewDate.getUTCMonth() + 1).padStart(2, "0");
         history.replaceState(null, null, `/#history/${currentY}/${currentM}`);
       }
 
