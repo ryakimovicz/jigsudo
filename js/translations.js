@@ -1,6 +1,6 @@
 export const translations = {
   es: {
-    seo_main_title: "Jigsudo - Juego diario de Lógica, Memoria, Rompecabezas y Sudoku.",
+    seo_main_title: "Jigsudo - Juego diario de Lógica, Memoria, Rompecabezas y Sudoku",
     seo_main_desc: "Jigsudo es un desafío mental diario. Supera las 6 etapas de nuestro tablero interactivo combinando Lógica, Memoria, Rompecabezas y Sudoku. ¡Juega gratis!",
     app_title: "JIGSUDO",
     // Guide & Tutorial
@@ -910,7 +910,7 @@ export const translations = {
     changelog_v132_item4: "Sincronización de Campos: Limpieza de fechas de actividad para asegurar que el sistema de decaimiento (decay) use datos precisos.",
   },
   en: {
-    seo_main_title: "Jigsudo - Daily game of Logic, Memory, Puzzles and Sudoku.",
+    seo_main_title: "Jigsudo - Daily game of Logic, Memory, Puzzles and Sudoku",
     seo_main_desc: "Jigsudo is a daily mental challenge. Beat the 6 stages of our interactive board combining Logic, Memory, Puzzles and Sudoku. Play for free!",
     app_title: "JIGSUDO",
     // Guide & Tutorial
