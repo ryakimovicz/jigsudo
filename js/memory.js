@@ -8,20 +8,20 @@ import {
   fitCollectedPieces, // imported if we want to expose it or use it during resize loop?
   handlePieceSelect,
   checkBoardCompletion,
-} from "./jigsaw.js?v=1.4.12";
-import { provideHint as provideSudokuHint } from "./sudoku.js?v=1.4.12";
-import { providePeaksHint } from "./peaks.js?v=1.4.12";
-import { provideSearchHint } from "./search.js?v=1.4.12";
-import { gameManager } from "./game-manager.js?v=1.4.12";
-import { CONFIG } from "./config.js?v=1.4.12";
-import { startTimer } from "./timer.js?v=1.4.12";
-import { translations } from "./translations.js?v=1.4.12";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.12";
-import { cleanupVictoryUI, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.12";
-import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.4.12";
-import { resumeSudokuState } from "./sudoku.js?v=1.4.12";
-import { resumePeaksState } from "./peaks.js?v=1.4.12";
-import { router } from "./router.js?v=1.4.12";
+} from "./jigsaw.js?v=1.4.13";
+import { provideHint as provideSudokuHint } from "./sudoku.js?v=1.4.13";
+import { providePeaksHint } from "./peaks.js?v=1.4.13";
+import { provideSearchHint } from "./search.js?v=1.4.13";
+import { gameManager } from "./game-manager.js?v=1.4.13";
+import { CONFIG } from "./config.js?v=1.4.13";
+import { startTimer } from "./timer.js?v=1.4.13";
+import { translations } from "./translations.js?v=1.4.13";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.13";
+import { cleanupVictoryUI, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.13";
+import { stopVictoryAnimations, debugSolveCode, resumeCodeState } from "./code.js?v=1.4.13";
+import { resumeSudokuState } from "./sudoku.js?v=1.4.13";
+import { resumePeaksState } from "./peaks.js?v=1.4.13";
+import { router } from "./router.js?v=1.4.13";
 
 // DOM Elements
 let memorySection;
@@ -230,29 +230,29 @@ export async function resumeToStage(stage) {
   resumeMemoryState();
 
   if (stage === "jigsaw") {
-    const m = await import("./jigsaw.js?v=1.4.12");
+    const m = await import("./jigsaw.js?v=1.4.13");
     m.resumeJigsawState();
     m.transitionToJigsaw();
   } else if (stage === "sudoku") {
-    const jigsaw = await import("./jigsaw.js?v=1.4.12");
+    const jigsaw = await import("./jigsaw.js?v=1.4.13");
     jigsaw.resumeJigsawState();
-    const sudoku = await import("./sudoku.js?v=1.4.12");
+    const sudoku = await import("./sudoku.js?v=1.4.13");
     sudoku.resumeSudokuState();
     sudoku.transitionToSudoku();
   } else if (stage === "peaks") {
-    const jigsaw = await import("./jigsaw.js?v=1.4.12");
+    const jigsaw = await import("./jigsaw.js?v=1.4.13");
     jigsaw.resumeJigsawState();
-    const peaks = await import("./peaks.js?v=1.4.12");
+    const peaks = await import("./peaks.js?v=1.4.13");
     peaks.transitionToPeaks();
   } else if (stage === "search") {
-    const jigsaw = await import("./jigsaw.js?v=1.4.12");
+    const jigsaw = await import("./jigsaw.js?v=1.4.13");
     jigsaw.resumeJigsawState();
-    const search = await import("./search.js?v=1.4.12");
+    const search = await import("./search.js?v=1.4.13");
     search.transitionToSearch();
   } else if (stage === "code") {
-    const jigsaw = await import("./jigsaw.js?v=1.4.12");
+    const jigsaw = await import("./jigsaw.js?v=1.4.13");
     jigsaw.resumeJigsawState();
-    const search = await import("./search.js?v=1.4.12");
+    const search = await import("./search.js?v=1.4.13");
     search.transitionToCode();
   }
 
