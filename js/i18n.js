@@ -56,6 +56,13 @@ export function updateTexts() {
     .getElementById("game-section")
     ?.classList.contains("jigsaw-mode");
 
+  // Update document title and meta description
+  if (t.seo_main_title) document.title = t.seo_main_title;
+  if (t.seo_main_desc) {
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute("content", t.seo_main_desc);
+  }
+
   // 1. Text Content
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     let key = el.getAttribute("data-i18n");
