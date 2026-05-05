@@ -620,6 +620,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1413_title: "Versión 1.4.13",
+    changelog_v1413_date: "05/05/2026",
+    changelog_v1413_item1: "Mejora SEO: Optimización de metadatos, mejora de estructura de encabezados (H1) y soporte dinámico de títulos.",
     changelog_v1412_title: "Versión 1.4.12",
     changelog_v1412_date: "04/05/2026",
     changelog_v1412_item1: "Navegación del Historial: Se resolvió un error de huso horario (UTC) que impedía navegar correctamente entre ciertos meses en el historial.",
@@ -1530,6 +1533,9 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1413_title: "Version 1.4.13",
+    changelog_v1413_date: "May 5, 2026",
+    changelog_v1413_item1: "SEO Improvement: Optimization of metadata, header structures (H1), and dynamic title support.",
     changelog_v1412_title: "Version 1.4.12",
     changelog_v1412_date: "May 4, 2026",
     changelog_v1412_item1: "History Navigation: Resolved a timezone (UTC) issue that prevented correctly navigating between certain months in the history view.",
