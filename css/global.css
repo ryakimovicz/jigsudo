@@ -311,6 +311,10 @@ body.dark-mode .user-avatar {
 #game-section,
 #privacy-section,
 #terms-section,
+#about-section,
+#support-section,
+#admin-section,
+#search-users-section,
 #changelog-section {
   flex: 1;
   max-width: none !important;
