@@ -44,11 +44,27 @@ export function initSearchUsers() {
         
         // v1.4.14: Contract favorites when searching (after 2 chars)
         const favContainer = document.getElementById("favorites-container");
-        if (favContainer) {
-            if (query.length >= 2) favContainer.classList.add("contracted");
-            else {
+        const toggleBtn = document.getElementById("btn-favorites-toggle");
+        const favGrid = document.getElementById("favorites-grid");
+        
+        if (favContainer && favGrid) {
+            if (query.length >= 2) {
+                favContainer.classList.add("contracted");
+                
+                // v1.4.14: Responsive check: does the grid wrap into multiple lines?
+                const items = favGrid.querySelectorAll(".favorite-pill");
+                if (items.length > 1 && toggleBtn) {
+                    const firstTop = items[0].offsetTop;
+                    const lastTop = items[items.length - 1].offsetTop;
+                    // If the last item is on a different vertical level than the first, it has wrapped
+                    toggleBtn.style.display = (lastTop > firstTop) ? "flex" : "none";
+                } else if (toggleBtn) {
+                    toggleBtn.style.display = "none";
+                }
+            } else {
                 favContainer.classList.remove("contracted");
                 favContainer.classList.remove("expanded"); // Also reset manual expansion
+                if (toggleBtn) toggleBtn.style.display = "none";
             }
         }
 
@@ -146,6 +162,25 @@ function renderFavorites() {
         };
         grid.appendChild(item);
     });
+
+    // v1.4.14: Re-evaluate toggle button visibility
+    const input = document.getElementById("user-search-input");
+    const toggleBtn = document.getElementById("btn-favorites-toggle");
+    if (input && toggleBtn) {
+        const query = input.value.trim();
+        if (query.length >= 2) {
+            const items = grid.querySelectorAll(".favorite-pill");
+            if (items.length > 1) {
+                const firstTop = items[0].offsetTop;
+                const lastTop = items[items.length - 1].offsetTop;
+                toggleBtn.style.display = (lastTop > firstTop) ? "flex" : "none";
+            } else {
+                toggleBtn.style.display = "none";
+            }
+        } else {
+            toggleBtn.style.display = "none";
+        }
+    }
 }
 
 function renderResults(users) {
