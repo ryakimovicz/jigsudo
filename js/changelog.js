@@ -32,6 +32,17 @@ function renderChangelog() {
 
     const versions = [
         {
+            tag: "v1.4.14",
+            titleKey: "changelog_v1414_title",
+            dateKey: "changelog_v1414_date",
+            itemKeys: [
+                "changelog_v1414_item1",
+                "changelog_v1414_item2",
+                "changelog_v1414_item3",
+                "changelog_v1414_item4"
+            ]
+        },
+        {
             tag: "v1.4.13",
             titleKey: "changelog_v1413_title",
             dateKey: "changelog_v1413_date",

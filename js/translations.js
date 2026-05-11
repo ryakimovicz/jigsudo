@@ -621,6 +621,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1414_title: "Versión 1.4.14",
+    changelog_v1414_date: "11/05/2026",
+    changelog_v1414_item1: "Social: Implementación de sistema de favoritos para seguir a otros jugadores.",
+    changelog_v1414_item2: "Interacción: Ahora los usuarios en las tablas de clasificación son clickeables para ver sus perfiles.",
+    changelog_v1414_item3: "Estabilidad: Corrección del error que impedía avanzar en el rompecabezas después de completar el tutorial.",
+    changelog_v1414_item4: "Interfaz: Ajuste del pie de página en la sección de búsqueda para mantenerlo siempre al final.",
     changelog_v1413_title: "Versión 1.4.13",
     changelog_v1413_date: "05/05/2026",
     changelog_v1413_item1: "Mejora SEO: Optimización de metadatos, mejora de estructura de encabezados (H1) y soporte dinámico de títulos.",
@@ -1535,6 +1541,12 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1414_title: "Version 1.4.14",
+    changelog_v1414_date: "May 11, 2026",
+    changelog_v1414_item1: "Social: Implementation of the favorites system to follow other players.",
+    changelog_v1414_item2: "Interaction: Users in leadearboards are now clickable to view their profiles.",
+    changelog_v1414_item3: "Stability: Fixed a bug that prevented puzzle progress after completing the tutorial.",
+    changelog_v1414_item4: "Interface: Adjusted the footer in the search section to stay at the bottom.",
     changelog_v1413_title: "Version 1.4.13",
     changelog_v1413_date: "May 5, 2026",
     changelog_v1413_item1: "SEO Improvement: Optimization of metadata, header structures (H1), and dynamic title support.",
