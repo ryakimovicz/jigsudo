@@ -216,7 +216,9 @@ export function placeInPanel(chunkIndex) {
 export function fitCollectedPieces() {
   if (!memorySection || memorySection.classList.contains("hidden")) return;
   const wrapper = document.querySelector(".collected-wrapper");
-  const pieces = document.querySelectorAll(".collected-piece");
+  const pieces = Array.from(collectedLeft.querySelectorAll(".collected-piece")).concat(
+    Array.from(collectedRight.querySelectorAll(".collected-piece"))
+  );
   if (!wrapper || !collectedLeft || !collectedRight) return;
 
   // DESKTOP RESET: Trust CSS > 768px (except for laptop specific override handled in CSS)
@@ -1190,7 +1192,10 @@ export function debugJigsawPlace() {
 
       // 1. Find the Correct Piece
       const correctGrid = Array.from(
-        document.querySelectorAll(".mini-sudoku-grid"),
+        boardContainer.querySelectorAll(".mini-sudoku-grid")
+      ).concat(
+        Array.from(collectedLeft.querySelectorAll(".mini-sudoku-grid")),
+        Array.from(collectedRight.querySelectorAll(".mini-sudoku-grid"))
       ).find((el) => el.dataset.chunkIndex == i);
 
       if (!correctGrid) {
@@ -1266,8 +1271,8 @@ export async function checkBoardCompletion() {
     .querySelectorAll(".error-slot")
     .forEach((el) => el.classList.remove("error-slot"));
 
-  const slots = document.querySelectorAll(".sudoku-chunk-slot");
-  const filledCount = document.querySelectorAll(
+  const slots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
+  const filledCount = boardContainer.querySelectorAll(
     ".sudoku-chunk-slot.filled",
   ).length;
 
@@ -1488,7 +1493,10 @@ export function resumeJigsawState() {
       `[data-slot-index="${slotIndex}"]`,
     );
     const panelItem = Array.from(
-      document.querySelectorAll(".mini-sudoku-grid"),
+      boardContainer.querySelectorAll(".mini-sudoku-grid")
+    ).concat(
+      Array.from(collectedLeft.querySelectorAll(".mini-sudoku-grid")),
+      Array.from(collectedRight.querySelectorAll(".mini-sudoku-grid"))
     ).find((el) => parseInt(el.dataset.chunkIndex) === chunkIndex);
 
     if (slot && panelItem) {
@@ -1508,7 +1516,7 @@ export function resumeJigsawState() {
   // v1.9.9: Auto-Advance Protection
   // If the board is already solved upon hydration, trigger the next stage transition.
   // We use a small delay to ensure DOM is settled.
-  const filledCount = document.querySelectorAll(
+  const filledCount = boardContainer.querySelectorAll(
     ".sudoku-chunk-slot.filled",
   ).length;
   if (filledCount === 9) {
@@ -1551,7 +1559,9 @@ function captureCurrentState() {
     .filter((slot) => slot.classList.contains("user-locked"))
     .map((slot) => parseInt(slot.dataset.slotIndex));
 
-  const panelSlots = Array.from(document.querySelectorAll(".collected-piece"));
+  const panelSlots = Array.from(collectedLeft.querySelectorAll(".collected-piece")).concat(
+    Array.from(collectedRight.querySelectorAll(".collected-piece"))
+  );
   const panel = panelSlots.map((slot) => {
     const content = slot.querySelector(".mini-sudoku-grid");
     return content ? parseInt(content.dataset.chunkIndex) : -1;
@@ -1631,7 +1641,9 @@ function applyHistoryState(state) {
   try {
     const lockedIndices = new Set(locked);
     const boardSlots = boardContainer.querySelectorAll(".sudoku-chunk-slot");
-    const panelSlots = document.querySelectorAll(".collected-piece");
+    const panelSlots = Array.from(collectedLeft.querySelectorAll(".collected-piece")).concat(
+      Array.from(collectedRight.querySelectorAll(".collected-piece"))
+    );
     const currentState = captureCurrentState();
 
     console.log("[Jigsaw] Applying history state...", { board, panel, locked });
@@ -1671,7 +1683,11 @@ function applyHistoryState(state) {
 
     // Map of chunkIndex -> current parent element
     const currentPositions = new Map();
-    document.querySelectorAll(".mini-sudoku-grid").forEach((p) => {
+    Array.from(boardContainer.querySelectorAll(".mini-sudoku-grid"))
+      .concat(
+        Array.from(collectedLeft.querySelectorAll(".mini-sudoku-grid")),
+        Array.from(collectedRight.querySelectorAll(".mini-sudoku-grid"))
+      ).forEach((p) => {
       const idx = parseInt(p.dataset.chunkIndex);
       if (idx === 4) return; // Center piece is static
       currentPositions.set(idx, p.parentElement);
@@ -1687,9 +1703,11 @@ function applyHistoryState(state) {
       const currentParent = currentPositions.get(targetChunkIndex);
 
       if (currentParent !== targetSlot) {
-        const piece = document.querySelector(
-          `.mini-sudoku-grid[data-chunk-index="${targetChunkIndex}"]`,
-        );
+        const piece = Array.from(boardContainer.querySelectorAll(".mini-sudoku-grid"))
+          .concat(
+            Array.from(collectedLeft.querySelectorAll(".mini-sudoku-grid")),
+            Array.from(collectedRight.querySelectorAll(".mini-sudoku-grid"))
+          ).find(el => el.dataset.chunkIndex == targetChunkIndex);
         if (piece) {
           rectsMap.set(targetChunkIndex, piece.getBoundingClientRect());
           piecesToMove.set(targetChunkIndex, { piece, target: targetSlot });
@@ -1705,9 +1723,11 @@ function applyHistoryState(state) {
       const currentParent = currentPositions.get(targetChunkIndex);
 
       if (currentParent !== targetSlot) {
-        const piece = document.querySelector(
-          `.mini-sudoku-grid[data-chunk-index="${targetChunkIndex}"]`,
-        );
+        const piece = Array.from(boardContainer.querySelectorAll(".mini-sudoku-grid"))
+          .concat(
+            Array.from(collectedLeft.querySelectorAll(".mini-sudoku-grid")),
+            Array.from(collectedRight.querySelectorAll(".mini-sudoku-grid"))
+          ).find(el => el.dataset.chunkIndex == targetChunkIndex);
         if (piece) {
           rectsMap.set(targetChunkIndex, piece.getBoundingClientRect());
           piecesToMove.set(targetChunkIndex, { piece, target: targetSlot });

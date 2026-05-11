@@ -185,6 +185,10 @@ export function closeTutorialModal(syncHash = true) {
   if (!modal) return;
 
   toggleModal(modal, false);
+  
+  // v1.4.14: Clear the board container to prevent selector collisions with real game
+  const container = document.getElementById("tutorial-board-container");
+  if (container) container.innerHTML = "";
 
   if (syncHash) {
     const hash = window.location.hash;
@@ -844,7 +848,7 @@ function getBlockTable(pieceIdx, slotIdx = null, conflicts = null) {
   const slotRowOffset = slotIdx !== null ? Math.floor(slotIdx / 3) * 3 : null;
   const slotColOffset = slotIdx !== null ? (slotIdx % 3) * 3 : null;
 
-  let html = `<div class="mini-sudoku-grid">`;
+  let html = `<div class="mini-sudoku-grid" data-chunk-index="${pieceIdx}">`;
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < 3; c++) {
       const row = rOffset + r;
