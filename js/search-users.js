@@ -91,6 +91,17 @@ export function initSearchUsers() {
         }
     });
 
+    // v1.4.14: Update titles when language changes
+    window.addEventListener("languageChanged", () => {
+        if (window.location.hash.startsWith("#search-users")) {
+            const starBtns = document.querySelectorAll(".btn-star");
+            starBtns.forEach(btn => {
+                const isFav = btn.classList.contains("active");
+                btn.title = isFav ? getI18n('fav_remove') : getI18n('fav_add');
+            });
+        }
+    });
+
     // v1.4.14: Toggle favorites expansion manually
     const toggleBtn = document.getElementById("btn-favorites-toggle");
     if (toggleBtn) {
@@ -182,7 +193,7 @@ function renderResults(users) {
                     <strong class="user-name">${user.username}</strong>
                     ${user.isVerified ? '<span class="verified-badge" title="Verificado">✅</span>' : ''}
                 </div>
-                <button class="btn-star ${isFav ? 'active' : ''}" title="${isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}" data-uid="${user.uid}" data-username="${user.username}">
+                <button class="btn-star ${isFav ? 'active' : ''}" title="${isFav ? getI18n('fav_remove') : getI18n('fav_add')}" data-uid="${user.uid}" data-username="${user.username}">
                     <span class="star-icon">⭐</span>
                 </button>
             </div>

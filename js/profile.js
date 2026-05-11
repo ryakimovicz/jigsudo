@@ -1,5 +1,5 @@
 import { getCurrentUser, logoutUser } from "./auth.js?v=1.4.14";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.14";
+import { getCurrentLang, updateTexts, getI18n } from "./i18n.js?v=1.4.14";
 import { translations } from "./translations.js?v=1.4.14";
 import { gameManager } from "./game-manager.js?v=1.4.14";
 import { getRankData, calculateRP } from "./ranks.js?v=1.4.14";
@@ -14,7 +14,18 @@ let activeProfileName = null;
 let comparisonEnabled = false;
 
 export function initProfile() {
-  console.log("Profile Module Loaded");
+  console.log("[Profile] Initializing...");
+  
+  // v1.4.14: Update favorite button title when language changes
+  window.addEventListener("languageChanged", () => {
+    if (window.location.hash.startsWith("#profile")) {
+      const favBtn = document.getElementById("profile-favorite-btn");
+      if (favBtn && !favBtn.classList.contains("hidden")) {
+        const isFav = favBtn.classList.contains("active");
+        favBtn.title = isFav ? getI18n('fav_remove') : getI18n('fav_add');
+      }
+    }
+  });
 
   // Calendar Listeners
   const prevBtn = document.getElementById("cal-prev-btn");
@@ -312,6 +323,7 @@ export async function updateProfileData(targetUsername = activeProfileName) {
             const isFav = gameManager.stats?.favorites && gameManager.stats.favorites[publicData.uid];
             currentFavBtn.classList.remove("hidden");
             currentFavBtn.classList.toggle("active", !!isFav);
+            currentFavBtn.title = isFav ? getI18n('fav_remove') : getI18n('fav_add');
             
             // Clean old listeners
             const newFavBtn = currentFavBtn.cloneNode(true);
@@ -324,7 +336,9 @@ export async function updateProfileData(targetUsername = activeProfileName) {
               newFavBtn.classList.remove("btn-loading-star");
               
               if (result.success) {
-                newFavBtn.classList.toggle("active", !result.isRemoved);
+                const nowFav = !result.isRemoved;
+                newFavBtn.classList.toggle("active", nowFav);
+                newFavBtn.title = nowFav ? getI18n('fav_remove') : getI18n('fav_add');
               }
             });
           }

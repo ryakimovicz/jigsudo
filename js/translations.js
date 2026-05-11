@@ -111,6 +111,8 @@ export const translations = {
     search_users_searching: "Buscando...",
     search_users_min_chars: "Escribe al menos 2 letras...",
     favorites_title: "Mis Favoritos",
+    fav_add: "Agregar a favoritos",
+    fav_remove: "Quitar de favoritos",
     search_users_stats_label: "Estadísticas",
     sidebar_support: "Soporte",
     sidebar_info: "Info",
@@ -1029,6 +1031,8 @@ export const translations = {
     search_users_searching: "Searching...",
     search_users_min_chars: "Type at least 2 letters...",
     favorites_title: "My Favorites",
+    fav_add: "Add to favorites",
+    fav_remove: "Remove from favorites",
     search_users_stats_label: "Stats",
 
     admin_panel_title: "Administrative Dashboard",
