@@ -1997,6 +1997,16 @@ body.dark-mode .current-user-row {
 .ranking-row {
   /* No default animation to avoid conflicts with FLIP */
   position: relative; /* Ensure transform works contextually */
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ranking-row:hover {
+  background-color: rgba(var(--accent-rgb), 0.08) !important;
+}
+
+body.dark-mode .ranking-row:hover {
+  background-color: rgba(var(--accent-rgb), 0.15) !important;
 }
 
 /* Only animate entry for NEW rows */

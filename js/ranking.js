@@ -17,6 +17,7 @@ import { getCurrentUser } from "./auth.js?v=1.4.13";
 import { getRankData, SCORING } from "./ranks.js?v=1.4.13";
 import { gameManager } from "./game-manager.js?v=1.4.13";
 import { getDailySeed } from "./utils/random.js?v=1.4.13";
+import { router } from "./router.js?v=1.4.13";
 
 const CACHE_KEY = "jigsudo_ranking_cache_v3";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -371,7 +372,31 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
       scoreFormat,
       personal,
     );
+    
+    // v1.4.14: Attach navigation listener once
+    if (!container.dataset.navListener) {
+      container.addEventListener("click", (e) => {
+        const row = e.target.closest(".ranking-row");
+        if (row && row.dataset.username) {
+          const username = row.dataset.username;
+          router.navigateTo(`#profile/${encodeURIComponent(username.toLowerCase())}`);
+        }
+      });
+      container.dataset.navListener = "true";
+    }
     return;
+  }
+
+  // v1.4.14: Ensure listener is attached even if table already exists (e.g. after hydration)
+  if (!container.dataset.navListener) {
+    container.addEventListener("click", (e) => {
+      const row = e.target.closest(".ranking-row");
+      if (row && row.dataset.username) {
+        const username = row.dataset.username;
+        router.navigateTo(`#profile/${encodeURIComponent(username.toLowerCase())}`);
+      }
+    });
+    container.dataset.navListener = "true";
   }
 
   // Smart Update (FLIP Animation)
@@ -449,6 +474,7 @@ export function renderRankings(container, rankings, currentCategory = "daily") {
     const tr = document.createElement("tr");
     tr.className = "ranking-row";
     tr.dataset.uid = entry.id || (isPersonal ? "personal_row" : "guest");
+    tr.dataset.username = entry.username || "Anónimo";
     updateRowContent(tr, entry, index, isPersonal, t, scoreFormat, currentUid);
     return tr;
   };
@@ -681,9 +707,9 @@ function generateTableHtml(data, currentUid, t, scoreFormat, personal) {
       const rankName = t[rankData.rank.nameKey] || rankData.rank.nameKey;
       const rankLevel = `${t.rank_level_prefix || "Nvl."} ${rankData.level}`;
 
-      // ADD data-uid
+      // ADD data-uid and data-username
       html += `
-        <tr class="ranking-row ${isTop3 ? "top-player" : ""} ${isCurrentUser ? "current-user-row" : ""}" data-uid="${entry.id}">
+        <tr class="ranking-row ${isTop3 ? "top-player" : ""} ${isCurrentUser ? "current-user-row" : ""}" data-uid="${entry.id}" data-username="${entry.username || "Anónimo"}">
           <td class="rank-col">${medal || index + 1}</td>
           <td class="user-col">
             <div class="user-info-group">
@@ -706,7 +732,7 @@ function generateTableHtml(data, currentUid, t, scoreFormat, personal) {
       <tr class="ranking-separator">
         <td colspan="3">...</td>
       </tr>
-      <tr class="ranking-row current-user-row personal-rank-row" data-uid="${(personal.id || personal.username) + "_p"}">
+      <tr class="ranking-row current-user-row personal-rank-row" data-uid="${(personal.id || personal.username) + "_p"}" data-username="${personal.username || "Anónimo"}">
         <td class="rank-col">${personal.rank}</td>
         <td class="user-col">
           <div class="user-info-group">
