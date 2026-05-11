@@ -623,6 +623,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Historial de Cambios",
+    changelog_v1415_title: "Versión 1.4.15",
+    changelog_v1415_date: "11/05/2026",
+    changelog_v1415_item1: "Localización: Traducción dinámica de los globos de texto en los botones de favoritos según el idioma seleccionado.",
+    changelog_v1415_item2: "Interfaz: Mejora inteligente del botón para desplegar favoritos, ahora se muestra de forma responsiva solo cuando hay múltiples líneas.",
     changelog_v1414_title: "Versión 1.4.14",
     changelog_v1414_date: "11/05/2026",
     changelog_v1414_item1: "Social: Implementación de sistema de favoritos para seguir a otros jugadores.",
@@ -1545,6 +1549,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1415_title: "Version 1.4.15",
+    changelog_v1415_date: "May 11, 2026",
+    changelog_v1415_item1: "Localization: Dynamic translation of favorite button tooltips based on the selected language.",
+    changelog_v1415_item2: "Interface: Intelligent improvement of the favorites toggle button, now showing responsively only when content wraps.",
     changelog_v1414_title: "Version 1.4.14",
     changelog_v1414_date: "May 11, 2026",
     changelog_v1414_item1: "Social: Implementation of the favorites system to follow other players.",
