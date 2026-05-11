@@ -257,6 +257,10 @@ export async function updateProfileData(targetUsername = activeProfileName) {
   const avatarEl = document.getElementById("profile-avatar");
   const nameEl = document.getElementById("profile-username");
   const emailEl = document.getElementById("profile-email");
+  const favBtn = document.getElementById("profile-favorite-btn");
+
+  // v1.4.14: Only hide if we are sure it shouldn't be there (to avoid flicker)
+  if (isOwnProfile && favBtn) favBtn.classList.add("hidden");
 
   if (!isOwnProfile) {
     // FOREIGN PUBLIC PROFILE
@@ -301,6 +305,29 @@ export async function updateProfileData(targetUsername = activeProfileName) {
           const ownHistory = gameManager.stats?.history || null;
           renderProfileStats(fullPublicData, false);
           renderCalendar(publicHistory, ownHistory, publicData.username);
+
+          // v1.4.14: Manage Favorite Button
+          const currentFavBtn = document.getElementById("profile-favorite-btn");
+          if (currentFavBtn) {
+            const isFav = gameManager.stats?.favorites && gameManager.stats.favorites[publicData.uid];
+            currentFavBtn.classList.remove("hidden");
+            currentFavBtn.classList.toggle("active", !!isFav);
+            
+            // Clean old listeners
+            const newFavBtn = currentFavBtn.cloneNode(true);
+            currentFavBtn.parentNode.replaceChild(newFavBtn, currentFavBtn);
+            
+            newFavBtn.addEventListener("click", async () => {
+              const { toggleFavorite } = await import("./db.js?v=1.4.13");
+              newFavBtn.classList.add("btn-loading-star");
+              const result = await toggleFavorite(publicData.uid, publicData.username);
+              newFavBtn.classList.remove("btn-loading-star");
+              
+              if (result.success) {
+                newFavBtn.classList.toggle("active", !result.isRemoved);
+              }
+            });
+          }
 
           // v1.7.6: Enable Comparison Mode
           comparisonEnabled = true;

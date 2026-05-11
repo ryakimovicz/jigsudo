@@ -110,6 +110,7 @@ export const translations = {
     search_users_empty: "No se encontraron usuarios.",
     search_users_searching: "Buscando...",
     search_users_min_chars: "Escribe al menos 2 letras...",
+    favorites_title: "Mis Favoritos",
     search_users_stats_label: "Estadísticas",
     sidebar_support: "Soporte",
     sidebar_info: "Info",
@@ -1021,6 +1022,7 @@ export const translations = {
     search_users_empty: "No users found.",
     search_users_searching: "Searching...",
     search_users_min_chars: "Type at least 2 letters...",
+    favorites_title: "My Favorites",
     search_users_stats_label: "Stats",
 
     admin_panel_title: "Administrative Dashboard",

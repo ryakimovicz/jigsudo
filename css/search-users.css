@@ -216,3 +216,190 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* v1.4.14: Favorites Section */
+.favorites-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: rgba(var(--accent-rgb), 0.03);
+    border-radius: 20px;
+    border: 1px dashed var(--glass-border);
+    transition: all 0.3s ease;
+}
+
+.favorites-section.contracted {
+    padding: 10px 20px;
+    margin-bottom: 16px;
+    opacity: 0.9;
+}
+
+.favorites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.btn-fav-toggle {
+    display: none; /* Hidden by default */
+    background: rgba(var(--accent-rgb), 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: all 0.2s ease;
+}
+
+.favorites-section.contracted .btn-fav-toggle {
+    display: flex; /* Show only when contracted */
+}
+
+.btn-fav-toggle:hover {
+    background: rgba(var(--accent-rgb), 0.1);
+    color: var(--text-main);
+}
+
+.favorites-section.expanded .btn-fav-toggle {
+    transform: rotate(180deg);
+}
+
+.favorites-section.expanded .favorites-grid {
+    max-height: 600px !important; /* Unrestricted height */
+    opacity: 1 !important;
+}
+
+.favorites-section.contracted .favorites-grid {
+    max-height: 50px; /* Increased to avoid cutting pills */
+    overflow: hidden;
+    padding: 4px 0;
+}
+
+.favorites-section.contracted .favorite-pill {
+    /* No changes to background or borders */
+}
+
+.favorites-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.favorites-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.favorite-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px 6px 6px;
+    background: white;
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.dark-mode .favorite-pill {
+    background: #2d333b;
+}
+
+.favorite-pill:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2);
+}
+
+.fav-avatar {
+    width: 28px;
+    height: 28px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.fav-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Star Button */
+.btn-star {
+    margin-left: auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid transparent;
+}
+
+.dark-mode .btn-star {
+    background: rgba(255,255,255,0.05);
+}
+
+.btn-star .star-icon {
+    font-size: 1.2rem;
+    filter: grayscale(1) opacity(0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-star.active {
+    background: rgba(var(--accent-rgb), 0.1);
+    border-color: rgba(var(--accent-rgb), 0.2);
+}
+
+.btn-star.active .star-icon {
+    filter: grayscale(0) opacity(1);
+    transform: scale(1.1);
+}
+
+.btn-star:hover {
+    transform: scale(1.1);
+    background: rgba(var(--accent-rgb), 0.15);
+}
+
+.btn-loading-star {
+    animation: pulse 1s infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes pulse {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0.5; transform: scale(0.9); }
+}
+
+/* Profile specific adjustment */
+.profile-name-row {
+    margin-bottom: 5px;
+}
+
+#profile-favorite-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    margin: 0;
+}
+

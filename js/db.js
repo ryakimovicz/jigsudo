@@ -198,7 +198,8 @@ export function reconstructStats(data) {
       s.forceWipeAt || data.forceWipeAt || 0,
     ),
     schemaVersion: data.schemaVersion || 0,
-    integrityChecked: "1.5.62",
+    favorites: data.favorites || {}, // v1.4.14: Cloud-synced favorites map {uid: username}
+    integrityChecked: "1.4.14",
   };
 
   return stats;
@@ -708,6 +709,51 @@ export async function saveUserStats(
   }
 }
 
+/**
+ * v1.4.14: Toggle favorite status for another user.
+ * Stores in user's root document under 'favorites' map.
+ */
+export async function toggleFavorite(targetUid, targetUsername) {
+  const currentUser = getCurrentUser();
+  if (!currentUser || currentUser.isAnonymous) return { success: false, error: "auth" };
+
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) return { success: false, error: "no_profile" };
+
+    const data = docSnap.data();
+    const favorites = data.favorites || {};
+    
+    let isRemoved = false;
+    if (favorites[targetUid]) {
+      delete favorites[targetUid];
+      isRemoved = true;
+    } else {
+      favorites[targetUid] = targetUsername;
+    }
+
+    await updateDoc(userRef, { 
+      favorites: favorites,
+      lastUpdated: serverTimestamp()
+    });
+
+    // v1.4.14: Immediate Local Update for UI responsiveness
+    if (gameManager.stats) {
+      gameManager.stats.favorites = favorites;
+      localStorage.setItem("jigsudo_user_stats", JSON.stringify(gameManager.stats));
+      // v1.4.14: Dispatch global event for immediate UI sync across components
+      window.dispatchEvent(new CustomEvent("userStatsUpdated", { detail: gameManager.stats }));
+    }
+
+    console.log(`[DB] Favorite ${isRemoved ? "removed" : "added"}: ${targetUsername}`);
+    return { success: true, isRemoved };
+  } catch (err) {
+    console.error("[DB] Toggle favorite failed:", err);
+    return { success: false, error: err.message };
+  }
+}
+
 export async function saveUserProgress(userId, progressData, options = {}) {
   if (!userId) return;
 
@@ -1180,8 +1226,8 @@ export async function getPublicUserByUsername(username) {
       careerRP: publicProfileData.careerRP || 0,
       monthlyRP: publicProfileData.monthlyRP || 0,
       dailyRP: publicProfileData.dailyRP || 0,
-      lastUpdated: publicProfileData.lastUpdated,
       uid: snap.docs[0].id,
+      lastUpdated: publicProfileData.lastUpdated,
     };
   } catch (error) {
     console.error("[DB] Error fetching public profile:", error);
@@ -1253,6 +1299,7 @@ export async function searchPublicUsers(queryText, limitCount = 20) {
         monthlyRP: data.monthlyRP || 0,
         stats: data.stats || {},
         isVerified: data.isVerified || false,
+        uid: doc.id,
       };
     });
   } catch (error) {

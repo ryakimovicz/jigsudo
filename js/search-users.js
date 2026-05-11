@@ -1,7 +1,8 @@
-import { searchPublicUsers } from "./db.js?v=1.4.13";
+import { searchPublicUsers, toggleFavorite } from "./db.js?v=1.4.13";
 import { getI18n } from "./i18n.js?v=1.4.13";
 import { router } from "./router.js?v=1.4.13";
 import { getCurrentUser } from "./auth.js?v=1.4.13";
+import { gameManager } from "./game-manager.js?v=1.4.13";
 
 let searchTimeout = null;
 
@@ -31,11 +32,26 @@ export function initSearchUsers() {
         navSearch.dataset.listenerAttached = "true";
     }
 
-    if (!input || input.dataset.initialized) return;
+    if (!input) return;
+
+    // v1.4.14: Render favorites ALWAYS on entry, even if already initialized
+    renderFavorites();
+
+    if (input.dataset.initialized) return;
 
     input.addEventListener("input", (e) => {
         const query = e.target.value.trim();
         
+        // v1.4.14: Contract favorites when searching (after 2 chars)
+        const favContainer = document.getElementById("favorites-container");
+        if (favContainer) {
+            if (query.length >= 2) favContainer.classList.add("contracted");
+            else {
+                favContainer.classList.remove("contracted");
+                favContainer.classList.remove("expanded"); // Also reset manual expansion
+            }
+        }
+
         clearTimeout(searchTimeout);
         
         if (query.length < 2) {
@@ -67,6 +83,58 @@ export function initSearchUsers() {
 
     input.dataset.initialized = "true";
     console.log("[Search] Page Logic Initialized");
+
+    // v1.4.14: Refresh favorites when stats update globally
+    window.addEventListener("userStatsUpdated", () => {
+        if (window.location.hash.startsWith("#search-users")) {
+            renderFavorites();
+        }
+    });
+
+    // v1.4.14: Toggle favorites expansion manually
+    const toggleBtn = document.getElementById("btn-favorites-toggle");
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+            const container = document.getElementById("favorites-container");
+            if (container) {
+                container.classList.toggle("expanded");
+            }
+        });
+    }
+}
+
+/**
+ * v1.4.14: Renders the favorites quick-access list.
+ */
+function renderFavorites() {
+    const container = document.getElementById("favorites-container");
+    const grid = document.getElementById("favorites-grid");
+    if (!container || !grid) return;
+
+    const favs = gameManager.stats?.favorites || {};
+    const uids = Object.keys(favs);
+
+    if (uids.length === 0) {
+        container.classList.add("hidden");
+        return;
+    }
+
+    container.classList.remove("hidden");
+    grid.innerHTML = "";
+
+    uids.forEach(uid => {
+        const username = favs[uid];
+        const item = document.createElement("div");
+        item.className = "favorite-pill animate-fade-in";
+        item.innerHTML = `
+            <span class="fav-avatar">${username.charAt(0).toUpperCase()}</span>
+            <span class="fav-name">${username}</span>
+        `;
+        item.onclick = () => {
+            window.location.hash = `profile/${encodeURIComponent(username.toLowerCase())}`;
+        };
+        grid.appendChild(item);
+    });
 }
 
 function renderResults(users) {
@@ -105,6 +173,7 @@ function renderResults(users) {
         
         // Calculate Level/Rank display (Simple estimation if needed, or just show RP)
         const rp = user.totalRP || 0;
+        const isFav = gameManager.stats?.favorites && gameManager.stats.favorites[user.uid];
         
         card.innerHTML = `
             <div class="user-card-header">
@@ -113,6 +182,9 @@ function renderResults(users) {
                     <strong class="user-name">${user.username}</strong>
                     ${user.isVerified ? '<span class="verified-badge" title="Verificado">✅</span>' : ''}
                 </div>
+                <button class="btn-star ${isFav ? 'active' : ''}" title="${isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}" data-uid="${user.uid}" data-username="${user.username}">
+                    <span class="star-icon">⭐</span>
+                </button>
             </div>
             <div class="user-card-stats">
                 <div class="stat-item">
@@ -128,6 +200,24 @@ function renderResults(users) {
                 <span>👤</span> ${getI18n('header_profile_label')}
             </button>
         `;
+
+        card.querySelector(".btn-star").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const btn = e.currentTarget;
+            const uid = btn.dataset.uid;
+            const username = btn.dataset.username;
+            
+            btn.classList.add("btn-loading-star");
+            const result = await toggleFavorite(uid, username);
+            btn.classList.remove("btn-loading-star");
+            
+            if (result.success) {
+                btn.classList.toggle("active", !result.isRemoved);
+                // v1.4.14: Local state is already updated via handleCloudSync usually,
+                // but for immediate feedback we can refresh the list
+                renderFavorites();
+            }
+        });
 
         card.querySelector(".btn-view-profile-search").addEventListener("click", (e) => {
             const btn = e.currentTarget;

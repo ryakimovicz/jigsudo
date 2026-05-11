@@ -2299,11 +2299,16 @@ export class GameManager {
       // v1.5.0: ECHO INHIBITION
       const remoteSessionId = remoteStats.stats ? remoteStats.stats.activeSessionId : remoteStats.activeSessionId;
       
-      // v1.5.7: Allow echo adoption IF ranking points differ (Root priority)
+      // v1.5.7: Allow echo adoption IF ranking points or favorites differ (Root priority)
       const rankFields = ["dailyRP", "monthlyRP", "totalRP", "careerRP"];
-      const hasRankDiscrepancy = rankFields.some(f => (remoteStats[f] || 0) !== (this.stats ? (this.stats[f] || 0) : 0));
+      let hasDiscrepancy = rankFields.some(f => (remoteStats[f] || 0) !== (this.stats ? (this.stats[f] || 0) : 0));
       
-      if (remoteSessionId === this.localSessionId && !hasRankDiscrepancy) {
+      // v1.4.14: Check for favorites changes in echo
+      const remoteFavs = JSON.stringify(remoteStats.favorites || {});
+      const localFavs = JSON.stringify(this.stats?.favorites || {});
+      if (remoteFavs !== localFavs) hasDiscrepancy = true;
+      
+      if (remoteSessionId === this.localSessionId && !hasDiscrepancy) {
         console.log("[Sync] Skipping echo (Scores match, Session match).");
       } else {
         const localTS = this.stats ? (this.stats.lastLocalUpdate || 0) : 0;
@@ -2319,7 +2324,7 @@ export class GameManager {
         const isWithinGracePeriod = Date.now() - (this._lastLocalWrite || 0) < 8000;
         const isProtectedSession = remoteSessionId === this.localSessionId;
         
-        if (isProtectedSession && hasRankDiscrepancy && isWithinGracePeriod) {
+        if (isProtectedSession && hasDiscrepancy && isWithinGracePeriod) {
           console.log("[Sync] Shield Active: Ignoring potentially stale cloud snapshot during grace period.");
           return;
         }
@@ -2352,6 +2357,14 @@ export class GameManager {
         const localCareer = this.stats ? (this.stats.careerRP || 0) : 0;
         const remoteCareer = remoteStats.careerRP || 0;
         const needsCareerAdoption = localCareer === 0 && remoteCareer > 0;
+
+        // v1.4.14: Favorites Adoption
+        if (remoteStats.favorites) {
+          if (!this.stats) this.stats = {};
+          this.stats.favorites = remoteStats.favorites;
+          // v1.4.14: Save to the unified stats object
+          localStorage.setItem("jigsudo_user_stats", JSON.stringify(this.stats));
+        }
 
         if (!this.stats || isRemoteNewer || this.isWiping || isMigration || needsCareerAdoption) {
           if (needsCareerAdoption) console.log(`[Sync] Forced CareerRP adoption (${remoteCareer}) despite timestamps.`);

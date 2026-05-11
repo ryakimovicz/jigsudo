@@ -1080,6 +1080,9 @@
 
           <!-- 1. Identity Card -->
           <div class="profile-card identity-card glass-panel">
+            <button id="profile-favorite-btn" class="btn-star hidden" title="Favorito">
+              <span class="star-icon">⭐</span>
+            </button>
             <div class="profile-avatar-large" id="profile-avatar">U</div>
             <div class="profile-identity">
               <h2 id="profile-username">Usuario</h2>
@@ -1391,6 +1394,19 @@
                 autocomplete="off"
               />
               <div id="search-loader" class="loader-tiny hidden"></div>
+            </div>
+          </div>
+          
+          <!-- v1.4.14: Favorites Quick List -->
+          <div id="favorites-container" class="favorites-section hidden">
+            <div class="favorites-header">
+                <h3 class="favorites-title"><span class="star-icon">⭐</span> <span data-i18n="favorites_title">Mis Favoritos</span></h3>
+                <button id="btn-favorites-toggle" class="btn-fav-toggle" title="Ver más/menos">
+                    <span class="toggle-icon">▼</span>
+                </button>
+            </div>
+            <div id="favorites-grid" class="favorites-grid">
+               <!-- Favorites will be injected here -->
             </div>
           </div>
 
