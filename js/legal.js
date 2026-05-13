@@ -1,12 +1,12 @@
-import { auth } from "./firebase-config.js?v=1.4.15";
+import { auth } from "./firebase-config.js?v=1.4.16";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { initLanguage, getCurrentLang } from "./i18n.js?v=1.4.15";
-import { initSidebar, closeSidebar } from "./sidebar.js?v=1.4.15";
-import { translations } from "./translations.js?v=1.4.15";
-import { CONFIG } from "./config.js?v=1.4.15";
-import { toggleModal, showToast } from "./ui.js?v=1.4.15";
-import { getRankData } from "./ranks.js?v=1.4.15";
-import { loginUser, registerUser, loginWithGoogle, initForgotPasswordUI } from "./auth.js?v=1.4.15";
+import { initLanguage, getCurrentLang } from "./i18n.js?v=1.4.16";
+import { initSidebar, closeSidebar } from "./sidebar.js?v=1.4.16";
+import { translations } from "./translations.js?v=1.4.16";
+import { CONFIG } from "./config.js?v=1.4.16";
+import { toggleModal, showToast } from "./ui.js?v=1.4.16";
+import { getRankData } from "./ranks.js?v=1.4.16";
+import { loginUser, registerUser, loginWithGoogle, initForgotPasswordUI } from "./auth.js?v=1.4.16";
 
 
 // Initialize Sidebar
@@ -238,7 +238,7 @@ function initAuthListener() {
     // v1.5.2: Proactive maintenance for data consistency on legal pages
     // We use onlyMaintenance: true to avoid claiming the "throne" (Exclusive Session)
     if (!isGuest && user) {
-        import("./db.js?v=1.4.15").then(({ callJigsudoFunction }) => {
+        import("./db.js?v=1.4.16").then(({ callJigsudoFunction }) => {
             callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true })
                 .then(() => console.log("[Maintenance] Proactive check (legal) complete."))
                 .catch(e => console.warn("[Maintenance] check failed:", e));

@@ -1,18 +1,18 @@
 /* Main Menu Logic */
-import { translations } from "./translations.js?v=1.4.15";
-import { getCurrentLang } from "./i18n.js?v=1.4.15";
-import { showProfile } from "./profile.js?v=1.4.15";
-import { getDailySeed } from "./utils/random.js?v=1.4.15";
-import { gameManager } from "./game-manager.js?v=1.4.15";
-import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.4.15";
-import { getCurrentUser } from "./auth.js?v=1.4.15";
-import { CONFIG } from "./config.js?v=1.4.15";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.4.15";
-import { router } from "./router.js?v=1.4.15";
-import { isPuzzleAvailable } from "./history.js?v=1.4.15";
-import { showAlertModal } from "./ui.js?v=1.4.15";
-import { getJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.4.15";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.15";
+import { translations } from "./translations.js?v=1.4.16";
+import { getCurrentLang } from "./i18n.js?v=1.4.16";
+import { showProfile } from "./profile.js?v=1.4.16";
+import { getDailySeed } from "./utils/random.js?v=1.4.16";
+import { gameManager } from "./game-manager.js?v=1.4.16";
+import { fetchRankings, renderRankings, clearRankingCache, getCachedRankings } from "./ranking.js?v=1.4.16";
+import { getCurrentUser } from "./auth.js?v=1.4.16";
+import { CONFIG } from "./config.js?v=1.4.16";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.4.16";
+import { router } from "./router.js?v=1.4.16";
+import { isPuzzleAvailable } from "./history.js?v=1.4.16";
+import { showAlertModal } from "./ui.js?v=1.4.16";
+import { getJigsudoDate, getJigsudoDateString } from "./utils/time.js?v=1.4.16";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.16";
 
 // Global UI Helpers
 window.toggleAuthPassword = function (btn) {
@@ -235,8 +235,8 @@ export function initHome() {
       localStorage.setItem("jigsudo_skip_clear_confirm", shouldSkip ? "true" : "false");
 
       // Sync to cloud if possible
-      const { getCurrentUser } = await import("./auth.js?v=1.4.15");
-      const { updateUserPreference } = await import("./db.js?v=1.4.15");
+      const { getCurrentUser } = await import("./auth.js?v=1.4.16");
+      const { updateUserPreference } = await import("./db.js?v=1.4.16");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
         // DB key: confirmClear (true = Ask, false = Skip)
@@ -490,7 +490,7 @@ export function initHome() {
           isReplay: false // Home view always represents the primary daily result
         };
 
-        const { showVictorySummary } = await import("./ui.js?v=1.4.15");
+        const { showVictorySummary } = await import("./ui.js?v=1.4.16");
         showVictorySummary(sessionStats, true);
       }
     } catch (e) {
@@ -646,7 +646,7 @@ export function initHome() {
   if (navHome) {
     navHome.addEventListener("click", async () => {
       // Use Router instead of reload to preserve cache and go to canonical #home
-      const { router } = await import("./router.js?v=1.4.15");
+      const { router } = await import("./router.js?v=1.4.16");
       router.navigateTo("#home");
     });
   }
@@ -681,7 +681,7 @@ export function initHome() {
     rankingLoading = true;
     
     // Only clear if empty (first load) AND no cache available
-    const { getCachedRankings, renderRankings, fetchRankings, clearRankingCache } = await import("./ranking.js?v=1.4.15");
+    const { getCachedRankings, renderRankings, fetchRankings, clearRankingCache } = await import("./ranking.js?v=1.4.16");
     const cachedRankings = getCachedRankings();
     
     if (cachedRankings) {
@@ -1059,7 +1059,7 @@ export function initHome() {
     }
 
     // REDUNDANCY: Ensure cache is dead
-    const { clearRankingCache } = await import("./ranking.js?v=1.4.15");
+    const { clearRankingCache } = await import("./ranking.js?v=1.4.16");
     clearRankingCache();
     
     // Force button update immediately
@@ -1123,7 +1123,7 @@ export async function startDailyGame() {
     const state = gameManager.getState();
     // v1.9.6: Resilience Guard - Support both legacy flat and modern nested state
     const currentStage = state?.progress?.currentStage || state?.currentStage || "memory";
-    const module = await import("./memory.js?v=1.4.15");
+    const module = await import("./memory.js?v=1.4.16");
 
     if (currentStage === "memory") {
       module.initMemoryGame();

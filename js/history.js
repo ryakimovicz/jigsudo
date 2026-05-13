@@ -1,13 +1,13 @@
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.15";
-import { translations } from "./translations.js?v=1.4.15";
-import { gameManager } from "./game-manager.js?v=1.4.15";
-import { startDailyGame } from "./home.js?v=1.4.15";
-import { updateSidebarActiveState } from "./sidebar.js?v=1.4.15";
-import { router } from "./router.js?v=1.4.15";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.16";
+import { translations } from "./translations.js?v=1.4.16";
+import { gameManager } from "./game-manager.js?v=1.4.16";
+import { startDailyGame } from "./home.js?v=1.4.16";
+import { updateSidebarActiveState } from "./sidebar.js?v=1.4.16";
+import { router } from "./router.js?v=1.4.16";
 
-import { getJigsudoDate } from "./utils/time.js?v=1.4.15";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.15";
-import { formatTime } from "./ui.js?v=1.4.15";
+import { getJigsudoDate } from "./utils/time.js?v=1.4.16";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.16";
+import { formatTime } from "./ui.js?v=1.4.16";
 
 export let histViewDate = getJigsudoDate();
 let puzzleExistsCache = {};
@@ -198,7 +198,7 @@ export async function updateHistoryUI() {
   let monthHistory = historyCache[monthKey];
   if (!monthHistory) {
       console.log(`[History] Fetching history for ${monthKey} from Firestore...`);
-      const { auth } = await import("./firebase-config.js?v=1.4.15");
+      const { auth } = await import("./firebase-config.js?v=1.4.16");
       const { getFirestore, collection, query, where, getDocs, doc } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
       
       const user = auth.currentUser;
