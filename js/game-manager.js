@@ -2004,31 +2004,40 @@ export class GameManager {
   _resetDailyStats(stats, today) {
     console.log(`[GameManager] Performing Daily Reset for ${today}`);
     
-    // v1.4.3: Resilience Lock - Only move current points to 'Yesterday' if we are 
-    // strictly transitioning from the day immediately before. 
-    if (stats.lastDailyUpdate) {
-        const diff = getJigsudoDayDiff(stats.lastDailyUpdate, today);
-        if (diff === 1) {
-            stats.lastDayRP = stats.dailyRP || 0;
-        } else if (diff > 1) {
-            stats.lastDayRP = 0;
-        }
-    } else {
-        stats.lastDayRP = 0;
-    }
-    
-    // v1.4.10: Mid-Session Protection Fix
-    // Only preserve points if the update anchor is ALREADY today (meaning they were earned 
-    // after a reset already happened). If transitioning from the past, we MUST wipe.
-    const isTransition = !stats.lastDailyUpdate || stats.lastDailyUpdate < today;
+    // v1.6.15: Safe Daily Reset - Point-Aware Migration
+    // We only move points to 'Yesterday' if the last update anchor is strictly from a previous day.
+    // This prevents today's early progress (e.g. 1.0 RP from Stage 1) from overwriting yesterday's real score.
+    const lastUpdate = stats.lastDailyUpdate;
+    const isTransition = !lastUpdate || lastUpdate < today;
 
     if (isTransition) {
+        if (lastUpdate) {
+            const diff = getJigsudoDayDiff(lastUpdate, today);
+            if (diff === 1) {
+                // Strictly yesterday -> Move points to history ONLY if not already set by a late win
+                if ((stats.lastDayRP || 0) === 0) {
+                    stats.lastDayRP = stats.dailyRP || 0;
+                    console.log(`[GameManager] Migrated yesterday's score (${stats.dailyRP}) to lastDayRP.`);
+                } else {
+                    console.log(`[GameManager] lastDayRP already contains a score (${stats.lastDayRP}). Skipping auto-migration.`);
+                }
+            } else {
+                // More than 1 day missed -> Clear history
+                stats.lastDayRP = 0;
+            }
+        } else {
+            stats.lastDayRP = 0;
+        }
+
+        // Wipe current day atoms as we are starting fresh
         stats.dailyWinsAccumulated = 0;
         stats.dailyBonusesAccumulated = 0;
-        stats.dailyPeaksErrorsAccumulated = 0;
         stats.dailyRP = 0;
+        stats.dailyPeaksErrorsAccumulated = 0;
+        
+        console.log(`[GameManager] dailyRP reset to 0 for new day ${today}`);
     } else {
-        console.log("[GameManager] dailyRP already marked for today. Preserving mid-session progress.");
+        console.log("[GameManager] dailyRP already belongs to today. Skipping migration to preserve current progress.");
     }
     
     stats.lastDailyUpdate = today;
@@ -3102,7 +3111,8 @@ export class GameManager {
       if (this.state.progress.currentStage === "code" || stagesCompleted.includes("code") || (this.state.progress.won)) {
           stagesCountToday = 6;
       }
-      let basePoints = stagesCountToday;
+      // v1.6.15: Root Scoring Fix - Always assume 6 stages on Victory to avoid sync drift
+      let basePoints = (stagesCompleted.length === 6 || (stagesCompleted.length === 5 && !stagesCompleted.includes("code"))) ? 6.0 : stagesCountToday;
       const sessionScore = Number((basePoints + timeBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
       const seedMonth = seedDate.substring(0,7);
       const todayMonth = today.substring(0,7);
@@ -3270,7 +3280,12 @@ export class GameManager {
               }
             }
 
-            if (!isLateCompletion) {
+            if (isLateCompletion) {
+              // v1.6.15: Late win points belong to yesterday
+              stats.lastDayRP = Number(dailyScore.toFixed(3));
+              stats.currentStreak = 0; // Missed the deadline
+              console.log("[Win] Late win recorded. Points moved to lastDayRP, streak reset.");
+            } else {
               stats.dailyRP = Number(dailyScore.toFixed(3));
             }
             

@@ -158,6 +158,7 @@ async function _performUserMaintenance(userRef, userData, today) {
     (userData.stats && userData.stats.totalPenaltyAccumulated) ||
     userData.totalPenaltyAccumulated ||
     0;
+  let finalLastDayRP = userData.lastDayRP || 0;
   let currentStreak = stats.currentStreak || 0;
 
   let totalSimulatedDays = 0;
@@ -174,12 +175,19 @@ async function _performUserMaintenance(userRef, userData, today) {
     const dStr = simDateObj.toISOString().substring(0, 10);
     const dMonth = dStr.substring(0, 7);
 
-    // 1. DAILY RESET
-    currentDailyRP = 0;
+    // 1. DAILY RESET (Point-Aware v1.6.15)
+    // We only move points to 'Yesterday' if they actually belong to the day before.
+    if (i === 1) {
+        const lastDaily = userData.lastDailyUpdate || lastDecay;
+        if (lastDaily < dStr) {
+            finalLastDayRP = currentDailyRP;
+        }
+        currentDailyRP = 0;
+    } else {
+        currentDailyRP = 0;
+    }
 
     // 2. DECAY CALCULATION
-    // A day is a "missed day" if the day BEFORE it was already > lastIntent
-    // (Jigsudo gives 24h grace: if you play Mon, Tues is safe, Wed is the first penalty)
     const dayBeforeSim = new Date(simDateObj.getTime());
     dayBeforeSim.setUTCDate(dayBeforeSim.getUTCDate() - 1);
     const dayBeforeStr = dayBeforeSim.toISOString().substring(0, 10);
@@ -228,6 +236,7 @@ async function _performUserMaintenance(userRef, userData, today) {
       totalRP: Number(currentTotalRP.toFixed(3)),
       monthlyRP: Number(currentMonthlyRP.toFixed(3)),
       dailyRP: currentDailyRP,
+      lastDayRP: finalLastDayRP,
       "stats.totalPenaltyAccumulated": Number(currentPenaltyAcc.toFixed(3)),
       "stats.currentStreak": currentStreak,
       "stats.lastDecayCheck": today,
@@ -445,10 +454,11 @@ exports.submitDailyWin = onCall({ cors: true }, async (request) => {
       newStreak = 1;
     }
   } else {
-    // Late Win (Delayed): Streak was already reset by maintenance/decay.
-    // We do NOT increment the streak for late wins.
+    // Late Win (Delayed): User missed the Jigsudo deadline.
+    // v1.6.15: Per user request, the streak is lost if won after midnight offset.
+    newStreak = 0;
     console.log(
-      `[submitDailyWin] Late win detected for ${seedDate}. Streak remains at ${newStreak}.`,
+      `[submitDailyWin] Late win detected for ${seedDate}. Streak reset to 0.`,
     );
   }
 

@@ -615,6 +615,10 @@ export const translations = {
     // Updates
     update_available_title: "Nueva actualización",
     update_available_msg: "Una nueva versión de Jigsudo ha sido detectada. Se recomienda actualizar para evitar errores en las puntuaciones.",
+    changelog_v1416_title: "Versión 1.4.16",
+    changelog_v1416_date: "12/05/2026",
+    changelog_v1416_item1: "Arreglado el error que causaba que el progreso parcial de hoy sobrescribiera el puntaje de ayer (lastDayRP).",
+    changelog_v1416_item2: "Corregida la discrepancia de 1 punto en el cálculo de victoria por tiempos de sincronización.",
     update_cache_hint: "Si el problema persiste, presiona <b>Ctrl+F5</b> o borra la caché del navegador.",
     btn_update_now: "Actualizar",
     toast_updating: "Actualizando Jigsudo...",
@@ -1549,6 +1553,10 @@ export const translations = {
 
     // Changelog
     changelog_title: "Changelog",
+    changelog_v1416_title: "Version 1.4.16",
+    changelog_v1416_date: "May 12, 2026",
+    changelog_v1416_item1: "Fixed the bug where today's partial progress could overwrite yesterday's score (lastDayRP).",
+    changelog_v1416_item2: "Resolved the 1-point discrepancy in victory calculations caused by sync timing.",
     changelog_v1415_title: "Version 1.4.15",
     changelog_v1415_date: "May 11, 2026",
     changelog_v1415_item1: "Localization: Dynamic translation of favorite button tooltips based on the selected language.",

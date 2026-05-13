@@ -75,11 +75,18 @@ snapshot.docs.forEach((doc) => {
         lastUpdated: FieldValue.serverTimestamp(),
       };
 
-      // 1. Daily Reset (Always happens if diffDays >= 1)
-      updateObj.lastDayRP = data.dailyRP || 0;
-      updateObj["stats.lastDayRP"] = data.dailyRP || 0;
-      updateObj.dailyRP = 0;
-      updateObj["stats.dailyRP"] = 0;
+      // 1. DAILY RESET (Point-Aware v1.6.15)
+      // We only move points to 'Yesterday' if the last update belongs to a previous day.
+      const lastDaily = data.lastDailyUpdate || stats.lastDailyUpdate || lastCheck;
+      if (lastDaily < todayStr) {
+          updateObj.lastDayRP = data.dailyRP || 0;
+          updateObj["stats.lastDayRP"] = data.dailyRP || 0;
+          updateObj.dailyRP = 0;
+          updateObj["stats.dailyRP"] = 0;
+          console.log(`[Decay] Migrated yesterday's score (${data.dailyRP}) to lastDayRP.`);
+      } else {
+          console.log("[Decay] dailyRP already belongs to today. Skipping migration.");
+      }
 
       // 2. Sequential Simulation (Transition Integrity)
       let totalPenaltyAccumulatedThisRun = 0;
