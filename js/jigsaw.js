@@ -27,21 +27,26 @@ let isDragging = false; // v1.6.8: Protect click handlers after drag
 const DRAG_THRESHOLD = 5; // px
 let undoStack = [];
 let redoStack = [];
-let initialJigsawState = null;
 let isJigsawInitialized = false;
+let initialJigsawState = null; // Captured at the start of the stage
 
 // Long Press for Locking
 let longPressTimer = null;
 const LONG_PRESS_DURATION = 600; // ms
 
 export function initJigsaw(elements) {
-  if (isJigsawInitialized) return;
-  isJigsawInitialized = true;
+  initialJigsawState = null; // v1.4.18: Reset initial state for every new session
+  undoStack = [];
+  redoStack = [];
+  updateHistoryButtons();
 
   boardContainer = elements.boardContainer;
   collectedLeft = elements.collectedLeft;
   collectedRight = elements.collectedRight;
   memorySection = elements.memorySection;
+
+  if (isJigsawInitialized) return;
+  isJigsawInitialized = true;
 
   // Initialize Drag & Drop
   initDragAndDrop();
@@ -684,10 +689,13 @@ export function transitionToJigsaw() {
   if (!memorySection || memorySection.classList.contains("hidden")) return;
   if (!isAtGameRoute()) return;
 
-  // Reset history stacks for the new session
-  undoStack = [];
-  redoStack = [];
-  updateHistoryButtons();
+  // v1.4.18: History stacks are now managed in initJigsaw and resumeJigsawState
+  // to allow persistence across session refreshes.
+
+  // v1.4.18: Capture initial state if not already set (discovery order)
+  if (!initialJigsawState) {
+    captureInitialJigsawState();
+  }
 
   console.log("Transitioning to Jigsaw Stage...");
   const lang = getCurrentLang();
@@ -791,15 +799,9 @@ export function transitionToJigsaw() {
           .querySelectorAll(".collected-piece")
           .forEach((p) => (p.style.transition = ""));
 
-        // v1.7.8: Initialize Jigsaw History AFTER transition completes
-        undoStack = [];
-        redoStack = [];
-        saveStateToUndo();
-        initialJigsawState = {
-          board: [-1, -1, -1, -1, 4, -1, -1, -1, -1],
-          panel: [0, 1, 2, 3, 5, 6, 7, 8],
-          locked: [],
-        };
+        // v1.7.8: Initialize Jigsaw History moved to initJigsaw/resume
+        updateHistoryButtons();
+        // initialJigsawState is already captured at the start of transitionToJigsaw
       });
     } else {
       memorySection.classList.add("jigsaw-mode");
@@ -808,15 +810,8 @@ export function transitionToJigsaw() {
       deselectPiece(); // Ensure clear state
       fitCollectedPieces(); // Force layout update
 
-      // v1.9.9d: Initialize History and Initial State in fallback
-      undoStack = [];
-      redoStack = [];
-      saveStateToUndo();
-      initialJigsawState = {
-        board: [-1, -1, -1, -1, 4, -1, -1, -1, -1],
-        panel: [0, 1, 2, 3, 5, 6, 7, 8],
-        locked: [],
-      };
+      // v1.9.9d: Initialize History and Initial State moved to initJigsaw/resume
+      updateHistoryButtons();
     }
   }
 
@@ -1157,6 +1152,15 @@ export function handlePointerUp(e) {
   }, 100);
 }
 
+/**
+ * Captures the current board/panel state as the 'original' state for Reset.
+ * Must be called when all pieces are in the panel (start of Jigsaw stage).
+ */
+export function captureInitialJigsawState() {
+  console.log("[Jigsaw] Capturing True Initial State...");
+  initialJigsawState = captureCurrentState();
+}
+
 function togglePieceLock(slot) {
   if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
   if (
@@ -1462,7 +1466,7 @@ export function syncJigsawState() {
     return content ? parseInt(content.dataset.chunkIndex) : -1;
   });
 
-  gameManager.updateProgress("jigsaw", { placedChunks });
+  gameManager.updateProgress("jigsaw", { placedChunks, undoStack, redoStack });
 }
 
 /**
@@ -1555,11 +1559,20 @@ export function resumeJigsawState() {
     }, 500);
   }
 
+  if (state.jigsaw?.undoStack) {
+    undoStack = [...state.jigsaw.undoStack];
+  } else {
+    undoStack = [];
+  }
+
+  if (state.jigsaw?.redoStack) {
+    redoStack = [...state.jigsaw.redoStack];
+  } else {
+    redoStack = [];
+  }
+
   // v1.7.8: Initialize History Stack on Resume
-  undoStack = [];
-  redoStack = [];
-  saveStateToUndo();
-  initialJigsawState = undoStack[0];
+  // We already restored stacks from state above.
   updateHistoryButtons();
 }
 
@@ -1616,6 +1629,10 @@ function saveStateToUndo() {
 
   redoStack = []; // New action clears redo
   updateHistoryButtons();
+
+  // v1.4.18: Persist history immediately
+  syncJigsawState();
+  gameManager.save();
 }
 
 function updateHistoryButtons() {
@@ -1633,6 +1650,10 @@ function undo() {
   const previous = undoStack.pop();
   applyHistoryState(previous);
   updateHistoryButtons();
+
+  // v1.4.18: Persist history immediately
+  syncJigsawState();
+  gameManager.save();
 }
 
 function redo() {
@@ -1643,6 +1664,10 @@ function redo() {
   const next = redoStack.pop();
   applyHistoryState(next);
   updateHistoryButtons();
+
+  // v1.4.18: Persist history immediately
+  syncJigsawState();
+  gameManager.save();
 }
 
 function applyHistoryState(state) {

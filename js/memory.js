@@ -7,6 +7,7 @@ import {
   createPanelPlaceholders,
   fitCollectedPieces, // imported if we want to expose it or use it during resize loop?
   handlePieceSelect,
+  captureInitialJigsawState,
   checkBoardCompletion,
 } from "./jigsaw.js?v=1.4.16";
 import { provideHint as provideSudokuHint } from "./sudoku.js?v=1.4.16";
@@ -233,6 +234,7 @@ export async function resumeToStage(stage) {
   // 4. Hydrate Previous Stages
   // Even if we are in Sudoku, we need Jigsaw pieces in slots / Memory pieces in panel
   resumeMemoryState();
+  captureInitialJigsawState();
 
   if (stage === "jigsaw") {
     const m = await import("./jigsaw.js?v=1.4.16");
