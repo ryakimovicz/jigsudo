@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js?v=1.4.16";
+import { CONFIG } from "./config.js?v=1.4.17";
 
 class SoundManager {
   constructor() {
