@@ -84,6 +84,11 @@ export function initMemoryGame() {
 
       // Close when clicking outside
       document.addEventListener("click", () => {
+        if (
+          document.getElementById("tutorial-modal")?.classList.contains("hidden") ===
+          false
+        )
+          return;
         titleContainer.classList.remove("active");
       });
     }

@@ -203,8 +203,8 @@ export function initSudoku() {
 
   // Global Click Listener for "Outside Unlock"
   document.addEventListener("click", (e) => {
-    // If nothing locked, ignore - REMOVED so we can deselect cells too!
-    // if (!lockedNumber) return;
+    // If tutorial is active, ignore
+    if (document.getElementById("tutorial-modal")?.classList.contains("hidden") === false) return;
 
     // If click is inside board, controls, or specific buttons, ignore
     const isControl = e.target.closest(".sudoku-controls");
@@ -236,7 +236,10 @@ export function initSudoku() {
     if (!gameSection || !gameSection.classList.contains("sudoku-mode")) return;
 
     // Ignore if modal is open
-    if (!document.getElementById("confirm-modal")?.classList.contains("hidden"))
+    if (
+      !document.getElementById("confirm-modal")?.classList.contains("hidden") ||
+      document.getElementById("tutorial-modal")?.classList.contains("hidden") === false
+    )
       return;
 
     const key = e.key;

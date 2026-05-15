@@ -88,7 +88,7 @@ export function initJigsaw(elements) {
     const isGameElement = e.target.closest(
       ".collected-piece, .sudoku-chunk-slot",
     );
-    if (!isGameElement) {
+    if (!isGameElement || document.getElementById("tutorial-modal")?.classList.contains("hidden") === false) {
       deselectPiece();
     }
   });
@@ -533,7 +533,13 @@ export function handleSlotClick_v2(slotIndex) {
   if (isDragging) return;
 
   // GUARD: Only in Jigsaw Mode
-  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
+  if (
+    window.isGameTransitioning ||
+    boardContainer?.classList.contains("board-complete") ||
+    document.getElementById("tutorial-modal")?.classList.contains("hidden") ===
+      false
+  )
+    return;
 
   const slot = boardContainer.querySelector(`[data-slot-index="${slotIndex}"]`);
   if (!slot) return;
@@ -789,7 +795,11 @@ export function transitionToJigsaw() {
         undoStack = [];
         redoStack = [];
         saveStateToUndo();
-        initialJigsawState = undoStack[0];
+        initialJigsawState = {
+          board: [-1, -1, -1, -1, 4, -1, -1, -1, -1],
+          panel: [0, 1, 2, 3, 5, 6, 7, 8],
+          locked: [],
+        };
       });
     } else {
       memorySection.classList.add("jigsaw-mode");
@@ -797,6 +807,16 @@ export function transitionToJigsaw() {
       gameManager.updateProgress("progress", { currentStage: "jigsaw" });
       deselectPiece(); // Ensure clear state
       fitCollectedPieces(); // Force layout update
+
+      // v1.9.9d: Initialize History and Initial State in fallback
+      undoStack = [];
+      redoStack = [];
+      saveStateToUndo();
+      initialJigsawState = {
+        board: [-1, -1, -1, -1, 4, -1, -1, -1, -1],
+        panel: [0, 1, 2, 3, 5, 6, 7, 8],
+        locked: [],
+      };
     }
   }
 
@@ -827,7 +847,13 @@ export function handlePointerDown(e) {
     return;
 
   // v1.9.9c: Lock interaction if transitioning or complete
-  if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
+  if (
+    window.isGameTransitioning ||
+    boardContainer?.classList.contains("board-complete") ||
+    document.getElementById("tutorial-modal")?.classList.contains("hidden") ===
+      false
+  )
+    return;
 
   const target = e.target.closest(".collected-piece, .sudoku-chunk-slot");
   if (!target) return;
@@ -1445,9 +1471,12 @@ export function syncJigsawState() {
 export function resetJigsaw() {
   if (window.isGameTransitioning || boardContainer?.classList.contains("board-complete")) return;
   if (!initialJigsawState) {
-    console.warn("[Jigsaw] No initial state captured. Resetting manually.");
-    // Fallback to old reset logic if needed, but initialJigsawState should be there
-    return;
+    console.warn("[Jigsaw] No initial state captured. Resetting to default.");
+    initialJigsawState = {
+      board: [-1, -1, -1, -1, 4, -1, -1, -1, -1],
+      panel: [0, 1, 2, 3, 5, 6, 7, 8],
+      locked: [],
+    };
   }
 
   // First, save current state to undo stack before resetting

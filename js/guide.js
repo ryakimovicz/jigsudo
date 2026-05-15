@@ -1785,7 +1785,14 @@ function initTutorialDragAndDrop() {
   document.addEventListener("pointerup", handlePointerUp, { passive: false });
 }
 
+function isTutorialActive() {
+  const modal = document.getElementById("tutorial-modal");
+  return modal && !modal.classList.contains("hidden");
+}
+
 function handlePointerDown(e) {
+  if (!isTutorialActive()) return;
+
   // Only Mouse or Pen (Except for Jigsaw/Search stage which allows touch for locking/selecting)
   if (
     e.pointerType === "touch" &&
@@ -1865,6 +1872,7 @@ function addCellToSearchSelection(cell) {
 }
 
 function handlePointerMove(e) {
+  if (!isTutorialActive()) return;
   if (currentTutorialStage === 2) {
     if (potentialDragTarget && !dragClone) {
       const dx = Math.abs(e.clientX - dragStartX);
@@ -1977,6 +1985,7 @@ function startDragging(e) {
 }
 
 function handlePointerUp(e) {
+  if (!isTutorialActive()) return;
   clearTimeout(longPressTimer); // Cancel lock timer
   if (currentTutorialStage === 2) {
     potentialDragTarget = null;
