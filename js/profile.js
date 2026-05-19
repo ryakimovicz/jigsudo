@@ -1055,8 +1055,10 @@ function renderCalendar(history = {}, ownHistory = null, fName = "Ellos") {
       }
       
       if (dayData) {
+        const isLegacyWin = !dayData.original && !dayData.best && dayData.status === "won";
+        
         // Rules: Green if won on day 1, Yellow if started on day 1 but not won.
-        if (dayData.original && dayData.original.won === true) {
+        if ((dayData.original && dayData.original.won === true) || isLegacyWin) {
           dayEl.classList.add("win");
         } else if (dayData.original && dayData.original.won !== true) {
           dayEl.classList.add("loss");

@@ -404,7 +404,9 @@ function renderHistoryCalendar(history = {}) {
       // Check History Status
       if (dayData) {
         // 1. BACKGROUND COLORS (Original performance anchor)
-        if (dayData.originalWon) {
+        const isLegacyWin = !dayData.hasOriginal && dayData.status === "won";
+        
+        if (dayData.originalWon || isLegacyWin) {
           // Green: Won on the original day
           dayEl.classList.add("win");
         } else if (dayData.hasOriginal && !dayData.originalWon) {

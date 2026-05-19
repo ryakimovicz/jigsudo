@@ -14,7 +14,7 @@ import { masterLock } from "./lock.js?v=1.4.17";
 export class GameManager {
   constructor() {
     this.currentSeed = getDailySeed();
-    this.ready = this.prepareDaily(); // Initial Load
+    // moved prepareDaily to after variable initialization
     this.cloudSaveTimeout = null;
     this.isWiping = false;
     this.isReplay = false;
@@ -48,6 +48,8 @@ export class GameManager {
 
     // v1.9.0: Persistent Reset Acknowledgement (Prevents reload loops)
     this._lastProcessedWipe = parseInt(localStorage.getItem("jigsudo_last_wipe_ack") || "0");
+
+    this.ready = this.prepareDaily(); // Initial Load
 
     // Listen for tab focus/visibility to force save or handle day transitions
     document.addEventListener("visibilitychange", async () => {
@@ -2973,6 +2975,10 @@ export class GameManager {
       // 1. Ensure RP reset logic (daily/monthly) runs BEFORE loading stats into local variable
       await this._ensureStats();
 
+      // v1.4.18: Award the final stage point before finalizing the score calculation
+      // This fixes the 1.0 point mismatch between the local ranking table and the victory screen.
+      await this.awardStagePoints("code");
+
       // RE-FETCH stats after ensureStats in case the healer replaced the object reference
       let stats = this.stats;
       if (!stats.history) stats.history = {};
@@ -3564,7 +3570,7 @@ export class GameManager {
 
     dates.forEach((dateStr) => {
       const h = stats.history[dateStr];
-      const isOriginal = !!h.original;
+      const isOriginal = !!h.original || (!h.original && !h.best);
 
       const hTime = Number(h.totalTime || 0);
       const hScore = Number(h.score || 0); 
