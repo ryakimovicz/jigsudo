@@ -1,9 +1,9 @@
-import { translations } from "./translations.js?v=1.4.19";
-import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.19";
-import { getCurrentUser } from "./auth.js?v=1.4.19";
-import { getRankData } from "./ranks.js?v=1.4.19";
-import { formatJigsudoDate } from "./utils/time.js?v=1.4.19";
-import { masterLock } from "./lock.js?v=1.4.19";
+import { translations } from "./translations.js?v=1.4.20";
+import { getCurrentLang, updateTexts } from "./i18n.js?v=1.4.20";
+import { getCurrentUser } from "./auth.js?v=1.4.20";
+import { getRankData } from "./ranks.js?v=1.4.20";
+import { formatJigsudoDate } from "./utils/time.js?v=1.4.20";
+import { masterLock } from "./lock.js?v=1.4.20";
  
 let lastVictoryStats = null;
 let lastVictoryIsHome = false;
@@ -205,8 +205,8 @@ export async function showUpdateAlert(isSticky = false) {
 
   if (!modal || !titleEl || !msgEl || !closeBtn) return;
 
-  const { translations } = await import("./translations.js?v=1.4.19");
-  const { getCurrentLang } = await import("./i18n.js?v=1.4.19");
+  const { translations } = await import("./translations.js?v=1.4.20");
+  const { getCurrentLang } = await import("./i18n.js?v=1.4.20");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -251,8 +251,8 @@ export async function showUpdateAlert(isSticky = false) {
  * Stage 1: Non-intrusive Toast for initial update attempt
  */
 export async function showUpdateToast() {
-  const { translations } = await import("./translations.js?v=1.4.19");
-  const { getCurrentLang } = await import("./i18n.js?v=1.4.19");
+  const { translations } = await import("./translations.js?v=1.4.20");
+  const { getCurrentLang } = await import("./i18n.js?v=1.4.20");
   const lang = getCurrentLang();
   const t = translations[lang] || translations["es"];
 
@@ -313,14 +313,14 @@ export async function showVictorySummary(stats, isHome = false) {
       if (!isHome) {
         // 1. Refresh Rankings immediately if possible (via home logic listener)
         try {
-          const { clearRankingCache } = await import("./ranking.js?v=1.4.19");
+          const { clearRankingCache } = await import("./ranking.js?v=1.4.20");
           clearRankingCache();
         } catch (err) {
           console.warn("Failed to clear ranking cache:", err);
         }
 
         // 2. Navigate based on mode
-        const { router } = await import("./router.js?v=1.4.19");
+        const { router } = await import("./router.js?v=1.4.20");
         if (stats.isReplay && stats.date) {
           // stats.date is YYYY-MM-DD
           const [y, m] = stats.date.split("-");
@@ -411,7 +411,7 @@ async function refreshVictorySummaryUI(stats, isHome) {
     descEl.dataset.i18n = "victory_desc";
   }
 
-  const { updateTexts } = await import("./i18n.js?v=1.4.19");
+  const { updateTexts } = await import("./i18n.js?v=1.4.20");
   updateTexts();
 }
 

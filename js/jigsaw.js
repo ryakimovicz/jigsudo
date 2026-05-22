@@ -1,12 +1,12 @@
-import { CONFIG } from "./config.js?v=1.4.19";
-import { gameManager } from "./game-manager.js?v=1.4.19";
-import { translations } from "./translations.js?v=1.4.19";
-import { transitionToSudoku } from "./sudoku.js?v=1.4.19";
-import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.4.19";
-import { getConflicts } from "./sudoku-logic.js?v=1.4.19";
-import { getCurrentLang } from "./i18n.js?v=1.4.19";
-import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.19";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.19";
+import { CONFIG } from "./config.js?v=1.4.20";
+import { gameManager } from "./game-manager.js?v=1.4.20";
+import { translations } from "./translations.js?v=1.4.20";
+import { transitionToSudoku } from "./sudoku.js?v=1.4.20";
+import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.4.20";
+import { getConflicts } from "./sudoku-logic.js?v=1.4.20";
+import { getCurrentLang } from "./i18n.js?v=1.4.20";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.20";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.20";
 
 // DOM Elements Reference
 let boardContainer;
@@ -1490,7 +1490,7 @@ export function resetJigsaw() {
   applyHistoryState(initialJigsawState);
 
   // Optional: show a subtle toast
-  // const { translations } = await import("./translations.js?v=1.4.19");
+  // const { translations } = await import("./translations.js?v=1.4.20");
   // const lang = getCurrentLang();
   // showToast(translations[lang].toast_jigsaw_reset || "Tablero reiniciado");
 }
