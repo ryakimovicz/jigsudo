@@ -3225,22 +3225,30 @@ export class GameManager {
                 console.log(`[Referee] Bonus confirmed: ${stats.lastBonus}. Server handles global totals.`);
               }
 
-              // v1.4.8: REFINED ATOMIC UPDATE
-              // Base points (6.0) are already added stage-by-stage in awardStagePoints.
-              // Here we ONLY add the time bonus to complete the session score.
+              // v1.6.16: Resilient Atomic Sync & Drift Correction
+              // If client-side dailyRP got reverted due to synchronization lag,
+              // we calculate the missing base points and add them to all accumulators.
+              const targetBasePoints = Number((6.0 - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+              const currentBasePoints = Number((stats.dailyRP || 0).toFixed(3));
+              
+              // Only consider missing base points if we are NOT in a late completion
+              // and ensure we don't have negative missing points due to float precision.
+              const missingBasePoints = (!isLateCompletion && targetBasePoints > currentBasePoints)
+                ? Number((targetBasePoints - currentBasePoints).toFixed(3))
+                : 0;
+
               const atomBonus = Number((stats.lastBonus || 0).toFixed(3));
+              const totalAddition = Number((atomBonus + missingBasePoints).toFixed(3));
 
               if (!isLateCompletion) {
-                stats.dailyRP = Number(((stats.dailyRP || 0) + atomBonus).toFixed(3));
+                stats.dailyRP = Number((6.0 + atomBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
+              } else {
+                stats.lastDayRP = Number((6.0 + atomBonus - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
               }
               
-              // stats.monthlyRP and stats.totalRP were already incremented by base points 
-              // during stages. Now we add the bonus to match the server's global update.
-              stats.monthlyRP = Number(((stats.monthlyRP || 0) + atomBonus).toFixed(3));
-              stats.totalRP = Number(((stats.totalRP || 0) + atomBonus).toFixed(3));
-              
-              // Career RP (Performance tracking)
-              stats.careerRP = Number(((stats.careerRP || 0) + atomBonus).toFixed(3));
+              stats.monthlyRP = Number(((stats.monthlyRP || 0) + totalAddition).toFixed(3));
+              stats.totalRP = Number(((stats.totalRP || 0) + totalAddition).toFixed(3));
+              stats.careerRP = Number(((stats.careerRP || 0) + totalAddition).toFixed(3));
               
               // v1.4.8: Finalizing the perfect score (Gross) and total bonuses
               // atomBonus (from lastBonus) is already the gross/perfect bonus.
