@@ -1,15 +1,15 @@
-import { getDailySeed } from "./utils/random.js?v=1.4.20";
+import { getDailySeed } from "./utils/random.js?v=1.4.21";
 // Local generation removed per user request (Cloud Only)
 import {
   generateSearchSequences,
   countSequenceOccurrences,
-} from "./search-gen.js?v=1.4.20";
-import { CONFIG } from "./config.js?v=1.4.20";
-import { calculateRP, getRankData, SCORING } from "./ranks.js?v=1.4.20";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.20";
-import { encryptData, decryptData } from "./utils/crypto.js?v=1.4.20";
-import { getJigsudoDateString, getJigsudoYearMonth, getJigsudoDayDiff } from "./utils/time.js?v=1.4.20";
-import { masterLock } from "./lock.js?v=1.4.20";
+} from "./search-gen.js?v=1.4.21";
+import { CONFIG } from "./config.js?v=1.4.21";
+import { calculateRP, getRankData, SCORING } from "./ranks.js?v=1.4.21";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.21";
+import { encryptData, decryptData } from "./utils/crypto.js?v=1.4.21";
+import { getJigsudoDateString, getJigsudoYearMonth, getJigsudoDayDiff } from "./utils/time.js?v=1.4.21";
+import { masterLock } from "./lock.js?v=1.4.21";
 
 export class GameManager {
   constructor() {
@@ -352,13 +352,13 @@ export class GameManager {
     this.stats.lastMonthlyUpdate = dateStr.substring(0, 7);
     // lastPenaltyDate is now persistent.
 
-    const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+    const { getCurrentUser } = await import("./auth.js?v=1.4.21");
     const user = getCurrentUser();
 
     if (user && !user.isAnonymous) {
       console.log("[Referee] Registering game start and maintenance check on server...");
       try {
-        const { callJigsudoFunction } = await import("./db.js?v=1.4.20");
+        const { callJigsudoFunction } = await import("./db.js?v=1.4.21");
         const result = await callJigsudoFunction("startJigsudoSession", {
           seed: this.currentSeed,
           sessionId: this.localSessionId,
@@ -384,7 +384,7 @@ export class GameManager {
 
     // v1.4.6: Proactively initialize History record
     if (user && !user.isAnonymous) {
-      import("./db.js?v=1.4.20").then(m => m.initializeHistoryDocument(user.uid, this.currentSeed));
+      import("./db.js?v=1.4.21").then(m => m.initializeHistoryDocument(user.uid, this.currentSeed));
     } else {
       // Local Guest History
       if (!this.stats.history) this.stats.history = {};
@@ -836,7 +836,7 @@ export class GameManager {
       const seed = this.currentSeed;
 
       // Dynamic import to avoid circular dependencies if any
-      const { generateSearchSequences } = await import("./search-gen.js?v=1.4.20");
+      const { generateSearchSequences } = await import("./search-gen.js?v=1.4.21");
       const sequences = generateSearchSequences(solution, seed);
 
       if (sequences && sequences.length > 0) {
@@ -929,7 +929,7 @@ export class GameManager {
 
   async forceCloudSave(isWonNow = false, isPenalty = false, isReset = false) {
     if (this.isWiping && !isReset) return;
-    const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+    const { getCurrentUser } = await import("./auth.js?v=1.4.21");
     const user = getCurrentUser();
     if (this.isWiping && !isReset) {
       console.log("[GM] Wiping in progress. Save blocked.");
@@ -945,8 +945,8 @@ export class GameManager {
       return;
     }
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.4.20");
-      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.4.20");
+      const { getCurrentUser } = await import("./auth.js?v=1.4.21");
+      const { saveUserProgress, saveUserStats } = await import("./db.js?v=1.4.21");
 
       let uid = null;
       const user = getCurrentUser();
@@ -1214,8 +1214,8 @@ export class GameManager {
 
     // 3. Re-sync with cloud (Awaited to avoid race condition on reload)
     try {
-      const { getCurrentUser } = await import("./auth.js?v=1.4.20");
-      const { showNotification } = await import("./ui.js?v=1.4.20");
+      const { getCurrentUser } = await import("./auth.js?v=1.4.21");
+      const { showNotification } = await import("./ui.js?v=1.4.21");
       const user = getCurrentUser();
 
       if (user && !user.isAnonymous) {
@@ -1223,7 +1223,7 @@ export class GameManager {
         console.log("[GameManager] Re-syncing cloud...");
         
         // v2.2.1: Nuclear Wipe - Delete the history record from the subcollection too
-        const { deleteHistoryEntry } = await import("./db.js?v=1.4.20");
+        const { deleteHistoryEntry } = await import("./db.js?v=1.4.21");
         await deleteHistoryEntry(user.uid, this.currentSeed);
         
         await this.forceCloudSave(false, false, true);
@@ -1505,8 +1505,8 @@ export class GameManager {
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-functions.js");
     const functions = getFunctions();
     const submitStageResult = httpsCallable(functions, "submitStageResult");
-    const { getCurrentUser } = await import("./auth.js?v=1.4.20");
-    const { saveUserStats } = await import("./db.js?v=1.4.20");
+    const { getCurrentUser } = await import("./auth.js?v=1.4.21");
+    const { saveUserStats } = await import("./db.js?v=1.4.21");
 
     while (this.validationQueue.length > 0) {
       const task = this.validationQueue[0];
@@ -1549,8 +1549,8 @@ export class GameManager {
           console.warn("[Referee] Server rejected stage validation:", result.data);
           
           // v1.6.0: Automated Fraud Reporting
-          const { sendRefereeReport } = await import("./db.js?v=1.4.20");
-          const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+          const { sendRefereeReport } = await import("./db.js?v=1.4.21");
+          const { getCurrentUser } = await import("./auth.js?v=1.4.21");
           const user = getCurrentUser();
           
           sendRefereeReport({
@@ -1576,8 +1576,8 @@ export class GameManager {
           console.warn(`[Referee] Server REJECTED validation for ${task.stage}: ${error.message}. Skipping to unclog queue.`);
           
           // v1.6.0: Report Logic Errors too (The "Too Fast" etc)
-          const { sendRefereeReport } = await import("./db.js?v=1.4.20");
-          const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+          const { sendRefereeReport } = await import("./db.js?v=1.4.21");
+          const { getCurrentUser } = await import("./auth.js?v=1.4.21");
           const user = getCurrentUser();
 
           sendRefereeReport({
@@ -1663,7 +1663,7 @@ export class GameManager {
 
     // 0. Temporal Reconciliation (v1.5.30: Absolute Truth Architecture)
     const today = getJigsudoDateString();
-    const { getDateStringFromSeed } = await import("./utils/time.js?v=1.4.20");
+    const { getDateStringFromSeed } = await import("./utils/time.js?v=1.4.21");
     const seedDate = getDateStringFromSeed(this.currentSeed);
     const isLateCompletion = seedDate < today;
     const currentMonth = getJigsudoYearMonth();
@@ -1752,10 +1752,10 @@ export class GameManager {
 
     // 4. Persistence
     if (!skipPersistence && !this._processingWin) {
-      const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+      const { getCurrentUser } = await import("./auth.js?v=1.4.21");
       const user = getCurrentUser();
       if (user && !user.isAnonymous) {
-        const { saveUserStats } = await import("./db.js?v=1.4.20");
+        const { saveUserStats } = await import("./db.js?v=1.4.21");
         
         // v1.5.31: Robust Penalty Detection
         // If there are peaks errors, we MUST treat this as an intentional penalty 
@@ -1921,7 +1921,7 @@ export class GameManager {
 
         // 3. Sequential Simulation Loop (v1.6.3: Transition Integrity)
         // We step through each day missed to apply penalties BEFORE monthly resets.
-        const { getRankData } = await import("./ranks.js?v=1.4.20");
+        const { getRankData } = await import("./ranks.js?v=1.4.21");
         let lastProcessedMonth = lastCheck.substring(0, 7);
 
         for (let i = 1; i <= diffDays; i++) {
@@ -2125,7 +2125,7 @@ export class GameManager {
    */
   async checkMaintenance() {
     try {
-      const { callJigsudoFunction } = await import("./db.js?v=1.4.20");
+      const { callJigsudoFunction } = await import("./db.js?v=1.4.21");
       await callJigsudoFunction("startJigsudoSession", { onlyMaintenance: true });
       console.log("[Maintenance] Proactive check triggered successfully.");
     } catch (err) {
@@ -2136,11 +2136,11 @@ export class GameManager {
   async ensureSessionStarted(markIntent = false) {
     if (this.isReplay) return; // v1.6.11: Replays are local-only, do not mark intent or anchor sessions.
 
-    const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+    const { getCurrentUser } = await import("./auth.js?v=1.4.21");
     const user = getCurrentUser();
     if (user && !user.isAnonymous) {
         try {
-            const { callJigsudoFunction } = await import("./db.js?v=1.4.20");
+            const { callJigsudoFunction } = await import("./db.js?v=1.4.21");
             const result = await callJigsudoFunction("startJigsudoSession", {
                 sessionId: this.localSessionId,
                 markIntent: markIntent // v1.6.10: Decoupled takeover from intent
@@ -2150,7 +2150,7 @@ export class GameManager {
             // v1.6.6: Explicit Root Update (Surgical)
             // Use updateDoc directly to avoid circular dependency with saveUserStats during init.
             const { doc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js");
-            const { db } = await import("./firebase-config.js?v=1.4.20");
+            const { db } = await import("./firebase-config.js?v=1.4.21");
             const userRef = doc(db, "users", user.uid);
             await updateDoc(userRef, { 
                 activeSessionId: this.localSessionId,
@@ -2294,7 +2294,7 @@ export class GameManager {
         console.log("[Sync] NUCLEAR SHIELD ACTIVE (Stats-only). Adoption blocked.");
         return;
     }
-    const { isAtGameRoute } = await import("./utils/route-utils.js?v=1.4.20");
+    const { isAtGameRoute } = await import("./utils/route-utils.js?v=1.4.21");
 
     if (this._isRestoring) return;
 
@@ -2719,7 +2719,7 @@ export class GameManager {
         // 3. Force Push to Cloud
         await this.forceCloudSave();
         // 4. (Optional) Toast
-        const { showToast } = await import("./ui.js?v=1.4.20");
+        const { showToast } = await import("./ui.js?v=1.4.21");
         showToast("Versión local conservada y subida.");
       };
     }
@@ -2735,8 +2735,8 @@ export class GameManager {
 
         try {
           const { fetchLatestUserData, triggerRemoteSave } =
-            await import("./db.js?v=1.4.20");
-          const { getCurrentUser } = await import("./auth.js?v=1.4.20");
+            await import("./db.js?v=1.4.21");
+          const { getCurrentUser } = await import("./auth.js?v=1.4.21");
           const user = getCurrentUser();
 
           if (user) {
@@ -2909,7 +2909,7 @@ export class GameManager {
 
     try {
       // v1.2.2: Access dynamic translations correctly
-      const { translations: tData } = await import("./translations.js?v=1.4.20");
+      const { translations: tData } = await import("./translations.js?v=1.4.21");
       if (tData && tData[lang]) {
         t = { ...t, ...tData[lang] };
       }
@@ -2989,7 +2989,7 @@ export class GameManager {
       const seedStr = this.currentSeed.toString();
 
       // v1.4.0: Standardized date derivation for consistency across all stats keys
-      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.4.20");
+      const { getDateStringFromSeed } = await import("./utils/time.js?v=1.4.21");
       const seedDate = getDateStringFromSeed(this.currentSeed);
       const puzzleDate = seedDate; // Alias used for history-specific keys
       
@@ -3074,9 +3074,9 @@ export class GameManager {
       if (!this.isReplay && isAlreadyWon && today === stats.lastDailyUpdate && !isLateCompletion) {
       }
 
-      const { getCurrentUser } = await import("./auth.js?v=1.4.20");
-      const { calculateTimeBonus } = await import("./ranks.js?v=1.4.20");
-      const { callJigsudoFunction, saveUserStats, saveHistoryEntry } = await import("./db.js?v=1.4.20");
+      const { getCurrentUser } = await import("./auth.js?v=1.4.21");
+      const { calculateTimeBonus } = await import("./ranks.js?v=1.4.21");
+      const { callJigsudoFunction, saveUserStats, saveHistoryEntry } = await import("./db.js?v=1.4.21");
       
       const user = getCurrentUser();
       const timeBonus = calculateTimeBonus(Math.floor(totalTimeMs / 1000));
@@ -3153,7 +3153,7 @@ export class GameManager {
                     }
                 });
 
-                const { saveUserProgress } = await import("./db.js?v=1.4.20");
+                const { saveUserProgress } = await import("./db.js?v=1.4.21");
                 cloudState = this._serializeState(this.state);
                 await saveUserProgress(user.uid, cloudState, this.state.meta);
             }
@@ -3451,7 +3451,7 @@ export class GameManager {
 
       // --- 5. CLOUD SYNC ---
       if (user && !user.isAnonymous) {
-        const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.4.20");
+        const { getJigsudoDateString, getJigsudoYearMonth } = await import("./utils/time.js?v=1.4.21");
         
         // Only mark today as updated if this was the ORIGINAL Daily win of the session.
         if (isOriginalDay) {
@@ -3471,10 +3471,10 @@ export class GameManager {
       await this.forceCloudSave();
 
       // --- 6. UX & NOTIFICATION ---
-      const { stopTimer } = await import("./timer.js?v=1.4.20");
-      const { showToast } = await import("./ui.js?v=1.4.20");
-      const { getCurrentLang } = await import("./i18n.js?v=1.4.20");
-      const { translations } = await import("./translations.js?v=1.4.20");
+      const { stopTimer } = await import("./timer.js?v=1.4.21");
+      const { showToast } = await import("./ui.js?v=1.4.21");
+      const { getCurrentLang } = await import("./i18n.js?v=1.4.21");
+      const { translations } = await import("./translations.js?v=1.4.21");
       
       stopTimer();
       const lang = getCurrentLang() || "es";
