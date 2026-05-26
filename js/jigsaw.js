@@ -1483,16 +1483,46 @@ export function resetJigsaw() {
     };
   }
 
+  // 1. Capture the current active state
+  const current = captureCurrentState();
+
+  // 2. Identify locked slots and pieces
+  const lockedSlots = new Set(current.locked); // Includes user-locked slots
+  lockedSlots.add(4); // Slot 4 (center) is always locked
+
+  const targetBoard = current.board.map((chunkIndex, slotIndex) => {
+    if (lockedSlots.has(slotIndex) && chunkIndex !== -1) {
+      return chunkIndex;
+    }
+    return -1;
+  });
+
+  const lockedPieces = new Set();
+  targetBoard.forEach((pieceIdx) => {
+    if (pieceIdx !== -1) {
+      lockedPieces.add(pieceIdx);
+    }
+  });
+
+  // 3. Reconstruct panel based on initial panel layout, leaving locked pieces out
+  const targetPanel = initialJigsawState.panel.map((piece) => {
+    if (piece === -1 || lockedPieces.has(piece)) {
+      return -1;
+    }
+    return piece;
+  });
+
+  const targetResetState = {
+    board: targetBoard,
+    panel: targetPanel,
+    locked: [...current.locked] // Keep user-locked slots locked
+  };
+
   // First, save current state to undo stack before resetting
   saveStateToUndo();
 
-  // Apply the initial state
-  applyHistoryState(initialJigsawState);
-
-  // Optional: show a subtle toast
-  // const { translations } = await import("./translations.js?v=1.4.20");
-  // const lang = getCurrentLang();
-  // showToast(translations[lang].toast_jigsaw_reset || "Tablero reiniciado");
+  // Apply the computed reset state
+  applyHistoryState(targetResetState);
 }
 
 /**
