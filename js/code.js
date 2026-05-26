@@ -21,6 +21,10 @@ let maxUnlockedLevel = 3; // Tracks the highest level shown to player
 let isMultipressBlocked = false; // Prevent debug overlapping
 let glitchInterval = null; // Track victory glitch interval
 let victoryPromise = null; // v1.2.6: Track background saving
+let codeClickHandlerRef = null;
+let codeTouchStartHandlerRef = null;
+let routeCleanupRegistered = false;
+let lastInputTime = 0;
 
 // ... (In initCode or reset)
 export function initCode() {
@@ -173,20 +177,47 @@ function showInputHint() {
   // Optional: cursor change or slight glow to indicate "Your turn"
 }
 
+export function detachCodeListeners() {
+  const board = document.getElementById("memory-board");
+  if (board) {
+    if (codeClickHandlerRef) {
+      board.removeEventListener("click", codeClickHandlerRef);
+    }
+    if (codeTouchStartHandlerRef) {
+      board.removeEventListener("touchstart", codeTouchStartHandlerRef);
+    }
+  }
+  codeClickHandlerRef = null;
+  codeTouchStartHandlerRef = null;
+}
+
+function handleRouteChangeCleanup(e) {
+  if (e.detail.route !== "game-section") {
+    detachCodeListeners();
+  }
+}
+
 function attachCodeListeners() {
   const board = document.getElementById("memory-board");
-  // Use delegation but specific to code-cell
-  board.addEventListener("click", handleCodeClick);
-  board.addEventListener(
-    "touchstart",
-    function (e) {
-      if (e.target.closest(".code-cell")) {
-        e.preventDefault();
-        handleCodeClick(e);
-      }
-    },
-    { passive: false },
-  );
+  if (!board) return;
+
+  detachCodeListeners(); // Clean up first
+
+  codeClickHandlerRef = handleCodeClick;
+  codeTouchStartHandlerRef = function (e) {
+    if (e.target.closest(".code-cell")) {
+      e.preventDefault();
+      handleCodeClick(e);
+    }
+  };
+
+  board.addEventListener("click", codeClickHandlerRef);
+  board.addEventListener("touchstart", codeTouchStartHandlerRef, { passive: false });
+
+  if (!routeCleanupRegistered) {
+    window.addEventListener("routeChanged", handleRouteChangeCleanup);
+    routeCleanupRegistered = true;
+  }
 }
 
 function playSequence() {
@@ -252,6 +283,12 @@ function playSequence() {
 // ...
 
 function handleCodeClick(e) {
+  const now = Date.now();
+  if (now - lastInputTime < 250) {
+    return;
+  }
+  lastInputTime = now;
+
   const cell = e.target.closest(".code-cell");
   if (!cell) return;
 

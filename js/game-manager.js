@@ -524,7 +524,7 @@ export class GameManager {
     this.currentSeed = requestedSeed;
     this._ensureStats();
     const dateStrToday = `${parts[0]}-${parts[1]}-${parts[2]}`;
-    const isAlreadyWon = this.stats.history && this.stats.history[dateStrToday]?.status === "won";
+    const isAlreadyWon = this.stats.history && (this.stats.history[dateStrToday]?.status === "won" || this.stats.history[dateStrToday]?.original?.won === true || this.stats.history[dateStrToday]?.best?.won === true || this.stats.history[dateStrToday]?.won === true);
 
     this.isReplay = requestedSeed !== liveSeed || isAlreadyWon;
 
@@ -1094,7 +1094,7 @@ export class GameManager {
       // B. Revert records from recordWin (if already won)
       if (stats.history && stats.history[today]) {
         const h = stats.history[today];
-        if (h.status === "won") {
+        if (h.status === "won" || h.original?.won === true || h.best?.won === true || h.won === true) {
           // v1.6.4: Support both legacy flat structure and new nested original/best structure
           const hData = h.original || h.best || h;
           const hErrors = hData.errors || hData.peaksErrors || 0;
@@ -1416,7 +1416,7 @@ export class GameManager {
       this.stats &&
       this.stats.history &&
       this.stats.history[today] &&
-      this.stats.history[today].status === "won"
+      (this.stats.history[today].status === "won" || this.stats.history[today].original?.won === true || this.stats.history[today].best?.won === true || this.stats.history[today].won === true)
     ) {
       console.log(`[RP] Game already won today. Skipping global RP update for ${stage}.`);
       return;
@@ -1873,7 +1873,7 @@ export class GameManager {
       console.warn(
         `[Maintenance] Cross-check triggered: countMismatch=${countMismatch}, missingDates=${missingDates}, hierarchyMismatch=${hierarchyMismatch}.`,
       );
-      this._recalculateRecords(this.stats);
+      this._recalculateRecords(this.stats, true);
       
       // Hierarchy Healing (v1.5.54: totalRP is the anchor)
       this.stats.monthlyRP = Math.max(this.stats.monthlyRP || 0, this.stats.dailyRP || 0);
@@ -2242,16 +2242,16 @@ export class GameManager {
       const cloudItem = cloudHistoryMap[dateKey];
       const localItem = this.stats.history[dateKey];
       
-      const cloudWon = cloudItem.original?.won === true || cloudItem.best?.won === true;
+      const cloudWon = cloudItem.original?.won === true || cloudItem.best?.won === true || cloudItem.status === "won";
       
       if (!localItem) {
-        this.stats.history[dateKey] = cloudItem;
+        this.stats.history[dateKey] = { ...cloudItem, status: cloudWon ? "won" : (cloudItem.status || "") };
         changed = true;
       } else {
-        const localWon = localItem.original?.won === true || localItem.best?.won === true;
+        const localWon = localItem.original?.won === true || localItem.best?.won === true || localItem.status === "won";
         
         if (cloudWon && !localWon) {
-          this.stats.history[dateKey] = cloudItem;
+          this.stats.history[dateKey] = { ...cloudItem, status: "won" };
           changed = true;
         }
       }
@@ -3562,7 +3562,10 @@ export class GameManager {
 
     // Filter and sort won entries to rebuild history timeline
     const dates = Object.keys(stats.history)
-      .filter((date) => stats.history[date].status === "won")
+      .filter((date) => {
+        const h = stats.history[date];
+        return h.status === "won" || h.original?.won === true || h.best?.won === true || h.won === true;
+      })
       .sort();
 
     if (dates.length === 0) {
@@ -3604,8 +3607,8 @@ export class GameManager {
         }
 
         // Rebuild Stage Stats
-        if (h.stageTimes) {
-          for (const [stage, time] of Object.entries(h.stageTimes)) {
+        if (hData.stageTimes) {
+          for (const [stage, time] of Object.entries(hData.stageTimes)) {
             rb.stageTimesAccumulated[stage] = (rb.stageTimesAccumulated[stage] || 0) + time;
             rb.stageWinsAccumulated[stage] = (rb.stageWinsAccumulated[stage] || 0) + 1;
           }

@@ -4,7 +4,7 @@ export const CONFIG = {
   author: "Román Yakimovicz",
   schemaVersion: 7.2,
   debugMode: false, // Toggle to true to see logs
-  betaMode: false, // Toggle to true to enable "Ayuda" button
+  betaMode: true, // Toggle to true to enable "Ayuda" button
 
   // Configuración de sincronización del servidor
   serverTimeSyncInterval: 1800000, // 30 minutos

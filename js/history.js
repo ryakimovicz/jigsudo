@@ -386,7 +386,7 @@ function renderHistoryCalendar(history = {}) {
     // Today restriction: Only allow Today if already won
     const isToday = dateStr === todayStr;
     const dayData = history[dateStr];
-    const isCompleted = dayData?.status === "won";
+    const isCompleted = dayData?.status === "won" || dayData?.original?.won === true || dayData?.best?.won === true || dayData?.won === true || dayData?.originalWon === true;
 
     if (isFuture || !exists) {
       dayEl.classList.add("disabled");
@@ -404,7 +404,7 @@ function renderHistoryCalendar(history = {}) {
       // Check History Status
       if (dayData) {
         // 1. BACKGROUND COLORS (Original performance anchor)
-        const isLegacyWin = !dayData.hasOriginal && !dayData.best && dayData.status === "won";
+        const isLegacyWin = !dayData.hasOriginal && !dayData.best && (dayData.status === "won" || dayData.original?.won === true || dayData.best?.won === true || dayData.won === true || dayData.originalWon === true);
         
         if (dayData.originalWon || isLegacyWin) {
           // Green: Won on the original day
@@ -415,7 +415,7 @@ function renderHistoryCalendar(history = {}) {
         }
 
         // DOT MARKER (Any completion)
-        if (dayData.status === "won") {
+        if (dayData.status === "won" || dayData.original?.won === true || dayData.best?.won === true || dayData.won === true || dayData.originalWon === true) {
           const dot = document.createElement("span");
           dot.className = "completed-dot";
           dot.textContent = "👑"; // Use crown emoji instead of dot
@@ -428,7 +428,7 @@ function renderHistoryCalendar(history = {}) {
 
       dayEl.addEventListener("click", () => {
         const isToday = dateStr === todayStr;
-        const isCompleted = dayData && dayData.status === "won";
+        const isCompleted = dayData && (dayData.status === "won" || dayData.original?.won === true || dayData.best?.won === true || dayData.won === true || dayData.originalWon === true);
 
         // Per user request:
         // Today is NOT clickable from history until won.
@@ -549,7 +549,7 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
 
   html += `<div class="tooltip-title" style="color: ${titleColor}; border-bottom-color: ${titleColor}22">
     <span>${dateTitle}</span>
-    ${(!isComparison && data?.status === "won") ? "<span>👑</span>" : ""}
+    ${(!isComparison && (data?.status === "won" || data?.original?.won === true || data?.best?.won === true || data?.won === true || data?.originalWon === true)) ? "<span>👑</span>" : ""}
   </div>`;
 
   const fmt = (ms) => formatTime(ms);
@@ -674,9 +674,9 @@ function showHistoryTooltip(e, data, dateStr, isMobile = false, ownData = null, 
 
           html += `
             <div class="history-comp-grid" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start;">
-                ${renderColumn(fName, fO, fB, oO, oB, "var(--accent-color)", false, f.status === "won")}
+                ${renderColumn(fName, fO, fB, oO, oB, "var(--accent-color)", false, f.status === "won" || f.original?.won === true || f.best?.won === true || f.won === true || f.originalWon === true)}
                 <div class="comp-vs" style="align-self: center; opacity: 0.3; font-style: italic; font-size: 0.8rem;">vs</div>
-                ${renderColumn(t.comp_you || "Tú", oO, oB, fO, fB, "#22c55e", true, o.status === "won")}
+                ${renderColumn(t.comp_you || "Tú", oO, oB, fO, fB, "#22c55e", true, o.status === "won" || o.original?.won === true || o.best?.won === true || o.won === true || o.originalWon === true)}
             </div>`;
       }
   }

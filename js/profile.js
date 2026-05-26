@@ -810,7 +810,7 @@ function renderWeekdayStats(stats) {
     // Fallback to History Iteration
     Object.entries(history).forEach(([dateStr, data]) => {
       // Changed to >= 0 to include debug/instant wins
-      if (data.status === "won" && data.totalTime >= 0 && data.originalWin) {
+      if ((data.status === "won" || data.original?.won === true || data.best?.won === true || data.won === true) && data.totalTime >= 0 && data.originalWin) {
         const parts = dateStr.split("-");
         if (parts.length === 3) {
           const [y, m, d] = parts.map(Number);
@@ -1044,7 +1044,7 @@ function renderCalendar(history = {}, ownHistory = null, fName = "Ellos") {
       // Format YYYY-MM-DD
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const dayData = history[dateStr];
-      const isCompleted = dayData?.status === "won";
+      const isCompleted = dayData?.status === "won" || dayData?.original?.won === true || dayData?.best?.won === true || dayData?.won === true;
       const isToday = dateStr === todayStr;
 
       if (isToday && !isCompleted) {
@@ -1055,10 +1055,10 @@ function renderCalendar(history = {}, ownHistory = null, fName = "Ellos") {
       }
       
       if (dayData) {
-        const isLegacyWin = !dayData.original && !dayData.best && dayData.status === "won";
+        const isLegacyWin = !dayData.original && !dayData.best && (dayData.status === "won" || dayData.original?.won === true || dayData.best?.won === true || dayData.won === true);
         
         // Rules: Green if won on day 1, Yellow if started on day 1 but not won.
-        if ((dayData.original && dayData.original.won === true) || isLegacyWin) {
+        if ((dayData.original && (dayData.original.won === true || dayData.original.status === "won")) || isLegacyWin) {
           dayEl.classList.add("win");
         } else if (dayData.original && dayData.original.won !== true) {
           dayEl.classList.add("loss");
@@ -1195,7 +1195,7 @@ async function handleShareStats() {
       let wonCount = 0;
       if (stats.history) {
         Object.values(stats.history).forEach((h) => {
-          if (h.status === "won" && h.totalTime > 0) {
+          if ((h.status === "won" || h.original?.won === true || h.best?.won === true || h.won === true) && h.totalTime > 0) {
             totalTime += h.totalTime;
             wonCount++;
           }
