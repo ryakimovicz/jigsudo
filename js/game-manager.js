@@ -2981,6 +2981,7 @@ export class GameManager {
 
       // RE-FETCH stats after ensureStats in case the healer replaced the object reference
       let stats = this.stats;
+      const localDailyRPBeforeSync = Number((stats.dailyRP || 0).toFixed(3));
       if (!stats.history) stats.history = {};
       if (!stats.stageTimesAccumulated) stats.stageTimesAccumulated = {};
       if (!stats.stageWinsAccumulated) stats.stageWinsAccumulated = {};
@@ -3229,7 +3230,7 @@ export class GameManager {
               // If client-side dailyRP got reverted due to synchronization lag,
               // we calculate the missing base points and add them to all accumulators.
               const targetBasePoints = Number((6.0 - (peaksErrors * SCORING.ERROR_PENALTY_RP)).toFixed(3));
-              const currentBasePoints = Number((stats.dailyRP || 0).toFixed(3));
+              const currentBasePoints = localDailyRPBeforeSync;
               
               // Only consider missing base points if we are NOT in a late completion
               // and ensure we don't have negative missing points due to float precision.
