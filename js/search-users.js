@@ -1,8 +1,8 @@
-import { searchPublicUsers, toggleFavorite } from "./db.js?v=1.4.21";
-import { getI18n } from "./i18n.js?v=1.4.21";
-import { router } from "./router.js?v=1.4.21";
-import { getCurrentUser } from "./auth.js?v=1.4.21";
-import { gameManager } from "./game-manager.js?v=1.4.21";
+import { searchPublicUsers, toggleFavorite } from "./db.js?v=1.4.22";
+import { getI18n } from "./i18n.js?v=1.4.22";
+import { router } from "./router.js?v=1.4.22";
+import { getCurrentUser } from "./auth.js?v=1.4.22";
+import { gameManager } from "./game-manager.js?v=1.4.22";
 
 let searchTimeout = null;
 

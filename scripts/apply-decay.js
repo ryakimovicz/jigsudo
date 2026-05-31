@@ -1,7 +1,7 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getJigsudoDateString, getJigsudoDayDiff } from "../js/utils/time.js?v=1.4.21"; // Uses Jigsudo offset handling
-import { getRankData } from "../js/ranks.js?v=1.4.21"; // Uses dynamic bounds for decay penalty
+import { getJigsudoDateString, getJigsudoDayDiff } from "../js/utils/time.js?v=1.4.22"; // Uses Jigsudo offset handling
+import { getRankData } from "../js/ranks.js?v=1.4.22"; // Uses dynamic bounds for decay penalty
 const todayStr = getJigsudoDateString();
 
 async function runDecay() {

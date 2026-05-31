@@ -22,7 +22,7 @@ const isLocalhost =
 
 if (isLocalhost) {
   try {
-    const secrets = await import("./utils/secrets.js?v=1.4.21");
+    const secrets = await import("./utils/secrets.js?v=1.4.22");
     if (secrets.API_KEY_DEV) {
       // console.log("[Firebase] Using DEV API Key");
       firebaseConfig.apiKey = secrets.API_KEY_DEV;
