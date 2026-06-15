@@ -477,10 +477,29 @@ export async function saveUserStats(
             }
           }
 
-          // v1.4.1: Protect careerRP from being overwritten by 0 if remote has value
-          if (localCareer === 0 && cloudCareer > 0 && !updateData._isIntentionalReset) {
-            console.warn(`[DB] Protection: Preventing overwrite of CareerRP (${cloudCareer}) with local 0.`);
-            s.careerRP = cloudCareer;
+          // v1.9.1: ANTI-REGRESSION SHIELD for Accumulated Stats
+          // Ensures a stale client (e.g., from another device) cannot wipe out cloud progress.
+          if (!updateData._isIntentionalReset) {
+            const cloudTotalScore = remoteStats.totalScoreAccumulated || 0;
+            if ((s.totalScoreAccumulated || 0) < cloudTotalScore) {
+              console.warn(`[DB] Shield: Preventing regression of totalScoreAccumulated (${cloudTotalScore} -> ${s.totalScoreAccumulated})`);
+              s.totalScoreAccumulated = cloudTotalScore;
+            }
+
+            if (s.careerRP < cloudCareer) {
+              console.warn(`[DB] Shield: Preventing regression of careerRP (${cloudCareer} -> ${s.careerRP})`);
+              s.careerRP = cloudCareer;
+            }
+
+            const cloudTotalRP = remoteStats.totalRP || 0;
+            if (s.totalRP < cloudTotalRP) {
+              // For totalRP, we must allow small legitimate drops due to penalties.
+              // A drop > 50 RP is mathematically impossible from a single game, meaning it's a stale device.
+              if (!isIntentionalPenalty || (cloudTotalRP - s.totalRP > 50)) {
+                console.warn(`[DB] Shield: Preventing regression of totalRP (${cloudTotalRP} -> ${s.totalRP})`);
+                s.totalRP = cloudTotalRP;
+              }
+            }
           }
 
           // v1.9.0: RESET GUARD (Legacy/Ghost Protection)
