@@ -1,12 +1,12 @@
-import { CONFIG } from "./config.js?v=1.4.22";
-import { gameManager } from "./game-manager.js?v=1.4.22";
-import { translations } from "./translations.js?v=1.4.22";
-import { transitionToSudoku } from "./sudoku.js?v=1.4.22";
-import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.4.22";
-import { getConflicts } from "./sudoku-logic.js?v=1.4.22";
-import { getCurrentLang } from "./i18n.js?v=1.4.22";
-import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.22";
-import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.22";
+import { CONFIG } from "./config.js?v=1.4.23";
+import { gameManager } from "./game-manager.js?v=1.4.23";
+import { translations } from "./translations.js?v=1.4.23";
+import { transitionToSudoku } from "./sudoku.js?v=1.4.23";
+import { getChunksFromBoard, createMiniGrid } from "./memory.js?v=1.4.23";
+import { getConflicts } from "./sudoku-logic.js?v=1.4.23";
+import { getCurrentLang } from "./i18n.js?v=1.4.23";
+import { showToast, updateLevelTitle, updateGameHelp } from "./ui.js?v=1.4.23";
+import { isAtGameRoute } from "./utils/route-utils.js?v=1.4.23";
 
 // DOM Elements Reference
 let boardContainer;
